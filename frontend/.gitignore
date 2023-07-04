@@ -1,0 +1,15 @@
+.DS_Store
+node_modules
+/build
+/.svelte-kit
+/package
+.vercel
+.output
+vite.config.js.timestamp-*
+vite.config.ts.timestamp-*
+
+.env.local
+.env.*.local
+
+local-key.pem
+local-cert.pem

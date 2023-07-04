@@ -1,0 +1,21 @@
+http:
+  routers:
+    traefik:
+      rule: "Host(`traefik.juicer-dev.xyz`)"
+      service: "api@internal"
+      tls:
+        domains:
+          - main: "juicer-dev.xyz"
+            sans:
+              - "*.juicer-dev.xyz"
+
+  middlewares:
+    redirecthttps:
+      redirectScheme:
+        scheme: "https"
+        permanent: true
+
+tls:
+  certificates:
+    - certFile: "/etc/certs/local-cert.pem"
+      keyFile: "/etc/certs/local-key.pem"

@@ -1,0 +1,34 @@
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: juicer-ingress
+  namespace: dev
+  annotations:
+    cert-manager.io/issuer: local-ca-issuer
+    traefik.ingress.kubernetes.io/router.entrypoints: web, websecure
+spec:
+  ingressClassName: traefik
+  tls:
+    - hosts:
+        - dankop.dev
+      secretName: local-ca-secret
+  rules:
+    - host: dankop.dev
+      http:
+        paths:
+          - path: /api
+            # - path: /api(/|$)(.*)
+            pathType: Prefix
+            backend:
+              service:
+                name: juicer-svc
+                port:
+                  number: 1337
+          - path: /kratos(/|$)(.*)
+            pathType: Prefix
+            backend:
+              service:
+                name: kratos-svc
+                port:
+                  number: 443

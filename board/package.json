@@ -1,0 +1,41 @@
+{
+  "name": "wat",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "main": "dist/my-board.es.js",
+  "exports": {
+    ".": "./dist/my-board.es.js"
+  },
+  "types": "types/my-board.d.ts",
+  "files": [
+    "dist",
+    "types"
+  ],
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "lint": "npm run lint:lit-analyzer && npm run lint:eslint",
+    "lint:eslint": "eslint 'src/**/*.ts'",
+    "format": "prettier \"**/*.{cjs,html,js,json,md,ts}\" --ignore-path ./.eslintignore --write",
+    "test": "npm run test:dev && npm run test:prod",
+    "test:dev": "wtr",
+    "test:watch": "wtr --watch",
+    "test:prod": "MODE=prod wtr",
+    "test:prod:watch": "MODE=prod wtr --watch"
+  },
+  "dependencies": {
+    "lit": "^2.6.1"
+  },
+  "devDependencies": {
+    "@open-wc/testing": "^3.1.8",
+    "@web/test-runner": "^0.15.3",
+    "@web/test-runner-playwright": "^0.9.0",
+    "eslint": "^8.38.0",
+    "eslint-plugin-lit-a11y": "^2.4.1",
+    "prettier": "^2.8.7",
+    "ts-lit-plugin": "^1.2.1",
+    "typescript": "^4.9.3",
+    "vite": "^4.2.3"
+  }
+}

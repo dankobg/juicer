@@ -1,0 +1,262 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kratos-deploy
+  labels:
+    app.kubernetes.io/name: kratos-deploy
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: kratos-deploy
+  strategy:
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: kratos-deploy
+    spec:
+      initContainers:
+        - name: kratos-migrate
+          image: oryd/kratos:v0.13.0
+          imagePullPolicy: IfNotPresent
+          envFrom:
+            - configMapRef:
+                name: kratos-conf
+            - secretRef:
+                name: kratos-secret
+          volumeMounts:
+            - name: kratos-files
+              mountPath: /etc/config/kratos
+          command:
+            [
+              "migrate",
+              "sql",
+              "--read-from-env",
+              "--yes",
+              "--config",
+              "/etc/config/kratos/kratos.yaml",
+            ]
+      containers:
+        - name: kratos
+          image: oryd/kratos:v0.13.0
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: ENV
+              value: production
+          ports:
+            - name: kratos-public
+              containerPort: 4433
+              protocol: TCP
+            - name: kratos-admin
+              containerPort: 4434
+              protocol: TCP
+          args:
+            - serve
+            - --config
+            - /etc/config/kratos/kratos.yaml
+          livenessProbe:
+            httpGet:
+              path: /admin/health/ready
+              port: 4434
+              # httpHeaders:
+              #   - name: Host
+              #     value: '127.0.0.1'
+            failureThreshold: 5
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /admin/health/ready
+              port: 4434
+              # httpHeaders:
+              #   - name: Host
+              #     value: '127.0.0.1'
+            failureThreshold: 5
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          startupProbe:
+            httpGet:
+              path: /admin/health/ready
+              port: 4434
+              # httpHeaders:
+              #   - name: Host
+              #     value: '127.0.0.1'
+            failureThreshold: 60
+            periodSeconds: 1
+            successThreshold: 1
+            timeoutSeconds: 1
+          resources:
+            limits:
+              memory: 512Mi
+              cpu: 200m
+          volumeMounts:
+            - name: kratos-files
+              mountPath: /etc/config/kratos
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            privileged: false
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            runAsUser: 100
+            seccompProfile:
+              type: RuntimeDefault
+      restartPolicy: Always
+      volumes:
+        - name: kratos-files
+          persistentVolumeClaim:
+            claimName: kratos-files-pvc
+      serviceAccountName: kratos
+      automountServiceAccountToken: true
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: kratos-svc
+  labels:
+    app.kubernetes.io/name: kratos-svc
+spec:
+  ports:
+    - name: kratos-public-tcp
+      protocol: TCP
+      port: 4433
+      targetPort: 4433
+    - name: kratos-admin-tcp
+      protocol: TCP
+      port: 4434
+      targetPort: 4434
+  selector:
+    app.kubernetes.io/name: kratos-svc
+status:
+  loadBalancer: {}
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: kratos-files-pv
+spec:
+  capacity:
+    storage: 10Mi
+  accessModes:
+    - ReadWriteOnce
+  hostPath:
+    path: ../files
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: kratos-files-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Mi
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: kratos-courier
+  namespace: default
+  labels:
+    app.kubernetes.io/name: kratos-courier
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: kratos-courier
+  serviceName: kratos-courier
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: kratos-courier
+    spec:
+      containers:
+        - name: kratos-courier
+          image: oryd/kratos:v0.13.0
+          imagePullPolicy: IfNotPresent
+          args:
+            - courier
+            - watch
+            - --config
+            - /etc/config/kratos/kratos.yaml
+          envFrom:
+            - configMapRef:
+                name: kratos-conf
+            - secretRef:
+                name: kratos-secret
+          resources:
+            limits:
+              memory: 256Mi
+              cpu: 100m
+          volumeMounts:
+            - name: kratos-files
+              mountPath: /etc/config/kratos
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            privileged: false
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            runAsUser: 100
+            seccompProfile:
+              type: RuntimeDefault
+      volumes:
+        - name: kratos-files
+          persistentVolumeClaim:
+            claimName: kratos-files-pvc
+      serviceAccountName: kratos
+      automountServiceAccountToken: true
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: kratos
+  labels:
+    app.kubernetes.io/name: kratos
+######################
+######################
+######################
+
+# apiVersion: networking.k8s.io/v1
+# kind: Ingress
+# metadata:
+#   name: api-ingress
+#   namespace: kratos-staging
+#   annotations:
+#     kubernetes.io/ingress.class: "nginx"
+#     cert-manager.io/issuer: "letsencrypt-nginx"
+#     nginx.ingress.kubernetes.io/cors-allow-headers: >-
+#       Keep-Alive, User-Agent, X-Requested-With, Cache-Control, Accept, Content-Type, Authorization, X-Forwarded-For, Strict-Transport-Security, Cookie, X-Kratos-Authenticated-Identity-Id, X-CSRF-Token, X-Session-Token
+#     nginx.ingress.kubernetes.io/cors-allow-methods: GET, PUT, POST, DELETE, PATCH, OPTIONS
+#     nginx.ingress.kubernetes.io/cors-allow-origin: https://staging-app.foxq.io
+#     nginx.ingress.kubernetes.io/cors-expose-headers: >-
+#       Content-Type, Content-Length, Set-Cookie, Authorization, X-Session-Token, X-CSRF-Token, Cookie
+#     nginx.ingress.kubernetes.io/enable-cors: 'true'
+#     nginx.ingress.kubernetes.io/rewrite-target: /$2
+#     nginx.ingress.kubernetes.io/ssl-redirect: 'true'
+# spec:
+#   tls:
+#     - hosts:
+#       - api.example.com
+#       secretName: api-example-com
+#   rules:
+#     - host: api.example.com
+#       http:
+#         paths:
+#           - path: /kratos(/|$)(.*)
+#             pathType: Prefix
+#             backend:
+#               service:
+#                 name: kratos-service
+#                 port:
+#                   number: 443
