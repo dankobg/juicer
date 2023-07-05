@@ -57,6 +57,8 @@ spec:
       restartPolicy: Always
       serviceAccountName: juicer
       automountServiceAccountToken: true
+      imagePullSecrets:
+        - name: ghcr-secret
 ---
 apiVersion: v1
 kind: Service

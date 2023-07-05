@@ -7,5 +7,4 @@ resources:
 generators:
   - postgres-prod-gen.yaml
 namespace: prod
-
-namePrefix: prod-
+# namePrefix: prod-

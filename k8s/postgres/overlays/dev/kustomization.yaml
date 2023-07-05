@@ -9,7 +9,7 @@ generators:
 
 namespace: dev
 
-namePrefix: dev-
+# namePrefix: dev-
 
 configMapGenerator:
   - name: postgres-conf

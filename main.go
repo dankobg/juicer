@@ -19,15 +19,22 @@ import (
 )
 
 func main() {
+	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		if _, err := w.Write([]byte("Path: /")); err != nil {
+			fmt.Printf("errored")
+			return
+		}
+	})
+
 	http.HandleFunc("/api", func(w http.ResponseWriter, r *http.Request) {
-		if _, err := w.Write([]byte("lol 123")); err != nil {
+		if _, err := w.Write([]byte("Path: /api")); err != nil {
 			fmt.Printf("errored")
 			return
 		}
 	})
 
 	http.HandleFunc("/api/v1/health/alive", func(w http.ResponseWriter, r *http.Request) {
-		if _, err := w.Write([]byte("lol 123")); err != nil {
+		if _, err := w.Write([]byte("Path: /api/v1/health/alive")); err != nil {
 			fmt.Printf("errored")
 			return
 		}

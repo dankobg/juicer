@@ -5,16 +5,12 @@ metadata:
   name: local-cert
   namespace: dev
 spec:
-  isCA: true
-  commonName: local-cert
   secretName: local-ca-secret
-  privateKey:
-    algorithm: ECDSA
-    size: 256
   issuerRef:
-    name: selfsigned-issuer
+    name: local-ca-clusterissuer
     kind: ClusterIssuer
     group: cert-manager.io
+  privateKey:
+    rotationPolicy: Always
   dnsNames:
-    # - dankop.xyz
-    - dankop.dev
+    - dankop-dev.xyz

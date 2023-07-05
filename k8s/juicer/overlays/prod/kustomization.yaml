@@ -9,7 +9,7 @@ generators:
 
 namespace: prod
 
-namePrefix: prod-
+# namePrefix: prod-
 
 configMapGenerator:
   - name: juicer-conf

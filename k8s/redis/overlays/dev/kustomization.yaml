@@ -6,7 +6,7 @@ resources:
 
 namespace: dev
 
-namePrefix: dev-
+# namePrefix: dev-
 
 generators:
   - redis-dev-gen.yaml

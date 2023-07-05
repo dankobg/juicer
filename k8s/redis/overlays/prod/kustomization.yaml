@@ -6,7 +6,7 @@ resources:
 
 namespace: prod
 
-namePrefix: prod-
+# namePrefix: prod-
 
 generators:
   - redis-prod-gen.yaml
