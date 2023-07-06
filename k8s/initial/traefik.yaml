@@ -232,7 +232,7 @@ spec:
   entryPoints:
     - traefik
   routes:
-    - match: PathPrefix(`/dashboard`) || PathPrefix(`/api`)
+    - match: PathPrefix(`/dashboard`) || PathPrefix(`/traefik`)
       kind: Rule
       services:
         - name: api@internal

@@ -6,7 +6,7 @@ metadata:
   annotations:
     cert-manager.io/cluster-issuer: local-ca-clusterissuer
     traefik.ingress.kubernetes.io/router.entrypoints: web, websecure
-    traefik.ingress.kubernetes.io/router.middlewares: dev-redirecttohttps@kubernetescrd
+    traefik.ingress.kubernetes.io/router.middlewares: redirecttohttps@kubernetescrd
 spec:
   ingressClassName: traefik
   tls:

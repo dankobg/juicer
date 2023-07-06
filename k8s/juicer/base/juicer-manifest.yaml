@@ -81,5 +81,3 @@ metadata:
   name: juicer
   labels:
     app.kubernetes.io/name: juicer
----
-

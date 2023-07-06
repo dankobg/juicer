@@ -7,7 +7,6 @@ resources:
   - ns.yaml
   - cluster-issuer.yaml
   - certificate.yaml
-  - ingress.yaml
   - https-mw.yaml
   # - traefik.yaml
 
