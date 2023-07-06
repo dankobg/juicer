@@ -1,0 +1,295 @@
+# https://taskfile.dev
+
+version: "3"
+
+env:
+  ENV: '{{.ENV | default "development"}}'
+
+vars:
+  DIR:
+    sh: pwd
+  DIR_NAME:
+    sh: basename {{.DIR}}
+  DOTENV_FILE:
+    sh: >-
+      if [ "${ENV}" == "production" ]; then
+        echo .env.production
+      else
+        echo .env
+      fi
+
+dotenv: ["{{.DOTENV_FILE}}"]
+
+tasks:
+  # ----------------------------------------------------------------------------
+
+  default:
+    cmds:
+      - task -l
+    silent: true
+
+  gen:
+    desc: Run go generate
+    cmds:
+      - go generate ./...
+
+  vet:
+    desc: Run go vet analyzer
+    cmds:
+      - go vet ./...
+
+  tidy:
+    desc: Tidy dependencies
+    cmds:
+      - go mod tidy
+
+  lint:
+    desc: Lint code with golangci-lint
+    cmds:
+      - golangci-lint run
+
+  fmt:
+    desc: Format code with go fmt
+    cmds:
+      - go fmt ./...
+
+  test:
+    desc: Run tests
+    cmds:
+      - go test {{.CLI_ARGS}} ./...
+
+  test:verbose:
+    desc: Run tests in verbose mode
+    cmds:
+      - go test -v ./...
+
+  test:race:
+    desc: Run tests in with race condition check
+    cmds:
+      - go test -race ./...
+
+  test:racev:
+    desc: Run tests in verbose mode with race condition check
+    cmds:
+      - go test -v -race ./...
+
+  coverage:
+    desc: Perform test coverage
+    cmds:
+      - go test -cover ./...
+  # ----------------------------------------------------------------------------
+
+  up:
+    desc: Run docker compose up -d
+    cmds:
+      - >-
+        {{if eq .ENV "production"}}
+          docker compose --env-file .env.production -f docker-compose.yaml -f docker-compose.prod.yaml up -d {{.CLI_ARGS}}
+        {{else}}
+          docker compose up -d {{.CLI_ARGS}}
+        {{end}}
+
+  down:
+    desc: Run docker compose down
+    cmds:
+      - >-
+        {{if eq .ENV "production"}}
+          docker compose --env-file .env.production -f docker-compose.yaml -f docker-compose.prod.yaml down {{.CLI_ARGS}}
+        {{else}}
+          docker compose down {{.CLI_ARGS}}
+        {{end}}
+
+  stop:
+    desc: Run docker compose stop
+    cmds:
+      - >-
+        {{if eq .ENV "production"}}
+          docker compose --env-file .env.production -f docker-compose.yaml -f docker-compose.prod.yaml stop {{.CLI_ARGS}}
+        {{else}}
+          docker compose stop {{.CLI_ARGS}}
+        {{end}}
+
+  restart:
+    desc: Run docker compose restart
+    cmds:
+      - >-
+        {{if eq .ENV "production"}}
+          docker compose --env-file .env.production -f docker-compose.yaml -f docker-compose.prod.yaml restart {{.CLI_ARGS}}
+        {{else}}
+          docker compose restart {{.CLI_ARGS}}
+        {{end}}
+
+  prune:
+    desc: Run docker system prune
+    cmds:
+      - docker system prune -a -f {{.CLI_ARGS}}
+
+  prune-all:
+    desc: Run docker system prune including volumes
+    cmds:
+      - docker system prune -a -f --volumes
+
+  # ----------------------------------------------------------------------------
+
+  mg:create:
+    desc: Create new db migrations
+    cmds:
+      - docker run -it -v {{.DIR}}/ent/migrations:/migrations --network {{.DIR_NAME}}_intranet migrate/migrate -path=/migrations -database "postgres://${DATABASE__USER}:${DATABASE__PASSWORD}@${DATABASE__HOST}:${DATABASE__PORT}/${DATABASE__DB}?sslmode=disable&x-migrations-table=\"gomigrate_schema_migrations\"&x-migrations-table-quoted=1" create -format unix -ext sql -dir /migrations {{.CLI_ARGS}}
+
+  mg:up:
+    desc: Run db migrations up
+    cmds:
+      - docker run -it -v {{.DIR}}/ent/migrations:/migrations --network {{.DIR_NAME}}_intranet migrate/migrate -path=/migrations -database "postgres://${DATABASE__USER}:${DATABASE__PASSWORD}@${DATABASE__HOST}:${DATABASE__PORT}/${DATABASE__DB}?sslmode=disable&x-migrations-table=\"gomigrate_schema_migrations\"&x-migrations-table-quoted=1" up {{.CLI_ARGS}}
+
+  mg:down:
+    desc: Run db migrations down
+    cmds:
+      - docker run -it -v {{.DIR}}/ent/migrations:/migrations --network {{.DIR_NAME}}_intranet migrate/migrate -path=/migrations -database "postgres://${DATABASE__USER}:${DATABASE__PASSWORD}@${DATABASE__HOST}:${DATABASE__PORT}/${DATABASE__DB}?sslmode=disable&x-migrations-table=\"gomigrate_schema_migrations\"&x-migrations-table-quoted=1" down {{.CLI_ARGS}}
+
+  mg:goto:
+    desc: Run db migrations goto version
+    cmds:
+      - docker run -it -v {{.DIR}}/ent/migrations:/migrations --network {{.DIR_NAME}}_intranet migrate/migrate -path=/migrations -database "postgres://${DATABASE__USER}:${DATABASE__PASSWORD}@${DATABASE__HOST}:${DATABASE__PORT}/${DATABASE__DB}?sslmode=disable&x-migrations-table=\"gomigrate_schema_migrations\"&x-migrations-table-quoted=1" goto {{.CLI_ARGS}}
+
+  mg:force:
+    desc: Run db migrations force version
+    cmds:
+      - docker run -it -v {{.DIR}}/ent/migrations:/migrations --network {{.DIR_NAME}}_intranet migrate/migrate -path=/migrations -database "postgres://${DATABASE__USER}:${DATABASE__PASSWORD}@${DATABASE__HOST}:${DATABASE__PORT}/${DATABASE__DB}?sslmode=disable&x-migrations-table=\"gomigrate_schema_migrations\"&x-migrations-table-quoted=1" force {{.CLI_ARGS}}
+
+  mg:drop:
+    desc: Run db migrations drop
+    cmds:
+      - docker run -it -v {{.DIR}}/ent/migrations:/migrations --network {{.DIR_NAME}}_intranet migrate/migrate -path=/migrations -database "postgres://${DATABASE__USER}:${DATABASE__PASSWORD}@${DATABASE__HOST}:${DATABASE__PORT}/${DATABASE__DB}?sslmode=disable&x-migrations-table=\"gomigrate_schema_migrations\"&x-migrations-table-quoted=1" drop {{.CLI_ARGS}}
+
+  mg:version:
+    desc: Show db migrations version
+    cmds:
+      - docker run -it -v {{.DIR}}/ent/migrations:/migrations --network {{.DIR_NAME}}_intranet migrate/migrate -path=/migrations -database "postgres://${DATABASE__USER}:${DATABASE__PASSWORD}@${DATABASE__HOST}:${DATABASE__PORT}/${DATABASE__DB}?sslmode=disable&x-migrations-table=\"gomigrate_schema_migrations\"&x-migrations-table-quoted=1" version {{.CLI_ARGS}}
+
+  mg:help:
+    desc: Show db migrations help
+    cmds:
+      - docker run -it -v {{.DIR}}/ent/migrations:/migrations --network {{.DIR_NAME}}_intranet migrate/migrate -path=/migrations -database "postgres://${DATABASE__USER}:${DATABASE__PASSWORD}@${DATABASE__HOST}:${DATABASE__PORT}/${DATABASE__DB}?sslmode=disable&x-migrations-table=\"gomigrate_schema_migrations\"&x-migrations-table-quoted=1" help
+
+  # ----------------------------------------------------------------------------
+
+  sh:api:
+    desc: Shell into animond-api docker container
+    cmds:
+      - docker compose exec -it animond-api sh
+
+  sh:kratos:
+    desc: Shell into kratos docker container
+    cmds:
+      - docker compose exec -it kratos sh
+
+  sh:keto:
+    desc: Shell into keto docker container
+    cmds:
+      - docker compose exec -it keto sh
+
+  sh:pg:
+    desc: Shell into postgres docker container
+    cmds:
+      - docker compose exec -it postgres sh
+
+  sh:redis:
+    desc: Shell into redis docker container
+    cmds:
+      - docker compose exec -it redis sh
+
+  sh:mailhog:
+    desc: Shell into mailhog docker container
+    cmds:
+      - docker compose exec -it mailhog sh
+
+  # ----------------------------------------------------------------------------
+
+  psql:
+    desc: Connect to db with psql
+    cmds:
+      - docker compose exec -it ${DATABASE__HOST} psql "postgres://${DATABASE__USER}:${DATABASE__PASSWORD}@127.0.0.1:${DATABASE__PORT}/${DATABASE__DB}?sslmode=disable"
+
+  pgcli:
+    desc: Connect to db with pgcli
+    env:
+      DSN: "" # OVERRIDE `DSN` ENV variable to empty string because pgcli uses it for it's alias inside pgclirc cfg
+      PGCLIRC: "~/.config/pgcli/config"
+
+    cmds:
+      - pgcli "postgres://${DATABASE__USER}:${DATABASE__PASSWORD}@127.0.0.1:${DATABASE__PORT}/${DATABASE__DB}?sslmode=disable"
+
+  rediscli:
+    desc: Connect to db with pgcli
+    cmds:
+      - docker compose exec -it redis redis-cli
+
+  # ----------------------------------------------------------------------------
+
+  i18n:extract:
+    desc: Extract translation files
+    cmds:
+      - goi18n extract -format=json -outdir=locales
+      - goi18n merge -format=json -outdir=locales locales/active.*.json
+
+  i18n:merge:
+    desc: Merge translation files
+    cmds:
+      - goi18n merge -format=json -outdir=locales locales/active.*.json locales/translate.$@.json
+
+  # ----------------------------------------------------------------------------
+
+  kratos:import-identity:
+    desc: Import kratos identity
+    cmds:
+      - docker exec kratos /bin/sh -c "cd /etc/config/kratos/imports && kratos import identity employees.json customers.json -e http://127.0.0.1:4434"
+
+  keto:create-tuples:
+    desc: Create keto relation tuples
+    cmds:
+      - docker exec keto /bin/sh -c "keto relation-tuple create /etc/config/keto/relation-tuples -c /etc/config/keto/keto.yaml"
+
+  # ----------------------------------------------------------------------------
+
+  lint:dockerfile-dev:
+    desc: Lint app dev Dockerfile
+    cmds:
+      - docker container run -v "{{.DIR}}/.docker:/dockerfiles" --rm -i  hadolint/hadolint hadolint --ignore DL3008 /dockerfiles/app.dev.dockerfile
+
+  lint:dockerfile-delve:
+    desc: Lint app delve Dockerfile
+    cmds:
+      - docker container run -v "{{.DIR}}/.docker:/dockerfiles" --rm -i  hadolint/hadolint hadolint --ignore DL3008 /dockerfiles/app.delve.dockerfile
+
+  lint:dockerfile-prod:
+    desc: Lint app Dockerfile
+    cmds:
+      - docker container run -v "{{.DIR}}/.docker:/dockerfiles" --rm -i  hadolint/hadolint hadolint --ignore DL3008 /dockerfiles/app.dockerfile
+
+  # ----------------------------------------------------------------------------
+
+  k:dev:
+    desc: Build and apply dev manifests
+    cmds:
+      - kubectl apply -f k8s/initial/cert-manager.yaml
+      - kubectl -n cert-manager wait --for condition=established --timeout=10s crd.apiextensions.k8s.io/certificaterequests.cert-manager.io crd.apiextensions.k8s.io/certificates.cert-manager.io crd.apiextensions.k8s.io/challenges.acme.cert-manager.io crd.apiextensions.k8s.io/clusterissuers.cert-manager.io crd.apiextensions.k8s.io/issuers.cert-manager.io crd.apiextensions.k8s.io/orders.acme.cert-manager.io
+      - kubectl -n cert-manager wait --for=condition=ready --timeout=10s pod -l app.kubernetes.io/name=webhook
+      - kustomize build --enable-alpha-plugins --enable-exec k8s/initial | kubectl apply -f -
+      - kustomize build --enable-alpha-plugins --enable-exec k8s/postgres/overlays/dev | kubectl apply -f -
+      - kustomize build --enable-alpha-plugins --enable-exec k8s/redis/overlays/dev | kubectl apply -f -
+      - kustomize build --enable-alpha-plugins --enable-exec k8s/kratos/overlays/dev | kubectl apply -f -
+      - kustomize build --enable-alpha-plugins --enable-exec k8s/juicer/overlays/dev | kubectl apply -f -
+
+  k:prod:
+    desc: Build and apply prod manifests
+    cmds:
+      - kubectl apply -f k8s/initial/cert-manager.yaml
+      - kubectl -n cert-manager wait --for condition=established --timeout=10s crd.apiextensions.k8s.io/certificaterequests.cert-manager.io crd.apiextensions.k8s.io/certificates.cert-manager.io crd.apiextensions.k8s.io/challenges.acme.cert-manager.io crd.apiextensions.k8s.io/clusterissuers.cert-manager.io crd.apiextensions.k8s.io/issuers.cert-manager.io crd.apiextensions.k8s.io/orders.acme.cert-manager.io
+      - kubectl -n cert-manager wait --for=condition=ready --timeout=10s pod -l app.kubernetes.io/name=webhook
+      - kustomize build --enable-alpha-plugins --enable-exec k8s/initial | kubectl apply -f -
+      - kustomize build --enable-alpha-plugins --enable-exec k8s/postgres/overlays/prod | kubectl apply -f -
+      - kustomize build --enable-alpha-plugins --enable-exec k8s/redis/overlays/prod | kubectl apply -f -
+      - kustomize build --enable-alpha-plugins --enable-exec k8s/kratos/overlays/prod | kubectl apply -f -
+      - kustomize build --enable-alpha-plugins --enable-exec k8s/juicer/overlays/prod | kubectl apply -f -
+
+  # ----------------------------------------------------------------------------

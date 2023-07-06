@@ -2,7 +2,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: juicer-deploy
+  name: juicer
   labels:
     app.kubernetes.io/name: juicer
 spec:
@@ -63,14 +63,14 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: juicer-svc
+  name: juicer
   labels:
-    app.kubernetes.io/name: juicer-svc
+    app.kubernetes.io/name: juicer
 spec:
   selector:
     app.kubernetes.io/name: juicer
   ports:
-    - name: juicer-tcp
+    - name: juicer
       protocol: TCP
       port: 1337
       targetPort: 1337

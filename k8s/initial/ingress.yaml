@@ -11,24 +11,23 @@ spec:
   ingressClassName: traefik
   tls:
     - hosts:
-        - dankop-dev.xyz
+        - dev-dankop.xyz
       secretName: local-ca-secret
   rules:
-    - host: dankop-dev.xyz
+    - host: dev-dankop.xyz
       http:
         paths:
-          # - path: /api
           - path: /api(/|$)(.*)
             pathType: Prefix
             backend:
               service:
-                name: juicer-svc
+                name: juicer
                 port:
-                  name: juicer-tcp
-          # - path: /kratos(/|$)(.*)
-          #   pathType: Prefix
-          #   backend:
-          #     service:
-          #       name: kratos-svc
-          #       port:
-          #         name: kratos-public-tcp
+                  name: juicer
+          - path: /kratos(/|$)(.*)
+            pathType: Prefix
+            backend:
+              service:
+                name: kratos
+                port:
+                  name: kratos-public

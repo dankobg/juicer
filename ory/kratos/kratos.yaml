@@ -1,6 +1,6 @@
 version: v0.13.0
 
-dsn: postgres://test:test@postgres:5432/test?sslmode=disable&max_conns=20&max_idle_conns=4
+dsn: postgres://test:test@pgsql:5432/juicer?sslmode=disable&max_conns=20&max_idle_conns=4
 
 serve:
   public:
@@ -117,9 +117,9 @@ selfservice:
           #     config:
           #       method: POST
           #       # @TODO LATER
-          #       # url: http://juicer-api:1337/api/v1/webhooks/kratos/registration/after/password
-          #       url: https://juicer.co/api/v1/webhooks/kratos/registration/after/password
-          #       body: file:///etc/config/kratos/hooks/registration/after/password.jsonnet
+          #       # url: http://juicer-api:1337/api/v1/webhooks/kratos/registration_after_password
+          #       url: https://juicer.co/api/v1/webhooks/kratos/registration_after_password
+          #       body: file:///etc/config/kratos/hooks/registration.after.password.jsonnet
           #       can_interrupt: false
           #       response:
           #         ignore: false
@@ -132,9 +132,9 @@ selfservice:
             #   config:
             #     method: POST
             #     # @TODO LATER
-            #     # url: http://juicer-api:1337/api/v1/webhooks/kratos/registration/after/oidc
-            #     url: https://juicer.co/api/v1/webhooks/kratos/registration/after/oidc
-            #     body: file:///etc/config/kratos/hooks/registration/after/oidc.jsonnet
+            #     # url: http://juicer-api:1337/api/v1/webhooks/kratos/registration_after_oidc
+            #     url: https://juicer.co/api/v1/webhooks/kratos/registration_after_oidc
+            #     body: file:///etc/config/kratos/hooks/registration.after.oidc.jsonnet
             #     can_interrupt: false
             #     response:
             #       ignore: false
