@@ -2,7 +2,10 @@ kind: Kustomization
 apiVersion: kustomize.config.k8s.io/v1beta1
 
 resources:
-  - kratos-manifest.yaml
+  - deploy.yaml
+  - sa.yaml
+  - sts.yaml
+  - svc.yaml
 
 configMapGenerator:
   - name: kratos-config

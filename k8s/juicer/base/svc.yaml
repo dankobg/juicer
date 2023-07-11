@@ -1,0 +1,15 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: juicer
+  labels:
+    app.kubernetes.io/name: juicer
+spec:
+  selector:
+    app.kubernetes.io/name: juicer
+  ports:
+    - name: juicer
+      protocol: TCP
+      port: 1337
+      targetPort: 1337

@@ -271,25 +271,129 @@ tasks:
   k:dev:
     desc: Build and apply dev manifests
     cmds:
-      - kubectl apply -f k8s/initial/cert-manager.yaml
-      - kubectl -n cert-manager wait --for condition=established --timeout=10s crd.apiextensions.k8s.io/certificaterequests.cert-manager.io crd.apiextensions.k8s.io/certificates.cert-manager.io crd.apiextensions.k8s.io/challenges.acme.cert-manager.io crd.apiextensions.k8s.io/clusterissuers.cert-manager.io crd.apiextensions.k8s.io/issuers.cert-manager.io crd.apiextensions.k8s.io/orders.acme.cert-manager.io
-      - kubectl -n cert-manager wait --for=condition=ready --timeout=10s pod -l app.kubernetes.io/name=webhook
-      - kustomize build --enable-alpha-plugins --enable-exec k8s/initial | kubectl apply -f -
-      - kustomize build --enable-alpha-plugins --enable-exec k8s/postgres/overlays/dev | kubectl apply -f -
-      - kustomize build --enable-alpha-plugins --enable-exec k8s/redis/overlays/dev | kubectl apply -f -
+      - task: h:install:cert-manager
+      - kubectl apply -f https://github.com/kubernetes-sigs/gateway-api/releases/download/v0.7.1/experimental-install.yaml
+      - kubectl -n cert-manager wait --for condition=established --timeout=5s crd/certificaterequests.cert-manager.io crd/certificates.cert-manager.io crd/challenges.acme.cert-manager.io crd/clusterissuers.cert-manager.io crd/issuers.cert-manager.io crd/orders.acme.cert-manager.io
+      - kubectl -n cert-manager wait --for=condition=ready --timeout=15s pod -l app=webhook -l app.kubernetes.io/name=webhook -l app.kubernetes.io/instance=cert-manager
+      - kubectl -n gateway-system wait --for=condition=ready --timeout=15s pod -l name=gateway-api-admission-server
+      - kustomize build --enable-alpha-plugins --enable-exec k8s/common/overlays/dev | kubectl apply -f -
+      - task: h:install:postgresql
+      - task: h:install:redis
+      - task: h:install:traefik
       - kustomize build --enable-alpha-plugins --enable-exec k8s/kratos/overlays/dev | kubectl apply -f -
       - kustomize build --enable-alpha-plugins --enable-exec k8s/juicer/overlays/dev | kubectl apply -f -
 
   k:prod:
     desc: Build and apply prod manifests
     cmds:
-      - kubectl apply -f k8s/initial/cert-manager.yaml
-      - kubectl -n cert-manager wait --for condition=established --timeout=10s crd.apiextensions.k8s.io/certificaterequests.cert-manager.io crd.apiextensions.k8s.io/certificates.cert-manager.io crd.apiextensions.k8s.io/challenges.acme.cert-manager.io crd.apiextensions.k8s.io/clusterissuers.cert-manager.io crd.apiextensions.k8s.io/issuers.cert-manager.io crd.apiextensions.k8s.io/orders.acme.cert-manager.io
-      - kubectl -n cert-manager wait --for=condition=ready --timeout=10s pod -l app.kubernetes.io/name=webhook
+      - kubectl apply -f k8s/initial/traefik-crd.yaml -f k8s/initial/cert-manager.yaml
+      - kubectl -n cert-manager wait --for condition=established --timeout=15s crd.apiextensions.k8s.io/certificaterequests.cert-manager.io crd.apiextensions.k8s.io/certificates.cert-manager.io crd.apiextensions.k8s.io/challenges.acme.cert-manager.io crd.apiextensions.k8s.io/clusterissuers.cert-manager.io crd.apiextensions.k8s.io/issuers.cert-manager.io crd.apiextensions.k8s.io/orders.acme.cert-manager.io crd.apiextensions.k8s.io/gatewayclasses.gateway.networking.k8s.io crd.apiextensions.k8s.io/gateways.gateway.networking.k8s.io crd.apiextensions.k8s.io/httproutes.gateway.networking.k8s.io
+      - kubectl -n cert-manager wait --for=condition=ready --timeout=15s pod -l app.kubernetes.io/name=webhook
       - kustomize build --enable-alpha-plugins --enable-exec k8s/initial | kubectl apply -f -
       - kustomize build --enable-alpha-plugins --enable-exec k8s/postgres/overlays/prod | kubectl apply -f -
       - kustomize build --enable-alpha-plugins --enable-exec k8s/redis/overlays/prod | kubectl apply -f -
       - kustomize build --enable-alpha-plugins --enable-exec k8s/kratos/overlays/prod | kubectl apply -f -
       - kustomize build --enable-alpha-plugins --enable-exec k8s/juicer/overlays/prod | kubectl apply -f -
+
+  # ----------------------------------------------------------------------------
+
+  cluster:create:
+    desc: Create new k3d cluster
+    cmds:
+      - k3d cluster create dev -p "8081:80@loadbalancer" --k3s-arg="--disable=traefik@server:0"
+
+  cluster:del:
+    desc: Create new k3d cluster
+    cmds:
+      - k3d cluster delete dev
+
+  # ----------------------------------------------------------------------------
+
+  crd:update-traefik:
+    desc: Update traefik CRDs manually with force conflicts
+    cmds:
+      - kubectl apply --server-side --force-conflicts -k https://github.com/traefik/traefik-helm-chart/traefik/crds/
+
+  # ----------------------------------------------------------------------------
+
+  h:repo:add:
+    desc: Helm add repositories
+    cmds:
+      - helm repo add jetstack https://charts.jetstack.io
+      - helm repo add cnpg https://cloudnative-pg.github.io/charts
+      - helm repo add traefik https://traefik.github.io/charts
+      - helm repo add ory https://k8s.ory.sh/helm/charts
+      - helm repo add bitnami https://charts.bitnami.com/bitnami
+
+  h:repo:remove:
+    desc: Helm remove repositories
+    cmds:
+      - helm repo remove jetstack https://charts.jetstack.io
+      - helm repo remove cnpg https://cloudnative-pg.github.io/charts
+      - helm repo remove traefik https://traefik.github.io/charts
+      - helm repo remove ory https://k8s.ory.sh/helm/charts
+      - helm repo remove bitnami https://charts.bitnami.com/bitnami
+
+  h:repo:update:
+    desc: Helm update repositories
+    cmds:
+      - helm repo update
+
+  h:install:
+    desc: Helm install
+    cmds:
+      - task: h:install:cert-manager
+      - task: h:install:postgresql
+      - task: h:install:redis
+      - task: h:install:traefik
+
+  h:install:postgresql:
+    desc: Helm install postgresql
+    cmds:
+      - helm secrets install postgresql bitnami/postgresql -n dev --create-namespace -f k8s/postgresql/dev-values.yaml -f k8s/postgresql/dev-secrets.yaml
+
+  h:install:redis:
+    desc: Helm install redis
+    cmds:
+      - helm secrets install redis bitnami/redis -n dev --create-namespace -f k8s/redis/dev-values.yaml -f k8s/redis/dev-secrets.yaml
+
+  h:install:cert-manager:
+    desc: Helm install cert manager
+    cmds:
+      - helm install cert-manager jetstack/cert-manager -n cert-manager --create-namespace -f k8s/cert-manager/dev-values.yaml
+
+  h:install:traefik:
+    desc: Helm install traefik
+    cmds:
+      # - helm install traefik traefik/traefik -n traefik --create-namespace -f k8s/traefik/dev-values.yaml
+      - helm install traefik traefik/traefik -n dev --create-namespace -f k8s/traefik/dev-values.yaml
+
+  h:delete:
+    desc: Helm delete
+    cmds:
+      - task: h:delete:cert-manager
+      - task: h:delete:traefik
+      - task: h:delete:postgresql
+      - task: h:delete:redis
+
+  h:delete:postgresql:
+    desc: Helm delete postgresql
+    cmds:
+      - helm delete postgresql -n dev
+
+  h:delete:redis:
+    desc: Helm delete redis
+    cmds:
+      - helm delete redis -n dev
+
+  h:delete:cert-manager:
+    desc: Helm delete cert manager
+    cmds:
+      - helm delete cert-manager -n cert-manager
+
+  h:delete:traefik:
+    desc: Helm delete traefik
+    cmds:
+      - helm delete traefik -n traefik
 
   # ----------------------------------------------------------------------------

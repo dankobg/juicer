@@ -2,8 +2,11 @@ kind: Kustomization
 apiVersion: kustomize.config.k8s.io/v1beta1
 
 resources:
-  - juicer-manifest.yaml
-  - ingress.yaml
+  - deploy.yaml
+  - svc.yaml
+  - sa.yaml
+  - ingress-route.yaml # @TODO: fix
+  # - gateway-routes.yaml # @TODO: fix
 
 generators:
   - ghcr-secret-gen.yaml

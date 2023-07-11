@@ -1,0 +1,61 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: juicer
+  labels:
+    app.kubernetes.io/name: juicer
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: juicer
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: juicer
+    spec:
+      containers:
+        - name: juicer
+          image: ghcr.io/dankobg/juicer:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 1337
+          envFrom:
+            - configMapRef:
+                name: juicer-conf
+            - secretRef:
+                name: juicer-secret
+          livenessProbe:
+            httpGet:
+              path: /api/v1/health/alive
+              port: 1337
+            failureThreshold: 5
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /api/v1/health/alive
+              port: 1337
+            failureThreshold: 5
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          startupProbe:
+            httpGet:
+              path: /api/v1/health/alive
+              port: 1337
+            failureThreshold: 60
+            periodSeconds: 1
+            successThreshold: 1
+            timeoutSeconds: 1
+          resources:
+            limits:
+              memory: 512Mi
+              cpu: 200m
+      restartPolicy: Always
+      serviceAccountName: juicer
+      automountServiceAccountToken: true
+      imagePullSecrets:
+        - name: ghcr-secret
