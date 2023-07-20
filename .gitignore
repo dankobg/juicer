@@ -28,3 +28,7 @@ dist/
 local-key.pem
 local-cert.pem
 dist/
+
+
+# Ignore DevSpace cache and log folder
+.devspace/

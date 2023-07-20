@@ -6,7 +6,7 @@ x-logging: &prod-logging
     tag: "{{.ImageName}}|{{.Name}}|{{.ImageFullID}}|{{.FullID}}"
 
 x-healthcheck: &prod-healthcheck
-  interval: 5s
+  interval: 120s
   timeout: 5s
   retries: 5
 
@@ -22,7 +22,7 @@ services:
     networks:
       - intranet
     depends_on:
-      postgres:
+      postgresql:
         condition: service_healthy
     logging: *prod-logging
     healthcheck:
@@ -55,13 +55,13 @@ services:
       <<: *prod-healthcheck
       test: ["CMD", "redis-cli", "ping"]
   # ----------------------------------------------------------------------------
-  postgres:
+  postgresql:
     environment:
       - ENV=production
     image: postgres:15-alpine
     restart: always
     volumes:
-      - postgres-data:/var/lib/postgresql/data
+      - postgresql-data:/var/lib/postgresql/data
     ports:
       - "${POSTGRES_PORT:-5432}:5432"
     networks:
@@ -75,7 +75,7 @@ services:
           "pg_isready",
           "-q",
           "-d",
-          "${POSTGRES_DB:-test}",
+          "${POSTGRES_DB:-juicer}",
           "-U",
           "${POSTGRES_USER:-test}",
         ]
@@ -95,7 +95,7 @@ services:
     networks:
       - intranet
     depends_on:
-      postgres:
+      postgresql:
         condition: service_healthy
       kratos-migrate:
         condition: service_started
@@ -132,13 +132,13 @@ services:
     networks:
       - intranet
     depends_on:
-      postgres:
+      postgresql:
         condition: service_healthy
     logging: *prod-logging
   # ----------------------------------------------------------------------------
 
 volumes:
-  postgres-data:
+  postgresql-data:
   redis-data:
 
 networks:

@@ -34,6 +34,7 @@ func main() {
 	})
 
 	http.HandleFunc("/api/v1/health/alive", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(200)
 		if _, err := w.Write([]byte("Path: /api/v1/health/alive")); err != nil {
 			fmt.Printf("errored")
 			return

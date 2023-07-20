@@ -14,11 +14,14 @@ spec:
         sans:
           - dev-dankop.xyz
   entryPoints:
-    - web
+    # - web
     - websecure
   routes:
     - match: Host(`dev-dankop.xyz`) && PathPrefix(`/api`)
       kind: Rule
+      middlewares:
+        - name: redirect-to-https
+          namespace: dev
       services:
         - kind: Service
           name: juicer
@@ -39,7 +42,7 @@ spec:
         sans:
           - dev-dankop.xyz
   entryPoints:
-    - web
+    # - web
     - websecure
   routes:
     - match: Host(`dev-dankop.xyz`) && PathPrefix(`/kratos`)
@@ -51,17 +54,8 @@ spec:
       middlewares:
         - name: kratos-stripprefix
           namespace: dev
----
-apiVersion: traefik.containo.us/v1alpha1
-kind: Middleware
-metadata:
-  name: kratos-stripprefix
-  namespace: dev
-spec:
-  stripPrefix:
-    prefixes:
-      - /kratos
-    forceSlash: false
+        - name: redirect-to-https
+          namespace: dev
 ---
 apiVersion: traefik.containo.us/v1alpha1
 kind: IngressRoute
@@ -79,11 +73,14 @@ spec:
           - traefik.dev-dankop.xyz
   entryPoints:
     - traefik
-    - web
+    # - web
     - websecure
   routes:
     - match: Host(`traefik.dev-dankop.xyz`)
       kind: Rule
+      middlewares:
+        - name: redirect-to-https
+          namespace: dev
       services:
         # - kind: Service
         #   name: traefik

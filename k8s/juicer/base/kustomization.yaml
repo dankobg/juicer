@@ -5,6 +5,7 @@ resources:
   - deploy.yaml
   - svc.yaml
   - sa.yaml
+  - mw.yaml
   - ingress-route.yaml # @TODO: fix
   # - gateway-routes.yaml # @TODO: fix
 

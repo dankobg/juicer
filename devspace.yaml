@@ -1,0 +1,54 @@
+version: v2beta1
+name: juicer-devspace
+
+pipelines:
+  build:
+    run: |
+      build_images juicer-dev
+  dev:
+    run: |-
+      run_dependencies --all
+      start_dev juicer-dev
+
+images:
+  juicer-dev:
+    image: juicer-dev
+    dockerfile: docker/devspace.dockerfile
+    context: ./
+    skipPush: true
+    rebuildStrategy: ignoreContextChanges
+    # injectRestartHelper: true
+
+dev:
+  juicer-dev:
+    imageSelector: ghcr.io/dankobg/juicer:latest
+    devImage: juicer-dev
+    namespace: dev
+    # restartHelper:
+    #   inject: true
+    command: ["go", "run", "main.go"]
+    sync:
+      - path: ./:/app
+        uploadExcludeFile: .dockerignore
+        startContainer: true
+        waitInitialSync: false
+        excludePaths:
+          - board/
+          - frontend/
+          - vscode/
+          - .git/
+        printLogs: true
+        onUpload:
+          restartContainer: true
+    terminal:
+      command: ./devspace_start.sh
+    ssh:
+      enabled: true
+    proxyCommands:
+      - command: devspace
+      - gitCredentials: true
+    ports:
+      - port: "1337"
+      # - port: "2345"
+    open:
+      - url: https://traefik.dev-dankop.xyz/dashboard/

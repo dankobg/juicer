@@ -173,10 +173,10 @@ tasks:
 
   # ----------------------------------------------------------------------------
 
-  sh:api:
-    desc: Shell into animond-api docker container
+  sh:juicer:
+    desc: Shell into juicer docker container
     cmds:
-      - docker compose exec -it animond-api sh
+      - docker compose exec -it juicer sh
 
   sh:kratos:
     desc: Shell into kratos docker container
@@ -189,9 +189,9 @@ tasks:
       - docker compose exec -it keto sh
 
   sh:pg:
-    desc: Shell into postgres docker container
+    desc: Shell into postgresql docker container
     cmds:
-      - docker compose exec -it postgres sh
+      - docker compose exec -it postgresql sh
 
   sh:redis:
     desc: Shell into redis docker container
@@ -215,7 +215,6 @@ tasks:
     env:
       DSN: "" # OVERRIDE `DSN` ENV variable to empty string because pgcli uses it for it's alias inside pgclirc cfg
       PGCLIRC: "~/.config/pgcli/config"
-
     cmds:
       - pgcli "postgres://${DATABASE__USER}:${DATABASE__PASSWORD}@127.0.0.1:${DATABASE__PORT}/${DATABASE__DB}?sslmode=disable"
 
@@ -290,7 +289,7 @@ tasks:
       - kubectl -n cert-manager wait --for condition=established --timeout=15s crd.apiextensions.k8s.io/certificaterequests.cert-manager.io crd.apiextensions.k8s.io/certificates.cert-manager.io crd.apiextensions.k8s.io/challenges.acme.cert-manager.io crd.apiextensions.k8s.io/clusterissuers.cert-manager.io crd.apiextensions.k8s.io/issuers.cert-manager.io crd.apiextensions.k8s.io/orders.acme.cert-manager.io crd.apiextensions.k8s.io/gatewayclasses.gateway.networking.k8s.io crd.apiextensions.k8s.io/gateways.gateway.networking.k8s.io crd.apiextensions.k8s.io/httproutes.gateway.networking.k8s.io
       - kubectl -n cert-manager wait --for=condition=ready --timeout=15s pod -l app.kubernetes.io/name=webhook
       - kustomize build --enable-alpha-plugins --enable-exec k8s/initial | kubectl apply -f -
-      - kustomize build --enable-alpha-plugins --enable-exec k8s/postgres/overlays/prod | kubectl apply -f -
+      - kustomize build --enable-alpha-plugins --enable-exec k8s/postgresql/overlays/prod | kubectl apply -f -
       - kustomize build --enable-alpha-plugins --enable-exec k8s/redis/overlays/prod | kubectl apply -f -
       - kustomize build --enable-alpha-plugins --enable-exec k8s/kratos/overlays/prod | kubectl apply -f -
       - kustomize build --enable-alpha-plugins --enable-exec k8s/juicer/overlays/prod | kubectl apply -f -
@@ -397,3 +396,14 @@ tasks:
       - helm delete traefik -n traefik
 
   # ----------------------------------------------------------------------------
+
+  k:wat:
+    cmds:
+      - task: h:install:cert-manager
+      - kubectl apply -f https://github.com/kubernetes-sigs/gateway-api/releases/download/v0.7.1/experimental-install.yaml
+      - kubectl -n cert-manager wait --for condition=established --timeout=5s crd/certificaterequests.cert-manager.io crd/certificates.cert-manager.io crd/challenges.acme.cert-manager.io crd/clusterissuers.cert-manager.io crd/issuers.cert-manager.io crd/orders.acme.cert-manager.io
+      - kubectl -n cert-manager wait --for=condition=ready --timeout=15s pod -l app=webhook -l app.kubernetes.io/name=webhook -l app.kubernetes.io/instance=cert-manager
+      - kubectl -n gateway-system wait --for=condition=ready --timeout=15s pod -l name=gateway-api-admission-server
+      - kustomize build --enable-alpha-plugins --enable-exec k8s/common/overlays/dev | kubectl apply -f -
+      - task: h:install:traefik
+      - kustomize build --enable-alpha-plugins --enable-exec k8s/juicer/overlays/dev | kubectl apply -f -

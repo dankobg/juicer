@@ -16,10 +16,9 @@ services:
     environment:
       - ENV=development
     build:
-      context: ./docker
-      dockerfile: app.dockerfile
-      target: dev
-      # target: debug
+      context: ./
+      dockerfile: docker/app.dockerfile
+    # command: /go/bin/dlv --api-version=2 --listen=:2345 --headless --accept-multiclient --log debug "./main.go" # UNCOMMENT WHEN DEBUGGING
     env_file:
       - .env
     volumes:
@@ -31,6 +30,9 @@ services:
       - "apparmor:unconfined"
     cap_add:
       - SYS_PTRACE
+    logging: *dev-logging
+    healthcheck:
+      <<: *dev-healthcheck
     labels:
       # Rest api
       - traefik.enable=true
@@ -50,14 +52,18 @@ services:
   redis:
     environment:
       - ENV=development
+    healthcheck:
+      <<: *dev-healthcheck
   # ----------------------------------------------------------------------------
-  postgres:
+  postgresql:
     env_file:
       - .env
     environment:
       - POSTGRES_USER=${POSTGRES_USER:-test}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-test}
-      - POSTGRES_DB=${POSTGRES_DB:-test}
+      - POSTGRES_DB=${POSTGRES_DB:-juicer}
+    healthcheck:
+      <<: *dev-healthcheck
   # ----------------------------------------------------------------------------
   kratos:
     env_file:
@@ -70,6 +76,8 @@ services:
         "/etc/config/kratos/kratos.yaml",
         "--dev",
       ]
+    healthcheck:
+      <<: *dev-healthcheck
     labels:
       - traefik.enable=true
       - traefik.http.routers.kratos.rule=Host(`juicer-dev.xyz`) && PathPrefix(`/kratos`)

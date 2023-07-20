@@ -1,0 +1,21 @@
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: Middleware
+metadata:
+  name: redirect-to-https
+  namespace: dev
+spec:
+  redirectScheme:
+    scheme: https
+    permanent: true
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: Middleware
+metadata:
+  name: kratos-stripprefix
+  namespace: dev
+spec:
+  stripPrefix:
+    prefixes:
+      - /kratos
+    forceSlash: false
