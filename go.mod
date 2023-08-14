@@ -3,7 +3,7 @@ module juicer
 go 1.20
 
 require (
-	github.com/gobwas/ws v1.2.1
+	github.com/gobwas/ws v1.3.0
 	github.com/google/uuid v1.3.0
 	github.com/joho/godotenv v1.5.1
 	github.com/knadh/koanf/parsers/yaml v0.1.0
