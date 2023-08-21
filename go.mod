@@ -12,7 +12,7 @@ require (
 	github.com/knadh/koanf/v2 v2.0.1
 	github.com/labstack/echo/v5 v5.0.0-20220717203827-74022662be4a
 	github.com/ory/client-go v1.1.39
-	github.com/redis/go-redis/v9 v9.0.5
+	github.com/redis/go-redis/v9 v9.1.0
 	golang.org/x/exp v0.0.0-20230321023759-10a507213a29
 )
 
