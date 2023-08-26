@@ -59,7 +59,7 @@
   ];
 </script>
 
-<Header company="SD" platformName="Chess" bind:isSideNavOpen href={config.routes.home.path}>
+<Header company="Juicer" platformName="Chess" bind:isSideNavOpen href={config.routes.home.path}>
   <svelte:fragment slot="skip-to-content">
     <SkipToContent />
   </svelte:fragment>

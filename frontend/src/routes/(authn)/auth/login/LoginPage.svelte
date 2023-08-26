@@ -159,7 +159,7 @@
             <input type="hidden" name="csrf_token" bind:value={data.csrf} readonly required />
             <input type="hidden" name="provider" value={provider.name} readonly required />
             <button type="submit">
-              <img src="/provider-{provider.name}.svg" alt="Continue with {provider.label}" />
+              <img src="/images/auth/provider-{provider.name}.svg" alt="Continue with {provider.label}" />
               <span>Continue with {provider.label}</span>
             </button>
           </form>

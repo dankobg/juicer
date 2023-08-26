@@ -83,7 +83,7 @@ services:
   kratos:
     environment:
       - ENV=production
-    image: oryd/kratos:v0.13.0
+    image: oryd/kratos:v1.0.0
     restart: unless-stopped
     command:
       ["serve", "--watch-courier", "--config", "/etc/config/kratos/kratos.yaml"]
@@ -116,7 +116,7 @@ services:
     environment:
       - ENV=production
     # profiles: ["ory"]
-    image: oryd/kratos:v0.13.0
+    image: oryd/kratos:v1.0.0
     restart: on-failure
     volumes:
       - ./ory/kratos:/etc/config/kratos

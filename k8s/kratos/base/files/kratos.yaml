@@ -1,4 +1,4 @@
-version: v0.13.0
+version: v1.0.0
 
 dsn: postgres://test:test@postgresql:5432/juicer?sslmode=disable&max_conns=20&max_idle_conns=4
 
@@ -104,7 +104,7 @@ selfservice:
           hooks:
             - hook: require_verified_address
         oidc:
-          default_browser_return_url: https://dev-dankop.xyz
+          default_browser_return_url: https://juicer-dev.xyz:1420
     registration:
       ui_url: https://dev-dankop.xyz:1420/auth/registration
       lifespan: 10m
