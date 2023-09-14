@@ -224,7 +224,7 @@ export function convertRowAndColumnToCoordinate(row: Row, col: Col): Coordinate 
   return convertFileAndRankToCoordinate(file, rank);
 }
 
-export function findRowAndCol(squareIdx: number): {
+export function getRowAndCol(squareIdx: number): {
   row: Row;
   col: Col;
 } {
@@ -235,7 +235,7 @@ export function findRowAndCol(squareIdx: number): {
 }
 
 export function getSquareColor(squareIdx: number): Color {
-  const { row, col } = findRowAndCol(squareIdx);
+  const { row, col } = getRowAndCol(squareIdx);
   return (row + col) % 2 === 0 ? WHITE : BLACK;
 }
 
@@ -576,7 +576,7 @@ export class Square {
   }
 
   private get rowCol(): { row: Row; col: Col } {
-    return findRowAndCol(this.squareIdx);
+    return getRowAndCol(this.squareIdx);
   }
 
   get row(): Row {
@@ -650,11 +650,14 @@ export class Square {
 
 export class Piece {
   alive: boolean = true;
+  id: string = '';
 
   constructor(
     public symbol: PieceSymbol,
     public color: Color
-  ) {}
+  ) {
+    this.id = generateRandomHexId();
+  }
 
   static fromPieceFenSymbol(symbol: PieceFenSymbol): Piece | null {
     return new Piece(symbol.toLowerCase() as PieceSymbol, getPieceColorFromFenSymbol(symbol));
@@ -711,4 +714,84 @@ export class Piece {
   copy(): Piece {
     return new Piece(this.symbol, this.color);
   }
+}
+
+export function makeTransparentDragImage(): HTMLImageElement {
+  const img = new Image();
+  img.src = 'data:image/gif;base64,R0lGODlhAQABAIAAAAUEBAAAACwAAAAAAQABAAACAkQBADs=';
+  return img;
+}
+
+export function calculateDistanceBetweenSquares(
+  srcIdx: number,
+  dstIdx: number,
+  boardSize: number
+): { dx: number; dy: number } {
+  const { row: srcRow, col: srcCol } = getRowAndCol(srcIdx);
+  const { row: dstRow, col: dstCol } = getRowAndCol(dstIdx);
+
+  const c = dstCol - srcCol;
+  const r = dstRow - srcRow;
+
+  const size = boardSize / 8;
+
+  const dx = c * size;
+  const dy = r * size;
+
+  return { dx, dy };
+}
+
+export const blackSparePieces: Piece[] = [
+  new Piece('r', 'b'),
+  new Piece('n', 'b'),
+  new Piece('b', 'b'),
+  new Piece('q', 'b'),
+  new Piece('k', 'b'),
+  new Piece('p', 'b'),
+];
+
+export const whiteSparePieces: Piece[] = [
+  new Piece('r', 'w'),
+  new Piece('n', 'w'),
+  new Piece('b', 'w'),
+  new Piece('q', 'w'),
+  new Piece('k', 'w'),
+  new Piece('p', 'w'),
+];
+
+export const allSparePieces = blackSparePieces.concat(whiteSparePieces);
+
+export function translateElm(elm: HTMLDivElement, dx: number, dy: number): void {
+  if (elm) {
+    elm.style.translate = `${dx}px ${dy}px`;
+  }
+}
+
+export function getSquareIdxFromDragPos(boardElm: HTMLDivElement, e: MouseEvent | DragEvent) {
+  const boardSize = boardElm.clientWidth;
+  const squareSize = boardSize / 8;
+  const dx = e.clientX - boardElm.offsetLeft;
+  const dy = e.clientY - boardElm.offsetTop;
+
+  const file = Math.max(0, Math.min(7, Math.floor(dx / squareSize)));
+  const rank = Math.max(0, Math.min(7, Math.floor(dy / squareSize)));
+
+  const dstSquare = rank * 8 + file;
+  return dstSquare;
+}
+
+function generateRandomHexId(length = 16): string {
+  if (length % 2 !== 0) {
+    throw new Error('Hex ID length must be even.');
+  }
+
+  const characters = '0123456789ABCDEF';
+  let result = '';
+
+  for (let i = 0; i < length; i++) {
+    const randomIndex = Math.floor(Math.random() * characters.length);
+    result += characters.charAt(randomIndex);
+  }
+
+  return result;
 }

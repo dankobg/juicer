@@ -1,31 +1,29 @@
-<script lang="ts">
-  import { findRowAndCol, type Piece } from './board';
-
-  export let piece: Piece;
-  export let squareIdx: number;
-
-  let { row, col } = findRowAndCol(squareIdx);
-</script>
-
 <!-- svelte-ignore a11y-no-static-element-interactions -->
 <!-- svelte-ignore a11y-click-events-have-key-events -->
+
+<script lang="ts">
+  import { getRowAndCol, type Piece } from '$lib/board/board';
+
+  export let piece: Piece;
+  export let square: number;
+  export let spare: boolean = false;
+
+  let { row, col } = getRowAndCol(square);
+</script>
+
 <div
+  draggable="true"
   class="piece"
-  style="--row:{row}; --col:{col};"
-  data-piece-fen={piece.toPieceFenSymbol()}
-  data-square={squareIdx}
-  data-row={row}
-  data-col={col}
+  class:spare
+  data-id={piece.id}
+  data-square={square}
+  data-symbol={piece.toPieceFenSymbol()}
+  data-color={piece.color}
   on:click
-  on:mousedown
+  on:pointerdown
   on:drag
   on:dragstart
   on:dragend
-  on:dragover
-  on:dragenter
-  on:dragleave
-  on:drop
-  draggable="true"
 />
 
 <style>
@@ -39,46 +37,46 @@
     background-size: contain;
     background-position: center;
     background-repeat: no-repeat;
-    overflow: hidden;
     z-index: 60;
-    top: calc(var(--row) * (var(--board-size) / 8));
-    left: calc(var(--col) * (var(--board-size) / 8));
+  }
+  .piece.spare {
+    background-color: plum;
   }
 
-  .piece[data-piece-fen='r'] {
+  .piece[data-symbol='r'] {
     background-image: var(--br-theme);
   }
-  .piece[data-piece-fen='b'] {
+  .piece[data-symbol='b'] {
     background-image: var(--bb-theme);
   }
-  .piece[data-piece-fen='n'] {
+  .piece[data-symbol='n'] {
     background-image: var(--bn-theme);
   }
-  .piece[data-piece-fen='q'] {
+  .piece[data-symbol='q'] {
     background-image: var(--bq-theme);
   }
-  .piece[data-piece-fen='k'] {
+  .piece[data-symbol='k'] {
     background-image: var(--bk-theme);
   }
-  .piece[data-piece-fen='p'] {
+  .piece[data-symbol='p'] {
     background-image: var(--bp-theme);
   }
-  .piece[data-piece-fen='R'] {
+  .piece[data-symbol='R'] {
     background-image: var(--wr-theme);
   }
-  .piece[data-piece-fen='B'] {
+  .piece[data-symbol='B'] {
     background-image: var(--wb-theme);
   }
-  .piece[data-piece-fen='N'] {
+  .piece[data-symbol='N'] {
     background-image: var(--wn-theme);
   }
-  .piece[data-piece-fen='Q'] {
+  .piece[data-symbol='Q'] {
     background-image: var(--wq-theme);
   }
-  .piece[data-piece-fen='K'] {
+  .piece[data-symbol='K'] {
     background-image: var(--wk-theme);
   }
-  .piece[data-piece-fen='P'] {
+  .piece[data-symbol='P'] {
     background-image: var(--wp-theme);
   }
 </style>

@@ -1,11 +1,11 @@
 import { writable } from 'svelte/store';
-import { WHITE, type Board, type Position, findRowAndCol } from '$lib/board/board';
+import { WHITE, type Board, type Position, getRowAndCol } from '$lib/board/board';
 
 interface BoardStore {
   board: Board | null;
   positions: Position[];
   highlightedSquares: number[];
-  selectedSquare: number;
+  activeSquare: number;
 }
 
 function createBoardStore() {
@@ -13,7 +13,7 @@ function createBoardStore() {
     board: null,
     positions: [],
     highlightedSquares: [],
-    selectedSquare: -1,
+    activeSquare: -1,
   });
 
   return {
@@ -25,48 +25,42 @@ function createBoardStore() {
 
         return s;
       }),
-    highlightSquare: (squareIdx: number) =>
+    highlightSquare: (squareIndices: number[]) =>
       update(s => {
-        s.highlightedSquares = [...s.highlightedSquares, squareIdx];
+        s.highlightedSquares = [...s.highlightedSquares, ...squareIndices];
 
         return s;
       }),
-    selectSquare: (squareIdx: number) =>
+    setActiveSquare: (squareIdx: number) =>
       update(s => {
-        s.selectedSquare = squareIdx;
+        s.activeSquare = squareIdx;
 
         return s;
       }),
     move: (fromSquareIdx: number, toSquareIdx: number) =>
       update(s => {
-        const p = document.querySelector(`.piece[data-square='${fromSquareIdx}']`) as HTMLElement | null;
-
-        console.log(p);
-
-        if (p) {
-          const { row, col } = findRowAndCol(toSquareIdx);
-          const moveAnimation = [
-            { translate: `calc(${col} * (var(--board-size) / 8)) calc(${row} * (var(--board-size) / 8))` },
-          ];
-
-          const anim = p.animate(moveAnimation, {
-            duration: 80,
-            fill: 'forwards',
-          });
-
-          anim.onfinish = () => {
-            if (s.board) {
-              s.board.squares[toSquareIdx] = s.board.squares[fromSquareIdx];
-              s.board.squares[fromSquareIdx].piece = null;
-              s.positions = [...s.positions, { board: s.board, turn: 'w' }];
-            }
-
-            return s;
-          };
+        if (s.board) {
+          s.board.squares[toSquareIdx] = s.board.squares[fromSquareIdx];
+          s.board.squares[fromSquareIdx].piece = null;
+          s.positions = [...s.positions, { board: s.board, turn: 'w' }];
         }
+
         return s;
       }),
   };
 }
 
 export const boardStore = createBoardStore();
+
+/**
+ * init(board): Board
+ * move([from, to, cfg]): void
+ * selectSquare(e2): void
+ * highlightSquares([a1, c4, h8]): void
+ * setSquarePiece([e5, 'Q']): void - or maybe addPiece and removePiece
+ * toggleOrientation(): void
+ * setOrientation(color: Color): void
+ * getFen(): void
+ * setFen(fen: string): void
+ * clearBoard(): void
+ */

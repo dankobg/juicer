@@ -1,18 +1,19 @@
+<!-- svelte-ignore a11y-no-static-element-interactions -->
+<!-- svelte-ignore a11y-click-events-have-key-events -->
+
 <script lang="ts">
-  import { findRowAndCol, getSquareColor, type Square } from '$lib/board/board';
+  import { getRowAndCol, getSquareColor, type Square } from '$lib/board/board';
 
   export let square: Square;
   export let bordered: boolean = false;
   export let selected: boolean = false;
   export let highlighted: boolean = false;
 
-  let { row, col } = findRowAndCol(square.squareIdx);
+  let { row, col } = getRowAndCol(square.squareIdx);
 
   let squareColor = getSquareColor(square.squareIdx);
 </script>
 
-<!-- svelte-ignore a11y-no-static-element-interactions -->
-<!-- svelte-ignore a11y-click-events-have-key-events -->
 <div
   class="square"
   style="--row:{row}; --col:{col};"
@@ -22,9 +23,9 @@
   data-bordered={bordered}
   data-color={squareColor}
   on:click
-  on:dragover
   on:dragenter
   on:dragleave
+  on:dragover
   on:drop
 />
 
@@ -42,7 +43,7 @@
     overflow: hidden;
     top: calc(var(--row) * (var(--board-size) / 8));
     left: calc(var(--col) * (var(--board-size) / 8));
-    z-index: 52;
+    z-index: 55;
   }
 
   .square[data-highlighted='true'] {

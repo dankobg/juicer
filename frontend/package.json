@@ -38,6 +38,7 @@
   "dependencies": {
     "@ory/client": "^1.1.50",
     "carbon-pictograms-svelte": "^12.7.0",
+    "interactjs": "^1.10.18",
     "just-safe-set": "^4.2.1",
     "svelte-french-toast": "^1.2.0",
     "sveltekit-superforms": "^1.6.1",
