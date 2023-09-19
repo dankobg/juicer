@@ -12,6 +12,7 @@
     translateElm,
     getRowAndCol,
     getSquareIdxFromDragPos,
+    BLACK,
   } from '$lib/board/board';
   import { onMount } from 'svelte';
   import { boardStore } from './store';
@@ -22,7 +23,8 @@
   // export let pieceMovement: PieceMovement = 'drag';
   export let showSparePieces: boolean = false;
 
-  let board = new Board(fen);
+  // let board = new Board(fen);
+  let board = new Board('r7/2k5/6b1/8/2P5/8/5P2/3Q2N1 w - - 0 1');
   let transparentDragImage: HTMLImageElement | null = null;
   let squareElements: NodeListOf<HTMLDivElement>;
   let pieceElements: NodeListOf<HTMLDivElement>;
@@ -41,6 +43,8 @@
   let xOffset: number = 0;
   let yOffset: number = 0;
   let pos: Record<string, { initialX: number; initialY: number; dx: number; dy: number }> = {};
+
+  let firstAnimationPlayed: boolean = false;
 
   function onBoardDragEnter(event: DragEvent) {
     event.preventDefault();
@@ -147,47 +151,67 @@
     translateElm(elm, pos[pieceId].dx, pos[pieceId].dy);
   }
 
-  onMount(() => {
+  function setupDomElementsAndInitialVars(): void {
     transparentDragImage = makeTransparentDragImage();
     pieceElements = document.querySelectorAll('.piece');
     squareElements = document.querySelectorAll('.square');
+  }
 
-    for (const sq of board.squares) {
-      if (sq.piece !== null) {
-        pos[sq.piece.id] = { initialX: 0, initialY: 0, dx: 0, dy: 0 };
+  function setInitialPiecesPositions(): void {
+    if (board) {
+      for (const sq of board.squares) {
+        if (sq.piece !== null) {
+          pos[sq.piece.id] = { initialX: 0, initialY: 0, dx: 0, dy: 0 };
+        }
       }
     }
+  }
 
+  function animatePiecesMoves(): void {
     if (board) {
       for (let i = 0; i < pieceElements.length; i++) {
         const p = pieceElements[i];
         const psize = p.clientWidth;
-
         const sqIdx = Number.parseInt(p.dataset.square ?? '-1');
         const pieceId = p.dataset.id ?? '';
         const symbol = p.dataset.symbol ?? '';
         const color = p.dataset.color ?? '';
-
         const { row, col } = getRowAndCol(sqIdx);
-        const [dx, dy] = [col * psize, row * psize];
-
+        let [dx, dy] = [col * psize, row * psize];
+        if (orientation === BLACK) {
+          dx = (7 - col) * 60;
+          dy = (7 - row) * 60;
+        }
         const blackKeyframesFrom = { opacity: 0, transform: `translate(${boardWidth / 2}px, ${-psize}px` };
         const whiteKeyframesFrom = { opacity: 0, transform: `translate(${boardWidth / 2}px, ${boardHeight}px)` };
         let keyframes: Keyframe[] = [{ opacity: 1, transform: `translate(${dx}px, ${dy}px)` }];
 
         keyframes.unshift(color === 'w' ? whiteKeyframesFrom : blackKeyframesFrom);
 
-        const opts: KeyframeAnimationOptions = { fill: 'forwards', easing: 'ease-in', duration: 200 };
+        const opts: KeyframeAnimationOptions = {
+          fill: 'forwards',
+          easing: 'ease-in',
+          duration: !firstAnimationPlayed ? 200 : 0,
+        };
 
         const anim = p.animate(keyframes, opts);
-
         anim.onfinish = () => {
           pos[pieceId].initialX = dx;
           pos[pieceId].initialY = dy;
         };
       }
     }
+
+    firstAnimationPlayed = true;
+  }
+
+  onMount(() => {
+    setupDomElementsAndInitialVars();
+    setInitialPiecesPositions();
+    // animatePiecesMoves();
   });
+
+  $: pieceElements && orientation && animatePiecesMoves();
 </script>
 
 <div style="--board-size: {boardInitialSize};">
@@ -285,6 +309,19 @@
   {/if}
 </div>
 
+<button
+  style="margin-block: 3rem;"
+  on:click={() => {
+    board.orientation = board.orientation === 'w' ? 'b' : 'w';
+    board = board;
+    orientation = orientation === 'w' ? 'b' : 'w';
+    // board.squares = [...board.squares].reverse();
+  }}>rofl</button
+>
+
+<pre>{JSON.stringify(board.orientation, null, 2)}</pre>
+<pre style="font-family: Courier;">{board.print()}</pre>
+
 <style>
   .spare-pieces {
     width: var(--board-size);
@@ -301,7 +338,6 @@
     background-size: cover;
     position: relative;
     user-select: none;
-    overflow: none;
   }
 
   .file-notations {

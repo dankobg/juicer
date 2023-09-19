@@ -432,14 +432,12 @@ export function fenToBoard(fen: string): Square[] {
 export function printBoardAscii(board: Square[], orientation: Color): string {
   let s = '   +------------------------+\n';
 
-  console.log('from pizda', orientation);
-
   for (let i = 0; i < 64; i++) {
     let sq: Square = board[i];
     let rank: number = 8 - Math.floor(i / 8);
 
     if (orientation === BLACK) {
-      const flippedBoard = board.slice().reverse();
+      const flippedBoard = board.toReversed();
       sq = flippedBoard[i];
       rank = Math.floor(i / 8) + 1;
     }
@@ -552,7 +550,7 @@ export class Board {
     this.setOrientation(BLACK);
   }
 
-  flip(): void {
+  flipOrientation(): void {
     if (this.orientation === WHITE) {
       this.setOrientationBlack();
     } else {
@@ -780,7 +778,7 @@ export function getSquareIdxFromDragPos(boardElm: HTMLDivElement, e: MouseEvent 
   return dstSquare;
 }
 
-function generateRandomHexId(length = 16): string {
+function generateRandomHexId(length = 32): string {
   if (length % 2 !== 0) {
     throw new Error('Hex ID length must be even.');
   }
