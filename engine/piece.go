@@ -1,4 +1,9 @@
-package engine
+package juicer
+
+import (
+	"fmt"
+	"slices"
+)
 
 // PieceKind represents the kind/type of the piece
 type PieceKind int8
@@ -37,7 +42,7 @@ func (ps PieceKind) String() string {
 type Piece int8
 
 const (
-	PieceNone = iota - 1
+	PieceNone Piece = iota - 1
 	WhiteKing
 	WhiteQueen
 	WhiteRook
@@ -114,7 +119,7 @@ func (p Piece) FENSymbol() string {
 		}
 	}
 
-	return ""
+	return "."
 }
 
 // Color returns the color of the piece
@@ -127,6 +132,10 @@ func (p Piece) Color() Color {
 	}
 
 	return ColorNone
+}
+
+func (p Piece) String() string {
+	return p.FENSymbol()
 }
 
 func (p Piece) IsKing() bool {
@@ -169,6 +178,10 @@ func (p Piece) IsMinor() bool {
 	return p.IsBishop() || p.IsKnight()
 }
 
+func (p Piece) IsPromotable() bool {
+	return p.IsMajor() || p.IsMinor()
+}
+
 // NewPiece returns the piece given the kind and the color
 func NewPiece(kind PieceKind, color Color) Piece {
 	for _, p := range allPieces {
@@ -178,4 +191,21 @@ func NewPiece(kind PieceKind, color Color) Piece {
 	}
 
 	return PieceNone
+}
+
+// NewPieceFromFenSymbol returns the piece given the fen piece symbol
+func NewPieceFromFenSymbol(symbol string) (Piece, error) {
+	if idx := slices.IndexFunc(whitePieces[:], func(p Piece) bool {
+		return p.String() == symbol
+	}); idx != -1 {
+		return whitePieces[idx], nil
+	}
+
+	if idx := slices.IndexFunc(blackPieces[:], func(p Piece) bool {
+		return p.String() == symbol
+	}); idx != -1 {
+		return blackPieces[idx], nil
+	}
+
+	return PieceNone, fmt.Errorf("invalid piece symbol")
 }

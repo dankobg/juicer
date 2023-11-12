@@ -1,4 +1,4 @@
-package engine
+package juicer
 
 import (
 	"fmt"
@@ -6,9 +6,21 @@ import (
 	"strings"
 )
 
+// bitboard representation
+//   +-------------------------+
+// 8 | 56 57 58 59 60 61 62 63 |
+// 7 | 48 49 50 51 52 53 54 55 |
+// 6 | 40 41 42 43 44 45 46 47 |
+// 5 | 32 33 34 35 36 37 38 39 |
+// 4 | 24 25 26 27 28 29 30 31 |
+// 3 | 16 17 18 19 20 21 22 23 |
+// 2 | 8  9  10 11 12 13 14 15 |
+// 1 | 0  1  2  3  4  5  6  7  |
+// 	 +-------------------------+
+// 		 a  b  c  d  e  f  g  h
+
 // bitboard is the board representation using 64-bit unsigned integer.
-// The mapping goes from a1 as LSB (bit 0) to h8 as MSB (bit 63)
-// The squares are assigned in a left to right, bottom to top ordering to each bit index in the 64 bit number from LSB to MSB.
+// the mapping goes from a1 as LSB (bit 0) to h8 as MSB (bit 63)
 type bitboard uint64
 
 // bitboardFull represents bitboard where every bit is set to 1
@@ -17,8 +29,8 @@ const bitboardFull bitboard = 0xffffffffffffffff
 // bitboardEmpty represents bitboard where every bit is set to 0
 const bitboardEmpty bitboard = 0x0
 
-// bitboardEmptyFiles represents clear mask where only specified file is filled with 0 and rest are 1
-var bitboardEmptyFiles = map[File]bitboard{
+// bitboardEmptyFilesMask represents clear mask where only specified file is filled with 0 and rest are 1
+var bitboardEmptyFilesMask = map[File]bitboard{
 	FileA: 0xFEFEFEFEFEFEFEFE,
 	FileB: 0xFDFDFDFDFDFDFDFD,
 	FileC: 0xFBFBFBFBFBFBFBFB,
@@ -29,8 +41,8 @@ var bitboardEmptyFiles = map[File]bitboard{
 	FileH: 0x7F7F7F7F7F7F7F7F,
 }
 
-// bitboardUniverseFiles represents fill mask where only specified file is filled with 1 and rest are 0
-var bitboardUniverseFiles = map[File]bitboard{
+// bitboardUniverseFilesMask represents fill mask where only specified file is filled with 1 and rest are 0
+var bitboardUniverseFilesMask = map[File]bitboard{
 	FileA: 0x101010101010101,
 	FileB: 0x202020202020202,
 	FileC: 0x404040404040404,
@@ -41,8 +53,8 @@ var bitboardUniverseFiles = map[File]bitboard{
 	FileH: 0x8080808080808080,
 }
 
-// bitboardEmptyRanks represents clear mask where only specified rank is filled with 0 and rest are 1
-var bitboardEmptyRanks = map[Rank]bitboard{
+// bitboardEmptyRanksMask represents clear mask where only specified rank is filled with 0 and rest are 1
+var bitboardEmptyRanksMask = map[Rank]bitboard{
 	Rank1: 0xFFFFFFFFFFFFFF00,
 	Rank2: 0xFFFFFFFFFFFF00FF,
 	Rank3: 0xFFFFFFFFFF00FFFF,
@@ -53,8 +65,8 @@ var bitboardEmptyRanks = map[Rank]bitboard{
 	Rank8: 0xFFFFFFFFFFFFFF,
 }
 
-// bitboardUniverseRanks represents fill mask where only specified rank is filled with 1 and rest are 0
-var bitboardUniverseRanks = map[Rank]bitboard{
+// bitboardUniverseRanksMask represents fill mask where only specified rank is filled with 1 and rest are 0
+var bitboardUniverseRanksMask = map[Rank]bitboard{
 	Rank1: 0xFF,
 	Rank2: 0xFF00,
 	Rank3: 0xFF0000,
@@ -75,16 +87,20 @@ func (bb *bitboard) getBit(sq Square) uint8 {
 }
 
 // setBit sets the bit to 1 at specified square
-func (bb *bitboard) setBit(sq Square) {
-	if sq.IndexInBoard() {
-		*bb |= 1 << sq
+func (bb *bitboard) setBit(squares ...Square) {
+	for _, sq := range squares {
+		if sq.IndexInBoard() {
+			*bb |= 1 << sq
+		}
 	}
 }
 
 // clearBit sets the bit to 0 at specified square
-func (bb *bitboard) clearBit(sq Square) {
-	if sq.IndexInBoard() {
-		*bb &= ^(1 << sq)
+func (bb *bitboard) clearBit(squares ...Square) {
+	for _, sq := range squares {
+		if sq.IndexInBoard() {
+			*bb &= ^(1 << sq)
+		}
 	}
 }
 
