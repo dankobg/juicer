@@ -104,7 +104,7 @@ func (bb *bitboard) clearBit(squares ...Square) {
 	}
 }
 
-// bitIseSet checks whether the bit is set to 0 at specified square
+// bitIseSet checks if bit is set to 1 at specified square
 func (bb *bitboard) bitIsSet(sq Square) bool {
 	if !sq.IndexInBoard() {
 		return false
@@ -113,56 +113,139 @@ func (bb *bitboard) bitIsSet(sq Square) bool {
 	return ((*bb >> sq) & 1) == 1
 }
 
+// bitIsNotSet checks if bit is set to 0 at specified square
+func (bb *bitboard) bitIsNotSet(sq Square) bool {
+	return !bb.bitIsSet(sq)
+}
+
 // countBits returns the count of 1 bits in bitboard
 func (bb *bitboard) countBits() uint8 {
 	return uint8(bits.OnesCount64(uint64(*bb)))
 }
 
+// setEmpty sets the bitboard to bitboardEmpty (all 0)
 func (bb *bitboard) setEmpty() {
 	*bb = bitboardEmpty
 }
 
+// setFull sets the bitboard to bitboardFull (all 1)
 func (bb *bitboard) setFull() {
 	*bb = bitboardFull
 }
 
-// drawCompact prints the bitboard for debugging as 8x8 grid of 0s and 1s in a compact way
-func (bb bitboard) drawCompact() string {
-	var sb strings.Builder
-
-	for r := boardSize - 1; r >= 0; r-- {
-		sb.WriteString(fmt.Sprintf(" %d ", r+1))
-
-		for f := 0; f < boardSize; f++ {
-			idx := r*8 + f
-			sb.WriteString(fmt.Sprintf(" %d", bb.getBit(Square(idx))))
-		}
-
-		sb.WriteString("\n")
-	}
-
-	sb.WriteString("\n    a b c d e f g h")
-
-	return sb.String()
+// flipVertical flips the bitboard vertically
+func (bb *bitboard) flipVertical() {
+	*bb = bitboard(bits.ReverseBytes64(uint64(*bb)))
 }
 
-// drawPretty prints the bitboard for debugging as 8x8 grid of 0s and 1s in a pretty way
-func (bb bitboard) drawPretty() string {
+// flipHorizontal flips the bitboard horizontally
+func (bb *bitboard) flipHorizontal() {
+	k1 := bitboard(0x5555555555555555)
+	k2 := bitboard(0x3333333333333333)
+	k4 := bitboard(0x0F0F0F0F0F0F0F0F)
+
+	*bb = ((*bb >> 1) & k1) + 2*(*bb&k1)
+	*bb = ((*bb >> 2) & k2) + 4*(*bb&k2)
+	*bb = ((*bb >> 4) & k4) + 16*(*bb&k4)
+}
+
+// flipDiagonalA1H8 flips the bitboard diagonally from a1 to h1
+func (bb *bitboard) flipDiagonalA1H8() {
+	var t bitboard
+	k1 := bitboard(0x5500550055005500)
+	k2 := bitboard(0x3333000033330000)
+	k4 := bitboard(0x0F0F0F0F00000000)
+
+	t = k4 & (*bb ^ (*bb << 28))
+	*bb ^= t ^ (t >> 28)
+	t = k2 & (*bb ^ (*bb << 14))
+	*bb ^= t ^ (t >> 14)
+	t = k1 & (*bb ^ (*bb << 7))
+	*bb ^= t ^ (t >> 7)
+}
+
+// flipDiagonalA8H1 flips the bitboard diagonally from a8 to h8
+func (bb *bitboard) flipDiagonalA8H1() {
+	var t bitboard
+	k1 := bitboard(0xAA00AA00AA00AA00)
+	k2 := bitboard(0xCCCC0000CCCC0000)
+	k4 := bitboard(0xF0F0F0F00F0F0F0F)
+
+	t = *bb ^ (*bb << 36)
+	*bb ^= k4 & (t ^ (*bb >> 36))
+	t = k2 & (*bb ^ (*bb << 18))
+	*bb ^= t ^ (t >> 18)
+	t = k1 & (*bb ^ (*bb << 9))
+	*bb ^= t ^ (t >> 9)
+}
+
+// rotate180 rotates the bitboard 180 degrees
+func (bb *bitboard) rotate180() {
+	bb.flipVertical()
+	bb.flipHorizontal()
+}
+
+// rotate90clockwise rotates the bitboard 90 degrees
+func (bb *bitboard) rotate90clockwise() {
+	bb.flipVertical()
+	bb.flipDiagonalA8H1()
+}
+
+// rotate90counterClockwise rotates the bitboard 270 degrees (90 counter-clockwise)
+func (bb *bitboard) rotate90counterClockwise() {
+	bb.flipVertical()
+	bb.flipDiagonalA1H8()
+}
+
+type drawOptions struct {
+	compact bool
+	side    Color
+}
+
+// draw prints the board in 8x8 grid with ascii style
+func (bb bitboard) draw(options *drawOptions) string {
 	var sb strings.Builder
-	sb.WriteString("   +------------------------+\n")
+
+	opts := drawOptions{side: White}
+	if options != nil {
+		opts = *options
+	}
+
+	if !opts.compact {
+		sb.WriteString("   +------------------------+\n")
+	}
 
 	for r := boardSize - 1; r >= 0; r-- {
-		sb.WriteString(fmt.Sprintf(" %d |", r+1))
+		s1 := ""
+		if !opts.compact {
+			s1 = "|"
+		}
+
+		sb.WriteString(fmt.Sprintf(" %d %s", r+1, s1))
 
 		for f := 0; f < 8; f++ {
 			idx := r*8 + f
-			sb.WriteString(fmt.Sprintf(" %d ", bb.getBit(Square(idx))))
+
+			s2 := ""
+			if !opts.compact {
+				s2 = " "
+			}
+
+			sb.WriteString(fmt.Sprintf(" %d%s", bb.getBit(Square(idx)), s2))
 		}
 
-		sb.WriteString("| \n")
+		s3 := ""
+		if !opts.compact {
+			s3 = "|"
+		}
+
+		sb.WriteString(fmt.Sprintf("%s \n", s3))
 	}
 
-	sb.WriteString("   +------------------------+\n")
+	if !opts.compact {
+		sb.WriteString("   +------------------------+\n")
+	}
+
 	sb.WriteString("     a  b  c  d  e  f  g  h")
 
 	return sb.String()

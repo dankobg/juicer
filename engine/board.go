@@ -26,51 +26,83 @@ type Board struct {
 	allPiecesOccupancy   bitboard
 }
 
-// DrawCompact prints the bitboard for debugging as 8x8 grid of 0s and 1s in a compact way
-func (b Board) DrawCompact() string {
-	var sb strings.Builder
-
-	for r := boardSize - 1; r >= 0; r-- {
-		sb.WriteString(fmt.Sprintf(" %d ", r+1))
-
-		for f := 0; f < boardSize; f++ {
-			square := Square(r*8 + f)
-			piece := b.pieceAt(square)
-			sb.WriteString(fmt.Sprintf(" %s", piece.String()))
-		}
-
-		sb.WriteString("\n")
-	}
-
-	sb.WriteString("\n    a b c d e f g h")
-
-	return sb.String()
+// Rotate90clockwise rotates the board 90 deg clockwise
+func (b *Board) Rotate90clockwise() {
+	b.whitePawnsOccupancy.rotate90clockwise()
 }
 
-// DrawPretty prints the board and pieces visually in 8x8 grid
-func (b Board) DrawPretty() string {
+// Rotate90counterClockwise rotates the board 90 deg counter-clockwise
+func (b *Board) Rotate90counterClockwise() {
+	b.whitePawnsOccupancy.rotate90counterClockwise()
+}
+
+// Rotate180 rotates the board 180 deg
+func (b *Board) Rotate180() {
+	b.whiteKingOccupancy.rotate180()
+	b.whiteQueensOccupancy.rotate180()
+	b.whiteRooksOccupancy.rotate180()
+	b.whiteBishopsOccupancy.rotate180()
+	b.whiteKnightsOccupancy.rotate180()
+	b.whitePawnsOccupancy.rotate180()
+	b.blackKingOccupancy.rotate180()
+	b.blackQueensOccupancy.rotate180()
+	b.blackRooksOccupancy.rotate180()
+	b.blackBishopsOccupancy.rotate180()
+	b.blackKnightsOccupancy.rotate180()
+	b.blackPawnsOccupancy.rotate180()
+}
+
+// Draw prints the board in 8x8 grid with ascii style
+func (b *Board) Draw(options *drawOptions) string {
 	var sb strings.Builder
-	sb.WriteString("   +------------------------+\n")
 
-	for r := boardSize - 1; r >= 0; r-- {
-		sb.WriteString(fmt.Sprintf(" %d |", r+1))
-
-		for f := 0; f < 8; f++ {
-			square := Square(r*8 + f)
-			piece := b.pieceAt(square)
-			sb.WriteString(fmt.Sprintf(" %s ", piece.String()))
-		}
-
-		sb.WriteString("| \n")
+	opts := drawOptions{side: White}
+	if options != nil {
+		opts = *options
 	}
 
-	sb.WriteString("   +------------------------+\n")
+	if !opts.compact {
+		sb.WriteString("   +------------------------+\n")
+	}
+
+	for r := boardSize - 1; r >= 0; r-- {
+		s1 := ""
+		if !opts.compact {
+			s1 = "|"
+		}
+
+		sb.WriteString(fmt.Sprintf(" %d %s", r+1, s1))
+
+		for f := 0; f < 8; f++ {
+			s2 := ""
+			if !opts.compact {
+				s2 = " "
+			}
+
+			square := Square(r*8 + f)
+			piece := b.pieceAt(square)
+
+			sb.WriteString(fmt.Sprintf(" %s%s", piece, s2))
+		}
+
+		s3 := ""
+		if !opts.compact {
+			s3 = "|"
+		}
+
+		sb.WriteString(fmt.Sprintf("%s \n", s3))
+	}
+
+	if !opts.compact {
+		sb.WriteString("   +------------------------+\n")
+	}
+
 	sb.WriteString("     a  b  c  d  e  f  g  h")
 
 	return sb.String()
 }
 
-func (b Board) pieceAt(sq Square) Piece {
+func (b *Board) pieceAt(sq Square) Piece {
 	if b.whiteKingOccupancy.bitIsSet(sq) {
 		return WhiteKing
 	} else if b.whiteQueensOccupancy.bitIsSet(sq) {

@@ -6,23 +6,6 @@ import (
 )
 
 func TestJuicer(t *testing.T) {
-	// for k, v := range bitboardEmptyFiles {
-	// 	fmt.Printf("\n    EMPTY FILES: %v\n", k)
-	// 	fmt.Printf("%v\n", v.drawPretty())
-	// }
-	// for k, v := range bitboardUniverseFiles {
-	// 	fmt.Printf("\n    UNIVERSE FILES: %v\n", k)
-	// 	fmt.Printf("%v\n", v.drawPretty())
-	// }
-	// for k, v := range bitboardEmptyRanks {
-	// 	fmt.Printf("\n    EMPTY RANKS: %v\n", k)
-	// 	fmt.Printf("%v\n", v.drawPretty())
-	// }
-	// for k, v := range bitboardUniverseRanks {
-	// 	fmt.Printf("\n    UNIVERSE RANKS: %v\n", k)
-	// 	fmt.Printf("%v\n", v.drawPretty())
-	// }
-
 	wk := bitboardEmpty
 	wk.setBit(E1)
 
@@ -77,9 +60,7 @@ func TestJuicer(t *testing.T) {
 		allPiecesOccupancy:    bitboardEmpty,
 	}
 
-	fmt.Println(wp.drawCompact())
-	fmt.Println(wp.drawPretty())
-
-	fmt.Println(b.DrawCompact())
-	fmt.Println(b.DrawPretty())
+	fmt.Println(b.Draw(nil))
+	b.Rotate180()
+	fmt.Println(b.Draw(nil))
 }
