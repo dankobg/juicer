@@ -60,7 +60,7 @@ func TestJuicer(t *testing.T) {
 		allPiecesOccupancy:    bitboardEmpty,
 	}
 
-	fmt.Println(b.Draw(nil))
+	fmt.Println(b.Draw(&drawOptions{side: White}))
 	b.Rotate180()
-	fmt.Println(b.Draw(nil))
+	fmt.Println(b.Draw(&drawOptions{side: Black}))
 }

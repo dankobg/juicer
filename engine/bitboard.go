@@ -197,13 +197,21 @@ func (bb *bitboard) rotate90counterClockwise() {
 	bb.flipDiagonalA1H8()
 }
 
+// draw prints the board in 8x8 grid in ascii style
+// it prints 1/0 whether the piece bit is set at specified square
+func (bb bitboard) draw(options *drawOptions) string {
+	return printBoard(options, func(sq Square) string {
+		return string(bb.getBit(sq))
+	})
+}
+
 type drawOptions struct {
 	compact bool
 	side    Color
 }
 
-// draw prints the board in 8x8 grid with ascii style
-func (bb bitboard) draw(options *drawOptions) string {
+// printBoard prints the board in 8x8 grid with ascii style
+func printBoard(options *drawOptions, printerFunc func(sq Square) string) string {
 	var sb strings.Builder
 
 	opts := drawOptions{side: White}
@@ -221,17 +229,22 @@ func (bb bitboard) draw(options *drawOptions) string {
 			s1 = "|"
 		}
 
-		sb.WriteString(fmt.Sprintf(" %d %s", r+1, s1))
+		rankNum := r + 1
+		if opts.side == Black {
+			rankNum = 8 - r
+		}
+
+		sb.WriteString(fmt.Sprintf(" %d %s", rankNum, s1))
 
 		for f := 0; f < 8; f++ {
-			idx := r*8 + f
+			sq := Square(r*8 + f)
 
 			s2 := ""
 			if !opts.compact {
 				s2 = " "
 			}
 
-			sb.WriteString(fmt.Sprintf(" %d%s", bb.getBit(Square(idx)), s2))
+			sb.WriteString(fmt.Sprintf(" %s%s", printerFunc(sq), s2))
 		}
 
 		s3 := ""
@@ -242,11 +255,21 @@ func (bb bitboard) draw(options *drawOptions) string {
 		sb.WriteString(fmt.Sprintf("%s \n", s3))
 	}
 
-	if !opts.compact {
+	if opts.compact {
+		if opts.side == White {
+			sb.WriteString("\n    a b c d e f g h")
+		} else {
+			sb.WriteString("\n    h g f e d c b a")
+		}
+	} else {
 		sb.WriteString("   +------------------------+\n")
-	}
 
-	sb.WriteString("     a  b  c  d  e  f  g  h")
+		if opts.side == White {
+			sb.WriteString("     a  b  c  d  e  f  g  h")
+		} else {
+			sb.WriteString("     h  g  f  e  d  c  b  a")
+		}
+	}
 
 	return sb.String()
 }

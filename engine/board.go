@@ -1,10 +1,5 @@
 package juicer
 
-import (
-	"fmt"
-	"strings"
-)
-
 // Board represents the chess board and internally uses 12 bitboards for all pieces
 type Board struct {
 	whiteKingOccupancy    bitboard
@@ -52,54 +47,12 @@ func (b *Board) Rotate180() {
 	b.blackPawnsOccupancy.rotate180()
 }
 
-// Draw prints the board in 8x8 grid with ascii style
+// Draw prints the board in 8x8 grid in ascii style
+// it prints the piece fen symbol or `.` when there is no piece on a square
 func (b *Board) Draw(options *drawOptions) string {
-	var sb strings.Builder
-
-	opts := drawOptions{side: White}
-	if options != nil {
-		opts = *options
-	}
-
-	if !opts.compact {
-		sb.WriteString("   +------------------------+\n")
-	}
-
-	for r := boardSize - 1; r >= 0; r-- {
-		s1 := ""
-		if !opts.compact {
-			s1 = "|"
-		}
-
-		sb.WriteString(fmt.Sprintf(" %d %s", r+1, s1))
-
-		for f := 0; f < 8; f++ {
-			s2 := ""
-			if !opts.compact {
-				s2 = " "
-			}
-
-			square := Square(r*8 + f)
-			piece := b.pieceAt(square)
-
-			sb.WriteString(fmt.Sprintf(" %s%s", piece, s2))
-		}
-
-		s3 := ""
-		if !opts.compact {
-			s3 = "|"
-		}
-
-		sb.WriteString(fmt.Sprintf("%s \n", s3))
-	}
-
-	if !opts.compact {
-		sb.WriteString("   +------------------------+\n")
-	}
-
-	sb.WriteString("     a  b  c  d  e  f  g  h")
-
-	return sb.String()
+	return printBoard(options, func(sq Square) string {
+		return b.pieceAt(sq).String()
+	})
 }
 
 func (b *Board) pieceAt(sq Square) Piece {
