@@ -104,7 +104,7 @@ func (bb *bitboard) clearBit(squares ...Square) {
 	}
 }
 
-// bitIseSet checks if bit is set to 1 at specified square
+// bitIsSet checks if bit value is 1 at specified square
 func (bb *bitboard) bitIsSet(sq Square) bool {
 	if !sq.IndexInBoard() {
 		return false
@@ -113,8 +113,8 @@ func (bb *bitboard) bitIsSet(sq Square) bool {
 	return ((*bb >> sq) & 1) == 1
 }
 
-// bitIsNotSet checks if bit is set to 0 at specified square
-func (bb *bitboard) bitIsNotSet(sq Square) bool {
+// bitIsUnset checks if bit value is 0 at specified square
+func (bb *bitboard) bitIsUnset(sq Square) bool {
 	return !bb.bitIsSet(sq)
 }
 
@@ -199,76 +199,82 @@ func (bb *bitboard) rotate90counterClockwise() {
 
 // draw prints the board in 8x8 grid in ascii style
 // it prints 1/0 whether the piece bit is set at specified square
-func (bb bitboard) draw(options *drawOptions) string {
+func (bb bitboard) draw(options *DrawOptions) string {
 	return printBoard(options, func(sq Square) string {
-		return string(bb.getBit(sq))
+		return fmt.Sprint(bb.getBit(sq))
 	})
 }
 
-type drawOptions struct {
-	compact bool
-	side    Color
+type DrawOptions struct {
+	Compact bool
+	Side    Color
 }
 
 // printBoard prints the board in 8x8 grid with ascii style
-func printBoard(options *drawOptions, printerFunc func(sq Square) string) string {
-	var sb strings.Builder
-
-	opts := drawOptions{side: White}
+func printBoard(options *DrawOptions, printerFunc func(sq Square) string) string {
+	opts := DrawOptions{Side: White}
 	if options != nil {
 		opts = *options
 	}
 
-	if !opts.compact {
+	var sb strings.Builder
+
+	if !opts.Compact {
 		sb.WriteString("   +------------------------+\n")
 	}
 
 	for r := boardSize - 1; r >= 0; r-- {
-		s1 := ""
-		if !opts.compact {
-			s1 = "|"
+		rankStartChar := ""
+		if !opts.Compact {
+			rankStartChar = "|"
 		}
 
-		rankNum := r + 1
-		if opts.side == Black {
-			rankNum = 8 - r
+		rankIdx, rankLabel := r, r+1
+		if opts.Side == Black {
+			rankIdx, rankLabel = 7-r, 8-r
 		}
 
-		sb.WriteString(fmt.Sprintf(" %d %s", rankNum, s1))
+		sb.WriteString(fmt.Sprintf(" %d %s", rankLabel, rankStartChar))
 
 		for f := 0; f < 8; f++ {
-			sq := Square(r*8 + f)
-
-			s2 := ""
-			if !opts.compact {
-				s2 = " "
+			fileSpacingChar := ""
+			if !opts.Compact {
+				fileSpacingChar = " "
 			}
 
-			sb.WriteString(fmt.Sprintf(" %s%s", printerFunc(sq), s2))
+			fileIdx := f
+			if opts.Side == Black {
+				fileIdx = 7 - f
+			}
+
+			sq := Square(rankIdx*8 + fileIdx)
+			sb.WriteString(fmt.Sprintf(" %s%s", printerFunc(sq), fileSpacingChar))
 		}
 
-		s3 := ""
-		if !opts.compact {
-			s3 = "|"
+		rankEndChar := ""
+		if !opts.Compact {
+			rankEndChar = "|"
 		}
 
-		sb.WriteString(fmt.Sprintf("%s \n", s3))
+		sb.WriteString(fmt.Sprintf("%s \n", rankEndChar))
 	}
 
-	if opts.compact {
-		if opts.side == White {
-			sb.WriteString("\n    a b c d e f g h")
-		} else {
-			sb.WriteString("\n    h g f e d c b a")
+	if opts.Compact {
+		fileLabels := "\n    a b c d e f g h"
+		if opts.Side == Black {
+			fileLabels = "\n    h g f e d c b a"
 		}
+
+		sb.WriteString(fileLabels)
 	} else {
 		sb.WriteString("   +------------------------+\n")
 
-		if opts.side == White {
-			sb.WriteString("     a  b  c  d  e  f  g  h")
-		} else {
-			sb.WriteString("     h  g  f  e  d  c  b  a")
+		fileLabels := "     a  b  c  d  e  f  g  h"
+		if opts.Side == Black {
+			fileLabels = "     h  g  f  e  d  c  b  a"
 		}
+
+		sb.WriteString(fileLabels)
 	}
 
 	return sb.String()

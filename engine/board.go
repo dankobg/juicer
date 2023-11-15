@@ -49,7 +49,7 @@ func (b *Board) Rotate180() {
 
 // Draw prints the board in 8x8 grid in ascii style
 // it prints the piece fen symbol or `.` when there is no piece on a square
-func (b *Board) Draw(options *drawOptions) string {
+func (b *Board) Draw(options *DrawOptions) string {
 	return printBoard(options, func(sq Square) string {
 		return b.pieceAt(sq).String()
 	})
