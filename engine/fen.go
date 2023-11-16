@@ -132,11 +132,11 @@ func validateFenMetadataParts(fen string, opts validateFenOps) (fenToken, error)
 }
 
 // validatePositionPart validates squares and pieces
-func validatePositionPart(ft fenToken, opts validateFenOps) error {
+func validatePositionPart(ft fenToken, opts validateFenOps) (map[Square]Piece, error) {
 	// position string contains 8 ranks
 	ranks := strings.Split(ft.position, fenPositionSeparator)
 	if len(ranks) != boardSize {
-		return fmt.Errorf("invalid FEN: it does not contain 8 ranks delimited by %q character", fenPositionSeparator)
+		return nil, fmt.Errorf("invalid FEN: it does not contain 8 ranks delimited by %q character", fenPositionSeparator)
 	}
 
 	squares := make(map[Square]Piece, boardTotalSquares)
@@ -150,12 +150,12 @@ func validatePositionPart(ft fenToken, opts validateFenOps) error {
 		for f := 0; f < len(ranks[f]); f++ {
 			if reIsDigit.MatchString(string(ranks[r][f])) {
 				if previousWasNumber {
-					return fmt.Errorf("invalid FEN: position string is invalid, it has consecutive numbers")
+					return nil, fmt.Errorf("invalid FEN: position string is invalid, it has consecutive numbers")
 				}
 
 				n, err := strconv.ParseInt(string(ranks[r][f]), 10, 64)
 				if err != nil {
-					return fmt.Errorf("invalid FEN: failed to parse row number")
+					return nil, fmt.Errorf("invalid FEN: failed to parse row number")
 				}
 
 				sumSquaresInRank += n
@@ -163,12 +163,12 @@ func validatePositionPart(ft fenToken, opts validateFenOps) error {
 			} else {
 				symbol := string(ranks[r][f])
 				if !reFenPieceSymbol.MatchString(symbol) {
-					return fmt.Errorf("invalid FEN: position string contains invalid piece symbol")
+					return nil, fmt.Errorf("invalid FEN: position string contains invalid piece symbol")
 				}
 
 				piece, err := NewPieceFromFenSymbol(symbol)
 				if err != nil {
-					return fmt.Errorf("invalid FEN: position string contains invalid piece symbol")
+					return nil, fmt.Errorf("invalid FEN: position string contains invalid piece symbol")
 				}
 
 				sqIdx := r*8 + f
@@ -194,56 +194,127 @@ func validatePositionPart(ft fenToken, opts validateFenOps) error {
 		}
 
 		if sumSquaresInRank != boardSize {
-			return fmt.Errorf("invalid FEN: position string is invalid, too many squares in rank")
+			return nil, fmt.Errorf("invalid FEN: position string is invalid, too many squares in rank")
 		}
 	}
 
 	if ft.enpSquare != SquareNone {
 		if (ft.enpSquare.Rank() == Rank3 && ft.turnColor == White) || (ft.enpSquare.Rank() == Rank6 && ft.turnColor == Black) {
-			return fmt.Errorf("invalid FEN: illegal en-passant target square")
+			return nil, fmt.Errorf("invalid FEN: illegal en-passant target square")
 		}
 	}
 
 	if ft.turnColor == White && whiteKingSquare != startingWhiteKingSquare {
-		return fmt.Errorf("invalid FEN: white king is not on a starting position which conflicts with the castle string")
+		return nil, fmt.Errorf("invalid FEN: white king is not on a starting position which conflicts with the castle string")
 		// @TODO: check if k/q side rook is not on starting square and if castle rights says you can castle on that k/q side
 	}
 
 	if ft.turnColor == Black && blackKingSquare != startingBlackKingSquare {
-		return fmt.Errorf("invalid FEN: black king is not on a starting position which conflicts with the castle string")
+		return nil, fmt.Errorf("invalid FEN: black king is not on a starting position which conflicts with the castle string")
 		// @TODO: check if k/q side rook is not on starting square and if castle rights says you can castle on that k/q side
 	}
 
 	if whiteKingsCount == 0 {
-		return fmt.Errorf("invalid FEN: position is missing white king")
+		return nil, fmt.Errorf("invalid FEN: position is missing white king")
 	}
 	if blackKingsCount == 0 {
-		return fmt.Errorf("invalid FEN: position is missing black king")
+		return nil, fmt.Errorf("invalid FEN: position is missing black king")
 	}
 	if whiteKingsCount > 1 {
-		return fmt.Errorf("invalid FEN: position is having too many white kings (%d)", whiteKingsCount)
+		return nil, fmt.Errorf("invalid FEN: position is having too many white kings (%d)", whiteKingsCount)
 	}
 	if blackKingsCount > 1 {
-		return fmt.Errorf("invalid FEN: position is having too many black kings (%d)", blackKingsCount)
+		return nil, fmt.Errorf("invalid FEN: position is having too many black kings (%d)", blackKingsCount)
 	}
 
-	return nil
+	return squares, nil
 }
 
 type validateFenOps struct {
 	strict bool
 }
 
+type positionMeta struct {
+	fenToken
+	squares map[Square]Piece
+}
+
 // validateFEN validates the fen string
-func validateFEN(fen string, opts validateFenOps) error {
+func validateFEN(fen string, opts validateFenOps) (*positionMeta, error) {
 	tkn, err := validateFenMetadataParts(fen, opts)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	if err := validatePositionPart(tkn, opts); err != nil {
-		return err
+	squares, err := validatePositionPart(tkn, opts)
+	if err != nil {
+		return nil, err
 	}
 
-	return nil
+	meta := positionMeta{
+		fenToken: tkn,
+		squares:  squares,
+	}
+
+	return &meta, nil
+}
+
+func loadPositionFromFEN(fen string) (*Position, error) {
+	meta, err := validateFEN(fen, validateFenOps{})
+	if err != nil {
+		return nil, err
+	}
+
+	board := NewEmptyBoard()
+
+	for sq, piece := range meta.squares {
+		if piece == WhiteKing {
+			board.whiteKingOccupancy.setBit(sq)
+		} else if piece == WhiteQueen {
+			board.whiteKingOccupancy.setBit(sq)
+		} else if piece == WhiteRook {
+			board.whiteRooksOccupancy.setBit(sq)
+		} else if piece == WhiteBishop {
+			board.whiteBishopsOccupancy.setBit(sq)
+		} else if piece == WhiteKnight {
+			board.whiteKnightsOccupancy.setBit(sq)
+		} else if piece == WhitePawn {
+			board.whitePawnsOccupancy.setBit(sq)
+		} else if piece == BlackKing {
+			board.blackKingOccupancy.setBit(sq)
+		} else if piece == BlackQueen {
+			board.blackQueensOccupancy.setBit(sq)
+		} else if piece == BlackRook {
+			board.blackRooksOccupancy.setBit(sq)
+		} else if piece == BlackBishop {
+			board.blackBishopsOccupancy.setBit(sq)
+		} else if piece == BlackKnight {
+			board.blackKnightsOccupancy.setBit(sq)
+		} else if piece == BlackPawn {
+			board.blackPawnsOccupancy.setBit(sq)
+		}
+	}
+
+	pos := Position{
+		board:         &board,
+		turn:          meta.turnColor,
+		enpSquare:     meta.enpSquare,
+		castleRights:  meta.castleRights,
+		halfMoveClock: meta.halfMoveClock,
+		fullMoveClock: meta.fullMoveClock,
+		// check:                false,
+		// checkmate:            false,
+		// stalemate:            false,
+		// draw:                 false,
+		// threeFold:            false,
+		// insufficientMaterial: false,
+		// terminated:           false,
+		// outcome:              "",
+		// comments:             []string{},
+		// headers:              []string{},
+		// capturedPieces:       []Piece{},
+		// alivePieces:          []Piece{},
+	}
+
+	return &pos, nil
 }

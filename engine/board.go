@@ -15,10 +15,18 @@ type Board struct {
 	blackBishopsOccupancy bitboard
 	blackKnightsOccupancy bitboard
 	blackPawnsOccupancy   bitboard
+}
 
-	whitePiecesOccupancy bitboard
-	blackPiecesOccupancy bitboard
-	allPiecesOccupancy   bitboard
+func (b *Board) whitePiecesOccupancy() bitboard {
+	return b.whiteKingOccupancy | b.whiteQueensOccupancy | b.whiteRooksOccupancy | b.whiteBishopsOccupancy | b.whiteKnightsOccupancy | b.whitePawnsOccupancy
+}
+
+func (b *Board) blackPiecesOccupancy() bitboard {
+	return b.blackKingOccupancy | b.blackQueensOccupancy | b.blackRooksOccupancy | b.blackBishopsOccupancy | b.blackKnightsOccupancy | b.blackPawnsOccupancy
+}
+
+func (b *Board) allPiecesOccupancy() bitboard {
+	return b.whitePiecesOccupancy() | b.blackPiecesOccupancy()
 }
 
 // Rotate90clockwise rotates the board 90 deg clockwise
@@ -85,6 +93,50 @@ func (b *Board) pieceAt(sq Square) Piece {
 	}
 }
 
-// var whitePiecesOccupancy bitboard = whiteKingOccupancy |whiteQueensOccupancy |whiteRooskOccupancy |whiteBishopsOccupancy |whiteKnightsOccupancy |whitePawnsOccupancy
-// var blackPiecesOccupancy bitboard = blackKingOccupancy |blackQueensOccupancy |blackRooskOccupancy |blackBishopsOccupancy |blackKnightsOccupancy |blackPawnsOccupancy
-// var allPiecesOccupancy = whitePiecesOccupancy | blackPiecesOccupancy
+func (b *Board) bitboardForPiece(piece Piece) bitboard {
+	switch piece {
+	case WhiteKing:
+		return b.whiteKingOccupancy
+	case WhiteQueen:
+		return b.whiteQueensOccupancy
+	case WhiteRook:
+		return b.whiteRooksOccupancy
+	case WhiteBishop:
+		return b.whiteBishopsOccupancy
+	case WhiteKnight:
+		return b.whiteKnightsOccupancy
+	case WhitePawn:
+		return b.whitePawnsOccupancy
+	case BlackKing:
+		return b.blackKingOccupancy
+	case BlackQueen:
+		return b.blackQueensOccupancy
+	case BlackRook:
+		return b.blackRooksOccupancy
+	case BlackBishop:
+		return b.blackBishopsOccupancy
+	case BlackKnight:
+		return b.blackKnightsOccupancy
+	case BlackPawn:
+		return b.blackPawnsOccupancy
+	}
+
+	return bitboardEmpty
+}
+
+func NewEmptyBoard() Board {
+	return Board{
+		whiteKingOccupancy:    bitboardEmpty,
+		whiteQueensOccupancy:  bitboardEmpty,
+		whiteRooksOccupancy:   bitboardEmpty,
+		whiteBishopsOccupancy: bitboardEmpty,
+		whiteKnightsOccupancy: bitboardEmpty,
+		whitePawnsOccupancy:   bitboardEmpty,
+		blackKingOccupancy:    bitboardEmpty,
+		blackQueensOccupancy:  bitboardEmpty,
+		blackRooksOccupancy:   bitboardEmpty,
+		blackBishopsOccupancy: bitboardEmpty,
+		blackKnightsOccupancy: bitboardEmpty,
+		blackPawnsOccupancy:   bitboardEmpty,
+	}
+}

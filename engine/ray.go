@@ -3,12 +3,12 @@ package juicer
 type RayDirection uint8
 
 const (
-	N  RayDirection = iota // north
-	NE                     // north-east
-	E                      // east
-	SE                     // south-east
-	S                      // south
-	SW                     // south-west
-	W                      // west
-	NW                     // north-west
+	Nort RayDirection = iota // north
+	NoEa                     // north-east
+	East                     // east
+	SoEa                     // south-east
+	Sout                     // south
+	SoWe                     // south-west
+	West                     // west
+	NoWe                     // north-west
 )

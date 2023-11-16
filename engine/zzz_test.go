@@ -55,11 +55,13 @@ func TestJuicer(t *testing.T) {
 		blackBishopsOccupancy: bb,
 		blackKnightsOccupancy: bn,
 		blackPawnsOccupancy:   bp,
-		whitePiecesOccupancy:  bitboardEmpty,
-		blackPiecesOccupancy:  bitboardEmpty,
-		allPiecesOccupancy:    bitboardEmpty,
 	}
 
-	fmt.Println(b.Draw(&DrawOptions{Compact: true, Side: White}))
-	fmt.Println(b.Draw(&DrawOptions{Compact: false, Side: Black}))
+	_ = b
+	// fmt.Println(b.Draw(nil))
+
+	for i := 0; i < 64; i++ {
+		sq := Square(i)
+		fmt.Printf("%v\n %v\n", sq, generateKnightAttacksMask(sq).draw(nil))
+	}
 }

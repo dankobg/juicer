@@ -29,7 +29,7 @@ func TestValidateFen(t *testing.T) {
 
 	for name, tc := range testCases {
 		t.Run(name, func(t *testing.T) {
-			err := validateFEN(tc.fen, validateFenOps{})
+			_, err := validateFEN(tc.fen, validateFenOps{})
 			if (err != nil) != tc.wantErr {
 				t.Fatalf("error mismatch, wantErr: %v, gotErr: %v", tc.wantErr, err)
 			}
