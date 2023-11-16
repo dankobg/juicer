@@ -123,20 +123,3 @@ func (b *Board) bitboardForPiece(piece Piece) bitboard {
 
 	return bitboardEmpty
 }
-
-func NewEmptyBoard() Board {
-	return Board{
-		whiteKingOccupancy:    bitboardEmpty,
-		whiteQueensOccupancy:  bitboardEmpty,
-		whiteRooksOccupancy:   bitboardEmpty,
-		whiteBishopsOccupancy: bitboardEmpty,
-		whiteKnightsOccupancy: bitboardEmpty,
-		whitePawnsOccupancy:   bitboardEmpty,
-		blackKingOccupancy:    bitboardEmpty,
-		blackQueensOccupancy:  bitboardEmpty,
-		blackRooksOccupancy:   bitboardEmpty,
-		blackBishopsOccupancy: bitboardEmpty,
-		blackKnightsOccupancy: bitboardEmpty,
-		blackPawnsOccupancy:   bitboardEmpty,
-	}
-}

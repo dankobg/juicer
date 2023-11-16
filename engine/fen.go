@@ -265,7 +265,7 @@ func loadPositionFromFEN(fen string) (*Position, error) {
 		return nil, err
 	}
 
-	board := NewEmptyBoard()
+	board := Board{}
 
 	for sq, piece := range meta.squares {
 		if piece == WhiteKing {

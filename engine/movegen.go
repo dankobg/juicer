@@ -3,8 +3,8 @@ package juicer
 import "sync"
 
 var (
-	initialized bool
-	once        sync.Once
+	once                   sync.Once
+	initializedAttackMasks bool
 
 	whitePawnAttacksMask map[Square]bitboard
 	blackPawnAttacksMask map[Square]bitboard
@@ -13,7 +13,7 @@ var (
 )
 
 func initAttacksMaskForNonSlidingPieces() {
-	if !initialized {
+	if !initializedAttackMasks {
 		once.Do(func() {
 			for i := 0; i < boardTotalSquares; i++ {
 				sq := Square(i)
@@ -23,7 +23,7 @@ func initAttacksMaskForNonSlidingPieces() {
 				initPawnAttacksMask(sq)
 			}
 
-			initialized = true
+			initializedAttackMasks = true
 		})
 	}
 }
@@ -42,7 +42,7 @@ func initPawnAttacksMask(sq Square) {
 }
 
 func generateKingAttacksMask(sq Square) bitboard {
-	occupancy, attacks := bitboardEmpty, bitboardEmpty
+	var occupancy, attacks bitboard
 	occupancy.setBit(sq)
 
 	clearedAFile := occupancy & bitboardEmptyFilesMask[FileA]
@@ -62,7 +62,7 @@ func generateKingAttacksMask(sq Square) bitboard {
 }
 
 func generateKnightAttacksMask(sq Square) bitboard {
-	occupancy, attacks := bitboardEmpty, bitboardEmpty
+	var occupancy, attacks bitboard
 	occupancy.setBit(sq)
 
 	clearedAFile := occupancy & bitboardEmptyFilesMask[FileA]
@@ -70,21 +70,21 @@ func generateKnightAttacksMask(sq Square) bitboard {
 	clearedABFile := clearedAFile & bitboardEmptyFilesMask[FileB]
 	clearedGHFile := clearedHFile & bitboardEmptyFilesMask[FileG]
 
-	attacks |= clearedHFile << 17  // Nort-NoEa
-	attacks |= clearedGHFile << 10 // East-NoEa
 	attacks |= clearedABFile << 6  // West-NoWe
 	attacks |= clearedAFile << 15  // Nort-NoWe
+	attacks |= clearedHFile << 17  // Nort-NoEa
+	attacks |= clearedGHFile << 10 // East-NoEa
 
-	attacks |= clearedAFile >> 17  // Sout-SoWe
-	attacks |= clearedABFile >> 10 // West-SoWe
 	attacks |= clearedGHFile >> 6  // East-SoEa
 	attacks |= clearedHFile >> 15  // Sout-SoEa
+	attacks |= clearedAFile >> 17  // Sout-SoWe
+	attacks |= clearedABFile >> 10 // West-SoWe
 
 	return attacks
 }
 
 func generatePawnAttacksMask(sq Square, color Color) bitboard {
-	occupancy, attacks := bitboardEmpty, bitboardEmpty
+	var occupancy, attacks bitboard
 	occupancy.setBit(sq)
 
 	clearedAFile := occupancy & bitboardEmptyFilesMask[FileA]
