@@ -219,6 +219,11 @@ func (bb bitboard) draw(options *DrawOptions) string {
 	})
 }
 
+// String implements the stringer and returns the uint64 as string
+func (bb bitboard) String() string {
+	return fmt.Sprint(uint64(bb))
+}
+
 type DrawOptions struct {
 	Compact bool
 	Side    Color

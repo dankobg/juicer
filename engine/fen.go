@@ -45,8 +45,8 @@ func validateFenMetadataParts(fen string, opts validateFenOps) (fenToken, error)
 	}
 
 	var (
-		halfMoveClockToken = tokens[5]
-		fullMoveClockToken = tokens[4]
+		fullMoveClockToken = tokens[5]
+		halfMoveClockToken = tokens[4]
 		enpSquareToken     = tokens[3]
 		castleRightsToken  = tokens[2]
 		turnColorToken     = tokens[1]

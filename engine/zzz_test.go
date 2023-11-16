@@ -38,8 +38,8 @@ func TestJuicer(t *testing.T) {
 
 	fmt.Println(b.Draw(nil))
 
-	for i := 0; i < 64; i++ {
-		sq := Square(i)
-		fmt.Printf("%v\n %v\n", sq, generateKnightAttacksMask(sq).draw(nil))
-	}
+	// for i := 0; i < 64; i++ {
+	// 	sq := Square(i)
+	// 	fmt.Printf("%v - %v\n", sq, strconv.FormatUint(uint64(generateKnightAttacksMask(sq)), 16))
+	// }
 }
