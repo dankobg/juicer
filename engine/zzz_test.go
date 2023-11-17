@@ -16,7 +16,7 @@ func TestJuicer(t *testing.T) {
 	wb.setBit(F1)
 	wn.setBit(B1)
 	wn.setBit(G1)
-	for _, x := range []Square{A2, B2, D2, E2, F2, G2, H2} {
+	for _, x := range []Square{A2, B2, C2, D2, E2, F2, G2, H2} {
 		wp.setBit(x)
 	}
 	bk.setBit(E8)
@@ -27,7 +27,7 @@ func TestJuicer(t *testing.T) {
 	bb.setBit(F8)
 	bn.setBit(B8)
 	bn.setBit(G8)
-	for _, x := range []Square{A7, B7, C7, D7, E7, G7, H7} {
+	for _, x := range []Square{A7, B7, C7, D7, E7, F7, G7, H7} {
 		bp.setBit(x)
 	}
 
@@ -46,10 +46,5 @@ func TestJuicer(t *testing.T) {
 		blackPawnsOccupancy:   bp,
 	}
 
-	_ = b
-	// fmt.Println(b.Draw(nil))
-
-	for i := 0; i < 64; i++ {
-		fmt.Printf("%v\n %v\n", Square(i), generateRookRelevantOccupancyBitsMask(Square(i)).draw(nil))
-	}
+	fmt.Println(b.Draw(nil))
 }

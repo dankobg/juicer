@@ -17,53 +17,81 @@ type Board struct {
 	blackPawnsOccupancy   bitboard
 }
 
-func (b *Board) whitePiecesOccupancy() bitboard {
+func (b Board) whitePiecesOccupancy() bitboard {
 	return b.whiteKingOccupancy | b.whiteQueensOccupancy | b.whiteRooksOccupancy | b.whiteBishopsOccupancy | b.whiteKnightsOccupancy | b.whitePawnsOccupancy
 }
 
-func (b *Board) blackPiecesOccupancy() bitboard {
+func (b Board) blackPiecesOccupancy() bitboard {
 	return b.blackKingOccupancy | b.blackQueensOccupancy | b.blackRooksOccupancy | b.blackBishopsOccupancy | b.blackKnightsOccupancy | b.blackPawnsOccupancy
 }
 
-func (b *Board) allPiecesOccupancy() bitboard {
+func (b Board) allPiecesOccupancy() bitboard {
 	return b.whitePiecesOccupancy() | b.blackPiecesOccupancy()
 }
 
-// Rotate90clockwise rotates the board 90 deg clockwise
-func (b *Board) Rotate90clockwise() {
-	b.whitePawnsOccupancy.rotate90clockwise()
+// rotate90clockwise rotates the board 90 deg clockwise
+func (b Board) rotate90clockwise() Board {
+	return Board{
+		whiteKingOccupancy:    b.whiteKingOccupancy.rotate90clockwise(),
+		whiteQueensOccupancy:  b.whiteQueensOccupancy.rotate90clockwise(),
+		whiteRooksOccupancy:   b.whiteRooksOccupancy.rotate90clockwise(),
+		whiteBishopsOccupancy: b.whiteBishopsOccupancy.rotate90clockwise(),
+		whiteKnightsOccupancy: b.whiteKnightsOccupancy.rotate90clockwise(),
+		whitePawnsOccupancy:   b.whitePawnsOccupancy.rotate90clockwise(),
+		blackKingOccupancy:    b.blackKingOccupancy.rotate90clockwise(),
+		blackQueensOccupancy:  b.blackQueensOccupancy.rotate90clockwise(),
+		blackRooksOccupancy:   b.blackRooksOccupancy.rotate90clockwise(),
+		blackBishopsOccupancy: b.blackBishopsOccupancy.rotate90clockwise(),
+		blackKnightsOccupancy: b.blackKnightsOccupancy.rotate90clockwise(),
+		blackPawnsOccupancy:   b.blackPawnsOccupancy.rotate90clockwise(),
+	}
 }
 
-// Rotate90counterClockwise rotates the board 90 deg counter-clockwise
-func (b *Board) Rotate90counterClockwise() {
-	b.whitePawnsOccupancy.rotate90counterClockwise()
+// rotate90counterClockwise rotates the board 90 deg counter-clockwise
+func (b Board) rotate90counterClockwise() Board {
+	return Board{
+		whiteKingOccupancy:    b.whiteKingOccupancy.rotate90counterClockwise(),
+		whiteQueensOccupancy:  b.whiteQueensOccupancy.rotate90counterClockwise(),
+		whiteRooksOccupancy:   b.whiteRooksOccupancy.rotate90counterClockwise(),
+		whiteBishopsOccupancy: b.whiteBishopsOccupancy.rotate90counterClockwise(),
+		whiteKnightsOccupancy: b.whiteKnightsOccupancy.rotate90counterClockwise(),
+		whitePawnsOccupancy:   b.whitePawnsOccupancy.rotate90counterClockwise(),
+		blackKingOccupancy:    b.blackKingOccupancy.rotate90counterClockwise(),
+		blackQueensOccupancy:  b.blackQueensOccupancy.rotate90counterClockwise(),
+		blackRooksOccupancy:   b.blackRooksOccupancy.rotate90counterClockwise(),
+		blackBishopsOccupancy: b.blackBishopsOccupancy.rotate90counterClockwise(),
+		blackKnightsOccupancy: b.blackKnightsOccupancy.rotate90counterClockwise(),
+		blackPawnsOccupancy:   b.blackPawnsOccupancy.rotate90counterClockwise(),
+	}
 }
 
-// Rotate180 rotates the board 180 deg
-func (b *Board) Rotate180() {
-	b.whiteKingOccupancy.rotate180()
-	b.whiteQueensOccupancy.rotate180()
-	b.whiteRooksOccupancy.rotate180()
-	b.whiteBishopsOccupancy.rotate180()
-	b.whiteKnightsOccupancy.rotate180()
-	b.whitePawnsOccupancy.rotate180()
-	b.blackKingOccupancy.rotate180()
-	b.blackQueensOccupancy.rotate180()
-	b.blackRooksOccupancy.rotate180()
-	b.blackBishopsOccupancy.rotate180()
-	b.blackKnightsOccupancy.rotate180()
-	b.blackPawnsOccupancy.rotate180()
+// rotate180 rotates the board 180 deg
+func (b Board) rotate180() Board {
+	return Board{
+		whiteKingOccupancy:    b.whiteKingOccupancy.rotate180(),
+		whiteQueensOccupancy:  b.whiteQueensOccupancy.rotate180(),
+		whiteRooksOccupancy:   b.whiteRooksOccupancy.rotate180(),
+		whiteBishopsOccupancy: b.whiteBishopsOccupancy.rotate180(),
+		whiteKnightsOccupancy: b.whiteKnightsOccupancy.rotate180(),
+		whitePawnsOccupancy:   b.whitePawnsOccupancy.rotate180(),
+		blackKingOccupancy:    b.blackKingOccupancy.rotate180(),
+		blackQueensOccupancy:  b.blackQueensOccupancy.rotate180(),
+		blackRooksOccupancy:   b.blackRooksOccupancy.rotate180(),
+		blackBishopsOccupancy: b.blackBishopsOccupancy.rotate180(),
+		blackKnightsOccupancy: b.blackKnightsOccupancy.rotate180(),
+		blackPawnsOccupancy:   b.blackPawnsOccupancy.rotate180(),
+	}
 }
 
 // Draw prints the board in 8x8 grid in ascii style
 // it prints the piece fen symbol or `.` when there is no piece on a square
-func (b *Board) Draw(options *DrawOptions) string {
+func (b Board) Draw(options *DrawOptions) string {
 	return printBoard(options, func(sq Square) string {
 		return b.pieceAt(sq).String()
 	})
 }
 
-func (b *Board) pieceAt(sq Square) Piece {
+func (b Board) pieceAt(sq Square) Piece {
 	if b.whiteKingOccupancy.bitIsSet(sq) {
 		return WhiteKing
 	} else if b.whiteQueensOccupancy.bitIsSet(sq) {
@@ -93,7 +121,7 @@ func (b *Board) pieceAt(sq Square) Piece {
 	}
 }
 
-func (b *Board) bitboardForPiece(piece Piece) bitboard {
+func (b Board) bitboardForPiece(piece Piece) bitboard {
 	switch piece {
 	case WhiteKing:
 		return b.whiteKingOccupancy

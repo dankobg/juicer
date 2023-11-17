@@ -78,15 +78,6 @@ var bitboardUniverseRanksMask = map[Rank]bitboard{
 	Rank8: 0xFF00000000000000,
 }
 
-// getBit gets the bit at specified square
-func (bb *bitboard) getBit(sq Square) uint8 {
-	if !sq.IndexInBoard() {
-		return 0
-	}
-
-	return uint8((*bb >> sq) & 1)
-}
-
 // setBit sets the bit to 1 at specified square
 func (bb *bitboard) setBit(sq Square) {
 	if sq.IndexInBoard() {
@@ -108,17 +99,26 @@ func (bb *bitboard) clearBit(sq Square) {
 	}
 }
 
+// getBit gets the bit at specified square
+func (bb bitboard) getBit(sq Square) uint8 {
+	if !sq.IndexInBoard() {
+		return 0
+	}
+
+	return uint8((bb >> sq) & 1)
+}
+
 // bitIsSet checks if bit value is 1 at specified square
-func (bb *bitboard) bitIsSet(sq Square) bool {
+func (bb bitboard) bitIsSet(sq Square) bool {
 	if !sq.IndexInBoard() {
 		return false
 	}
 
-	return ((*bb >> sq) & 1) == 1
+	return ((bb >> sq) & 1) == 1
 }
 
 // bitIsUnset checks if bit value is 0 at specified square
-func (bb *bitboard) bitIsUnset(sq Square) bool {
+func (bb bitboard) bitIsUnset(sq Square) bool {
 	return !bb.bitIsSet(sq)
 }
 
@@ -128,13 +128,13 @@ func (bb bitboard) populationCount() uint8 {
 }
 
 // MS1B gets the index of most significant 1 bit
-func (bb *bitboard) MS1B() int {
-	return 63 - bits.LeadingZeros64(uint64(*bb))
+func (bb bitboard) MS1B() int {
+	return 63 - bits.LeadingZeros64(uint64(bb))
 }
 
 // LS1B gets the index of least significant 1 bit
-func (bb *bitboard) LS1B() int {
-	return bits.TrailingZeros64(uint64(*bb))
+func (bb bitboard) LS1B() int {
+	return bits.TrailingZeros64(uint64(bb))
 }
 
 // PopLS1B pops (clears) the LS1B and returns its index
@@ -151,83 +151,85 @@ func (bb *bitboard) PopMS1B() int {
 	return ms1b
 }
 
-// setEmpty sets the bitboard to bitboardEmpty (all 0)
-func (bb *bitboard) setEmpty() {
-	*bb = bitboardEmpty
-}
-
-// setFull sets the bitboard to bitboardFull (all 1)
-func (bb *bitboard) setFull() {
-	*bb = bitboardFull
-}
-
 // flipVertical flips the bitboard vertically
-func (bb *bitboard) flipVertical() {
-	*bb = bitboard(bits.ReverseBytes64(uint64(*bb)))
+func (bb bitboard) flipVertical() bitboard {
+	return bitboard(bits.ReverseBytes64(uint64(bb)))
 }
 
 // flipHorizontal flips the bitboard horizontally
-func (bb *bitboard) flipHorizontal() {
+func (bb bitboard) flipHorizontal() bitboard {
 	k1 := bitboard(0x5555555555555555)
 	k2 := bitboard(0x3333333333333333)
 	k4 := bitboard(0x0F0F0F0F0F0F0F0F)
 
-	*bb = ((*bb >> 1) & k1) + 2*(*bb&k1)
-	*bb = ((*bb >> 2) & k2) + 4*(*bb&k2)
-	*bb = ((*bb >> 4) & k4) + 16*(*bb&k4)
+	bb = ((bb >> 1) & k1) + 2*(bb&k1)
+	bb = ((bb >> 2) & k2) + 4*(bb&k2)
+	bb = ((bb >> 4) & k4) + 16*(bb&k4)
+
+	return bb
 }
 
 // flipDiagonalA1H8 flips the bitboard diagonally from a1 to h1
-func (bb *bitboard) flipDiagonalA1H8() {
+func (bb bitboard) flipDiagonalA1H8() bitboard {
 	var t bitboard
 	k1 := bitboard(0x5500550055005500)
 	k2 := bitboard(0x3333000033330000)
 	k4 := bitboard(0x0F0F0F0F00000000)
 
-	t = k4 & (*bb ^ (*bb << 28))
-	*bb ^= t ^ (t >> 28)
-	t = k2 & (*bb ^ (*bb << 14))
-	*bb ^= t ^ (t >> 14)
-	t = k1 & (*bb ^ (*bb << 7))
-	*bb ^= t ^ (t >> 7)
+	t = k4 & (bb ^ (bb << 28))
+	bb ^= t ^ (t >> 28)
+	t = k2 & (bb ^ (bb << 14))
+	bb ^= t ^ (t >> 14)
+	t = k1 & (bb ^ (bb << 7))
+	bb ^= t ^ (t >> 7)
+
+	return bb
 }
 
 // flipDiagonalA8H1 flips the bitboard diagonally from a8 to h8
-func (bb *bitboard) flipDiagonalA8H1() {
+func (bb bitboard) flipDiagonalA8H1() bitboard {
 	var t bitboard
 	k1 := bitboard(0xAA00AA00AA00AA00)
 	k2 := bitboard(0xCCCC0000CCCC0000)
 	k4 := bitboard(0xF0F0F0F00F0F0F0F)
 
-	t = *bb ^ (*bb << 36)
-	*bb ^= k4 & (t ^ (*bb >> 36))
-	t = k2 & (*bb ^ (*bb << 18))
-	*bb ^= t ^ (t >> 18)
-	t = k1 & (*bb ^ (*bb << 9))
-	*bb ^= t ^ (t >> 9)
+	t = bb ^ (bb << 36)
+	bb ^= k4 & (t ^ (bb >> 36))
+	t = k2 & (bb ^ (bb << 18))
+	bb ^= t ^ (t >> 18)
+	t = k1 & (bb ^ (bb << 9))
+	bb ^= t ^ (t >> 9)
+
+	return bb
 }
 
 // rotate180 rotates the bitboard 180 degrees
-func (bb *bitboard) rotate180() {
-	bb.flipVertical()
-	bb.flipHorizontal()
+func (bb bitboard) rotate180() bitboard {
+	bb = bb.flipVertical()
+	bb = bb.flipHorizontal()
+
+	return bb
 }
 
 // rotate90clockwise rotates the bitboard 90 degrees
-func (bb *bitboard) rotate90clockwise() {
-	bb.flipVertical()
-	bb.flipDiagonalA8H1()
+func (bb bitboard) rotate90clockwise() bitboard {
+	bb = bb.flipVertical()
+	bb = bb.flipDiagonalA8H1()
+
+	return bb
 }
 
 // rotate90counterClockwise rotates the bitboard 270 degrees (90 counter-clockwise)
-func (bb *bitboard) rotate90counterClockwise() {
-	bb.flipVertical()
-	bb.flipDiagonalA1H8()
+func (bb bitboard) rotate90counterClockwise() bitboard {
+	bb = bb.flipVertical()
+	bb = bb.flipDiagonalA1H8()
+
+	return bb
 }
 
 // isEmpty checks whether bitboard is empty (all 0s)
-func (bb *bitboard) isEmpty() bool {
-	return *bb == 0
+func (bb bitboard) isEmpty() bool {
+	return bb == 0
 }
 
 // draw prints the board in 8x8 grid in ascii style
