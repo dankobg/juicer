@@ -39,12 +39,7 @@ func TestJuicer(t *testing.T) {
 	_ = b
 	// fmt.Println(b.Draw(nil))
 
-	var bbtest bitboard
-	bbtest.setBit(D2, D7, B4, G4)
-
-	fmt.Println(bbtest.draw(nil))
-	fmt.Println("LSB: ", bbtest.LS1B())
-	fmt.Println("MSB: ", bbtest.MS1B())
-	fmt.Println("POPPED: ", bbtest.PopMS1B())
-	fmt.Println(bbtest.draw(nil))
+	for i := 0; i < 64; i++ {
+		fmt.Printf("%v\n %v\n", Square(i), generateRookRelevantOccupancyBitsMask(Square(i)).draw(nil))
+	}
 }

@@ -10,6 +10,12 @@ var (
 	blackPawnAttacksMask map[Square]bitboard
 	kingAttacksMask      map[Square]bitboard
 	knightsAttacksMask   map[Square]bitboard
+
+	bishopRelevantOccupancyBitsMask map[Square]bitboard
+	rookRelevantOccupancyBitsMask   map[Square]bitboard
+
+	bishopRelevantOccupancyBitsPopulationCount map[Square]uint8
+	rookRelevantOccupancyBitsPopulationCount   map[Square]uint8
 )
 
 func initAttacksMaskForNonSlidingPieces() {
@@ -21,6 +27,12 @@ func initAttacksMaskForNonSlidingPieces() {
 				initKingAttacksMask(sq)
 				initKnightPawnAttacksMask(sq)
 				initPawnAttacksMask(sq)
+
+				initBishopRelevantOccupancyBitsMask(sq)
+				initRookRelevantOccupancyBitsMask(sq)
+
+				initBishopRelevantOccupancyBitsPopulationCount(sq)
+				initRookRelevantOccupancyBitsPopulationCount(sq)
 			}
 
 			initializedAttackMasks = true
@@ -39,6 +51,22 @@ func initKnightPawnAttacksMask(sq Square) {
 func initPawnAttacksMask(sq Square) {
 	whitePawnAttacksMask[sq] = generatePawnAttacksMask(sq, White)
 	blackPawnAttacksMask[sq] = generatePawnAttacksMask(sq, Black)
+}
+
+func initBishopRelevantOccupancyBitsMask(sq Square) {
+	bishopRelevantOccupancyBitsMask[sq] = generateBishopRelevantOccupancyBitsMask(sq)
+}
+
+func initRookRelevantOccupancyBitsMask(sq Square) {
+	rookRelevantOccupancyBitsMask[sq] = generateRookRelevantOccupancyBitsMask(sq)
+}
+
+func initBishopRelevantOccupancyBitsPopulationCount(sq Square) {
+	bishopRelevantOccupancyBitsPopulationCount[sq] = bishopRelevantOccupancyBitsMask[sq].populationCount()
+}
+
+func initRookRelevantOccupancyBitsPopulationCount(sq Square) {
+	rookRelevantOccupancyBitsPopulationCount[sq] = rookRelevantOccupancyBitsMask[sq].populationCount()
 }
 
 func generateKingAttacksMask(sq Square) bitboard {
@@ -98,6 +126,52 @@ func generatePawnAttacksMask(sq Square, color Color) bitboard {
 	if color.IsBlack() {
 		attacks |= clearedAFile >> 9 // SoWe
 		attacks |= clearedHFile >> 7 // SoEa
+	}
+
+	return attacks
+}
+
+// generateBishopRelevantOccupancyBitsMask generates the bishop relevant occupancy look table
+func generateBishopRelevantOccupancyBitsMask(sq Square) bitboard {
+	var occupancy, attacks bitboard
+	occupancy.setBit(sq)
+
+	f, r := int(sq%8), int(sq/8)
+
+	for i := 1; f-i > 0 && r+i < 7; i++ {
+		attacks.setBit(Square((r+i)*8 + f - i)) // NoWe
+	}
+	for i := 1; f+i < 7 && r+i < 7; i++ {
+		attacks.setBit(Square((r+i)*8 + f + i)) // NoEa
+	}
+	for i := 1; f-i > 0 && r-i > 0; i++ {
+		attacks.setBit(Square((r-i)*8 + f - i)) // SoWe
+	}
+	for i := 1; f+i < 7 && r-i > 0; i++ {
+		attacks.setBit(Square((r-i)*8 + f + i)) // SoEa
+	}
+
+	return attacks
+}
+
+// generateRookRelevantOccupancyBitsMask generates the rook relevant occupancy look table
+func generateRookRelevantOccupancyBitsMask(sq Square) bitboard {
+	var occupancy, attacks bitboard
+	occupancy.setBit(sq)
+
+	f, r := int(sq%8), int(sq/8)
+
+	for i := 1; r+i < 7; i++ {
+		attacks.setBit(Square((r+i)*8 + f)) // North
+	}
+	for i := 1; f+i < 7; i++ {
+		attacks.setBit(Square(r*8 + f + i)) // East
+	}
+	for i := 1; r-i > 0; i++ {
+		attacks.setBit(Square((r-i)*8 + f)) // Sout
+	}
+	for i := 1; f-i > 0; i++ {
+		attacks.setBit(Square(r*8 + f - i)) // West
 	}
 
 	return attacks

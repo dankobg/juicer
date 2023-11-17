@@ -129,8 +129,8 @@ func (bb *bitboard) bitIsUnset(sq Square) bool {
 }
 
 // populationCount returns the count of 1 bits in bitboard
-func (bb *bitboard) populationCount() uint8 {
-	return uint8(bits.OnesCount64(uint64(*bb)))
+func (bb bitboard) populationCount() uint8 {
+	return uint8(bits.OnesCount64(uint64(bb)))
 }
 
 // MS1B gets the index of most significant 1 bit
