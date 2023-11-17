@@ -88,29 +88,23 @@ func (bb *bitboard) getBit(sq Square) uint8 {
 }
 
 // setBit sets the bit to 1 at specified square
-func (bb *bitboard) setBit(squares ...Square) {
-	for _, sq := range squares {
-		if sq.IndexInBoard() {
-			*bb |= 1 << sq
-		}
+func (bb *bitboard) setBit(sq Square) {
+	if sq.IndexInBoard() {
+		*bb |= 1 << sq
 	}
 }
 
 // toggleBit toggles the bit, it sets 0->1 and 1->0
-func (bb *bitboard) toggleBit(squares ...Square) {
-	for _, sq := range squares {
-		if sq.IndexInBoard() {
-			*bb ^= 1 << sq
-		}
+func (bb *bitboard) toggleBit(sq Square) {
+	if sq.IndexInBoard() {
+		*bb ^= 1 << sq
 	}
 }
 
 // clearBit sets the bit to 0 at specified square
-func (bb *bitboard) clearBit(squares ...Square) {
-	for _, sq := range squares {
-		if sq.IndexInBoard() {
-			*bb &= ^(1 << sq)
-		}
+func (bb *bitboard) clearBit(sq Square) {
+	if sq.IndexInBoard() {
+		*bb &= ^(1 << sq)
 	}
 }
 
@@ -232,8 +226,8 @@ func (bb *bitboard) rotate90counterClockwise() {
 }
 
 // isEmpty checks whether bitboard is empty (all 0s)
-func (bb bitboard) isEmpty() bool {
-	return bb == 0
+func (bb *bitboard) isEmpty() bool {
+	return *bb == 0
 }
 
 // draw prints the board in 8x8 grid in ascii style
