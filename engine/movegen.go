@@ -176,3 +176,93 @@ func generateRookRelevantOccupancyBitsMask(sq Square) bitboard {
 
 	return attacks
 }
+
+// generateBishopAttacksWithBlockers generates bishop sliding attacks with a blocker bitboard on the fly
+// it is only used for finding and initializing magic numbers becayse it is too slow to use in in movegen
+func generateBishopAttacksWithBlockers(sq Square, blockers bitboard) bitboard {
+	var occupancy, attacks bitboard
+	occupancy.setBit(sq)
+
+	f, r := int(sq%8), int(sq/8)
+	target := SquareNone
+
+	for i := 1; f-i >= 0 && r+i < 8; i++ {
+		target = Square((r+i)*8 + f - i) // NoWe
+		attacks.setBit(target)
+
+		if blockers&target.occupancyMask() != 0 {
+			break
+		}
+	}
+	for i := 1; f+i < 8 && r+i < 8; i++ {
+		target = Square((r+i)*8 + f + i) // NoEa
+		attacks.setBit(target)
+
+		if blockers&target.occupancyMask() != 0 {
+			break
+		}
+	}
+	for i := 1; f-i >= 0 && r-i >= 0; i++ {
+		target = Square((r-i)*8 + f - i) // SoWe
+		attacks.setBit(target)
+
+		if blockers&target.occupancyMask() != 0 {
+			break
+		}
+	}
+	for i := 1; f+i < 8 && r-i >= 0; i++ {
+		target = Square((r-i)*8 + f + i) // SoEa
+		attacks.setBit(target)
+
+		if blockers&target.occupancyMask() != 0 {
+			break
+		}
+	}
+
+	return attacks
+}
+
+// generateRookAttacksWithBlockers generates rook sliding attacks with a blocker bitboard on the fly
+// it is only used for finding and initializing magic numbers becayse it is too slow to use in in movegen
+func generateRookAttacksWithBlockers(sq Square, blockers bitboard) bitboard {
+	var piece, attacks bitboard
+	piece.setBit(sq)
+
+	f, r := int(sq%8), int(sq/8)
+	target := SquareNone
+
+	for i := 1; f+i < 8; i++ {
+		target = Square(r*8 + f + i) // East
+		attacks.setBit(target)
+
+		if blockers&target.occupancyMask() != 0 {
+			break
+		}
+	}
+	for i := 1; r-i >= 0; i++ {
+		target = Square((r-i)*8 + f) // Sout
+		attacks.setBit(target)
+
+		if blockers&target.occupancyMask() != 0 {
+			break
+		}
+	}
+	for i := 1; f-i >= 0; i++ {
+		target = Square(r*8 + f - i) // West
+		attacks.setBit(target)
+
+		if blockers&target.occupancyMask() != 0 {
+			break
+		}
+	}
+	for i := 1; r+i < 8; i++ {
+		target = Square((r+i)*8 + f) // Nort
+		attacks.setBit(target)
+
+		if blockers&target.occupancyMask() != 0 {
+			break
+		}
+	}
+
+	return attacks
+}

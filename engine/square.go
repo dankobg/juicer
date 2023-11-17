@@ -228,3 +228,7 @@ func NewRank(rank string) (Rank, error) {
 func (r Rank) String() string {
 	return rankChars[r : r+1]
 }
+
+func (sq Square) occupancyMask() bitboard {
+	return 1 << sq
+}
