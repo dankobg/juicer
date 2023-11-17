@@ -36,10 +36,13 @@ func TestJuicer(t *testing.T) {
 		blackPawnsOccupancy:   bp,
 	}
 
-	fmt.Println(b.Draw(nil))
+	_ = b
+	// fmt.Println(b.Draw(nil))
 
-	// for i := 0; i < 64; i++ {
-	// 	sq := Square(i)
-	// 	fmt.Printf("%v - %v\n", sq, strconv.FormatUint(uint64(generateKnightAttacksMask(sq)), 16))
-	// }
+	var bbtest bitboard
+	bbtest.setBit(D2, D7, B4, G4)
+
+	fmt.Println(bbtest.draw(nil))
+	fmt.Println("LSB: ", bbtest.LS1B())
+	fmt.Println("MSB: ", bbtest.MS1B())
 }

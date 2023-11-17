@@ -20,7 +20,8 @@ import (
 // 		 a  b  c  d  e  f  g  h
 
 // bitboard is the board representation using 64-bit unsigned integer.
-// the mapping goes from a1 as LSB (bit 0) to h8 as MSB (bit 63)
+// it uses little endian rank-file (LERF) mapping which has A1 as LSB (bit 0) and H8 as MSB (bit 63)
+// it goes like this: (a1, b1 ... h1, a2, b2 ... h2, a8, b8 ... h8)
 type bitboard uint64
 
 // bitboardFull represents bitboard where every bit is set to 1
@@ -130,6 +131,16 @@ func (bb *bitboard) bitIsUnset(sq Square) bool {
 // populationCount returns the count of 1 bits in bitboard
 func (bb *bitboard) populationCount() uint8 {
 	return uint8(bits.OnesCount64(uint64(*bb)))
+}
+
+// MS1B gets the position of the first MSB that is 1
+func (bb *bitboard) MS1B() int {
+	return 63 - bits.LeadingZeros64(uint64(*bb))
+}
+
+// LS1B gets the position of the first LSB that is 1
+func (bb *bitboard) LS1B() int {
+	return bits.TrailingZeros64(uint64(*bb))
 }
 
 // setEmpty sets the bitboard to bitboardEmpty (all 0)
