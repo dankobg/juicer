@@ -133,14 +133,28 @@ func (bb *bitboard) populationCount() uint8 {
 	return uint8(bits.OnesCount64(uint64(*bb)))
 }
 
-// MS1B gets the position of the first MSB that is 1
+// MS1B gets the index of most significant 1 bit
 func (bb *bitboard) MS1B() int {
 	return 63 - bits.LeadingZeros64(uint64(*bb))
 }
 
-// LS1B gets the position of the first LSB that is 1
+// LS1B gets the index of least significant 1 bit
 func (bb *bitboard) LS1B() int {
 	return bits.TrailingZeros64(uint64(*bb))
+}
+
+// PopLS1B pops (clears) the LS1B and returns its index
+func (bb *bitboard) PopLS1B() int {
+	ls1b := bb.LS1B()
+	bb.clearBit(Square(ls1b))
+	return ls1b
+}
+
+// PopMS1B pops (clears) the MS1B and returns its index
+func (bb *bitboard) PopMS1B() int {
+	ms1b := bb.MS1B()
+	bb.clearBit(Square(ms1b))
+	return ms1b
 }
 
 // setEmpty sets the bitboard to bitboardEmpty (all 0)

@@ -45,4 +45,6 @@ func TestJuicer(t *testing.T) {
 	fmt.Println(bbtest.draw(nil))
 	fmt.Println("LSB: ", bbtest.LS1B())
 	fmt.Println("MSB: ", bbtest.MS1B())
+	fmt.Println("POPPED: ", bbtest.PopMS1B())
+	fmt.Println(bbtest.draw(nil))
 }
