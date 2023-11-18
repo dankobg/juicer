@@ -141,6 +141,7 @@ func (bb bitboard) LS1B() int {
 func (bb *bitboard) PopLS1B() int {
 	ls1b := bb.LS1B()
 	bb.clearBit(Square(ls1b))
+
 	return ls1b
 }
 
@@ -148,6 +149,7 @@ func (bb *bitboard) PopLS1B() int {
 func (bb *bitboard) PopMS1B() int {
 	ms1b := bb.MS1B()
 	bb.clearBit(Square(ms1b))
+
 	return ms1b
 }
 

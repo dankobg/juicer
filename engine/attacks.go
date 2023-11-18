@@ -6,16 +6,19 @@ var (
 	once                   sync.Once
 	initializedAttackMasks bool
 
-	whitePawnAttacksMask map[Square]bitboard
-	blackPawnAttacksMask map[Square]bitboard
-	kingAttacksMask      map[Square]bitboard
-	knightsAttacksMask   map[Square]bitboard
+	whitePawnAttacksMask = make(map[Square]bitboard, 64)
+	blackPawnAttacksMask = make(map[Square]bitboard, 64)
+	kingAttacksMask      = make(map[Square]bitboard, 64)
+	knightsAttacksMask   = make(map[Square]bitboard, 64)
 
-	bishopRelevantOccupancyBitsMask map[Square]bitboard
-	rookRelevantOccupancyBitsMask   map[Square]bitboard
+	bishopRelevantOccupancyBitsMask = make(map[Square]bitboard, 64)
+	rookRelevantOccupancyBitsMask   = make(map[Square]bitboard, 64)
 
-	bishopRelevantOccupancyBitsPopulationCount map[Square]uint8
-	rookRelevantOccupancyBitsPopulationCount   map[Square]uint8
+	bishopRelevantOccupancyBitsPopulationCount = make(map[Square]uint8, 64)
+	rookRelevantOccupancyBitsPopulationCount   = make(map[Square]uint8, 64)
+
+	bishopMagics = make(map[Square]bitboard, 64)
+	rookMagics   = make(map[Square]bitboard, 64)
 )
 
 func initAttacksMaskForNonSlidingPieces() {
@@ -141,12 +144,15 @@ func generateBishopRelevantOccupancyBitsMask(sq Square) bitboard {
 	for i := 1; f-i > 0 && r+i < 7; i++ {
 		attacks.setBit(Square((r+i)*8 + f - i)) // NoWe
 	}
+
 	for i := 1; f+i < 7 && r+i < 7; i++ {
 		attacks.setBit(Square((r+i)*8 + f + i)) // NoEa
 	}
+
 	for i := 1; f-i > 0 && r-i > 0; i++ {
 		attacks.setBit(Square((r-i)*8 + f - i)) // SoWe
 	}
+
 	for i := 1; f+i < 7 && r-i > 0; i++ {
 		attacks.setBit(Square((r-i)*8 + f + i)) // SoEa
 	}
@@ -164,12 +170,15 @@ func generateRookRelevantOccupancyBitsMask(sq Square) bitboard {
 	for i := 1; r+i < 7; i++ {
 		attacks.setBit(Square((r+i)*8 + f)) // North
 	}
+
 	for i := 1; f+i < 7; i++ {
 		attacks.setBit(Square(r*8 + f + i)) // East
 	}
+
 	for i := 1; r-i > 0; i++ {
 		attacks.setBit(Square((r-i)*8 + f)) // Sout
 	}
+
 	for i := 1; f-i > 0; i++ {
 		attacks.setBit(Square(r*8 + f - i)) // West
 	}
@@ -194,6 +203,7 @@ func generateBishopAttacksWithBlockers(sq Square, blockers bitboard) bitboard {
 			break
 		}
 	}
+
 	for i := 1; f+i < 8 && r+i < 8; i++ {
 		target = Square((r+i)*8 + f + i) // NoEa
 		attacks.setBit(target)
@@ -202,6 +212,7 @@ func generateBishopAttacksWithBlockers(sq Square, blockers bitboard) bitboard {
 			break
 		}
 	}
+
 	for i := 1; f-i >= 0 && r-i >= 0; i++ {
 		target = Square((r-i)*8 + f - i) // SoWe
 		attacks.setBit(target)
@@ -210,6 +221,7 @@ func generateBishopAttacksWithBlockers(sq Square, blockers bitboard) bitboard {
 			break
 		}
 	}
+
 	for i := 1; f+i < 8 && r-i >= 0; i++ {
 		target = Square((r-i)*8 + f + i) // SoEa
 		attacks.setBit(target)
@@ -239,6 +251,7 @@ func generateRookAttacksWithBlockers(sq Square, blockers bitboard) bitboard {
 			break
 		}
 	}
+
 	for i := 1; r-i >= 0; i++ {
 		target = Square((r-i)*8 + f) // Sout
 		attacks.setBit(target)
@@ -247,6 +260,7 @@ func generateRookAttacksWithBlockers(sq Square, blockers bitboard) bitboard {
 			break
 		}
 	}
+
 	for i := 1; f-i >= 0; i++ {
 		target = Square(r*8 + f - i) // West
 		attacks.setBit(target)
@@ -255,6 +269,7 @@ func generateRookAttacksWithBlockers(sq Square, blockers bitboard) bitboard {
 			break
 		}
 	}
+
 	for i := 1; r+i < 8; i++ {
 		target = Square((r+i)*8 + f) // Nort
 		attacks.setBit(target)
@@ -265,4 +280,20 @@ func generateRookAttacksWithBlockers(sq Square, blockers bitboard) bitboard {
 	}
 
 	return attacks
+}
+
+// Occupancy generates occupancy bitboards for a given relevant occupancy bitboard
+func Occupancy(index, count int, attack bitboard) bitboard {
+	var occupancy bitboard
+
+	for i := 0; i < count; i++ {
+		sq := Square(attack.LS1B())
+		attack.clearBit(sq)
+
+		if index&(1<<i) != 0 {
+			occupancy.setBit(sq)
+		}
+	}
+
+	return occupancy
 }
