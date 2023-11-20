@@ -47,5 +47,4 @@ func TestJuicer(t *testing.T) {
 
 	_ = b
 	// fmt.Println(b.Draw(nil))
-
 }
