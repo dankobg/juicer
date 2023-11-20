@@ -1,7 +1,6 @@
 package juicer
 
 import (
-	"fmt"
 	"testing"
 )
 
@@ -46,5 +45,7 @@ func TestJuicer(t *testing.T) {
 		blackPawnsOccupancy:   bp,
 	}
 
-	fmt.Println(b.Draw(nil))
+	_ = b
+	// fmt.Println(b.Draw(nil))
+
 }
