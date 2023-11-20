@@ -133,20 +133,20 @@ func initBishopAndRookAttacksMask(sq Square) {
 	attackBishop := bishopRelevantOccupancyBitsMask[sq]
 	attackRook := rookRelevantOccupancyBitsMask[sq]
 
-	occRook := attackRook.populationCount()
-	occBishop := attackBishop.populationCount()
-	occIdxR := 1 << occRook
-	occIdxB := 1 << occBishop
+	bishopPopcount := BishopRelevantOccupancyBitsPopulationCount[sq]
+	rookPopcount := RookRelevantOccupancyBitsPopulationCount[sq]
+	bishopPermutations := 1 << bishopPopcount
+	rookPermutations := 1 << rookPopcount
 
-	for i := 0; i < occIdxB; i++ {
-		occ := Occupancy(i, int(occBishop), attackBishop)
-		mIdx := (occ * bishopMagics[sq]) >> (64 - occBishop)
+	for i := 0; i < bishopPermutations; i++ {
+		occ := Occupancy(i, int(bishopPopcount), attackBishop)
+		mIdx := (occ * bishopMagics[sq]) >> (64 - bishopPopcount)
 		bishopAttacksMask[sq][mIdx] = generateBishopAttacksWithBlockers(sq, occ)
 	}
 
-	for i := 0; i < occIdxR; i++ {
-		occ := Occupancy(i, int(occRook), attackRook)
-		mIdx := (occ * rookMagics[sq]) >> (64 - occRook)
+	for i := 0; i < rookPermutations; i++ {
+		occ := Occupancy(i, int(rookPopcount), attackRook)
+		mIdx := (occ * rookMagics[sq]) >> (64 - rookPopcount)
 		rookAttacksMask[sq][mIdx] = generateRookAttacksWithBlockers(sq, occ)
 	}
 }
