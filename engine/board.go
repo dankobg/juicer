@@ -1,5 +1,10 @@
 package juicer
 
+import (
+	"fmt"
+	"strings"
+)
+
 // Board represents the chess board and internally uses 12 bitboards for all pieces
 type Board struct {
 	whiteKingOccupancy    bitboard
@@ -150,4 +155,41 @@ func (b Board) bitboardForPiece(piece Piece) bitboard {
 	}
 
 	return bitboardEmpty
+}
+
+// FenPositionPart returns the fen position part without the metadata (turn, enpSq, castle, half/full move clock)
+// e.g. fen: "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1" -> fenPositionPart: "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR"
+func (b Board) FenPositionPart() string {
+	var sb strings.Builder
+
+	for r := boardSize - 1; r >= 0; r-- {
+		emptySquares := 0
+
+		for f := 0; f < 8; f++ {
+			sq := Square(r*8 + f)
+
+			piece := b.pieceAt(sq)
+
+			if piece != PieceNone {
+				if emptySquares > 0 {
+					sb.WriteString(fmt.Sprint(emptySquares))
+					emptySquares = 0
+				}
+
+				sb.WriteString(piece.FENSymbol())
+			} else {
+				emptySquares++
+			}
+		}
+
+		if emptySquares > 0 {
+			sb.WriteString(fmt.Sprint(emptySquares))
+		}
+
+		if r > 0 {
+			sb.WriteString(fenPositionSeparator)
+		}
+	}
+
+	return sb.String()
 }

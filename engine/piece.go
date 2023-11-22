@@ -2,7 +2,6 @@ package juicer
 
 import (
 	"fmt"
-	"slices"
 )
 
 // PieceKind represents the kind/type of the piece
@@ -195,17 +194,10 @@ func NewPiece(kind PieceKind, color Color) Piece {
 
 // NewPieceFromFenSymbol returns the piece given the fen piece symbol
 func NewPieceFromFenSymbol(symbol string) (Piece, error) {
-	if idx := slices.IndexFunc(whitePieces[:], func(p Piece) bool {
-		return p.String() == symbol
-	}); idx != -1 {
-		return whitePieces[idx], nil
+	piece, exists := fenPieces[symbol]
+	if !exists {
+		return PieceNone, fmt.Errorf("invalid piece symbol")
 	}
 
-	if idx := slices.IndexFunc(blackPieces[:], func(p Piece) bool {
-		return p.String() == symbol
-	}); idx != -1 {
-		return blackPieces[idx], nil
-	}
-
-	return PieceNone, fmt.Errorf("invalid piece symbol")
+	return piece, nil
 }

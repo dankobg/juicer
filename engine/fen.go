@@ -36,12 +36,12 @@ type fenToken struct {
 // validateFenMetadataParts validates the the parts after the position string token which are
 // half and full move clocks, current turn color, en-passant square and castle rights
 func validateFenMetadataParts(fen string, opts validateFenOps) (fenToken, error) {
-	noopRet := fenToken{}
+	var emptyRet fenToken
 
 	// tokens length must be 6 after splitting the fen by a single space delimiter
 	tokens := strings.Split(fen, fenSeparator)
 	if len(tokens) != fenPartsLength {
-		return noopRet, fmt.Errorf("invalid FEN: length must be exactly 6 after splitting by a single space delimiter")
+		return emptyRet, fmt.Errorf("invalid FEN: length must be exactly 6 after splitting by a single space delimiter")
 	}
 
 	var (
@@ -55,19 +55,24 @@ func validateFenMetadataParts(fen string, opts validateFenOps) (fenToken, error)
 
 	// turn color must be either `w` | `b`
 	if !reTurnColor.MatchString(turnColorToken) {
-		return noopRet, fmt.Errorf("invalid FEN: invalid active turn color")
+		return emptyRet, fmt.Errorf("invalid FEN: invalid active turn color")
+	}
+
+	turn := White
+	if turnColorToken == Black.String() {
+		turn = Black
 	}
 
 	// full move clock must be a number >= 1
-	fullMoveClock, err := strconv.ParseUint(fullMoveClockToken, 10, 8)
+	fullMoveClock, err := strconv.ParseUint(fullMoveClockToken, 10, 16)
 	if err != nil || fullMoveClock == 0 {
-		return noopRet, fmt.Errorf("invalid FEN: full move clock must be a number >= 1")
+		return emptyRet, fmt.Errorf("invalid FEN: full move clock must be a number >= 1")
 	}
 
 	// half move clock must be a number >= 0
-	halfMoveClock, err := strconv.ParseUint(halfMoveClockToken, 10, 64)
+	halfMoveClock, err := strconv.ParseUint(halfMoveClockToken, 10, 8)
 	if err != nil {
-		return noopRet, fmt.Errorf("invalid FEN: half move clock must be a number >= 0")
+		return emptyRet, fmt.Errorf("invalid FEN: half move clock must be a number >= 0")
 	}
 
 	var n uint64
@@ -77,27 +82,33 @@ func validateFenMetadataParts(fen string, opts validateFenOps) (fenToken, error)
 
 	// half move clock must be within the limit
 	if !(halfMoveClock <= ((fullMoveClock-1)*2)+n) {
-		return noopRet, fmt.Errorf("invalid FEN: half move clock must be whithin the valid limit")
+		return emptyRet, fmt.Errorf("invalid FEN: half move clock must be whithin the valid limit")
 	}
 
 	// in case of an en-passant square, the half move clock must be equal to 0
 	if enpSquareToken != fenNoneSymbol && halfMoveClock != 0 {
-		return noopRet, fmt.Errorf("invalid FEN: half move clock must be 0 if en-passant square exists")
+		return emptyRet, fmt.Errorf("invalid FEN: half move clock must be 0 if en-passant square exists")
 	}
 
 	// en-passant square must be a valid square or `-` if empty
 	if !reEnpSquare.MatchString(enpSquareToken) {
-		return noopRet, fmt.Errorf("invalid FEN: en-passant target square is invalid")
+		return emptyRet, fmt.Errorf("invalid FEN: en-passant target square is invalid")
+	}
+
+	enpSquare := SquareNone
+	if enpSquareToken != fenNoneSymbol {
+		enpSquare = coordToSquare[enpSquareToken]
+	}
+
+	if enpSquare != SquareNone {
+		if (turn.IsWhite() && enpSquare.Rank() == Rank3) || (turn.IsBlack() && enpSquare.Rank() == Rank6) {
+			return emptyRet, fmt.Errorf("invalid FEN: en-passant target square coordinate is invalid")
+		}
 	}
 
 	// castle rights string must be of valid fen castle string format
 	if reCastleRights.MatchString(castleRightsToken) {
-		return noopRet, fmt.Errorf("invalid FEN: invalid castling rights string")
-	}
-
-	turn := White
-	if turnColorToken == Black.String() {
-		turn = Black
+		return emptyRet, fmt.Errorf("invalid FEN: invalid castling rights string")
 	}
 
 	var cr CastleRights
@@ -116,11 +127,6 @@ func validateFenMetadataParts(fen string, opts validateFenOps) (fenToken, error)
 		}
 	}
 
-	enpSquare := SquareNone
-	if enpSquareToken != fenNoneSymbol {
-		enpSquare = coordToSquare[enpSquareToken]
-	}
-
 	return fenToken{
 		halfMoveClock: uint8(halfMoveClock),
 		fullMoveClock: uint16(fullMoveClock),
@@ -133,62 +139,42 @@ func validateFenMetadataParts(fen string, opts validateFenOps) (fenToken, error)
 
 // validatePositionPart validates squares and pieces
 func validatePositionPart(ft fenToken, opts validateFenOps) (map[Square]Piece, error) {
-	// position string contains 8 ranks
 	ranks := strings.Split(ft.position, fenPositionSeparator)
 	if len(ranks) != boardSize {
 		return nil, fmt.Errorf("invalid FEN: it does not contain 8 ranks delimited by %q character", fenPositionSeparator)
 	}
 
+	piecesCount := make(map[Piece]uint8, 0)
 	squares := make(map[Square]Piece, boardTotalSquares)
-	var whiteKingsCount, blackKingsCount int
-	whiteKingSquare, blackKingSquare := SquareNone, SquareNone
 
 	for r := 0; r < len(ranks); r++ {
-		var sumSquaresInRank int64
+		var sumSquaresInRank uint8
 		var previousWasNumber bool
 
-		for f := 0; f < len(ranks[f]); f++ {
+		for f := 0; f < len(ranks[r]); f++ {
 			if reIsDigit.MatchString(string(ranks[r][f])) {
 				if previousWasNumber {
 					return nil, fmt.Errorf("invalid FEN: position string is invalid, it has consecutive numbers")
 				}
 
-				n, err := strconv.ParseInt(string(ranks[r][f]), 10, 64)
+				n, err := strconv.ParseUint(string(ranks[r][f]), 10, 8)
 				if err != nil {
 					return nil, fmt.Errorf("invalid FEN: failed to parse row number")
 				}
 
-				sumSquaresInRank += n
+				sumSquaresInRank += uint8(n)
 				previousWasNumber = true
 			} else {
-				symbol := string(ranks[r][f])
-				if !reFenPieceSymbol.MatchString(symbol) {
-					return nil, fmt.Errorf("invalid FEN: position string contains invalid piece symbol")
-				}
-
-				piece, err := NewPieceFromFenSymbol(symbol)
+				piece, err := NewPieceFromFenSymbol(string(ranks[r][f]))
 				if err != nil {
 					return nil, fmt.Errorf("invalid FEN: position string contains invalid piece symbol")
 				}
 
-				sqIdx := r*8 + f
-				sq := Square(sqIdx)
-				if sq.IndexInBoard() {
-					squares[sq] = piece
-				}
+				sq := Square((7-r)*8 + int(sumSquaresInRank))
+				squares[sq] = piece
 
-				if piece.IsKing() {
-					if piece.Color().IsWhite() {
-						whiteKingsCount++
-						whiteKingSquare = sq
-					}
-					if piece.Color().IsBlack() {
-						blackKingsCount++
-						blackKingSquare = sq
-					}
-				}
-
-				sumSquaresInRank += 1
+				piecesCount[piece]++
+				sumSquaresInRank++
 				previousWasNumber = false
 			}
 		}
@@ -198,33 +184,33 @@ func validatePositionPart(ft fenToken, opts validateFenOps) (map[Square]Piece, e
 		}
 	}
 
-	if ft.enpSquare != SquareNone {
-		if (ft.enpSquare.Rank() == Rank3 && ft.turnColor == White) || (ft.enpSquare.Rank() == Rank6 && ft.turnColor == Black) {
-			return nil, fmt.Errorf("invalid FEN: illegal en-passant target square")
+	if piecesCount[WhiteKing] == 0 {
+		return nil, fmt.Errorf("invalid FEN: position is missing white king")
+	}
+	if piecesCount[BlackKing] == 0 {
+		return nil, fmt.Errorf("invalid FEN: position is missing black king")
+	}
+	if c := piecesCount[WhiteKing]; c > 1 {
+		return nil, fmt.Errorf("invalid FEN: position is having too many white kings (%d)", c)
+	}
+	if c := piecesCount[BlackKing]; c > 1 {
+		return nil, fmt.Errorf("invalid FEN: position is having too many black kings (%d)", c)
+	}
+
+	if ft.turnColor.IsWhite() {
+		for _, char := range ranks[0] {
+			if string(char) == WhitePawn.String() {
+				return nil, fmt.Errorf("invalid FEN: white pawn is on 8th rank")
+			}
 		}
 	}
 
-	if ft.turnColor == White && whiteKingSquare != startingWhiteKingSquare {
-		return nil, fmt.Errorf("invalid FEN: white king is not on a starting position which conflicts with the castle string")
-		// @TODO: check if k/q side rook is not on starting square and if castle rights says you can castle on that k/q side
-	}
-
-	if ft.turnColor == Black && blackKingSquare != startingBlackKingSquare {
-		return nil, fmt.Errorf("invalid FEN: black king is not on a starting position which conflicts with the castle string")
-		// @TODO: check if k/q side rook is not on starting square and if castle rights says you can castle on that k/q side
-	}
-
-	if whiteKingsCount == 0 {
-		return nil, fmt.Errorf("invalid FEN: position is missing white king")
-	}
-	if blackKingsCount == 0 {
-		return nil, fmt.Errorf("invalid FEN: position is missing black king")
-	}
-	if whiteKingsCount > 1 {
-		return nil, fmt.Errorf("invalid FEN: position is having too many white kings (%d)", whiteKingsCount)
-	}
-	if blackKingsCount > 1 {
-		return nil, fmt.Errorf("invalid FEN: position is having too many black kings (%d)", blackKingsCount)
+	if ft.turnColor.IsBlack() {
+		for _, char := range ranks[7] {
+			if string(char) == BlackPawn.String() {
+				return nil, fmt.Errorf("invalid FEN: black pawn is on 1st rank")
+			}
+		}
 	}
 
 	return squares, nil
@@ -257,64 +243,4 @@ func validateFEN(fen string, opts validateFenOps) (*positionMeta, error) {
 	}
 
 	return &meta, nil
-}
-
-func loadPositionFromFEN(fen string) (*Position, error) {
-	meta, err := validateFEN(fen, validateFenOps{})
-	if err != nil {
-		return nil, err
-	}
-
-	board := Board{}
-
-	for sq, piece := range meta.squares {
-		if piece == WhiteKing {
-			board.whiteKingOccupancy.setBit(sq)
-		} else if piece == WhiteQueen {
-			board.whiteKingOccupancy.setBit(sq)
-		} else if piece == WhiteRook {
-			board.whiteRooksOccupancy.setBit(sq)
-		} else if piece == WhiteBishop {
-			board.whiteBishopsOccupancy.setBit(sq)
-		} else if piece == WhiteKnight {
-			board.whiteKnightsOccupancy.setBit(sq)
-		} else if piece == WhitePawn {
-			board.whitePawnsOccupancy.setBit(sq)
-		} else if piece == BlackKing {
-			board.blackKingOccupancy.setBit(sq)
-		} else if piece == BlackQueen {
-			board.blackQueensOccupancy.setBit(sq)
-		} else if piece == BlackRook {
-			board.blackRooksOccupancy.setBit(sq)
-		} else if piece == BlackBishop {
-			board.blackBishopsOccupancy.setBit(sq)
-		} else if piece == BlackKnight {
-			board.blackKnightsOccupancy.setBit(sq)
-		} else if piece == BlackPawn {
-			board.blackPawnsOccupancy.setBit(sq)
-		}
-	}
-
-	pos := Position{
-		board:         &board,
-		turn:          meta.turnColor,
-		enpSquare:     meta.enpSquare,
-		castleRights:  meta.castleRights,
-		halfMoveClock: meta.halfMoveClock,
-		fullMoveClock: meta.fullMoveClock,
-		// check:                false,
-		// checkmate:            false,
-		// stalemate:            false,
-		// draw:                 false,
-		// threeFold:            false,
-		// insufficientMaterial: false,
-		// terminated:           false,
-		// outcome:              "",
-		// comments:             []string{},
-		// headers:              []string{},
-		// capturedPieces:       []Piece{},
-		// alivePieces:          []Piece{},
-	}
-
-	return &pos, nil
 }

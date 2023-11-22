@@ -23,12 +23,86 @@ type Position struct {
 	alivePieces          []Piece
 }
 
-func (p *Position) FEN() string {
-	return FENStartingPosition
+func (p *Position) PrintBoard() string {
+	return p.board.Draw(nil)
 }
 
-func (p *Position) LoadFromFEN(fen string) {
-	fmt.Println("fen", fen)
+func (p *Position) LoadFromFEN(fen string) error {
+	meta, err := validateFEN(fen, validateFenOps{})
+	if err != nil {
+		return fmt.Errorf("failed to load position from fen: %w", err)
+	}
+
+	board := Board{}
+
+	for sq, piece := range meta.squares {
+		if piece == WhiteKing {
+			board.whiteKingOccupancy.setBit(sq)
+		} else if piece == WhiteQueen {
+			board.whiteKingOccupancy.setBit(sq)
+		} else if piece == WhiteRook {
+			board.whiteRooksOccupancy.setBit(sq)
+		} else if piece == WhiteBishop {
+			board.whiteBishopsOccupancy.setBit(sq)
+		} else if piece == WhiteKnight {
+			board.whiteKnightsOccupancy.setBit(sq)
+		} else if piece == WhitePawn {
+			board.whitePawnsOccupancy.setBit(sq)
+		} else if piece == BlackKing {
+			board.blackKingOccupancy.setBit(sq)
+		} else if piece == BlackQueen {
+			board.blackQueensOccupancy.setBit(sq)
+		} else if piece == BlackRook {
+			board.blackRooksOccupancy.setBit(sq)
+		} else if piece == BlackBishop {
+			board.blackBishopsOccupancy.setBit(sq)
+		} else if piece == BlackKnight {
+			board.blackKnightsOccupancy.setBit(sq)
+		} else if piece == BlackPawn {
+			board.blackPawnsOccupancy.setBit(sq)
+		}
+	}
+
+	p.board = &board
+	p.turn = meta.turnColor
+	p.enpSquare = meta.enpSquare
+	p.castleRights = meta.castleRights
+	p.halfMoveClock = meta.halfMoveClock
+	p.fullMoveClock = meta.fullMoveClock
+
+	// p.check = false
+	// p.checkmate = false
+	// p.stalemate = false
+	// p.draw = false
+	// p.threeFold = false
+	// p.insufficientMaterial = false
+	// p.terminated = false
+	// p.outcome = ""
+	// p.comments = []string{}
+	// p.headers = []string{}
+	// p.capturedPieces = []Piece{}
+	// p.alivePieces = []Piece{}
+
+	return nil
+}
+
+// FenMetaPart returns the fen meta part without the position and it includes the empty string ` ` at start
+// e.g. fen: "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1" -> fenMetaPart: " w KQkq - 0 1"
+func (p *Position) FenMetaPart() string {
+	castleToken := p.castleRights.ToFEN()
+
+	enpSqToken := fenNoneSymbol
+	if p.enpSquare != SquareNone {
+		enpSqToken = p.enpSquare.Coordinate()
+	}
+
+	fenMetaPart := fmt.Sprintf(" %s %s %s %d %d", p.turn, castleToken, enpSqToken, p.halfMoveClock, p.fullMoveClock)
+	return fenMetaPart
+}
+
+// Fen returns the full fen string
+func (p *Position) Fen() string {
+	return p.board.FenPositionPart() + p.FenMetaPart()
 }
 
 func (p *Position) whiteCanCastleKingSide() bool {

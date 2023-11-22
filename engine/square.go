@@ -59,7 +59,7 @@ func (sq Square) Rank() Rank {
 	return Rank(int(sq) / boardSize)
 }
 
-// Coordinate returns the square's coordinate (file, rank pair) eg: e4
+// Coordinate returns the square's coordinate (file, rank pair) e.g. `e4`
 func (sq Square) Coordinate() string {
 	return sq.File().String() + sq.Rank().String()
 }
