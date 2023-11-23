@@ -39,7 +39,7 @@ func (p *Position) LoadFromFEN(fen string) error {
 		if piece == WhiteKing {
 			board.whiteKingOccupancy.setBit(sq)
 		} else if piece == WhiteQueen {
-			board.whiteKingOccupancy.setBit(sq)
+			board.whiteQueensOccupancy.setBit(sq)
 		} else if piece == WhiteRook {
 			board.whiteRooksOccupancy.setBit(sq)
 		} else if piece == WhiteBishop {

@@ -7,7 +7,7 @@ import (
 )
 
 func main() {
-	fen := "2kr1r2/ppp2pp1/n4q2/3p3p/8/1PN2Q1P/P1P1PPP1/2KR1B1R w K - 0 1"
+	fen := "r1b1kb1r/2ppqppp/2n2n2/p3p3/B3P3/5N2/1PPPQPPP/RNB1K2R w KQkq - 0 1"
 	// fen := juicer.FENStartingPosition
 	p := juicer.Position{}
 
