@@ -11,52 +11,71 @@ var (
 	once                    sync.Once
 	initializedAttackTables bool
 
-	whitePawnAttacksMask [64]bitboard
-	blackPawnAttacksMask [64]bitboard
-	kingAttacksMask      [64]bitboard
-	knightsAttacksMask   [64]bitboard
+	pawnAttacksMask    = make(map[Color]map[Square]bitboard, 2)
+	kingAttacksMask    = make(map[Square]bitboard, 64)
+	knightsAttacksMask = make(map[Square]bitboard, 64)
 
-	bishopRelevantOccupancyBitsMask [64]bitboard
-	rookRelevantOccupancyBitsMask   [64]bitboard
+	bishopRelevantOccupancyBitsMask = make(map[Square]bitboard, 64)
+	rookRelevantOccupancyBitsMask   = make(map[Square]bitboard, 64)
 
-	BishopRelevantOccupancyBitsPopulationCount [64]uint8
-	RookRelevantOccupancyBitsPopulationCount   [64]uint8
+	BishopRelevantOccupancyBitsPopulationCount = make(map[Square]uint8, 64)
+	RookRelevantOccupancyBitsPopulationCount   = make(map[Square]uint8, 64)
 
-	bishopAttacksMask [64][512]bitboard
-	rookAttacksMask   [64][4096]bitboard
+	bishopAttacksMask = make(map[Square][512]bitboard, 64)
+	rookAttacksMask   = make(map[Square][4096]bitboard, 64)
 
-	bishopMagics = [64]bitboard{
-		0x20010400808600, 0xA008010410820000, 0x1004440082038008, 0x904040098084800, 0x600C052000520541, 0x4002010420402022, 0x11040104400480, 0x200104104202080,
-		0x1200210204080080, 0x6C18600204E20682, 0x2202004200E0, 0x100044404810840, 0x400220211108110, 0x20002011009000C, 0xA00200A2084210, 0x202008098011000,
-		0xC40002004019206, 0x116042040804C500, 0x419002080A80200A, 0x4000844000800, 0x404B080A04800, 0x4608080482012002, 0x44040500A0880841, 0x2002100909050D00,
-		0x8404004030A400, 0x90709004040080, 0x11444043040D0204, 0x8080100202020, 0x801001181004000, 0x4140822002021000, 0x102089092009006, 0x540A042100540203,
-		0x50100409482820, 0x8010880900041004, 0x230100500414, 0x200800050810, 0x8294064010040100, 0x9010100220044404, 0x154202022004008E, 0x9420220008401,
-		0x71080840110401, 0x2000A40420400201, 0x802619048001004, 0x209280A058000500, 0x2004044810100A00, 0xA0208D000804300, 0x638A80D000684, 0x1910401000080,
-		0x800420210400200, 0x4404410090100, 0x8020808400880000, 0x400081042120C21, 0x4009001022120001, 0x4902220802082000, 0x410841000820290, 0x820020401002440,
-		0x800420041084000, 0x10818C05A000, 0x301804213D000, 0x800040018208801, 0x1B80000004104405, 0x2500214084184884, 0x1000628801050400, 0x8040229E24002080,
+	bishopMagics = map[Square]bitboard{
+		A1: 0x20010400808600, B1: 0xA008010410820000, C1: 0x1004440082038008, D1: 0x904040098084800, E1: 0x600C052000520541, F1: 0x4002010420402022, G1: 0x11040104400480, H1: 0x200104104202080,
+		A2: 0x1200210204080080, B2: 0x6C18600204E20682, C2: 0x2202004200E0, D2: 0x100044404810840, E2: 0x400220211108110, F2: 0x20002011009000C, G2: 0xA00200A2084210, H2: 0x202008098011000,
+		A3: 0xC40002004019206, B3: 0x116042040804C500, C3: 0x419002080A80200A, D3: 0x4000844000800, E3: 0x404B080A04800, F3: 0x4608080482012002, G3: 0x44040500A0880841, H3: 0x2002100909050D00,
+		A4: 0x8404004030A400, B4: 0x90709004040080, C4: 0x11444043040D0204, D4: 0x8080100202020, E4: 0x801001181004000, F4: 0x4140822002021000, G4: 0x102089092009006, H4: 0x540A042100540203,
+		A5: 0x50100409482820, B5: 0x8010880900041004, C5: 0x230100500414, D5: 0x200800050810, E5: 0x8294064010040100, F5: 0x9010100220044404, G5: 0x154202022004008E, H5: 0x9420220008401,
+		A6: 0x71080840110401, B6: 0x2000A40420400201, C6: 0x802619048001004, D6: 0x209280A058000500, E6: 0x2004044810100A00, F6: 0xA0208D000804300, G6: 0x638A80D000684, H6: 0x1910401000080,
+		A7: 0x800420210400200, B7: 0x4404410090100, C7: 0x8020808400880000, D7: 0x400081042120C21, E7: 0x4009001022120001, F7: 0x4902220802082000, G7: 0x410841000820290, H7: 0x820020401002440,
+		A8: 0x800420041084000, B8: 0x10818C05A000, C8: 0x301804213D000, D8: 0x800040018208801, E8: 0x1B80000004104405, F8: 0x2500214084184884, G8: 0x1000628801050400, H8: 0x8040229E24002080,
 	}
 
-	rookMagics = [64]bitboard{
-		0x18010A040018000, 0x40002000401001, 0x290010A841E00100, 0x29001000050900A0, 0x4080030400800800, 0x1200040200100801, 0x2200208200040851, 0x220000820425004C,
-		0x104800740008020, 0x420400020005000, 0x844801000200480, 0x4004808008001000, 0x4009000410080100, 0x3000400020900, 0x4804000810020104, 0x74800641800900,
-		0x862818014400020, 0x40048020004480, 0x11A1010040200012, 0x20828010000800, 0x848808004020800, 0x4522808004000200, 0x10100020004, 0x400206000092411C,
-		0x818004444000A000, 0x180A000C0005002, 0xB104100200100, 0x24022202000A4010, 0x100040080080080, 0x2010200080490, 0x180390400221098, 0x410008200010044,
-		0x310400089800020, 0x8C0804009002902, 0x1004402001001504, 0x105021001000920, 0x40080800801, 0xA02001002000804, 0x108284204005041, 0x8004082002411,
-		0x2802281C0028001, 0x9044000910020, 0x200010008080, 0x40201001010008, 0x8000080004008080, 0x3010400420080110, 0x414210040008, 0x10348400460001,
-		0x80002000401040, 0x460200088400080, 0x8201822000100280, 0x600100008008280, 0xC0800800040080, 0x24040080020080, 0x22C11A0108100C00, 0x204008114104200,
-		0x8800800010290041, 0x401500228206, 0x8002A00011090041, 0x42008100101, 0x283000800100205, 0x2008810010402, 0x490102200880104, 0x800010920940042,
+	rookMagics = map[Square]bitboard{
+		A1: 0x18010A040018000, B1: 0x40002000401001, C1: 0x290010A841E00100, D1: 0x29001000050900A0, E1: 0x4080030400800800, F1: 0x1200040200100801, G1: 0x2200208200040851, H1: 0x220000820425004C,
+		A2: 0x104800740008020, B2: 0x420400020005000, C2: 0x844801000200480, D2: 0x4004808008001000, E2: 0x4009000410080100, F2: 0x3000400020900, G2: 0x4804000810020104, H2: 0x74800641800900,
+		A3: 0x862818014400020, B3: 0x40048020004480, C3: 0x11A1010040200012, D3: 0x20828010000800, E3: 0x848808004020800, F3: 0x4522808004000200, G3: 0x10100020004, H3: 0x400206000092411C,
+		A4: 0x818004444000A000, B4: 0x180A000C0005002, C4: 0xB104100200100, D4: 0x24022202000A4010, E4: 0x100040080080080, F4: 0x2010200080490, G4: 0x180390400221098, H4: 0x410008200010044,
+		A5: 0x310400089800020, B5: 0x8C0804009002902, C5: 0x1004402001001504, D5: 0x105021001000920, E5: 0x40080800801, F5: 0xA02001002000804, G5: 0x108284204005041, H5: 0x8004082002411,
+		A6: 0x2802281C0028001, B6: 0x9044000910020, C6: 0x200010008080, D6: 0x40201001010008, E6: 0x8000080004008080, F6: 0x3010400420080110, G6: 0x414210040008, H6: 0x10348400460001,
+		A7: 0x80002000401040, B7: 0x460200088400080, C7: 0x8201822000100280, D7: 0x600100008008280, E7: 0xC0800800040080, F7: 0x24040080020080, G7: 0x22C11A0108100C00, H7: 0x204008114104200,
+		A8: 0x8800800010290041, B8: 0x401500228206, C8: 0x8002A00011090041, D8: 0x42008100101, E8: 0x283000800100205, F8: 0x2008810010402, G8: 0x490102200880104, H8: 0x800010920940042,
 	}
+
+	F1G1 = bitboardUniverseFilesMask[FileF]&bitboardUniverseRanksMask[Rank1] | bitboardUniverseFilesMask[FileG]&bitboardUniverseRanksMask[Rank1]
+	C1D1 = bitboardUniverseFilesMask[FileC]&bitboardUniverseRanksMask[Rank1] | bitboardUniverseFilesMask[FileD]&bitboardUniverseRanksMask[Rank1]
+	B1D1 = bitboardUniverseFilesMask[FileB]&bitboardUniverseRanksMask[Rank1] | bitboardUniverseFilesMask[FileD]&bitboardUniverseRanksMask[Rank1]
+
+	F8G8 = bitboardUniverseFilesMask[FileF]&bitboardUniverseRanksMask[Rank8] | bitboardUniverseFilesMask[FileG]&bitboardUniverseRanksMask[Rank8]
+	C8D8 = bitboardUniverseFilesMask[FileC]&bitboardUniverseRanksMask[Rank8] | bitboardUniverseFilesMask[FileD]&bitboardUniverseRanksMask[Rank8]
+	B8D8 = bitboardUniverseFilesMask[FileB]&bitboardUniverseRanksMask[Rank8] | bitboardUniverseFilesMask[FileD]&bitboardUniverseRanksMask[Rank8]
 )
 
 func InitAllAttackMasksTables() {
 	if !initializedAttackTables {
 		once.Do(func() {
+			prepareVars()
 			initAttackMasksForNonSlidingPieces()
 			initBishopAndRookPopCounts()
 			initAttackMasksForSlidingPieces()
 
 			initializedAttackTables = true
 		})
+	}
+}
+
+func prepareVars() {
+	for _, color := range [2]Color{White, Black} {
+		pawnAttacksMask[color] = make(map[Square]bitboard, 64)
+
+		for sq := A1; sq <= H8; sq++ {
+			pawnAttacksMask[color][sq] = bitboardEmpty
+		}
+
 	}
 }
 
@@ -93,8 +112,8 @@ func initKnightPawnAttacksMask(sq Square) {
 }
 
 func initPawnAttacksMask(sq Square) {
-	whitePawnAttacksMask[sq] = generatePawnAttacksMask(sq, White)
-	blackPawnAttacksMask[sq] = generatePawnAttacksMask(sq, Black)
+	pawnAttacksMask[White][sq] = generatePawnAttacksMask(sq, White)
+	pawnAttacksMask[Black][sq] = generatePawnAttacksMask(sq, Black)
 }
 
 func initBishopRelevantOccupancyBitsMask(sq Square) {
@@ -123,15 +142,19 @@ func initBishopAndRookAttacksMask(sq Square) {
 	rookOccIdx := 1 << rookPopcount
 
 	for i := 0; i < bishopOccIdx; i++ {
-		occ := Occupancy(i, int(bishopPopcount), attackBishop)
+		occ := SetOccupancy(i, int(bishopPopcount), attackBishop)
 		mIdx := (occ * bishopMagics[sq]) >> (64 - bishopPopcount)
-		bishopAttacksMask[sq][mIdx] = generateBishopAttacksWithBlockers(sq, occ)
+		arr := bishopAttacksMask[sq]
+		arr[mIdx] = generateBishopAttacksWithBlockers(sq, occ)
+		bishopAttacksMask[sq] = arr
 	}
 
 	for i := 0; i < rookOccIdx; i++ {
-		occ := Occupancy(i, int(rookPopcount), attackRook)
+		occ := SetOccupancy(i, int(rookPopcount), attackRook)
 		mIdx := (occ * rookMagics[sq]) >> (64 - rookPopcount)
-		rookAttacksMask[sq][mIdx] = generateRookAttacksWithBlockers(sq, occ)
+		arr := rookAttacksMask[sq]
+		arr[mIdx] = generateRookAttacksWithBlockers(sq, occ)
+		rookAttacksMask[sq] = arr
 	}
 }
 
@@ -345,8 +368,8 @@ func generateRookAttacksWithBlockers(sq Square, blockers bitboard) bitboard {
 	return attacks
 }
 
-// Occupancy generate occupancy bitboards for a given relevant occupancy bitboard
-func Occupancy(index, count int, attack bitboard) bitboard {
+// SetOccupancy generate occupancy bitboards for a given relevant occupancy bitboard
+func SetOccupancy(index, count int, attack bitboard) bitboard {
 	occ := bitboardEmpty
 
 	for i := 0; i < count; i++ {
@@ -382,7 +405,7 @@ func findMagicNumbers(sq Square, isBishop bool) bitboard {
 	permutations := 1 << bitCount
 
 	for i := 0; i < permutations; i++ {
-		occ[i] = Occupancy(i, int(bitCount), attack)
+		occ[i] = SetOccupancy(i, int(bitCount), attack)
 
 		if isBishop {
 			attacks[sq] = generateBishopAttacksWithBlockers(sq, occ[sq])

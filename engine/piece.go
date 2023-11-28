@@ -59,15 +59,17 @@ const (
 var (
 	whitePieceSymbols = [6]string{"P", "R", "N", "B", "Q", "K"}
 	blackPieceSymbols = [6]string{"p", "r", "n", "b", "q", "k"}
-	allPieceSymbols   = append(whitePieceSymbols[:], blackPieceSymbols[:]...)
+	pieceSymbols      = append(whitePieceSymbols[:], blackPieceSymbols[:]...)
 
 	whitePieceUnicodeSymbols = [6]string{"♔", "♕", "♖", "♗", "♘", "♙"}
 	blackPieceUnicodeSymbols = [6]string{"♚", "♛", "♜", "♝", "♞", "♟"}
-	allPieceUnicodeSymbols   = [12]string{"♔", "♕", "♖", "♗", "♘", "♙", "♚", "♛", "♜", "♝", "♞", "♟"}
+	pieceUnicodeSymbols      = [12]string{"♔", "♕", "♖", "♗", "♘", "♙", "♚", "♛", "♜", "♝", "♞", "♟"}
+
+	pieceKinds = [6]PieceKind{King, Queen, Rook, Bishop, Knight, Pawn}
 
 	whitePieces = [6]Piece{WhiteKing, WhiteQueen, WhiteRook, WhiteBishop, WhiteKnight, WhitePawn}
 	blackPieces = [6]Piece{BlackKing, BlackQueen, BlackRook, BlackBishop, BlackKnight, BlackPawn}
-	allPieces   = [12]Piece{WhiteKing, WhiteQueen, WhiteRook, WhiteBishop, WhiteKnight, WhitePawn, BlackKing, BlackQueen, BlackRook, BlackBishop, BlackKnight, BlackPawn}
+	pieces      = [12]Piece{WhiteKing, WhiteQueen, WhiteRook, WhiteBishop, WhiteKnight, WhitePawn, BlackKing, BlackQueen, BlackRook, BlackBishop, BlackKnight, BlackPawn}
 
 	fenPieces = map[string]Piece{
 		"K": WhiteKing,
@@ -183,7 +185,7 @@ func (p Piece) IsPromotable() bool {
 
 // NewPiece returns the piece given the kind and the color
 func NewPiece(kind PieceKind, color Color) Piece {
-	for _, p := range allPieces {
+	for _, p := range pieces {
 		if p.Color() == color && p.Kind() == kind {
 			return p
 		}

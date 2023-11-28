@@ -7,27 +7,38 @@ import (
 
 // Board represents the chess board and internally uses 12 bitboards for all pieces
 type Board struct {
-	whiteKingOccupancy    bitboard
-	whiteQueensOccupancy  bitboard
-	whiteRooksOccupancy   bitboard
-	whiteBishopsOccupancy bitboard
-	whiteKnightsOccupancy bitboard
-	whitePawnsOccupancy   bitboard
+	occupancies map[Color]map[PieceKind]bitboard
+}
 
-	blackKingOccupancy    bitboard
-	blackQueensOccupancy  bitboard
-	blackRooksOccupancy   bitboard
-	blackBishopsOccupancy bitboard
-	blackKnightsOccupancy bitboard
-	blackPawnsOccupancy   bitboard
+func newEmptyBoard() Board {
+	b := Board{
+		occupancies: make(map[Color]map[PieceKind]bitboard, 2),
+	}
+
+	for _, clr := range [2]Color{White, Black} {
+		b.occupancies[clr] = make(map[PieceKind]bitboard, 6)
+
+		for _, pk := range pieceKinds {
+			b.occupancies[clr][pk] = bitboardEmpty
+		}
+	}
+
+	return b
 }
 
 func (b Board) whitePiecesOccupancy() bitboard {
-	return b.whiteKingOccupancy | b.whiteQueensOccupancy | b.whiteRooksOccupancy | b.whiteBishopsOccupancy | b.whiteKnightsOccupancy | b.whitePawnsOccupancy
+	return b.occupancies[White][King] | b.occupancies[White][Queen] | b.occupancies[White][Rook] | b.occupancies[White][Bishop] | b.occupancies[White][Knight] | b.occupancies[White][Pawn]
 }
 
 func (b Board) blackPiecesOccupancy() bitboard {
-	return b.blackKingOccupancy | b.blackQueensOccupancy | b.blackRooksOccupancy | b.blackBishopsOccupancy | b.blackKnightsOccupancy | b.blackPawnsOccupancy
+	return b.occupancies[Black][King] | b.occupancies[Black][Queen] | b.occupancies[Black][Rook] | b.occupancies[Black][Bishop] | b.occupancies[Black][Knight] | b.occupancies[Black][Pawn]
+}
+
+func (b Board) piecesOccupancyForSide(side Color) bitboard {
+	if side.IsWhite() {
+		return b.whitePiecesOccupancy()
+	}
+	return b.blackPiecesOccupancy()
 }
 
 func (b Board) allPiecesOccupancy() bitboard {
@@ -36,56 +47,41 @@ func (b Board) allPiecesOccupancy() bitboard {
 
 // rotate90clockwise rotates the board 90 deg clockwise
 func (b Board) rotate90clockwise() Board {
-	return Board{
-		whiteKingOccupancy:    b.whiteKingOccupancy.rotate90clockwise(),
-		whiteQueensOccupancy:  b.whiteQueensOccupancy.rotate90clockwise(),
-		whiteRooksOccupancy:   b.whiteRooksOccupancy.rotate90clockwise(),
-		whiteBishopsOccupancy: b.whiteBishopsOccupancy.rotate90clockwise(),
-		whiteKnightsOccupancy: b.whiteKnightsOccupancy.rotate90clockwise(),
-		whitePawnsOccupancy:   b.whitePawnsOccupancy.rotate90clockwise(),
-		blackKingOccupancy:    b.blackKingOccupancy.rotate90clockwise(),
-		blackQueensOccupancy:  b.blackQueensOccupancy.rotate90clockwise(),
-		blackRooksOccupancy:   b.blackRooksOccupancy.rotate90clockwise(),
-		blackBishopsOccupancy: b.blackBishopsOccupancy.rotate90clockwise(),
-		blackKnightsOccupancy: b.blackKnightsOccupancy.rotate90clockwise(),
-		blackPawnsOccupancy:   b.blackPawnsOccupancy.rotate90clockwise(),
+	board := newEmptyBoard()
+
+	for color, occupancies := range b.occupancies {
+		for pk, occ := range occupancies {
+			board.occupancies[color][pk] = occ.rotate90clockwise()
+		}
 	}
+
+	return board
 }
 
 // rotate90counterClockwise rotates the board 90 deg counter-clockwise
 func (b Board) rotate90counterClockwise() Board {
-	return Board{
-		whiteKingOccupancy:    b.whiteKingOccupancy.rotate90counterClockwise(),
-		whiteQueensOccupancy:  b.whiteQueensOccupancy.rotate90counterClockwise(),
-		whiteRooksOccupancy:   b.whiteRooksOccupancy.rotate90counterClockwise(),
-		whiteBishopsOccupancy: b.whiteBishopsOccupancy.rotate90counterClockwise(),
-		whiteKnightsOccupancy: b.whiteKnightsOccupancy.rotate90counterClockwise(),
-		whitePawnsOccupancy:   b.whitePawnsOccupancy.rotate90counterClockwise(),
-		blackKingOccupancy:    b.blackKingOccupancy.rotate90counterClockwise(),
-		blackQueensOccupancy:  b.blackQueensOccupancy.rotate90counterClockwise(),
-		blackRooksOccupancy:   b.blackRooksOccupancy.rotate90counterClockwise(),
-		blackBishopsOccupancy: b.blackBishopsOccupancy.rotate90counterClockwise(),
-		blackKnightsOccupancy: b.blackKnightsOccupancy.rotate90counterClockwise(),
-		blackPawnsOccupancy:   b.blackPawnsOccupancy.rotate90counterClockwise(),
+	board := newEmptyBoard()
+
+	for color, occupancies := range b.occupancies {
+		for pk, occ := range occupancies {
+			board.occupancies[color][pk] = occ.rotate90counterClockwise()
+		}
 	}
+
+	return board
 }
 
 // rotate180 rotates the board 180 deg
 func (b Board) rotate180() Board {
-	return Board{
-		whiteKingOccupancy:    b.whiteKingOccupancy.rotate180(),
-		whiteQueensOccupancy:  b.whiteQueensOccupancy.rotate180(),
-		whiteRooksOccupancy:   b.whiteRooksOccupancy.rotate180(),
-		whiteBishopsOccupancy: b.whiteBishopsOccupancy.rotate180(),
-		whiteKnightsOccupancy: b.whiteKnightsOccupancy.rotate180(),
-		whitePawnsOccupancy:   b.whitePawnsOccupancy.rotate180(),
-		blackKingOccupancy:    b.blackKingOccupancy.rotate180(),
-		blackQueensOccupancy:  b.blackQueensOccupancy.rotate180(),
-		blackRooksOccupancy:   b.blackRooksOccupancy.rotate180(),
-		blackBishopsOccupancy: b.blackBishopsOccupancy.rotate180(),
-		blackKnightsOccupancy: b.blackKnightsOccupancy.rotate180(),
-		blackPawnsOccupancy:   b.blackPawnsOccupancy.rotate180(),
+	board := newEmptyBoard()
+
+	for color, occupancies := range b.occupancies {
+		for pk, occ := range occupancies {
+			board.occupancies[color][pk] = occ.rotate180()
+		}
 	}
+
+	return board
 }
 
 // Draw prints the board in 8x8 grid in ascii style
@@ -97,61 +93,20 @@ func (b Board) Draw(options *DrawOptions) string {
 }
 
 func (b Board) pieceAt(sq Square) Piece {
-	if b.whiteKingOccupancy.bitIsSet(sq) {
-		return WhiteKing
-	} else if b.whiteQueensOccupancy.bitIsSet(sq) {
-		return WhiteQueen
-	} else if b.whiteRooksOccupancy.bitIsSet(sq) {
-		return WhiteRook
-	} else if b.whiteBishopsOccupancy.bitIsSet(sq) {
-		return WhiteBishop
-	} else if b.whiteKnightsOccupancy.bitIsSet(sq) {
-		return WhiteKnight
-	} else if b.whitePawnsOccupancy.bitIsSet(sq) {
-		return WhitePawn
-	} else if b.blackKingOccupancy.bitIsSet(sq) {
-		return BlackKing
-	} else if b.blackQueensOccupancy.bitIsSet(sq) {
-		return BlackQueen
-	} else if b.blackRooksOccupancy.bitIsSet(sq) {
-		return BlackRook
-	} else if b.blackBishopsOccupancy.bitIsSet(sq) {
-		return BlackBishop
-	} else if b.blackKnightsOccupancy.bitIsSet(sq) {
-		return BlackKnight
-	} else if b.blackPawnsOccupancy.bitIsSet(sq) {
-		return BlackPawn
-	} else {
-		return PieceNone
+	for color, occupancies := range b.occupancies {
+		for pk, occ := range occupancies {
+			if occ.bitIsSet(sq) {
+				return NewPiece(pk, color)
+			}
+		}
 	}
+
+	return PieceNone
 }
 
 func (b Board) bitboardForPiece(piece Piece) bitboard {
-	switch piece {
-	case WhiteKing:
-		return b.whiteKingOccupancy
-	case WhiteQueen:
-		return b.whiteQueensOccupancy
-	case WhiteRook:
-		return b.whiteRooksOccupancy
-	case WhiteBishop:
-		return b.whiteBishopsOccupancy
-	case WhiteKnight:
-		return b.whiteKnightsOccupancy
-	case WhitePawn:
-		return b.whitePawnsOccupancy
-	case BlackKing:
-		return b.blackKingOccupancy
-	case BlackQueen:
-		return b.blackQueensOccupancy
-	case BlackRook:
-		return b.blackRooksOccupancy
-	case BlackBishop:
-		return b.blackBishopsOccupancy
-	case BlackKnight:
-		return b.blackKnightsOccupancy
-	case BlackPawn:
-		return b.blackPawnsOccupancy
+	if bb, ok := b.occupancies[piece.Color()][piece.Kind()]; ok {
+		return bb
 	}
 
 	return bitboardEmpty
@@ -192,4 +147,73 @@ func (b Board) FenPositionPart() string {
 	}
 
 	return sb.String()
+}
+
+// isSquareAttackedByKing checks if the square is attacked by king by the provided side
+func (b Board) isSquareAttackedByKing(sq Square, side Color) bool {
+	return kingAttacksMask[sq]&b.occupancies[side][King] != 0
+}
+
+// isSquareAttackedByPawn checks if the square is attacked by pawn by the provided side
+func (b Board) isSquareAttackedByPawn(sq Square, side Color) bool {
+	return pawnAttacksMask[side.Opposite()][sq]&b.occupancies[side][Pawn] != 0
+}
+
+// isSquareAttackedByKnight checks if the square is attacked by knight by the provided side
+func (b Board) isSquareAttackedByKnight(sq Square, side Color) bool {
+	return knightsAttacksMask[sq]&b.occupancies[side][Knight] != 0
+}
+
+// isSquareAttackedByRook checks if the square is attacked by rook by the provided side
+func (b Board) isSquareAttackedByRook(sq Square, side Color, occupancy bitboard) bool {
+	return getRookAttacks(sq, occupancy)&b.occupancies[side][Rook] != 0
+}
+
+// isSquareAttackedByBishop checks if the square is attacked by bishop by the provided side
+func (b Board) isSquareAttackedByBishop(sq Square, side Color, occupancy bitboard) bool {
+	return getBishopAttacks(sq, occupancy)&b.occupancies[side][Bishop] != 0
+}
+
+// isSquareAttackedByQueen checks if the square is attacked by queen by the provided side
+func (b Board) isSquareAttackedByQueen(sq Square, side Color, occupancy bitboard) bool {
+	return getQueenAttacks(sq, occupancy)&b.occupancies[side][Queen] != 0
+}
+
+// isSquareAttackedByBishopOrQueen checks if the square is attacked by bishop or queen by the provided side
+func (b Board) isSquareAttackedByBishopOrQueen(sq Square, side Color, occupancy bitboard) bool {
+	return getBishopAttacks(sq, occupancy)&(b.occupancies[side][Bishop]|b.occupancies[side][Queen]) != 0
+}
+
+// isSquareAttackedByRookOrQueen checks if the square is attacked by rook or queen by the provided side
+func (b Board) isSquareAttackedByRookOrQueen(sq Square, side Color, occupancy bitboard) bool {
+	return getRookAttacks(sq, occupancy)&(b.occupancies[side][Rook]|b.occupancies[side][Queen]) != 0
+}
+
+// isSquareAttacked checks if the square is attacked by the provided side
+func (b Board) isSquareAttacked(sq Square, side Color, occupancy bitboard) bool {
+	return b.isSquareAttackedByPawn(sq, side) ||
+		b.isSquareAttackedByKing(sq, side) ||
+		b.isSquareAttackedByKnight(sq, side) ||
+		b.isSquareAttackedByBishopOrQueen(sq, side, occupancy) ||
+		b.isSquareAttackedByRookOrQueen(sq, side, occupancy)
+}
+
+// GetAttackedSquares gets the attacked squares by the provided side
+func (b Board) GetAttackedSquares(side Color, mask, occupancy bitboard) bitboard {
+	var attacked bitboard
+
+	for mask > 0 {
+		sq := Square(mask.PopLS1B())
+
+		if b.isSquareAttacked(sq, side, occupancy) {
+			attacked |= sq.occupancyMask()
+		}
+	}
+
+	return attacked
+}
+
+// IsChecked checks if the provided side is in check
+func (b Board) IsInCheck(side Color) bool {
+	return b.isSquareAttacked(Square(b.occupancies[side][King].LS1B()), side.Opposite(), b.allPiecesOccupancy())
 }
