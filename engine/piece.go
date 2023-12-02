@@ -123,6 +123,17 @@ func (p Piece) FENSymbol() string {
 	return "."
 }
 
+// UnicodeSymbol returns the unicode piece symbol
+func (p Piece) UnicodeSymbol() string {
+	for idx, piece := range pieces {
+		if piece == p {
+			return pieceUnicodeSymbols[idx]
+		}
+	}
+
+	return "."
+}
+
 // Color returns the color of the piece
 func (p Piece) Color() Color {
 	switch p {

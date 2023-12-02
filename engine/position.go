@@ -1,6 +1,9 @@
 package juicer
 
-import "fmt"
+import (
+	"fmt"
+	"slices"
+)
 
 type Position struct {
 	board                *Board
@@ -20,7 +23,11 @@ type Position struct {
 	comments             []string
 	headers              []string
 	capturedPieces       []Piece
-	alivePieces          []Piece
+	zobrist              *zobrist
+}
+
+func (p *Position) Hash() uint64 {
+	return p.zobrist.hash
 }
 
 func (p *Position) PrintBoard() string {
@@ -33,7 +40,7 @@ func (p *Position) LoadFromFEN(fen string) error {
 		return fmt.Errorf("failed to load position from fen: %w", err)
 	}
 
-	board := newEmptyBoard()
+	var board Board
 
 	for sq, piece := range meta.squares {
 		occ := board.occupancies[piece.Color()][piece.Kind()]
@@ -47,6 +54,8 @@ func (p *Position) LoadFromFEN(fen string) error {
 	p.castleRights = meta.castleRights
 	p.halfMoveClock = meta.halfMoveClock
 	p.fullMoveClock = meta.fullMoveClock
+
+	p.zobrist = newZobrist()
 
 	// p.check = false
 	// p.checkmate = false
@@ -134,6 +143,49 @@ func (p *Position) canCastle() bool {
 	if p.turn.IsBlack() {
 		return p.blackCanCastle()
 	}
+	return false
+}
+
+func (p *Position) SwitchTurn() {
+	p.turn = p.turn.Opposite()
+}
+
+// InsufficentMaterial checks if there is insufficient material on the board which leads to a draw
+// theoretically possible checkmates are not counted as a draw because they can be achieved with the help of self mate
+func (p *Position) IsInsufficientMaterial() bool {
+	if p.board.IsOnlyKingLeft() {
+		return true
+	}
+
+	if p.board.occupancies[White][Queen] != 0 ||
+		p.board.occupancies[Black][Queen] != 0 ||
+		p.board.occupancies[White][Rook] != 0 ||
+		p.board.occupancies[Black][Rook] != 0 ||
+		p.board.occupancies[White][Pawn] != 0 ||
+		p.board.occupancies[Black][Pawn] != 0 ||
+		p.board.allPiecesOccupancy().populationCount() > 4 {
+		return false
+	}
+
+	wn, wb := p.board.occupancies[White][Knight].populationCount(), p.board.occupancies[White][Bishop].populationCount()
+	bn, bb := p.board.occupancies[Black][Knight].populationCount(), p.board.occupancies[Black][Bishop].populationCount()
+	wm, bm := wn+wb, bn+bb
+
+	// k vs k+b/n (1 minor) is a draw
+	if wm+bm <= 1 {
+		return true
+	}
+
+	// k vs k+n+n, k vs k+b+b, k vs k+b+n is not a draw
+	if wm > 1 || bm > 1 {
+		return false
+	}
+
+	// same color bishops is a draw
+	if wb == 1 && bb == 1 {
+		return Square(p.board.occupancies[White][Bishop].LS1B()).Color() == Square(p.board.occupancies[Black][Bishop].LS1B()).Color()
+	}
+
 	return false
 }
 
@@ -429,4 +481,285 @@ func (p *Position) generateAllPseudoLegalMoves() []Move {
 	allPseudo = append(allPseudo, pawnMoves...)
 
 	return allPseudo
+}
+
+func (p *Position) Copy() *Position {
+	boardCopy := p.board.Copy()
+
+	positionCopy := Position{
+		board:                &boardCopy,
+		turn:                 p.turn,
+		enpSquare:            p.enpSquare,
+		castleRights:         p.castleRights,
+		halfMoveClock:        p.halfMoveClock,
+		fullMoveClock:        p.fullMoveClock,
+		check:                p.check,
+		checkmate:            p.checkmate,
+		stalemate:            p.stalemate,
+		draw:                 p.draw,
+		threeFold:            p.threeFold,
+		insufficientMaterial: p.insufficientMaterial,
+		terminated:           p.terminated,
+		outcome:              p.outcome,
+		comments:             slices.Clone(p.comments),
+		headers:              slices.Clone(p.headers),
+		capturedPieces:       slices.Clone(p.capturedPieces),
+	}
+
+	return &positionCopy
+}
+
+// UnmakeMove undos the previous move and is returned from MakeMove func
+func (p *Position) UnmakeMove() func() {
+	pcopy := p.Copy()
+
+	return func() {
+		p.board = pcopy.board
+		p.turn = pcopy.turn
+		p.enpSquare = pcopy.enpSquare
+		p.castleRights = pcopy.castleRights
+		p.halfMoveClock = pcopy.halfMoveClock
+		p.fullMoveClock = pcopy.fullMoveClock
+		p.check = pcopy.check
+		p.checkmate = pcopy.checkmate
+		p.stalemate = pcopy.stalemate
+		p.draw = pcopy.draw
+		p.threeFold = pcopy.threeFold
+		p.insufficientMaterial = pcopy.insufficientMaterial
+		p.terminated = pcopy.terminated
+		p.outcome = pcopy.outcome
+		p.comments = pcopy.comments
+		p.headers = pcopy.headers
+		p.capturedPieces = pcopy.capturedPieces
+	}
+}
+
+// MakeMove makes the move and returns UnmakeMove func that undos the move
+func (p *Position) MakeMove(m Move) func() {
+	unmakeMove := p.UnmakeMove()
+
+	if m.IsCapture() || m.Piece().IsPawn() {
+		p.halfMoveClock = 0
+	} else {
+		p.halfMoveClock++
+	}
+
+	if p.enpSquare != SquareNone {
+		p.ZobristEnpSquare(p.enpSquare)
+	}
+
+	if m.IsEnPassant() {
+		p.ZobristEnpCapture(m)
+		p.enpSquare = SquareNone
+
+		direction := 8
+		if p.turn.IsBlack() {
+			direction = -8
+		}
+		p.RemoveCapturedPiece(m.Dest() - Square(direction))
+	} else if m.IsCapture() {
+		p.enpSquare = SquareNone
+		p.RemoveCapturedPiece(m.Dest())
+		p.ZobristCapture(m)
+	} else if m.IsCastle() {
+		p.enpSquare = SquareNone
+		p.ZobristMove(m)
+		p.CompleteCastling(m)
+	} else if m.IsDoublePawn() {
+		p.enpSquare = (m.Dest() + m.Src()) / 2
+		p.ZobristMove(m)
+		p.ZobristEnpSquare(p.enpSquare)
+	} else {
+		p.enpSquare = SquareNone
+		p.ZobristMove(m)
+	}
+
+	piecOcc := p.board.bitboardForPiece(m.Piece())
+	piecOcc.clearBit(m.Src())
+	piecOcc.setBit(m.Dest())
+
+	p.Promote(m)
+
+	if p.turn.IsBlack() {
+		p.fullMoveClock++
+	}
+
+	p.updateCastlingRights(m)
+
+	p.ZobristTurn()
+	p.SwitchTurn()
+	p.check = p.board.IsInCheck(p.turn)
+
+	return unmakeMove
+}
+
+func (p *Position) RemoveCapturedPiece(sq Square) {
+	enemyOcc := p.board.piecesOccupancyForSide(p.turn.Opposite())
+	enemyOcc.clearBit(sq)
+
+	for _, occ := range p.board.occupancies[p.turn.Opposite()] {
+		occ &= enemyOcc
+	}
+}
+
+func (p *Position) CompleteCastling(m Move) {
+	occ := p.board.occupancies[p.turn][Rook]
+
+	var rookMove Move
+
+	if m.Src() == E1 && m.Dest() == G1 {
+		rookMove = NewMove(H1, F1, WhiteRook, PromotionNone, false, false, false, false)
+	}
+	if m.Src() == E1 && m.Dest() == C1 {
+		rookMove = NewMove(A1, D1, WhiteRook, PromotionNone, false, false, false, false)
+	}
+	if m.Src() == E8 && m.Dest() == G8 {
+		rookMove = NewMove(H8, F8, BlackRook, PromotionNone, false, false, false, false)
+	}
+	if m.Src() == E8 && m.Dest() == C8 {
+		rookMove = NewMove(A8, D8, BlackRook, PromotionNone, false, false, false, false)
+	}
+
+	p.ZobristMove(rookMove)
+	occ.setBit(rookMove.Dest())
+	occ.clearBit(rookMove.Src())
+}
+
+// Promote promotes (replaces) a pawn on the 8th/1st rank with the promoted piece
+func (p *Position) Promote(m Move) {
+	if m.Promotion() == PromotionNone {
+		return
+	}
+
+	pawnOcc := p.board.occupancies[p.turn][Pawn]
+	promoOcc := p.board.occupancies[p.turn][m.Promotion().PieceKind()]
+
+	pawnOcc.clearBit(m.Dest())
+	promoOcc.setBit(m.Dest())
+
+	p.ZobristPromotion(m)
+}
+
+func (p *Position) updateCastlingRights(m Move) {
+	if p.castleRights == 0 {
+		return
+	}
+
+	if m.Piece().IsKing() {
+		if p.turn.IsWhite() {
+			if p.whiteCanCastleKingSide() {
+				p.ZobristCastleRights(WhiteKingSideCastle)
+			}
+			if p.whiteCanCastleQueenSide() {
+				p.ZobristCastleRights(WhiteQueenSideCastle)
+			}
+
+			p.castleRights.preventWhiteFromCastling()
+		}
+		if p.turn.IsBlack() {
+			if p.blackCanCastleKingSide() {
+				p.ZobristCastleRights(BlackKingSideCastle)
+			}
+			if p.blackCanCastleQueenSide() {
+				p.ZobristCastleRights(BlackQueenSideCastle)
+			}
+
+			p.castleRights.preventBlackFromCastling()
+		}
+	}
+
+	if m.Piece().IsRook() {
+		if p.turn.IsWhite() {
+			if m.Src() == H1 {
+				p.castleRights.preventWhiteFromCastlingKingSide()
+				p.ZobristCastleRights(WhiteKingSideCastle)
+			}
+			if m.Src() == A1 {
+				p.castleRights.preventWhiteFromCastlingQueenSide()
+				p.ZobristCastleRights(WhiteQueenSideCastle)
+			}
+		}
+
+		if p.turn.IsBlack() {
+			if m.Src() == H8 {
+				p.castleRights.preventBlackFromCastlingKingSide()
+				p.ZobristCastleRights(BlackKingSideCastle)
+			}
+			if m.Src() == A8 {
+				p.castleRights.preventBlackFromCastlingQueenSide()
+				p.ZobristCastleRights(BlackQueenSideCastle)
+			}
+		}
+	}
+}
+
+func (p *Position) InitHash() {
+	for color, occupancies := range p.board.occupancies {
+		for pk, occ := range occupancies {
+			copy := occ
+
+			for occ > 0 {
+				sq := copy.PopLS1B()
+				p.zobrist.hash ^= p.zobrist.occupanciesKeys[color][pk][sq]
+
+			}
+		}
+	}
+
+	for ct, cr := range p.zobrist.castleKeys {
+		if p.castleRights&ct != 0 {
+			p.zobrist.hash ^= cr
+		}
+	}
+
+	if p.enpSquare != SquareNone {
+		p.zobrist.hash ^= p.zobrist.enpKeys[p.enpSquare]
+	}
+
+	if p.turn.IsBlack() {
+		p.zobrist.hash ^= p.zobrist.turnKey
+	}
+}
+
+func (p *Position) ZobristMove(m Move) {
+	p.zobrist.hash ^= p.zobrist.occupanciesKeys[p.turn][m.Piece().Kind()][m.Dest()]
+	p.zobrist.hash ^= p.zobrist.occupanciesKeys[p.turn][m.Piece().Kind()][m.Src()]
+}
+
+func (p *Position) ZobristCapture(m Move) {
+	capturedPiece := p.board.pieceAt(m.Dest())
+
+	p.zobrist.hash ^= p.zobrist.occupanciesKeys[p.turn.Opposite()][capturedPiece.Kind()][m.Dest()]
+	p.zobrist.hash ^= p.zobrist.occupanciesKeys[p.turn][m.Piece()][m.Src()]
+	p.zobrist.hash ^= p.zobrist.occupanciesKeys[p.turn][m.Piece()][m.Dest()]
+}
+
+func (p *Position) ZobristEnpCapture(m Move) {
+	direction := 8
+	if p.turn.IsBlack() {
+		direction = -8
+	}
+
+	p.zobrist.hash ^= p.zobrist.occupanciesKeys[p.turn.Opposite()][Pawn][m.Dest()-Square(direction)]
+	p.zobrist.hash ^= p.zobrist.occupanciesKeys[p.turn][Pawn][m.Src()]
+	p.zobrist.hash ^= p.zobrist.occupanciesKeys[p.turn][Pawn][m.Dest()]
+}
+
+func (p *Position) ZobristTurn() {
+	p.zobrist.hash ^= p.zobrist.turnKey
+}
+
+func (p *Position) ZobristCastleRights(cr CastleRights) {
+	p.zobrist.hash ^= p.zobrist.castleKeys[cr]
+}
+
+func (p *Position) ZobristPromotion(m Move) {
+	p.zobrist.hash ^= p.zobrist.occupanciesKeys[p.turn][m.Promotion().PieceKind()][m.Dest()]
+	p.zobrist.hash ^= p.zobrist.occupanciesKeys[p.turn][Pawn][m.Dest()]
+}
+
+func (p *Position) ZobristEnpSquare(sq Square) {
+	if sq != SquareNone {
+		p.zobrist.hash ^= p.zobrist.enpKeys[sq]
+	}
 }

@@ -7,23 +7,11 @@ import (
 
 // Board represents the chess board and internally uses 12 bitboards for all pieces
 type Board struct {
-	occupancies map[Color]map[PieceKind]bitboard
+	occupancies [2][6]bitboard
 }
 
-func newEmptyBoard() Board {
-	b := Board{
-		occupancies: make(map[Color]map[PieceKind]bitboard, 2),
-	}
-
-	for _, clr := range [2]Color{White, Black} {
-		b.occupancies[clr] = make(map[PieceKind]bitboard, 6)
-
-		for _, pk := range pieceKinds {
-			b.occupancies[clr][pk] = bitboardEmpty
-		}
-	}
-
-	return b
+func (b *Board) bitboardForPiece(piece Piece) *bitboard {
+	return &b.occupancies[piece.Color()][piece.Kind()]
 }
 
 func (b Board) whitePiecesOccupancy() bitboard {
@@ -47,7 +35,7 @@ func (b Board) allPiecesOccupancy() bitboard {
 
 // rotate90clockwise rotates the board 90 deg clockwise
 func (b Board) rotate90clockwise() Board {
-	board := newEmptyBoard()
+	var board Board
 
 	for color, occupancies := range b.occupancies {
 		for pk, occ := range occupancies {
@@ -60,7 +48,7 @@ func (b Board) rotate90clockwise() Board {
 
 // rotate90counterClockwise rotates the board 90 deg counter-clockwise
 func (b Board) rotate90counterClockwise() Board {
-	board := newEmptyBoard()
+	var board Board
 
 	for color, occupancies := range b.occupancies {
 		for pk, occ := range occupancies {
@@ -73,7 +61,7 @@ func (b Board) rotate90counterClockwise() Board {
 
 // rotate180 rotates the board 180 deg
 func (b Board) rotate180() Board {
-	board := newEmptyBoard()
+	var board Board
 
 	for color, occupancies := range b.occupancies {
 		for pk, occ := range occupancies {
@@ -93,23 +81,15 @@ func (b Board) Draw(options *DrawOptions) string {
 }
 
 func (b Board) pieceAt(sq Square) Piece {
-	for color, occupancies := range b.occupancies {
-		for pk, occ := range occupancies {
-			if occ.bitIsSet(sq) {
+	for _, color := range colors {
+		for _, pk := range pieceKinds {
+			if b.occupancies[color][pk].bitIsSet(sq) {
 				return NewPiece(pk, color)
 			}
 		}
 	}
 
 	return PieceNone
-}
-
-func (b Board) bitboardForPiece(piece Piece) bitboard {
-	if bb, ok := b.occupancies[piece.Color()][piece.Kind()]; ok {
-		return bb
-	}
-
-	return bitboardEmpty
 }
 
 // FenPositionPart returns the fen position part without the metadata (turn, enpSq, castle, half/full move clock)
@@ -216,4 +196,43 @@ func (b Board) GetAttackedSquares(side Color, mask, occupancy bitboard) bitboard
 // IsChecked checks if the provided side is in check
 func (b Board) IsInCheck(side Color) bool {
 	return b.isSquareAttacked(Square(b.occupancies[side][King].LS1B()), side.Opposite(), b.allPiecesOccupancy())
+}
+
+// IsOnlyKingAndPawnLeft checks if only king and pawns are left
+func (b Board) IsOnlyKingAndPawnLeft() bool {
+	return b.occupancies[White][Pawn]|b.occupancies[White][King]|b.occupancies[Black][Pawn]|b.occupancies[Black][King] == b.allPiecesOccupancy()
+}
+
+// IsOnlyKingLeft checks if only kings are left
+func (b Board) IsOnlyKingLeft() bool {
+	return b.occupancies[White][King]|b.occupancies[Black][King] == b.allPiecesOccupancy()
+}
+
+// AlivePieces gets the total alive pieces count
+func (b Board) AlivePieces() uint8 {
+	return b.allPiecesOccupancy().populationCount()
+}
+
+// AlivePiecesForSide gets the total alive pieces count for given side
+func (b Board) AlivePiecesForSide(turn Color) uint8 {
+	return b.piecesOccupancyForSide(turn).populationCount()
+}
+
+// WhiteAlivePieces gets the total alive pieces count for white side
+func (b Board) WhiteAlivePieces() uint8 {
+	return b.whitePiecesOccupancy().populationCount()
+}
+
+// BlackAlivePieces gets the total alive pieces count for black side
+func (b Board) BlackAlivePieces() uint8 {
+	return b.blackPiecesOccupancy().populationCount()
+}
+
+// Copy returns the copy of a board
+func (b Board) Copy() Board {
+	occupanciesCopy := b.occupancies
+
+	return Board{
+		occupancies: occupanciesCopy,
+	}
 }
