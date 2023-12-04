@@ -7,6 +7,7 @@ const (
 
 type Chess struct {
 	position *Position
+	history  []Position
 }
 
 func (c *Chess) MakeMove(m Move) {

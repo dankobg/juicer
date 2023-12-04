@@ -7,6 +7,8 @@ import (
 )
 
 func main() {
+	juicer.InitAllAttackMasksTables()
+
 	p := juicer.Position{}
 
 	fen := juicer.FENStartingPosition

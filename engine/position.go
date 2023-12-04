@@ -12,6 +12,7 @@ type Position struct {
 	castleRights         CastleRights
 	halfMoveClock        uint8
 	fullMoveClock        uint16
+	ply                  uint16
 	check                bool
 	checkmate            bool
 	stalemate            bool
@@ -23,11 +24,7 @@ type Position struct {
 	comments             []string
 	headers              []string
 	capturedPieces       []Piece
-	zobrist              *zobrist
-}
-
-func (p *Position) Hash() uint64 {
-	return p.zobrist.hash
+	hash                 uint64
 }
 
 func (p *Position) PrintBoard() string {
@@ -55,7 +52,16 @@ func (p *Position) LoadFromFEN(fen string) error {
 	p.halfMoveClock = meta.halfMoveClock
 	p.fullMoveClock = meta.fullMoveClock
 
-	p.zobrist = newZobrist()
+	// ply refers to a single move by one player - a full move consists of two ply e.g. 1.e4 e5
+	// half move clock gets reset after each irrevirsible move played (pawn push, promotion, castle)
+	// ply is basically total of half moves and doesnt get reset
+	p.ply = p.fullMoveClock * 2
+	if p.turn.IsBlack() {
+		p.ply--
+	}
+
+	p.hash = defaultZobrist.hash
+	p.InitHash()
 
 	// p.check = false
 	// p.checkmate = false
@@ -466,6 +472,22 @@ func (p *Position) generatePseudoLegalPawnMoves() []Move {
 	return moves
 }
 
+func (p *Position) generateAllLegalMoves(pseudoMoves []Move) []Move {
+	legalMoves := make([]Move, 0)
+
+	for _, m := range pseudoMoves {
+		unmakeMove := p.MakeMove(m)
+
+		if !p.board.IsInCheck(p.turn.Opposite()) {
+			legalMoves = append(legalMoves, m)
+		}
+
+		unmakeMove()
+	}
+
+	return legalMoves
+}
+
 func (p *Position) generateAllPseudoLegalMoves() []Move {
 	kingMoves := p.generatePseudoLegalKingMoves()
 	queenMoves := p.generatePseudoLegalQueenMoves()
@@ -531,6 +553,7 @@ func (p *Position) UnmakeMove() func() {
 		p.comments = pcopy.comments
 		p.headers = pcopy.headers
 		p.capturedPieces = pcopy.capturedPieces
+		p.ply = pcopy.ply
 	}
 }
 
@@ -543,6 +566,8 @@ func (p *Position) MakeMove(m Move) func() {
 	} else {
 		p.halfMoveClock++
 	}
+
+	p.ply++
 
 	if p.enpSquare != SquareNone {
 		p.ZobristEnpSquare(p.enpSquare)
@@ -700,38 +725,37 @@ func (p *Position) InitHash() {
 
 			for occ > 0 {
 				sq := copy.PopLS1B()
-				p.zobrist.hash ^= p.zobrist.occupanciesKeys[color][pk][sq]
-
+				p.hash ^= defaultZobrist.occupanciesKeys[color][pk][sq]
 			}
 		}
 	}
 
-	for ct, cr := range p.zobrist.castleKeys {
+	for ct, cr := range defaultZobrist.castleKeys {
 		if p.castleRights&ct != 0 {
-			p.zobrist.hash ^= cr
+			p.hash ^= cr
 		}
 	}
 
 	if p.enpSquare != SquareNone {
-		p.zobrist.hash ^= p.zobrist.enpKeys[p.enpSquare]
+		p.hash ^= defaultZobrist.enpKeys[p.enpSquare]
 	}
 
 	if p.turn.IsBlack() {
-		p.zobrist.hash ^= p.zobrist.turnKey
+		p.hash ^= defaultZobrist.turnKey
 	}
 }
 
 func (p *Position) ZobristMove(m Move) {
-	p.zobrist.hash ^= p.zobrist.occupanciesKeys[p.turn][m.Piece().Kind()][m.Dest()]
-	p.zobrist.hash ^= p.zobrist.occupanciesKeys[p.turn][m.Piece().Kind()][m.Src()]
+	p.hash ^= defaultZobrist.occupanciesKeys[p.turn][m.Piece().Kind()][m.Dest()]
+	p.hash ^= defaultZobrist.occupanciesKeys[p.turn][m.Piece().Kind()][m.Src()]
 }
 
 func (p *Position) ZobristCapture(m Move) {
 	capturedPiece := p.board.pieceAt(m.Dest())
 
-	p.zobrist.hash ^= p.zobrist.occupanciesKeys[p.turn.Opposite()][capturedPiece.Kind()][m.Dest()]
-	p.zobrist.hash ^= p.zobrist.occupanciesKeys[p.turn][m.Piece()][m.Src()]
-	p.zobrist.hash ^= p.zobrist.occupanciesKeys[p.turn][m.Piece()][m.Dest()]
+	p.hash ^= defaultZobrist.occupanciesKeys[p.turn.Opposite()][capturedPiece.Kind()][m.Dest()]
+	p.hash ^= defaultZobrist.occupanciesKeys[p.turn][m.Piece()][m.Src()]
+	p.hash ^= defaultZobrist.occupanciesKeys[p.turn][m.Piece()][m.Dest()]
 }
 
 func (p *Position) ZobristEnpCapture(m Move) {
@@ -740,26 +764,37 @@ func (p *Position) ZobristEnpCapture(m Move) {
 		direction = -8
 	}
 
-	p.zobrist.hash ^= p.zobrist.occupanciesKeys[p.turn.Opposite()][Pawn][m.Dest()-Square(direction)]
-	p.zobrist.hash ^= p.zobrist.occupanciesKeys[p.turn][Pawn][m.Src()]
-	p.zobrist.hash ^= p.zobrist.occupanciesKeys[p.turn][Pawn][m.Dest()]
+	p.hash ^= defaultZobrist.occupanciesKeys[p.turn.Opposite()][Pawn][m.Dest()-Square(direction)]
+	p.hash ^= defaultZobrist.occupanciesKeys[p.turn][Pawn][m.Src()]
+	p.hash ^= defaultZobrist.occupanciesKeys[p.turn][Pawn][m.Dest()]
 }
 
 func (p *Position) ZobristTurn() {
-	p.zobrist.hash ^= p.zobrist.turnKey
+	p.hash ^= defaultZobrist.turnKey
 }
 
 func (p *Position) ZobristCastleRights(cr CastleRights) {
-	p.zobrist.hash ^= p.zobrist.castleKeys[cr]
+	p.hash ^= defaultZobrist.castleKeys[cr]
 }
 
 func (p *Position) ZobristPromotion(m Move) {
-	p.zobrist.hash ^= p.zobrist.occupanciesKeys[p.turn][m.Promotion().PieceKind()][m.Dest()]
-	p.zobrist.hash ^= p.zobrist.occupanciesKeys[p.turn][Pawn][m.Dest()]
+	p.hash ^= defaultZobrist.occupanciesKeys[p.turn][m.Promotion().PieceKind()][m.Dest()]
+	p.hash ^= defaultZobrist.occupanciesKeys[p.turn][Pawn][m.Dest()]
 }
 
 func (p *Position) ZobristEnpSquare(sq Square) {
 	if sq != SquareNone {
-		p.zobrist.hash ^= p.zobrist.enpKeys[sq]
+		p.hash ^= defaultZobrist.enpKeys[sq]
 	}
+}
+
+func (p *Position) IsThreeFoldRepetition() bool {
+	// historyDepth := max(0, e.Ply-2-int(e.Board.HalfMoveCounter))
+	// for ply := e.Ply - 3; ply >= historyDepth; ply -= 2 {
+	// 	if e.Board.Hash == e.Plys[ply] {
+	// 		return true
+	// 	}
+	// }
+
+	return false
 }
