@@ -10,6 +10,11 @@ type Chess struct {
 	history  []Position
 }
 
+func InitPrecalculatedTables() {
+	initAllAttackMasksTables()
+	initZobrist()
+}
+
 func (c *Chess) MakeMove(m Move) {
 
 }

@@ -7,7 +7,7 @@ import (
 )
 
 func main() {
-	juicer.InitAllAttackMasksTables()
+	juicer.InitPrecalculatedTables()
 
 	p := juicer.Position{}
 

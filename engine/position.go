@@ -60,7 +60,6 @@ func (p *Position) LoadFromFEN(fen string) error {
 		p.ply--
 	}
 
-	p.hash = defaultZobrist.hash
 	p.InitHash()
 
 	// p.check = false
@@ -719,11 +718,13 @@ func (p *Position) updateCastlingRights(m Move) {
 }
 
 func (p *Position) InitHash() {
+	p.hash = defaultZobrist.seed
+
 	for color, occupancies := range p.board.occupancies {
 		for pk, occ := range occupancies {
 			copy := occ
 
-			for occ > 0 {
+			for copy > 0 {
 				sq := copy.PopLS1B()
 				p.hash ^= defaultZobrist.occupanciesKeys[color][pk][sq]
 			}

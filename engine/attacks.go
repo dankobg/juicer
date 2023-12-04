@@ -71,7 +71,7 @@ var (
 	B8D8 = bitboardUniverseFilesMask[FileB]&bitboardUniverseRanksMask[Rank8] | bitboardUniverseFilesMask[FileD]&bitboardUniverseRanksMask[Rank8]
 )
 
-func InitAllAttackMasksTables() {
+func initAllAttackMasksTables() {
 	if !initializedAttackTables {
 		once.Do(func() {
 			initAttackMasksForNonSlidingPieces()

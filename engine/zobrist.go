@@ -12,7 +12,7 @@ var (
 )
 
 type zobrist struct {
-	hash            uint64
+	seed            uint64
 	occupanciesKeys [2][6][64]uint64
 	castleKeys      map[CastleRights]uint64
 	turnKey         uint64
@@ -23,7 +23,7 @@ func initZobrist() {
 	if !zobristInitialized {
 		onceZobrist.Do(func() {
 			defaultZobrist = zobrist{
-				hash: rand.Uint64(),
+				seed: rand.Uint64(),
 			}
 
 			for sq := A1; sq <= H8; sq++ {
