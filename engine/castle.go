@@ -5,9 +5,10 @@ import (
 	"strings"
 )
 
-type CastleRights int
+type CastleRights uint8
 
 const (
+	CastleRightsNone    CastleRights = 0
 	WhiteKingSideCastle CastleRights = 1 << iota
 	WhiteQueenSideCastle
 	BlackKingSideCastle
@@ -22,7 +23,7 @@ const (
 )
 
 func (cr CastleRights) ToFEN() string {
-	if cr == 0 {
+	if cr == CastleRightsNone {
 		return fenNoneSymbol
 	}
 
@@ -96,25 +97,29 @@ func (cr *CastleRights) preventBlackFromCastlingQueenSide() {
 	*cr &= ^BlackQueenSideCastle
 }
 
+func (cr *CastleRights) clear() {
+	*cr = CastleRightsNone
+}
+
 func NewCastleRightsFromFen(fenCastle string) (CastleRights, error) {
 	if reCastleRights.MatchString(fenCastle) {
 		var cr CastleRights
 
 		if fenCastle != fenNoneSymbol {
-			if strings.Contains(fenCastle, "K") {
+			if strings.Contains(fenCastle, wkCastleFen) {
 				cr |= WhiteKingSideCastle
 			}
-			if strings.Contains(fenCastle, "Q") {
+			if strings.Contains(fenCastle, wqCastleFen) {
 				cr |= WhiteQueenSideCastle
 			}
-			if strings.Contains(fenCastle, "k") {
+			if strings.Contains(fenCastle, bkCastleFen) {
 				cr |= BlackKingSideCastle
 			}
-			if strings.Contains(fenCastle, "q") {
+			if strings.Contains(fenCastle, bqCastleFen) {
 				cr |= BlackQueenSideCastle
 			}
 		}
 	}
 
-	return CastleRights(0), fmt.Errorf("invalid castle rights string, doesn't match the pattern")
+	return CastleRightsNone, fmt.Errorf("invalid castle rights string, doesn't match the pattern")
 }

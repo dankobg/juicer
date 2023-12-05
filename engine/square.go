@@ -15,9 +15,9 @@ const (
 )
 
 var (
-	validFileRe  = regexp.MustCompile("^[a-h]$")
-	validRankRe  = regexp.MustCompile("^[1-8]$")
-	validCoordRe = regexp.MustCompile("^[a-h][1-8]$")
+	reValidFile  = regexp.MustCompile("^[a-h]$")
+	reValidRank  = regexp.MustCompile("^[1-8]$")
+	reValidCoord = regexp.MustCompile("^[a-h][1-8]$")
 
 	coords = []string{
 		"a1", "b1", "c1", "d1", "e1", "f1", "g1", "h1",
@@ -82,7 +82,7 @@ func NewSquareFromCoord(coord string) (Square, error) {
 	fileChar := string(coord[0])
 	rankChar := string(coord[1])
 
-	if !validCoordRe.MatchString(coord) {
+	if !reValidCoord.MatchString(coord) {
 		return SquareNone, fmt.Errorf("invalid coordinate: %s", coord)
 	}
 
@@ -186,7 +186,7 @@ func NewFile(file string) (File, error) {
 		return File(-1), fmt.Errorf("invaid file character length: %s", file)
 	}
 
-	if !validFileRe.MatchString(file) {
+	if !reValidFile.MatchString(file) {
 		return File(-1), fmt.Errorf("invalid file character: %s", file)
 	}
 
@@ -217,7 +217,7 @@ func NewRank(rank string) (Rank, error) {
 		return Rank(-1), fmt.Errorf("invaid rank character length: %s", rank)
 	}
 
-	if !validRankRe.MatchString(rank) {
+	if !reValidRank.MatchString(rank) {
 		return Rank(-1), fmt.Errorf("invalid rank character: %s", rank)
 	}
 
