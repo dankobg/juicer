@@ -560,13 +560,13 @@ func (p *Position) UnmakeMove() func() {
 func (p *Position) MakeMove(m Move) func() {
 	unmakeMove := p.UnmakeMove()
 
+	p.ply++
+
 	if m.IsCapture() || m.Piece().IsPawn() {
 		p.halfMoveClock = 0
 	} else {
 		p.halfMoveClock++
 	}
-
-	p.ply++
 
 	if p.enpSquare != SquareNone {
 		p.ZobristEnpSquare(p.enpSquare)
