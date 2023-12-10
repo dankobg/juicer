@@ -2,6 +2,64 @@ package juicer
 
 import "fmt"
 
+type MoveType uint8
+
+const (
+	MoveTypeQuiet MoveType = iota
+	MoveTypeCapture
+	MoveTypeDoublePawn
+	MoveTypeEnpCapture
+	MoveTypePromotion
+	MoveTypePromotionCapture
+	MoveTypeCastle
+)
+
+func newQuietMove(src, dest Square, piece Piece) Move {
+	return newMove(src, dest, piece, PromotionNone, false, false, false, false)
+}
+
+func newCaptureMove(src, dest Square, piece Piece) Move {
+	return newMove(src, dest, piece, PromotionNone, true, false, false, false)
+}
+
+func newDoublePawnMove(src, dest Square, piece Piece) Move {
+	return newMove(src, dest, piece, PromotionNone, false, true, false, false)
+}
+
+func newEnpCaptureMove(src, dest Square, piece Piece) Move {
+	return newMove(src, dest, piece, PromotionNone, true, false, true, false)
+}
+
+func newPromotionMove(src, dest Square, piece Piece, promo Promotion) Move {
+	return newMove(src, dest, piece, promo, false, false, false, false)
+}
+
+func newPromotionCaptureMove(src, dest Square, piece Piece, promo Promotion) Move {
+	return newMove(src, dest, piece, promo, true, false, false, false)
+}
+
+func newCastleMove(src, dest Square, piece Piece) Move {
+	return newMove(src, dest, piece, PromotionNone, false, false, false, true)
+}
+
+func newPossiblePromotionMoves(src, dest Square, piece Piece) []Move {
+	return []Move{
+		newMove(src, dest, piece, PromotionQueen, false, false, false, false),
+		newMove(src, dest, piece, PromotionRook, false, false, false, false),
+		newMove(src, dest, piece, PromotionBishop, false, false, false, false),
+		newMove(src, dest, piece, PromotionKnight, false, false, false, false),
+	}
+}
+
+func newPossiblePromotionCaptureMoves(src, dest Square, piece Piece) []Move {
+	return []Move{
+		newMove(src, dest, piece, PromotionQueen, true, false, false, false),
+		newMove(src, dest, piece, PromotionRook, true, false, false, false),
+		newMove(src, dest, piece, PromotionBishop, true, false, false, false),
+		newMove(src, dest, piece, PromotionKnight, true, false, false, false),
+	}
+}
+
 type Promotion uint8
 
 const (
@@ -49,7 +107,7 @@ const (
 // Move is mapped from: [0..5] src, [6..11] dest, [12..15] piece, [16..18] promotion, 19 capture, 20 doublePawn, 21 en-passant, 22 castle
 type Move int32
 
-func NewMove(src, dest Square, piece Piece, promotion Promotion, capture, doublePawn, enPassant, castle bool) Move {
+func newMove(src, dest Square, piece Piece, promotion Promotion, capture, doublePawn, enPassant, castle bool) Move {
 	var m Move
 
 	m |= Move(src) << srcShift

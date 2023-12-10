@@ -99,6 +99,14 @@ func (sq Square) Color() Color {
 	return White
 }
 
+func (sq Square) IsLight() bool {
+	return sq.Color().IsWhite()
+}
+
+func (sq Square) IsDark() bool {
+	return sq.Color().IsBlack()
+}
+
 const (
 	SquareNone Square = iota - 1
 	A1

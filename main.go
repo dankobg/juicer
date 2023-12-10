@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"os"
 
 	juicer "github.com/dankobg/juicer/engine"
 )
@@ -15,7 +16,8 @@ func main() {
 
 	if err := p.LoadFromFEN(fen); err != nil {
 		fmt.Println(err)
-	} else {
-		fmt.Printf("%+v\n", p.PrintBoard())
+		os.Exit(1)
 	}
+
+	fmt.Printf("%+v\n", p.PrintBoard())
 }

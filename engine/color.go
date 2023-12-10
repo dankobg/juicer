@@ -14,6 +14,8 @@ const (
 	Black
 )
 
+const Both Color = 2
+
 var (
 	colors     = [2]Color{White, Black}
 	reFenColor = regexp.MustCompile("^(w|b)$")

@@ -24,58 +24,74 @@ import (
 // it goes like this: (a1, b1 ... h1, a2, b2 ... h2, a8, b8 ... h8)
 type bitboard uint64
 
-// bitboardFull represents bitboard where every bit is set to 1
-const bitboardFull bitboard = 0xffffffffffffffff
+const (
+	bitboardFull         bitboard = 0xFFFFFFFFFFFFFFFF
+	bitboardEmpty        bitboard = 0x0
+	bitboardLightSquares bitboard = 0x55AA55AA55AA55AA
+	bitboardDarkSquares  bitboard = 0xAA55AA55AA55AA55
+	bitboardCorners      bitboard = 0x8100000000000081
+	bitboardBackranks    bitboard = 0xFF000000000000FF
+	bitboardCenter       bitboard = 0x0000001818000000
+)
 
-// bitboardEmpty represents bitboard where every bit is set to 0
-const bitboardEmpty bitboard = 0x0
+var (
+	// bitboardEmptyFilesMask represents clear mask where only specified file is filled with 0 and rest are 1
+	bitboardEmptyFilesMask = map[File]bitboard{
+		FileA: 0xFEFEFEFEFEFEFEFE,
+		FileB: 0xFDFDFDFDFDFDFDFD,
+		FileC: 0xFBFBFBFBFBFBFBFB,
+		FileD: 0xF7F7F7F7F7F7F7F7,
+		FileE: 0xEFEFEFEFEFEFEFEF,
+		FileF: 0xDFDFDFDFDFDFDFDF,
+		FileG: 0xBFBFBFBFBFBFBFBF,
+		FileH: 0x7F7F7F7F7F7F7F7F,
+	}
 
-// bitboardEmptyFilesMask represents clear mask where only specified file is filled with 0 and rest are 1
-var bitboardEmptyFilesMask = map[File]bitboard{
-	FileA: 0xFEFEFEFEFEFEFEFE,
-	FileB: 0xFDFDFDFDFDFDFDFD,
-	FileC: 0xFBFBFBFBFBFBFBFB,
-	FileD: 0xF7F7F7F7F7F7F7F7,
-	FileE: 0xEFEFEFEFEFEFEFEF,
-	FileF: 0xDFDFDFDFDFDFDFDF,
-	FileG: 0xBFBFBFBFBFBFBFBF,
-	FileH: 0x7F7F7F7F7F7F7F7F,
+	// bitboardUniverseFilesMask represents fill mask where only specified file is filled with 1 and rest are 0
+	bitboardUniverseFilesMask = map[File]bitboard{
+		FileA: 0x101010101010101,
+		FileB: 0x202020202020202,
+		FileC: 0x404040404040404,
+		FileD: 0x808080808080808,
+		FileE: 0x1010101010101010,
+		FileF: 0x2020202020202020,
+		FileG: 0x4040404040404040,
+		FileH: 0x8080808080808080,
+	}
+
+	// bitboardEmptyRanksMask represents clear mask where only specified rank is filled with 0 and rest are 1
+	bitboardEmptyRanksMask = map[Rank]bitboard{
+		Rank1: 0xFFFFFFFFFFFFFF00,
+		Rank2: 0xFFFFFFFFFFFF00FF,
+		Rank3: 0xFFFFFFFFFF00FFFF,
+		Rank4: 0xFFFFFFFF00FFFFFF,
+		Rank5: 0xFFFFFF00FFFFFFFF,
+		Rank6: 0xFFFF00FFFFFFFFFF,
+		Rank7: 0xFF00FFFFFFFFFFFF,
+		Rank8: 0xFFFFFFFFFFFFFF,
+	}
+
+	// bitboardUniverseRanksMask represents fill mask where only specified rank is filled with 1 and rest are 0
+	bitboardUniverseRanksMask = map[Rank]bitboard{
+		Rank1: 0xFF,
+		Rank2: 0xFF00,
+		Rank3: 0xFF0000,
+		Rank4: 0xFF000000,
+		Rank5: 0xFF00000000,
+		Rank6: 0xFF0000000000,
+		Rank7: 0xFF000000000000,
+		Rank8: 0xFF00000000000000,
+	}
+)
+
+// clear sets the bitboard to empty
+func (bb *bitboard) clear() {
+	*bb = bitboardEmpty
 }
 
-// bitboardUniverseFilesMask represents fill mask where only specified file is filled with 1 and rest are 0
-var bitboardUniverseFilesMask = map[File]bitboard{
-	FileA: 0x101010101010101,
-	FileB: 0x202020202020202,
-	FileC: 0x404040404040404,
-	FileD: 0x808080808080808,
-	FileE: 0x1010101010101010,
-	FileF: 0x2020202020202020,
-	FileG: 0x4040404040404040,
-	FileH: 0x8080808080808080,
-}
-
-// bitboardEmptyRanksMask represents clear mask where only specified rank is filled with 0 and rest are 1
-var bitboardEmptyRanksMask = map[Rank]bitboard{
-	Rank1: 0xFFFFFFFFFFFFFF00,
-	Rank2: 0xFFFFFFFFFFFF00FF,
-	Rank3: 0xFFFFFFFFFF00FFFF,
-	Rank4: 0xFFFFFFFF00FFFFFF,
-	Rank5: 0xFFFFFF00FFFFFFFF,
-	Rank6: 0xFFFF00FFFFFFFFFF,
-	Rank7: 0xFF00FFFFFFFFFFFF,
-	Rank8: 0xFFFFFFFFFFFFFF,
-}
-
-// bitboardUniverseRanksMask represents fill mask where only specified rank is filled with 1 and rest are 0
-var bitboardUniverseRanksMask = map[Rank]bitboard{
-	Rank1: 0xFF,
-	Rank2: 0xFF00,
-	Rank3: 0xFF0000,
-	Rank4: 0xFF000000,
-	Rank5: 0xFF00000000,
-	Rank6: 0xFF0000000000,
-	Rank7: 0xFF000000000000,
-	Rank8: 0xFF00000000000000,
+// fill sets the bitboard to filled
+func (bb *bitboard) fill() {
+	*bb = bitboardFull
 }
 
 // setBit sets the bit to 1 at specified square
@@ -231,7 +247,7 @@ func (bb bitboard) rotate90counterClockwise() bitboard {
 
 // isEmpty checks whether bitboard is empty (all 0s)
 func (bb bitboard) isEmpty() bool {
-	return bb == 0
+	return bb == bitboardEmpty
 }
 
 // draw prints the board in 8x8 grid in ascii style

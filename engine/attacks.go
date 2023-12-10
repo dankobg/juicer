@@ -11,7 +11,7 @@ var (
 	once                    sync.Once
 	initializedAttackTables bool
 
-	pawnAttacksMask    [2][64]bitboard // [Color][Square]
+	pawnAttacksMask    [2][64]bitboard
 	kingAttacksMask    [64]bitboard
 	knightsAttacksMask [64]bitboard
 
