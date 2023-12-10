@@ -22,7 +22,7 @@ func TestJuicer(t *testing.T) {
 	if err := p.LoadFromFEN(fen); err != nil {
 		t.Fatal(err)
 	}
-	fmt.Println(p.PrintBoard())
+	// fmt.Println(p.PrintBoard())
 
 	// pseudo := p.generateAllPseudoLegalMoves()
 	// legal := p.generateAllLegalMoves(pseudo)
@@ -30,8 +30,6 @@ func TestJuicer(t *testing.T) {
 	// fmt.Printf("pseudo: %v %+v\n", len(pseudo), pseudo)
 	// fmt.Printf("legal: %v %+v\n", len(legal), legal)
 
-	perftDivide(FENStartingPosition, 1)
-	perftDivide(FENStartingPosition, 2)
 	perftDivide(FENStartingPosition, 3)
 }
 
