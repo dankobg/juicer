@@ -17,11 +17,11 @@ const (
 )
 
 var (
-	reIsDigit        = regexp.MustCompile("^[0-9]$")
-	reEnpSquare      = regexp.MustCompile("^(-|[abcdefgh][36])$")
-	reCastleRights   = regexp.MustCompile("[^kKqQ-]")
-	reTurnColor      = regexp.MustCompile("^(w|b)$")
-	reFenPieceSymbol = regexp.MustCompile("^[prnbqkPRNBQK]$")
+	reIsDigit        = regexp.MustCompile(`^[0-9]$`)
+	reEnpSquare      = regexp.MustCompile(`^(-|[abcdefgh][36])$`)
+	reCastleRights   = regexp.MustCompile(`(?m)^(-|\bK?Q?k?q?)$`)
+	reTurnColor      = regexp.MustCompile(`^(w|b)$`)
+	reFenPieceSymbol = regexp.MustCompile(`^[prnbqkPRNBQK]$`)
 )
 
 type fenToken struct {
@@ -107,7 +107,7 @@ func validateFenMetadataParts(fen string, opts validateFenOps) (fenToken, error)
 	}
 
 	// castle rights string must be of valid fen castle string format
-	if reCastleRights.MatchString(castleRightsToken) {
+	if !reCastleRights.MatchString(castleRightsToken) {
 		return emptyRet, fmt.Errorf("invalid FEN: invalid castling rights string")
 	}
 

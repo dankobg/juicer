@@ -18,7 +18,7 @@ const Both Color = 2
 
 var (
 	colors     = [2]Color{White, Black}
-	reFenColor = regexp.MustCompile("^(w|b)$")
+	reFenColor = regexp.MustCompile(`^(w|b)$`)
 )
 
 // String returns a FEN compatible color character
@@ -67,7 +67,7 @@ func (c Color) Opposite() Color {
 	return ColorNone
 }
 
-func NewColorFromFenColor(fenColor string) (Color, error) {
+func NewColorFromFenStr(fenColor string) (Color, error) {
 	if reFenColor.MatchString(fenColor) {
 		if fenColor == White.String() {
 			return White, nil

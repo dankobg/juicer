@@ -1,24 +1,43 @@
 package juicer
 
 import (
+	"encoding/json"
 	"fmt"
 	"testing"
 )
 
 var c int
 
-func play(p Position, m Move) {
+func play(p *Position, m Move) {
+	type tmpp struct {
+		TURN  Color
+		ENP   Square
+		CR    CastleRights
+		CHECK bool
+		INSF  bool
+	}
+
+	pre := tmpp{TURN: p.turn, ENP: p.enpSquare, CR: p.castleRights, CHECK: p.check, INSF: p.insufficientMaterial}
+	bbpre, _ := json.Marshal(&pre)
+
 	p.MakeMove(m)
 	c++
-	fmt.Printf("%v.\n %+v\n %+v\n %+v\n", c, m, p, p.PrintBoard())
+
+	after := tmpp{TURN: p.turn, ENP: p.enpSquare, CR: p.castleRights, CHECK: p.check, INSF: p.insufficientMaterial}
+	bbafter, _ := json.Marshal(&after)
+
+	num := fmt.Sprintf("%v", c)
+	if c < 10 {
+		num = fmt.Sprintf(" %v", c)
+	}
+
+	fmt.Printf("\n%v. %+v  %+v\n          %+v\n%+v\n%+v\n", num, m, string(bbpre), string(bbafter), p.PrintBoard(), p.Fen())
 }
 
 func TestJuicer(t *testing.T) {
 	InitPrecalculatedTables()
 
-	p := &Position{}
-	fen := FENStartingPosition
-
+	p, fen, depth := &Position{}, FENStartingPosition, 3
 	if err := p.LoadFromFEN(fen); err != nil {
 		t.Fatal(err)
 	}
@@ -30,7 +49,7 @@ func TestJuicer(t *testing.T) {
 	// fmt.Printf("pseudo: %v %+v\n", len(pseudo), pseudo)
 	// fmt.Printf("legal: %v %+v\n", len(legal), legal)
 
-	perftDivide(FENStartingPosition, 3)
+	perftDivide(FENStartingPosition, depth)
 }
 
 func TestPerftNodes(t *testing.T) {
@@ -73,9 +92,9 @@ func TestPerftNodes(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			nodes, _ := perft(tc.fen, tc.depth)
-			if nodes != tc.wantNodes {
-				t.Fatalf("want %v, got %v", tc.wantNodes, nodes)
+			pd := perft2(tc.fen, tc.depth)
+			if int64(pd.Nodes) != tc.wantNodes {
+				t.Fatalf("want %v, got %v", tc.wantNodes, pd.Nodes)
 			}
 		})
 	}

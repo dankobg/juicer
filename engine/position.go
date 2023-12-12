@@ -53,6 +53,7 @@ func (p *Position) LoadFromFEN(fen string) error {
 	p.castleRights = meta.castleRights
 	p.halfMoveClock = meta.halfMoveClock
 	p.fullMoveClock = meta.fullMoveClock
+	p.check = p.board.IsInCheck(p.turn)
 
 	// ply refers to a single move by one player - a full move consists of two ply e.g. 1.e4 e5
 	// half move clock gets reset after each irrevirsible move played (pawn push, promotion, castle)
@@ -385,10 +386,12 @@ func (p *Position) generatePseudoLegalPawnMoves() []Move {
 			}
 
 			dest = src + 8
-			if src.Rank() == Rank7 && p.board.sideOccupancies[Both]&dest.occupancyMask() == 0 && dest.occupancyMask() != 0 {
-				moves = append(moves, newPossiblePromotionMoves(src, dest, piece)...)
-			} else {
-				moves = append(moves, newQuietMove(src, dest, piece))
+			if dest <= 63 && p.board.sideOccupancies[Both]&dest.occupancyMask() == 0 && dest.occupancyMask() != 0 {
+				if src.Rank() == Rank7 {
+					moves = append(moves, newPossiblePromotionMoves(src, dest, piece)...)
+				} else {
+					moves = append(moves, newQuietMove(src, dest, piece))
+				}
 			}
 
 			dest = src + 16

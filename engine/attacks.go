@@ -86,7 +86,7 @@ func initAllAttackMasksTables() {
 func initAttackMasksForNonSlidingPieces() {
 	for sq := A1; sq <= H8; sq++ {
 		initKingAttacksMask(sq)
-		initKnightPawnAttacksMask(sq)
+		initKnightAttacksMask(sq)
 		initPawnAttacksMask(sq)
 
 		initBishopRelevantOccupancyBitsMask(sq)
@@ -111,7 +111,7 @@ func initKingAttacksMask(sq Square) {
 	kingAttacksMask[sq] = generateKingAttacksMask(sq)
 }
 
-func initKnightPawnAttacksMask(sq Square) {
+func initKnightAttacksMask(sq Square) {
 	knightsAttacksMask[sq] = generateKnightAttacksMask(sq)
 }
 

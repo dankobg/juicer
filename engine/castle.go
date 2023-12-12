@@ -8,11 +8,11 @@ import (
 type CastleRights uint8
 
 const (
-	CastleRightsNone    CastleRights = 0
 	WhiteKingSideCastle CastleRights = 1 << iota
 	WhiteQueenSideCastle
 	BlackKingSideCastle
 	BlackQueenSideCastle
+	CastleRightsNone CastleRights = 0
 )
 
 const (
