@@ -97,21 +97,19 @@ func traverse2(p *Position, depth int, pd *perftData) {
 
 			if m.IsCapture() {
 				pd.Captures++
-			} else if m.IsEnPassant() {
+			}
+			if m.IsEnPassant() {
 				pd.Enpassants++
-				pd.Captures++
-			} else if m.IsCastle() && m.Piece().IsKing() {
+			}
+			if m.IsCastle() && m.Piece().IsKing() {
 				pd.Castles++
-			} else if m.Promotion().IsPromotion() {
+			}
+			if m.Promotion().IsPromotion() {
 				pd.Promotions++
-
-				if m.IsCapture() {
-					pd.Captures++
-				}
-			} else if p.board.IsInCheck(p.turn) {
+			}
+			if p.board.IsInCheck(p.turn) {
 				pd.Checks++
 			}
-
 		}
 
 		unmakeMove()
@@ -129,34 +127,34 @@ func perft2(fen string, depth int) perftData {
 	return pd
 }
 
-// func perftDivide(fen string, depth int) {
-// 	p := &Position{}
-// 	if err := p.LoadFromFEN(fen); err != nil {
-// 		panic(err)
-// 	}
+func perftDivide2(fen string, depth int) {
+	p := &Position{}
+	if err := p.LoadFromFEN(fen); err != nil {
+		panic(err)
+	}
 
-// 	pseudo := p.generateAllPseudoLegalMoves()
+	pseudo := p.generateAllPseudoLegalMoves()
 
-// 	sort.Slice(pseudo, func(i, j int) bool {
-// 		if pseudo[i].String()[0] != pseudo[j].String()[0] {
-// 			return pseudo[i].String()[0] < pseudo[j].String()[0]
-// 		}
-// 		return pseudo[i].String()[1:] < pseudo[j].String()[1:]
-// 	})
+	sort.Slice(pseudo, func(i, j int) bool {
+		if pseudo[i].String()[0] != pseudo[j].String()[0] {
+			return pseudo[i].String()[0] < pseudo[j].String()[0]
+		}
+		return pseudo[i].String()[1:] < pseudo[j].String()[1:]
+	})
 
-// 	var nodesSearched int64
+	var nodesSearched int64
+	var pd perftData
 
-// 	for _, m := range pseudo {
-// 		unmakeMove := p.MakeMove(m)
+	for _, m := range pseudo {
+		unmakeMove := p.MakeMove(m)
 
-// 		if !p.board.IsInCheck(p.turn.Opposite()) {
-// 			nodes := traverse(p, depth-1)
-// 			nodesSearched += nodes
-// 			fmt.Printf("%v: %v\n", m, nodes)
-// 		}
+		if !p.board.IsInCheck(p.turn.Opposite()) {
+			traverse2(p, depth-1, &pd)
+			fmt.Printf("%v: %+v\n", m, pd)
+		}
 
-// 		unmakeMove()
-// 	}
+		unmakeMove()
+	}
 
-// 	fmt.Printf("\nNodes searched: %d\n\n", nodesSearched)
-// }
+	fmt.Printf("\nNodes searched: %d\n\n", nodesSearched)
+}

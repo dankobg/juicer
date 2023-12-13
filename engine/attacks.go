@@ -396,7 +396,6 @@ func generateRandomMagicNumberCandidate() bitboard {
 
 // findMagicNumbers finds the magic numbers with a brute force approach for a square
 func findMagicNumbers(sq Square, isBishop bool) bitboard {
-
 	var occ, attacks, usedAttacks [4096]bitboard
 	attack := generateRookRelevantOccupancyBitsMask(sq)
 	bitCount := attack.populationCount()

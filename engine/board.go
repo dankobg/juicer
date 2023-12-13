@@ -14,7 +14,6 @@ type Board struct {
 func (b *Board) calcSideOccupancies() {
 	b.sideOccupancies[White] = b.pieceOccupancies[White][King] | b.pieceOccupancies[White][Queen] | b.pieceOccupancies[White][Rook] | b.pieceOccupancies[White][Bishop] | b.pieceOccupancies[White][Knight] | b.pieceOccupancies[White][Pawn]
 	b.sideOccupancies[Black] = b.pieceOccupancies[Black][King] | b.pieceOccupancies[Black][Queen] | b.pieceOccupancies[Black][Rook] | b.pieceOccupancies[Black][Bishop] | b.pieceOccupancies[Black][Knight] | b.pieceOccupancies[Black][Pawn]
-
 	b.sideOccupancies[Both] = b.sideOccupancies[White] | b.sideOccupancies[Black]
 }
 

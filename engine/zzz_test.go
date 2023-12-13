@@ -37,19 +37,18 @@ func play(p *Position, m Move) {
 func TestJuicer(t *testing.T) {
 	InitPrecalculatedTables()
 
-	p, fen, depth := &Position{}, FENStartingPosition, 3
+	p, fen := &Position{}, FENStartingPosition
 	if err := p.LoadFromFEN(fen); err != nil {
 		t.Fatal(err)
 	}
-	// fmt.Println(p.PrintBoard())
 
-	// pseudo := p.generateAllPseudoLegalMoves()
-	// legal := p.generateAllLegalMoves(pseudo)
+	// 	pseudo := p.generateAllPseudoLegalMoves()
+	// 	legal := p.generateAllLegalMoves(pseudo)
 
-	// fmt.Printf("pseudo: %v %+v\n", len(pseudo), pseudo)
-	// fmt.Printf("legal: %v %+v\n", len(legal), legal)
+	// 	fmt.Printf("pseudo: %v %+v\n", len(pseudo), pseudo)
+	// 	fmt.Printf("legal: %v %+v\n", len(legal), legal)
 
-	perftDivide(FENStartingPosition, depth)
+	perftDivide(fen, 6)
 }
 
 func TestPerftNodes(t *testing.T) {

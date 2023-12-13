@@ -30,7 +30,6 @@ const (
 	bitboardLightSquares bitboard = 0x55AA55AA55AA55AA
 	bitboardDarkSquares  bitboard = 0xAA55AA55AA55AA55
 	bitboardCorners      bitboard = 0x8100000000000081
-	bitboardBackranks    bitboard = 0xFF000000000000FF
 	bitboardCenter       bitboard = 0x0000001818000000
 )
 
