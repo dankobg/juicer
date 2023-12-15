@@ -341,7 +341,7 @@ func (p *Position) generatePseudoLegalKingMoves() []Move {
 			if p.whiteCanCastleKingSide() && (p.board.sideOccupancies[Both]|attackedSquares)&F1G1 == 0 {
 				moves = append(moves, newCastleMove(E1, G1, piece))
 			}
-			if p.whiteCanCastleQueenSide() && p.board.sideOccupancies[Both]&B1D1 == 0 && attackedSquares&C1D1 == 0 {
+			if p.whiteCanCastleQueenSide() && p.board.sideOccupancies[Both]&(B1D1|C1D1) == 0 && attackedSquares&C1D1 == 0 {
 				moves = append(moves, newCastleMove(E1, C1, piece))
 			}
 		}
@@ -352,7 +352,7 @@ func (p *Position) generatePseudoLegalKingMoves() []Move {
 			if p.blackCanCastleKingSide() && (p.board.sideOccupancies[Both]|attackedSquares)&F8G8 == 0 {
 				moves = append(moves, newCastleMove(E8, G8, piece))
 			}
-			if p.blackCanCastleQueenSide() && p.board.sideOccupancies[Both]&B8D8 == 0 && attackedSquares&C8D8 == 0 {
+			if p.blackCanCastleQueenSide() && p.board.sideOccupancies[Both]&(B8D8|C8D8) == 0 && attackedSquares&C8D8 == 0 {
 				moves = append(moves, newCastleMove(E8, C8, piece))
 			}
 		}
@@ -596,6 +596,22 @@ func (p *Position) MakeMove(m Move) func() {
 }
 
 func (p *Position) RemoveCapturedPiece(sq Square) {
+	capturedPiece := p.board.pieceAt(sq)
+	if capturedPiece.IsRook() {
+		if sq == A1 {
+			p.castleRights.preventWhiteFromCastlingQueenSide()
+		}
+		if sq == H1 {
+			p.castleRights.preventWhiteFromCastlingKingSide()
+		}
+		if sq == A8 {
+			p.castleRights.preventBlackFromCastlingQueenSide()
+		}
+		if sq == H8 {
+			p.castleRights.preventBlackFromCastlingKingSide()
+		}
+	}
+
 	p.board.sideOccupancies[p.turn.Opposite()].clearBit(sq)
 
 	for i := 0; i < len(p.board.pieceOccupancies[p.turn.Opposite()]); i++ {

@@ -258,7 +258,7 @@ func generateRookRelevantOccupancyBitsMask(sq Square) bitboard {
 	f, r := int(sq%8), int(sq/8)
 
 	for i := 1; r+i < 7; i++ {
-		attacks.setBit(Square((r+i)*8 + f)) // North
+		attacks.setBit(Square((r+i)*8 + f)) // Nort
 	}
 
 	for i := 1; f+i < 7; i++ {

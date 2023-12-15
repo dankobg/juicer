@@ -1,55 +1,17 @@
 package juicer
 
 import (
+	"bufio"
 	"encoding/json"
 	"fmt"
+	"io"
+	"os"
+	"os/exec"
+	"sort"
+	"strconv"
+	"strings"
 	"testing"
 )
-
-var c int
-
-func play(p *Position, m Move) {
-	type tmpp struct {
-		TURN  Color
-		ENP   Square
-		CR    CastleRights
-		CHECK bool
-		INSF  bool
-	}
-
-	pre := tmpp{TURN: p.turn, ENP: p.enpSquare, CR: p.castleRights, CHECK: p.check, INSF: p.insufficientMaterial}
-	bbpre, _ := json.Marshal(&pre)
-
-	p.MakeMove(m)
-	c++
-
-	after := tmpp{TURN: p.turn, ENP: p.enpSquare, CR: p.castleRights, CHECK: p.check, INSF: p.insufficientMaterial}
-	bbafter, _ := json.Marshal(&after)
-
-	num := fmt.Sprintf("%v", c)
-	if c < 10 {
-		num = fmt.Sprintf(" %v", c)
-	}
-
-	fmt.Printf("\n%v. %+v  %+v\n          %+v\n%+v\n%+v\n", num, m, string(bbpre), string(bbafter), p.PrintBoard(), p.Fen())
-}
-
-func TestJuicer(t *testing.T) {
-	InitPrecalculatedTables()
-
-	p, fen := &Position{}, FENStartingPosition
-	if err := p.LoadFromFEN(fen); err != nil {
-		t.Fatal(err)
-	}
-
-	// 	pseudo := p.generateAllPseudoLegalMoves()
-	// 	legal := p.generateAllLegalMoves(pseudo)
-
-	// 	fmt.Printf("pseudo: %v %+v\n", len(pseudo), pseudo)
-	// 	fmt.Printf("legal: %v %+v\n", len(legal), legal)
-
-	perftDivide(fen, 6)
-}
 
 func TestPerftNodes(t *testing.T) {
 	testCases := map[string]struct {
@@ -97,4 +59,169 @@ func TestPerftNodes(t *testing.T) {
 			}
 		})
 	}
+}
+
+var c int
+
+func play(p *Position, m Move) {
+	type tmpp struct {
+		TURN  Color
+		ENP   Square
+		CR    CastleRights
+		CHECK bool
+		INSF  bool
+	}
+
+	pre := tmpp{TURN: p.turn, ENP: p.enpSquare, CR: p.castleRights, CHECK: p.check, INSF: p.insufficientMaterial}
+	bbpre, _ := json.Marshal(&pre)
+
+	p.MakeMove(m)
+	c++
+
+	after := tmpp{TURN: p.turn, ENP: p.enpSquare, CR: p.castleRights, CHECK: p.check, INSF: p.insufficientMaterial}
+	bbafter, _ := json.Marshal(&after)
+
+	num := fmt.Sprintf("%v", c)
+	if c < 10 {
+		num = fmt.Sprintf(" %v", c)
+	}
+
+	fmt.Printf("\n%v. %+v  %+v\n          %+v\n%+v\n%+v\n", num, m, string(bbpre), string(bbafter), p.PrintBoard(), p.Fen())
+}
+
+func dbg(w io.Writer, fen string, depth int) {
+	p := &Position{}
+	if err := p.LoadFromFEN(fen); err != nil {
+		panic(err)
+	}
+
+	pseudo := p.generateAllPseudoLegalMoves()
+	legal := make([]Move, 0)
+
+	sort.Slice(pseudo, func(i, j int) bool {
+		if pseudo[i].String()[0] != pseudo[j].String()[0] {
+			return pseudo[i].String()[0] < pseudo[j].String()[0]
+		}
+		return pseudo[i].String()[1:] < pseudo[j].String()[1:]
+	})
+
+	var nodesSearched int64
+
+	mine := make(map[string]int64)
+	sf := make(map[string]int64)
+	diff := make(map[string]int64)
+
+	for _, m := range pseudo {
+		unmakeMove := p.MakeMove(m)
+
+		if !p.board.IsInCheck(p.turn.Opposite()) {
+			legal = append(legal, m)
+			nodes := traverse(p, depth-1)
+			nodesSearched += nodes
+			mine[m.String()] = nodes
+		}
+
+		unmakeMove()
+	}
+
+	mine["total"] = nodesSearched
+
+	cmd := exec.Cmd{Path: "/usr/bin/stockfish"}
+
+	in, err := cmd.StdinPipe()
+	if err != nil {
+		panic("in err: " + err.Error())
+	}
+
+	out, err := cmd.StdoutPipe()
+	if err != nil {
+		panic("out err: " + err.Error())
+	}
+	defer out.Close()
+
+	if err := cmd.Start(); err != nil {
+		panic("start err: " + err.Error())
+	}
+
+	send := func(command string) {
+		if _, err := in.Write([]byte(command + "\n")); err != nil {
+			in.Close()
+		}
+	}
+
+	send("position fen " + fen)
+	send("go perft " + strconv.Itoa(depth))
+
+	in.Close()
+
+	scanner := bufio.NewScanner(out)
+
+	for scanner.Scan() {
+		txt := scanner.Text()
+
+		if strings.HasPrefix(txt, "Nodes searched") {
+			pair := strings.Split(txt, ": ")
+			nodes, _ := strconv.Atoi(pair[1])
+			sf["total"] = int64(nodes)
+		}
+
+		if !strings.HasPrefix(txt, "Stockfish") &&
+			!strings.HasPrefix(txt, "Fen") &&
+			!strings.HasPrefix(txt, "Key") &&
+			!strings.HasPrefix(txt, "Checkers") &&
+			!strings.HasPrefix(txt, "Nodes searched") &&
+			txt != "" {
+			pair := strings.Split(txt, ": ")
+			move := pair[0]
+			nodes, _ := strconv.Atoi(pair[1])
+			sf[move] = int64(nodes)
+		}
+	}
+
+	for m, n := range mine {
+		if m == "total" {
+			continue
+		}
+		if sf[m] != n {
+			diff[m] = n
+		}
+	}
+
+	cmd.Wait()
+
+	display := func() {
+		fmt.Printf("%6v | %6v | %6v | %3v | %4v", "move", "sf", "own", "dif", "n")
+		fmt.Printf("\n  ------------------------------------\n")
+
+		isDiff := func(a, b int64) string {
+			if a != b {
+				return "*"
+			}
+			return " "
+		}
+
+		for k, v := range sf {
+			if k != "total" {
+				fmt.Printf("%6v | %6v | %6v | %3v | %4v\n", k, v, mine[k], isDiff(v, mine[k]), v-mine[k])
+			}
+		}
+
+		fmt.Printf("\n  Nodes searched: %6v | %6v | %6v\n\n", sf["total"], mine["total"], sf["total"]-mine["total"])
+		fmt.Printf("\nlegal:%v\n%v\n", len(legal), legal)
+	}
+
+	display()
+}
+
+func TestJuicer(t *testing.T) {
+	InitPrecalculatedTables()
+
+	fen := "rnbq1k1r/pp1Pbppp/2p5/8/2B5/8/PPP1NnPP/RNBQK2R w KQ - 1 8"
+
+	p := &Position{}
+	if err := p.LoadFromFEN(fen); err != nil {
+		t.Fatal(err)
+	}
+
+	dbg(os.Stdout, fen, 5)
 }

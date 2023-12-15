@@ -123,53 +123,14 @@ func (b Board) FenPositionPart() string {
 	return sb.String()
 }
 
-// isSquareAttackedByKing checks if the square is attacked by king by the provided side
-func (b Board) isSquareAttackedByKing(sq Square, side Color) bool {
-	return kingAttacksMask[sq]&b.pieceOccupancies[side][King] != 0
-}
-
-// isSquareAttackedByPawn checks if the square is attacked by pawn by the provided side
-func (b Board) isSquareAttackedByPawn(sq Square, side Color) bool {
-	return pawnAttacksMask[side.Opposite()][sq]&b.pieceOccupancies[side][Pawn] != 0
-}
-
-// isSquareAttackedByKnight checks if the square is attacked by knight by the provided side
-func (b Board) isSquareAttackedByKnight(sq Square, side Color) bool {
-	return knightsAttacksMask[sq]&b.pieceOccupancies[side][Knight] != 0
-}
-
-// isSquareAttackedByRook checks if the square is attacked by rook by the provided side
-func (b Board) isSquareAttackedByRook(sq Square, side Color, occupancy bitboard) bool {
-	return getRookAttacks(sq, occupancy)&b.pieceOccupancies[side][Rook] != 0
-}
-
-// isSquareAttackedByBishop checks if the square is attacked by bishop by the provided side
-func (b Board) isSquareAttackedByBishop(sq Square, side Color, occupancy bitboard) bool {
-	return getBishopAttacks(sq, occupancy)&b.pieceOccupancies[side][Bishop] != 0
-}
-
-// isSquareAttackedByQueen checks if the square is attacked by queen by the provided side
-func (b Board) isSquareAttackedByQueen(sq Square, side Color, occupancy bitboard) bool {
-	return getQueenAttacks(sq, occupancy)&b.pieceOccupancies[side][Queen] != 0
-}
-
-// isSquareAttackedByBishopOrQueen checks if the square is attacked by bishop or queen by the provided side
-func (b Board) isSquareAttackedByBishopOrQueen(sq Square, side Color, occupancy bitboard) bool {
-	return getBishopAttacks(sq, occupancy)&(b.pieceOccupancies[side][Bishop]|b.pieceOccupancies[side][Queen]) != 0
-}
-
-// isSquareAttackedByRookOrQueen checks if the square is attacked by rook or queen by the provided side
-func (b Board) isSquareAttackedByRookOrQueen(sq Square, side Color, occupancy bitboard) bool {
-	return getRookAttacks(sq, occupancy)&(b.pieceOccupancies[side][Rook]|b.pieceOccupancies[side][Queen]) != 0
-}
-
 // isSquareAttacked checks if the square is attacked by the provided side
 func (b Board) isSquareAttacked(sq Square, side Color, occupancy bitboard) bool {
-	return b.isSquareAttackedByPawn(sq, side) ||
-		b.isSquareAttackedByKing(sq, side) ||
-		b.isSquareAttackedByKnight(sq, side) ||
-		b.isSquareAttackedByBishopOrQueen(sq, side, occupancy) ||
-		b.isSquareAttackedByRookOrQueen(sq, side, occupancy)
+	return pawnAttacksMask[side.Opposite()][sq]&b.pieceOccupancies[side][Pawn] != 0 ||
+		kingAttacksMask[sq]&b.pieceOccupancies[side][King] != 0 ||
+		knightsAttacksMask[sq]&b.pieceOccupancies[side][Knight] != 0 ||
+		getBishopAttacks(sq, occupancy)&(b.pieceOccupancies[side][Bishop]|b.pieceOccupancies[side][Queen]) != 0 ||
+		getRookAttacks(sq, occupancy)&(b.pieceOccupancies[side][Rook]|b.pieceOccupancies[side][Queen]) != 0
+
 }
 
 // GetAttackedSquares gets the attacked squares by the provided side
