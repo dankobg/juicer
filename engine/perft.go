@@ -1,8 +1,12 @@
 package juicer
 
 import (
+	"bufio"
 	"fmt"
+	"os/exec"
 	"sort"
+	"strconv"
+	"strings"
 	"time"
 )
 
@@ -27,25 +31,25 @@ func traverse(p *Position, depth int) int64 {
 	return num
 }
 
-func perft(fen string, depth int) (int64, time.Duration) {
+func Perft(fen string, depth int) int64 {
 	p := &Position{}
 	if err := p.LoadFromFEN(fen); err != nil {
 		panic(err)
 	}
 
-	start := time.Now()
 	nodes := traverse(p, depth)
-
-	return nodes, time.Since(start)
+	return nodes
 }
 
-func perftDivide(fen string, depth int) {
+func Divide(fen string, depth int) {
 	p := &Position{}
 	if err := p.LoadFromFEN(fen); err != nil {
 		panic(err)
 	}
 
 	pseudo := p.generateAllPseudoLegalMoves()
+
+	start := time.Now()
 
 	sort.Slice(pseudo, func(i, j int) bool {
 		if pseudo[i].String()[0] != pseudo[j].String()[0] {
@@ -68,66 +72,11 @@ func perftDivide(fen string, depth int) {
 		unmakeMove()
 	}
 
-	fmt.Printf("\nNodes searched: %d\n\n", nodesSearched)
+	fmt.Printf("\nNodes searched: %d\n", nodesSearched)
+	fmt.Printf("perft (nps): %v\n\n", (1000000*nodesSearched)/time.Since(start).Microseconds())
 }
 
-type perftData struct {
-	Nodes      int
-	Captures   int
-	Enpassants int
-	Castles    int
-	Promotions int
-	Checks     int
-}
-
-func traverse2(p *Position, depth int, pd *perftData) {
-	if depth == 0 {
-		pd.Nodes++
-		return
-	}
-
-	pseudo := p.generateAllPseudoLegalMoves()
-
-	for i := 0; i < len(pseudo); i++ {
-		m := pseudo[i]
-		unmakeMove := p.MakeMove(m)
-
-		if !p.board.IsInCheck(p.turn.Opposite()) {
-			traverse2(p, depth-1, pd)
-
-			if m.IsCapture() {
-				pd.Captures++
-			}
-			if m.IsEnPassant() {
-				pd.Enpassants++
-			}
-			if m.IsCastle() && m.Piece().IsKing() {
-				pd.Castles++
-			}
-			if m.Promotion().IsPromotion() {
-				pd.Promotions++
-			}
-			if p.board.IsInCheck(p.turn) {
-				pd.Checks++
-			}
-		}
-
-		unmakeMove()
-	}
-}
-
-func perft2(fen string, depth int) perftData {
-	p := &Position{}
-	if err := p.LoadFromFEN(fen); err != nil {
-		panic(err)
-	}
-
-	var pd perftData
-	traverse2(p, depth, &pd)
-	return pd
-}
-
-func perftDivide2(fen string, depth int) {
+func CompareWithStockfishPerft(fen string, depth int, sfBinaryPath *string) {
 	p := &Position{}
 	if err := p.LoadFromFEN(fen); err != nil {
 		panic(err)
@@ -143,18 +92,105 @@ func perftDivide2(fen string, depth int) {
 	})
 
 	var nodesSearched int64
-	var pd perftData
+
+	mine := make(map[string]int64)
+	sf := make(map[string]int64)
+	diff := make(map[string]int64)
 
 	for _, m := range pseudo {
 		unmakeMove := p.MakeMove(m)
 
 		if !p.board.IsInCheck(p.turn.Opposite()) {
-			traverse2(p, depth-1, &pd)
-			fmt.Printf("%v: %+v\n", m, pd)
+			nodes := traverse(p, depth-1)
+			nodesSearched += nodes
+			mine[m.String()] = nodes
 		}
 
 		unmakeMove()
 	}
 
-	fmt.Printf("\nNodes searched: %d\n\n", nodesSearched)
+	mine["total"] = nodesSearched
+
+	sfPath := "/usr/bin/stockfish"
+	if sfBinaryPath != nil {
+		sfPath = *sfBinaryPath
+	}
+
+	cmd := exec.Cmd{Path: sfPath}
+
+	in, err := cmd.StdinPipe()
+	if err != nil {
+		panic("in pipe err: " + err.Error())
+	}
+
+	out, err := cmd.StdoutPipe()
+	if err != nil {
+		panic("out pipe err: " + err.Error())
+	}
+	defer out.Close()
+
+	if err := cmd.Start(); err != nil {
+		panic("cmd start err: " + err.Error())
+	}
+
+	send := func(command string) {
+		if _, err := in.Write([]byte(command + "\n")); err != nil {
+			in.Close()
+		}
+	}
+
+	send("position fen " + fen)
+	send("go perft " + strconv.Itoa(depth))
+
+	in.Close()
+
+	scanner := bufio.NewScanner(out)
+
+	for scanner.Scan() {
+		line := scanner.Text()
+
+		fmt.Println(line)
+
+		if strings.HasPrefix(line, "Nodes searched") {
+			pair := strings.Split(line, ": ")
+			nodes, _ := strconv.Atoi(pair[1])
+			sf["total"] = int64(nodes)
+		}
+
+		if !strings.HasPrefix(line, "Stockfish") &&
+			!strings.HasPrefix(line, "Fen") &&
+			!strings.HasPrefix(line, "Key") &&
+			!strings.HasPrefix(line, "Checkers") &&
+			!strings.HasPrefix(line, "Nodes searched") &&
+			line != "" {
+			pair := strings.Split(line, ": ")
+			move := pair[0]
+			nodes, _ := strconv.Atoi(pair[1])
+			sf[move] = int64(nodes)
+		}
+	}
+
+	for m, n := range mine {
+		if m == "total" {
+			continue
+		}
+		if sf[m] != n {
+			diff[m] = n
+		}
+	}
+
+	cmd.Wait()
+
+	fmt.Printf("%6v | %8v | %8v | %8v", "move", "sfish", "juicer", "dif")
+	fmt.Printf("\n-------------------------------------------\n")
+
+	for k, v := range sf {
+		if k != "total" {
+			fmt.Printf("%6v | %8v | %8v | %8v\n", k, v, mine[k], v-mine[k])
+		}
+	}
+
+	fmt.Printf("---------------------------------------------")
+	fmt.Printf("\n%6v | %8v | %8v | %8v\n", "Nodes", sf["total"], mine["total"], sf["total"]-mine["total"])
+	fmt.Printf("---------------------------------------------\n\n")
 }
