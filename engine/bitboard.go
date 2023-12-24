@@ -132,11 +132,6 @@ func (bb bitboard) bitIsSet(sq Square) bool {
 	return ((bb >> sq) & 1) == 1
 }
 
-// bitIsUnset checks if bit value is 0 at specified square
-func (bb bitboard) bitIsUnset(sq Square) bool {
-	return !bb.bitIsSet(sq)
-}
-
 // populationCount returns the count of 1 bits in bitboard
 func (bb bitboard) populationCount() uint8 {
 	return uint8(bits.OnesCount64(uint64(bb)))
@@ -166,6 +161,16 @@ func (bb *bitboard) PopMS1B() int {
 	bb.clearBit(Square(ms1b))
 
 	return ms1b
+}
+
+// isEmpty checks whether bitboard is empty (all 0s)
+func (bb bitboard) isEmpty() bool {
+	return bb == bitboardEmpty
+}
+
+// isFull checks whether bitboard is full (all 1s)
+func (bb bitboard) isFull() bool {
+	return bb == bitboardFull
 }
 
 // flipVertical flips the bitboard vertically
@@ -242,11 +247,6 @@ func (bb bitboard) rotate90counterClockwise() bitboard {
 	bb = bb.flipDiagonalA1H8()
 
 	return bb
-}
-
-// isEmpty checks whether bitboard is empty (all 0s)
-func (bb bitboard) isEmpty() bool {
-	return bb == bitboardEmpty
 }
 
 // draw prints the board in 8x8 grid in ascii style

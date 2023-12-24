@@ -84,10 +84,32 @@ func TestJuicer(t *testing.T) {
 }
 
 func TestWtf(t *testing.T) {
-	initAllAttackMasksTables()
+	InitPrecalculatedTables()
 
-	fen := FENStartingPosition
-	depth := 3
+	c, err := NewChess(FENStartingPosition)
+	if err != nil {
+		t.Fatal(err)
+	}
 
-	Divide(fen, depth)
+	c.MakeMove(newQuietMove(G1, F3, WhiteKnight))
+	c.MakeMove(newQuietMove(G8, F6, BlackKnight))
+	c.MakeMove(newQuietMove(F3, G1, WhiteKnight))
+	c.MakeMove(newQuietMove(F6, G8, BlackKnight))
+
+	c.MakeMove(newQuietMove(G1, F3, WhiteKnight))
+	c.MakeMove(newQuietMove(G8, F6, BlackKnight))
+	c.MakeMove(newQuietMove(F3, G1, WhiteKnight))
+	c.MakeMove(newQuietMove(F6, G8, BlackKnight))
+
+	c.MakeMove(newQuietMove(A2, A3, WhitePawn))
+
+	c.MakeMove(newQuietMove(G8, F6, BlackKnight))
+	c.MakeMove(newQuietMove(G1, F3, WhiteKnight))
+	c.MakeMove(newQuietMove(F6, G8, BlackKnight))
+	c.MakeMove(newQuietMove(F3, G1, WhiteKnight))
+
+	c.MakeMove(newQuietMove(G8, F6, BlackKnight))
+	c.MakeMove(newQuietMove(G1, F3, WhiteKnight))
+	c.MakeMove(newQuietMove(F6, G8, BlackKnight))
+	c.MakeMove(newQuietMove(F3, G1, WhiteKnight))
 }

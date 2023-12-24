@@ -116,7 +116,7 @@ func CompareWithStockfishPerft(fen string, depth int, sfBinaryPath *string) {
 		sfPath = *sfBinaryPath
 	}
 
-	cmd := exec.Cmd{Path: sfPath}
+	cmd := exec.Command(sfPath)
 
 	in, err := cmd.StdinPipe()
 	if err != nil {
@@ -148,8 +148,6 @@ func CompareWithStockfishPerft(fen string, depth int, sfBinaryPath *string) {
 
 	for scanner.Scan() {
 		line := scanner.Text()
-
-		fmt.Println(line)
 
 		if strings.HasPrefix(line, "Nodes searched") {
 			pair := strings.Split(line, ": ")

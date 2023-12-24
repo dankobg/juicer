@@ -197,19 +197,14 @@ func validatePositionPart(ft fenToken, opts validateFenOps) (map[Square]Piece, e
 		return nil, fmt.Errorf("invalid FEN: position is having too many black kings (%d)", c)
 	}
 
-	if ft.turnColor.IsWhite() {
-		for _, char := range ranks[0] {
-			if string(char) == WhitePawn.String() {
-				return nil, fmt.Errorf("invalid FEN: white pawn is on 8th rank")
-			}
+	for _, char := range ranks[0] {
+		if string(char) == WhitePawn.String() {
+			return nil, fmt.Errorf("invalid FEN: white pawn is on 8th rank")
 		}
 	}
-
-	if ft.turnColor.IsBlack() {
-		for _, char := range ranks[7] {
-			if string(char) == BlackPawn.String() {
-				return nil, fmt.Errorf("invalid FEN: black pawn is on 1st rank")
-			}
+	for _, char := range ranks[7] {
+		if string(char) == BlackPawn.String() {
+			return nil, fmt.Errorf("invalid FEN: black pawn is on 1st rank")
 		}
 	}
 
