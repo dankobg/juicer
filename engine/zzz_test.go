@@ -2,7 +2,6 @@ package juicer
 
 import (
 	"bufio"
-	"fmt"
 	"os"
 	"strconv"
 	"strings"
@@ -82,15 +81,4 @@ func TestJuicer(t *testing.T) {
 	if err := sc.Err(); err != nil {
 		t.Fatalf("scan perft file err: %v", err)
 	}
-}
-
-func TestWtf(t *testing.T) {
-	InitPrecalculatedTables()
-
-	c, err := NewChess(FENStartingPosition)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	fmt.Println(c.position.PrintBoard())
 }

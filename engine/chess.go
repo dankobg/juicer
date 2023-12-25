@@ -116,16 +116,16 @@ func (c *Chess) IsThreefoldRepetition() bool {
 	return !c.disableAutoThreefold && c.repetitions >= 3
 }
 
+func (c *Chess) IsFivefoldRepetition() bool {
+	return !c.disableAutoThreefold && c.repetitions >= 5
+}
+
 func (c *Chess) IsDrawBy50MoveRule() bool {
 	return c.position.halfMoveClock >= 100
 }
 
 func (c *Chess) IsDrawBy75MoveRule() bool {
 	return c.position.halfMoveClock >= 150
-}
-
-func (c *Chess) IsFivefoldRepetition() bool {
-	return !c.disableAutoThreefold && c.repetitions >= 5
 }
 
 func (c *Chess) IsDraw() bool {

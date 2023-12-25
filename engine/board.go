@@ -130,7 +130,6 @@ func (b Board) isSquareAttacked(sq Square, side Color, occupancy bitboard) bool 
 		knightsAttacksMask[sq]&b.pieceOccupancies[side][Knight] != 0 ||
 		getBishopAttacks(sq, occupancy)&(b.pieceOccupancies[side][Bishop]|b.pieceOccupancies[side][Queen]) != 0 ||
 		getRookAttacks(sq, occupancy)&(b.pieceOccupancies[side][Rook]|b.pieceOccupancies[side][Queen]) != 0
-
 }
 
 // GetAttackedSquares gets the attacked squares by the provided side
