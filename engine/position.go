@@ -14,13 +14,7 @@ type Position struct {
 	fullMoveClock        uint16
 	ply                  uint16
 	check                bool
-	checkmate            bool
-	stalemate            bool
-	draw                 bool
-	threeFold            bool
 	insufficientMaterial bool
-	terminated           bool
-	outcome              string
 	comments             []string
 	headers              []string
 	capturedPieces       []Piece
@@ -481,13 +475,7 @@ func (p *Position) Copy() *Position {
 		fullMoveClock:        p.fullMoveClock,
 		ply:                  p.ply,
 		check:                p.check,
-		checkmate:            p.checkmate,
-		stalemate:            p.stalemate,
-		draw:                 p.draw,
-		threeFold:            p.threeFold,
 		insufficientMaterial: p.insufficientMaterial,
-		terminated:           p.terminated,
-		outcome:              p.outcome,
 		comments:             slices.Clone(p.comments),
 		headers:              slices.Clone(p.headers),
 		capturedPieces:       slices.Clone(p.capturedPieces),
@@ -512,13 +500,7 @@ func (p *Position) UnmakeMove() func() {
 		p.fullMoveClock = pcopy.fullMoveClock
 		p.ply = pcopy.ply
 		p.check = pcopy.check
-		p.checkmate = pcopy.checkmate
-		p.stalemate = pcopy.stalemate
-		p.draw = pcopy.draw
-		p.threeFold = pcopy.threeFold
 		p.insufficientMaterial = pcopy.insufficientMaterial
-		p.terminated = pcopy.terminated
-		p.outcome = pcopy.outcome
 		p.comments = pcopy.comments
 		p.headers = pcopy.headers
 		p.capturedPieces = pcopy.capturedPieces
@@ -761,8 +743,8 @@ func (p *Position) ZobristMove(m Move) {
 func (p *Position) ZobristCapture(m Move) {
 	capturedPiece := p.board.pieceAt(m.Dest())
 
-	p.hash ^= defaultZobrist.occupanciesKeys[p.turn][m.Piece()][m.Src()]
-	p.hash ^= defaultZobrist.occupanciesKeys[p.turn][m.Piece()][m.Dest()]
+	p.hash ^= defaultZobrist.occupanciesKeys[p.turn][m.Piece().Kind()][m.Src()]
+	p.hash ^= defaultZobrist.occupanciesKeys[p.turn][m.Piece().Kind()][m.Dest()]
 	p.hash ^= defaultZobrist.occupanciesKeys[p.turn.Opposite()][capturedPiece.Kind()][m.Dest()]
 }
 
