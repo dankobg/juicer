@@ -29,16 +29,16 @@ func (cr CastleRights) ToFEN() string {
 
 	var sb strings.Builder
 
-	if cr.whiteCanCastleKingSide() {
+	if cr.whiteHasKingSideCastleRights() {
 		sb.WriteString(wkCastleFen)
 	}
-	if cr.whiteCanCastleQueenSide() {
+	if cr.whiteHasQueenSideCastleRights() {
 		sb.WriteString(wqCastleFen)
 	}
-	if cr.blackCanCastleKingSide() {
+	if cr.blackHasKingSideCastleRights() {
 		sb.WriteString(bkCastleFen)
 	}
-	if cr.blackCanCastleQueenSide() {
+	if cr.blackHasQueenSideCastleRights() {
 		sb.WriteString(bqCastleFen)
 	}
 
@@ -49,51 +49,51 @@ func (cr CastleRights) String() string {
 	return cr.ToFEN()
 }
 
-func (cr CastleRights) whiteCanCastleKingSide() bool {
+func (cr CastleRights) whiteHasKingSideCastleRights() bool {
 	return (cr & WhiteKingSideCastle) != 0
 }
 
-func (cr CastleRights) whiteCanCastleQueenSide() bool {
+func (cr CastleRights) whiteHasQueenSideCastleRights() bool {
 	return (cr & WhiteQueenSideCastle) != 0
 }
 
-func (cr CastleRights) whiteCanCastle() bool {
-	return cr.whiteCanCastleKingSide() || cr.whiteCanCastleQueenSide()
+func (cr CastleRights) whiteHasCastleRights() bool {
+	return cr.whiteHasKingSideCastleRights() || cr.whiteHasQueenSideCastleRights()
 }
 
-func (cr CastleRights) blackCanCastleKingSide() bool {
+func (cr CastleRights) blackHasKingSideCastleRights() bool {
 	return (cr & BlackKingSideCastle) != 0
 }
 
-func (cr CastleRights) blackCanCastleQueenSide() bool {
+func (cr CastleRights) blackHasQueenSideCastleRights() bool {
 	return (cr & BlackQueenSideCastle) != 0
 }
 
-func (cr CastleRights) blackCanCastle() bool {
-	return cr.blackCanCastleKingSide() || cr.blackCanCastleQueenSide()
+func (cr CastleRights) blackHasCastleRights() bool {
+	return cr.blackHasKingSideCastleRights() || cr.blackHasQueenSideCastleRights()
 }
 
-func (cr *CastleRights) preventWhiteFromCastling() {
+func (cr *CastleRights) disableWhiteCastleRights() {
 	*cr &= ^(WhiteKingSideCastle | WhiteQueenSideCastle)
 }
 
-func (cr *CastleRights) preventWhiteFromCastlingKingSide() {
+func (cr *CastleRights) disableWhiteKingSideCastleRight() {
 	*cr &= ^WhiteKingSideCastle
 }
 
-func (cr *CastleRights) preventWhiteFromCastlingQueenSide() {
+func (cr *CastleRights) disableWhiteQueenSideCastleRight() {
 	*cr &= ^WhiteQueenSideCastle
 }
 
-func (cr *CastleRights) preventBlackFromCastling() {
+func (cr *CastleRights) disableBlackCastleRights() {
 	*cr &= ^(BlackKingSideCastle | BlackQueenSideCastle)
 }
 
-func (cr *CastleRights) preventBlackFromCastlingKingSide() {
+func (cr *CastleRights) disableBlackKingSideCastleRight() {
 	*cr &= ^BlackKingSideCastle
 }
 
-func (cr *CastleRights) preventBlackFromCastlingQueenSide() {
+func (cr *CastleRights) disableBlackQueenSideCastleRight() {
 	*cr &= ^BlackQueenSideCastle
 }
 
@@ -105,20 +105,20 @@ func NewCastleRightsFromFen(fenCastle string) (CastleRights, error) {
 	if reCastleRights.MatchString(fenCastle) {
 		var cr CastleRights
 
-		if fenCastle != fenNoneSymbol {
-			if strings.Contains(fenCastle, wkCastleFen) {
-				cr |= WhiteKingSideCastle
-			}
-			if strings.Contains(fenCastle, wqCastleFen) {
-				cr |= WhiteQueenSideCastle
-			}
-			if strings.Contains(fenCastle, bkCastleFen) {
-				cr |= BlackKingSideCastle
-			}
-			if strings.Contains(fenCastle, bqCastleFen) {
-				cr |= BlackQueenSideCastle
-			}
+		if strings.Contains(fenCastle, wkCastleFen) {
+			cr |= WhiteKingSideCastle
 		}
+		if strings.Contains(fenCastle, wqCastleFen) {
+			cr |= WhiteQueenSideCastle
+		}
+		if strings.Contains(fenCastle, bkCastleFen) {
+			cr |= BlackKingSideCastle
+		}
+		if strings.Contains(fenCastle, bqCastleFen) {
+			cr |= BlackQueenSideCastle
+		}
+
+		return cr, nil
 	}
 
 	return CastleRightsNone, fmt.Errorf("invalid castle rights string, doesn't match the pattern")

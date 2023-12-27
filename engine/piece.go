@@ -59,7 +59,7 @@ const (
 var (
 	whitePieceSymbols = [6]string{"P", "R", "N", "B", "Q", "K"}
 	blackPieceSymbols = [6]string{"p", "r", "n", "b", "q", "k"}
-	pieceSymbols      = append(whitePieceSymbols[:], blackPieceSymbols[:]...)
+	pieceSymbols      = [12]string{"P", "R", "N", "B", "Q", "K", "p", "r", "n", "b", "q", "k"}
 
 	whitePieceUnicodeSymbols = [6]string{"♔", "♕", "♖", "♗", "♘", "♙"}
 	blackPieceUnicodeSymbols = [6]string{"♚", "♛", "♜", "♝", "♞", "♟"}

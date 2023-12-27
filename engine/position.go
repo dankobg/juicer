@@ -6,19 +6,18 @@ import (
 )
 
 type Position struct {
-	board                *Board
-	turn                 Color
-	enpSquare            Square
-	castleRights         CastleRights
-	halfMoveClock        uint8
-	fullMoveClock        uint16
-	ply                  uint16
-	check                bool
-	insufficientMaterial bool
-	comments             []string
-	headers              []string
-	capturedPieces       []Piece
-	hash                 uint64
+	board          *Board
+	turn           Color
+	enpSquare      Square
+	castleRights   CastleRights
+	halfMoveClock  uint8
+	fullMoveClock  uint16
+	ply            uint16
+	check          bool
+	comments       []string
+	headers        []string
+	capturedPieces []Piece
+	hash           uint64
 }
 
 func (p *Position) PrintBoard() string {
@@ -74,56 +73,56 @@ func (p *Position) Fen() string {
 	return p.board.FenPositionPart() + p.FenMetaPart()
 }
 
-func (p *Position) whiteCanCastleKingSide() bool {
-	return p.castleRights.whiteCanCastleKingSide()
+func (p *Position) whiteHasKingSideCastleRights() bool {
+	return p.castleRights.whiteHasKingSideCastleRights()
 }
 
-func (p *Position) whiteCanCastleQueenSide() bool {
-	return p.castleRights.whiteCanCastleQueenSide()
+func (p *Position) whiteHasQueenSideCastleRights() bool {
+	return p.castleRights.whiteHasQueenSideCastleRights()
 }
 
-func (p *Position) whiteCanCastle() bool {
-	return p.castleRights.whiteCanCastle()
+func (p *Position) whiteHasCastleRights() bool {
+	return p.castleRights.whiteHasCastleRights()
 }
 
-func (p *Position) blackCanCastleKingSide() bool {
-	return p.castleRights.blackCanCastleKingSide()
+func (p *Position) blackHasKingSideCastleRights() bool {
+	return p.castleRights.blackHasKingSideCastleRights()
 }
 
-func (p *Position) blackCanCastleQueenSide() bool {
-	return p.castleRights.blackCanCastleQueenSide()
+func (p *Position) blackHasQueenSideCastleRights() bool {
+	return p.castleRights.blackHasQueenSideCastleRights()
 }
 
-func (p *Position) blackCanCastle() bool {
-	return p.castleRights.blackCanCastle()
+func (p *Position) blackHasCastleRights() bool {
+	return p.castleRights.blackHasCastleRights()
 }
 
-func (p *Position) canCastleKingSide() bool {
+func (p *Position) hasKingSideCastleRights() bool {
 	if p.turn.IsWhite() {
-		return p.whiteCanCastleKingSide()
+		return p.whiteHasKingSideCastleRights()
 	}
 	if p.turn.IsBlack() {
-		return p.blackCanCastleKingSide()
+		return p.blackHasKingSideCastleRights()
 	}
 	return false
 }
 
-func (p *Position) canCastleQueenSide() bool {
+func (p *Position) hasQueenSideCastleRights() bool {
 	if p.turn.IsWhite() {
-		return p.whiteCanCastleQueenSide()
+		return p.whiteHasQueenSideCastleRights()
 	}
 	if p.turn.IsBlack() {
-		return p.blackCanCastleQueenSide()
+		return p.blackHasQueenSideCastleRights()
 	}
 	return false
 }
 
-func (p *Position) canCastle() bool {
+func (p *Position) hasCastleRights() bool {
 	if p.turn.IsWhite() {
-		return p.whiteCanCastle()
+		return p.whiteHasCastleRights()
 	}
 	if p.turn.IsBlack() {
-		return p.blackCanCastle()
+		return p.blackHasCastleRights()
 	}
 	return false
 }
@@ -325,10 +324,10 @@ func (p *Position) generatePseudoLegalKingMoves() []Move {
 		if p.turn.IsWhite() {
 			attackedSquares := p.board.GetAttackedSquares(p.turn.Opposite(), F1G1|B1D1|C1D1, p.board.sideOccupancies[Both] & ^occupancy)
 
-			if p.whiteCanCastleKingSide() && (p.board.sideOccupancies[Both]|attackedSquares)&F1G1 == 0 {
+			if p.whiteHasKingSideCastleRights() && (p.board.sideOccupancies[Both]|attackedSquares)&F1G1 == 0 {
 				moves = append(moves, newCastleMove(E1, G1, piece))
 			}
-			if p.whiteCanCastleQueenSide() && p.board.sideOccupancies[Both]&(B1D1|C1D1) == 0 && attackedSquares&C1D1 == 0 {
+			if p.whiteHasQueenSideCastleRights() && p.board.sideOccupancies[Both]&(B1D1|C1D1) == 0 && attackedSquares&C1D1 == 0 {
 				moves = append(moves, newCastleMove(E1, C1, piece))
 			}
 		}
@@ -336,10 +335,10 @@ func (p *Position) generatePseudoLegalKingMoves() []Move {
 		if p.turn.IsBlack() {
 			attackedSquares := p.board.GetAttackedSquares(p.turn.Opposite(), F8G8|B8D8|C8D8, p.board.sideOccupancies[Both] & ^occupancy)
 
-			if p.blackCanCastleKingSide() && (p.board.sideOccupancies[Both]|attackedSquares)&F8G8 == 0 {
+			if p.blackHasKingSideCastleRights() && (p.board.sideOccupancies[Both]|attackedSquares)&F8G8 == 0 {
 				moves = append(moves, newCastleMove(E8, G8, piece))
 			}
-			if p.blackCanCastleQueenSide() && p.board.sideOccupancies[Both]&(B8D8|C8D8) == 0 && attackedSquares&C8D8 == 0 {
+			if p.blackHasQueenSideCastleRights() && p.board.sideOccupancies[Both]&(B8D8|C8D8) == 0 && attackedSquares&C8D8 == 0 {
 				moves = append(moves, newCastleMove(E8, C8, piece))
 			}
 		}
@@ -467,19 +466,18 @@ func (p *Position) Copy() *Position {
 	boardCopy := p.board.Copy()
 
 	positionCopy := Position{
-		board:                &boardCopy,
-		turn:                 p.turn,
-		enpSquare:            p.enpSquare,
-		castleRights:         p.castleRights,
-		halfMoveClock:        p.halfMoveClock,
-		fullMoveClock:        p.fullMoveClock,
-		ply:                  p.ply,
-		check:                p.check,
-		insufficientMaterial: p.insufficientMaterial,
-		comments:             slices.Clone(p.comments),
-		headers:              slices.Clone(p.headers),
-		capturedPieces:       slices.Clone(p.capturedPieces),
-		hash:                 p.hash,
+		board:          &boardCopy,
+		turn:           p.turn,
+		enpSquare:      p.enpSquare,
+		castleRights:   p.castleRights,
+		halfMoveClock:  p.halfMoveClock,
+		fullMoveClock:  p.fullMoveClock,
+		ply:            p.ply,
+		check:          p.check,
+		comments:       slices.Clone(p.comments),
+		headers:        slices.Clone(p.headers),
+		capturedPieces: slices.Clone(p.capturedPieces),
+		hash:           p.hash,
 	}
 
 	return &positionCopy
@@ -500,7 +498,6 @@ func (p *Position) UnmakeMove() func() {
 		p.fullMoveClock = pcopy.fullMoveClock
 		p.ply = pcopy.ply
 		p.check = pcopy.check
-		p.insufficientMaterial = pcopy.insufficientMaterial
 		p.comments = pcopy.comments
 		p.headers = pcopy.headers
 		p.capturedPieces = pcopy.capturedPieces
@@ -598,18 +595,20 @@ func (p *Position) MakeNullMove() func() {
 
 func (p *Position) RemoveCapturedPiece(sq Square) {
 	capturedPiece := p.board.pieceAt(sq)
+	p.capturedPieces = append(p.capturedPieces, capturedPiece)
+
 	if capturedPiece.IsRook() {
 		if sq == A1 {
-			p.castleRights.preventWhiteFromCastlingQueenSide()
+			p.castleRights.disableWhiteQueenSideCastleRight()
 		}
 		if sq == H1 {
-			p.castleRights.preventWhiteFromCastlingKingSide()
+			p.castleRights.disableWhiteKingSideCastleRight()
 		}
 		if sq == A8 {
-			p.castleRights.preventBlackFromCastlingQueenSide()
+			p.castleRights.disableBlackQueenSideCastleRight()
 		}
 		if sq == H8 {
-			p.castleRights.preventBlackFromCastlingKingSide()
+			p.castleRights.disableBlackKingSideCastleRight()
 		}
 	}
 
@@ -660,46 +659,46 @@ func (p *Position) updateCastlingRights(m Move) {
 
 	if m.Piece().IsKing() {
 		if p.turn.IsWhite() {
-			if p.whiteCanCastleKingSide() {
+			if p.whiteHasKingSideCastleRights() {
 				p.ZobristCastleRights(WhiteKingSideCastle)
 			}
-			if p.whiteCanCastleQueenSide() {
+			if p.whiteHasQueenSideCastleRights() {
 				p.ZobristCastleRights(WhiteQueenSideCastle)
 			}
 
-			p.castleRights.preventWhiteFromCastling()
+			p.castleRights.disableWhiteCastleRights()
 		}
 		if p.turn.IsBlack() {
-			if p.blackCanCastleKingSide() {
+			if p.blackHasKingSideCastleRights() {
 				p.ZobristCastleRights(BlackKingSideCastle)
 			}
-			if p.blackCanCastleQueenSide() {
+			if p.blackHasQueenSideCastleRights() {
 				p.ZobristCastleRights(BlackQueenSideCastle)
 			}
 
-			p.castleRights.preventBlackFromCastling()
+			p.castleRights.disableBlackCastleRights()
 		}
 	}
 
 	if m.Piece().IsRook() {
 		if p.turn.IsWhite() {
 			if m.Src() == H1 {
-				p.castleRights.preventWhiteFromCastlingKingSide()
+				p.castleRights.disableWhiteKingSideCastleRight()
 				p.ZobristCastleRights(WhiteKingSideCastle)
 			}
 			if m.Src() == A1 {
-				p.castleRights.preventWhiteFromCastlingQueenSide()
+				p.castleRights.disableWhiteQueenSideCastleRight()
 				p.ZobristCastleRights(WhiteQueenSideCastle)
 			}
 		}
 
 		if p.turn.IsBlack() {
 			if m.Src() == H8 {
-				p.castleRights.preventBlackFromCastlingKingSide()
+				p.castleRights.disableBlackKingSideCastleRight()
 				p.ZobristCastleRights(BlackKingSideCastle)
 			}
 			if m.Src() == A8 {
-				p.castleRights.preventBlackFromCastlingQueenSide()
+				p.castleRights.disableBlackQueenSideCastleRight()
 				p.ZobristCastleRights(BlackQueenSideCastle)
 			}
 		}

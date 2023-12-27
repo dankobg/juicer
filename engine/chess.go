@@ -30,7 +30,7 @@ const (
 	StatusFiveFoldRepetition
 	StatusFiftyMoveRule
 	StatusSeventyFiveMoveRule
-	InsufficientMaterial
+	StatusInsufficientMaterial
 )
 
 type History struct {
@@ -95,6 +95,18 @@ func (c *Chess) MakeMove(m Move) {
 	c.calcLegalMoves()
 }
 
+func (c *Chess) MakeMoveUCI(uciMove string) error {
+	for _, m := range c.legalMoves {
+		if m.String() == uciMove {
+			c.MakeMove(m)
+
+			return nil
+		}
+	}
+
+	return fmt.Errorf("invalid move: %v", uciMove)
+}
+
 func (c *Chess) calcRepetitions() {
 	var reps uint16
 	depth := max(0, c.position.ply-uint16(c.position.halfMoveClock))
@@ -142,4 +154,30 @@ func (c *Chess) IsStalemate() bool {
 
 func (c *Chess) IsTerminated() bool {
 	return c.IsDraw() || c.IsCheckmate()
+}
+
+func (c *Chess) Status() Status {
+	if c.IsInsufficientMaterial() {
+		return StatusInsufficientMaterial
+	}
+	if c.IsThreefoldRepetition() {
+		return StatusThreeFoldRepetition
+	}
+	if c.IsFivefoldRepetition() {
+		return StatusFiveFoldRepetition
+	}
+	if c.IsDrawBy50MoveRule() {
+		return StatusFiftyMoveRule
+	}
+	if c.IsDrawBy75MoveRule() {
+		return StatusSeventyFiveMoveRule
+	}
+	if c.IsCheckmate() {
+		return StatusCheckmate
+	}
+	if c.IsStalemate() {
+		return StatusStalemate
+	}
+
+	return StatusUnknown
 }
