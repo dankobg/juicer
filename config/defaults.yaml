@@ -1,0 +1,82 @@
+app:
+  env: development
+  host: https://juicer-dev.xyz
+  port: 1337
+  base_url: https://juicer-dev.xyz
+  website_url: https://juicer-dev.xyz:1420
+  kratos_public_url: https://juicer-dev.xyz/kratos
+  kratos_admin_url: http://kratos:4434
+
+server:
+  read_header_timeout: 5s
+  read_timeout: 7s
+  write_timeout: 10s
+  idle_timeout: 45s
+  use_tls: false
+  cert_file: xxxxx
+  key_file: xxxxx
+
+cors:
+  allow_origins:
+    - https://juicer.dev.xyz:1420
+  allow_methods:
+    - GET
+    - POSt
+    - PUt
+    - PATCH
+    - DELETE
+    - HEAD
+    - OPTIONS
+    - TRACE
+  allow_headers:
+    - Content-Type
+    - Authorization
+    - X-CSRF-Token
+  expose_headers:
+    - Content-Length
+    - Cache-Control
+    - Content-Language
+    - Content-Type
+    - Content-Range
+    - Expires
+    - Last-Modified
+    - Pragma
+    - Authorization
+  allow_credentials: true
+  max_age: 86400
+  debug: true
+
+postgres:
+  host: postgresql
+  port: 5432
+  db: juicer
+  user: test
+  password: test
+  scheme: postgres
+  ssl_mode: disable
+  retries_num: 5
+  retries_delay: 2s
+
+redis:
+  host: redis
+  port: 6379
+  db: 0
+  password:
+
+email:
+  enabled: false
+  tls: false
+  from_name: juicer
+  from_address: juicer-dev.xyz
+  smtp_host: xxxxx
+  smtp_port: 587
+  smtp_username: xxxxx
+  smtp_password: xxxxx
+  dev_smtp_host: mailpit
+  dev_smtp_port: 1025
+  dev_smtp_username: test
+  dev_smtp_password: test
+
+logger:
+  pretty_console: false
+  level: debug

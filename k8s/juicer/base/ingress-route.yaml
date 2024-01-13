@@ -1,0 +1,89 @@
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
+metadata:
+  name: juicer-ingressroute
+  namespace: dev
+  annotations:
+    cert-manager.io/cluster-issuer: local-ca-clusterissuer
+spec:
+  tls:
+    secretName: local-ca-secret
+    domains:
+      - main: dev-dankop.xyz
+        sans:
+          - dev-dankop.xyz
+  entryPoints:
+    # - web
+    - websecure
+  routes:
+    - match: Host(`dev-dankop.xyz`) && PathPrefix(`/api`)
+      kind: Rule
+      middlewares:
+        - name: redirect-to-https
+          namespace: dev
+      services:
+        - kind: Service
+          name: juicer
+          port: juicer
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
+metadata:
+  name: kratos-ingressroute
+  namespace: dev
+  annotations:
+    cert-manager.io/cluster-issuer: local-ca-clusterissuer
+spec:
+  tls:
+    secretName: local-ca-secret
+    domains:
+      - main: dev-dankop.xyz
+        sans:
+          - dev-dankop.xyz
+  entryPoints:
+    # - web
+    - websecure
+  routes:
+    - match: Host(`dev-dankop.xyz`) && PathPrefix(`/kratos`)
+      kind: Rule
+      services:
+        - kind: Service
+          name: kratos
+          port: kratos-public
+      middlewares:
+        - name: kratos-stripprefix
+          namespace: dev
+        - name: redirect-to-https
+          namespace: dev
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
+metadata:
+  name: traefik-ingressroute
+  namespace: dev
+  annotations:
+    cert-manager.io/cluster-issuer: local-ca-clusterissuer
+spec:
+  tls:
+    secretName: local-ca-secret
+    domains:
+      - main: traefik.dev-dankop.xyz
+        sans:
+          - traefik.dev-dankop.xyz
+  entryPoints:
+    - traefik
+    # - web
+    - websecure
+  routes:
+    - match: Host(`traefik.dev-dankop.xyz`)
+      kind: Rule
+      middlewares:
+        - name: redirect-to-https
+          namespace: dev
+      services:
+        # - kind: Service
+        #   name: traefik
+        #   port: 9000
+        - name: api@internal
+          kind: TraefikService

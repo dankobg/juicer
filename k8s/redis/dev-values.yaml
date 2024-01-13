@@ -1,0 +1,22 @@
+architecture: standalone
+
+image:
+  tag: 7.0.11-debian-11-r20
+
+auth:
+  enabled: true
+  sentinel: true
+
+master:
+  kind: StatefulSet
+  count: 1
+  persistence:
+    enabled: true
+    size: 4Gi
+  resources:
+    limits:
+      cpu: 500m
+      memory: 1Gi
+  disableCommands:
+    - FLUSHDB
+    - FLUSHALL

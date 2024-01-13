@@ -1,0 +1,72 @@
+ingressClass:
+  enabled: true
+  isDefaultClass: true
+
+experimental:
+  v3:
+    enabled: true
+  plugins:
+    enabled: false
+  kubernetesGateway:
+    enabled: true
+    gateway:
+      enabled: true
+    certificate:
+      group: core
+      kind: Secret
+      name: local-ca-secret
+    annotations:
+      cert-manager.io/cluster-issuer: local-ca-clusterissuer
+
+ports:
+  traefik:
+    port: 9000
+    containerPort: 9000
+    expose: false
+    exposedPort: 9000
+    protocol: TCP
+  web:
+    port: 8000
+    containerPort: 8000
+    expose: true
+    exposedPort: 80
+    protocol: TCP
+  websecure:
+    port: 8443
+    containerPort: 8443
+    expose: true
+    exposedPort: 443
+    protocol: TCP
+    http3:
+      enabled: false
+    tls:
+      enabled: true
+      domains:
+        - main: traefik.dev-dankop.xyz
+          sans:
+            - traefik.dev-dankop.xyz
+    middlewares: []
+  metrics:
+    port: 9100
+    expose: false
+    exposedPort: 9100
+    protocol: TCP
+
+ingressRoute:
+  dashboard:
+    enabled: true
+    insecure: true
+    # matchRule: PathPrefix(`/dashboard`) || PathPrefix(`/api`)
+    matchRule: Host(`traefik.dev-dankop.xyz`) && (PathPrefix(`/dashboard`) || PathPrefix(`/api`))
+    entryPoints: ["traefik", "web", "websecure"]
+    middlewares: []
+
+metrics:
+  prometheus: null
+
+globalArguments:
+  - "--global.checknewversion"
+  - "--global.sendanonymoususage=false"
+
+additionalArguments:
+  - "--serversTransport.insecureSkipVerify=true"

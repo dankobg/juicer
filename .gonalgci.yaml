@@ -1,0 +1,8 @@
+run:
+  skip-dirs:
+    - graph/generated
+    - ent
+
+linters-settings:
+  gci:
+    local-prefixes: github.com/dankobg/juicer/

@@ -1,0 +1,31 @@
+services:
+  # # ----------------------------------------------------------------------------
+  juicer:
+    build:
+      context: ./
+      dockerfile: docker/app.dockerfile
+    restart: always
+    # volumes:
+    #   - ./:/app
+    ports:
+      - "3000:3000"
+    networks:
+      - intranet
+    develop:
+      watch:
+        - action: sync+restart
+          path: ./
+          target: /app
+          ignore:
+            - "k8s"
+            - "web"
+            - ".vscode"
+            - ".github"
+        - action: rebuild
+          path: go.mod
+
+  # ----------------------------------------------------------------------------
+
+networks:
+  intranet:
+    driver: bridge

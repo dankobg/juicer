@@ -1,0 +1,145 @@
+x-logging: &prod-logging
+  driver: "json-file"
+  options:
+    max-file: "5"
+    max-size: "10M"
+    tag: "{{.ImageName}}|{{.Name}}|{{.ImageFullID}}|{{.FullID}}"
+
+x-healthcheck: &prod-healthcheck
+  interval: 120s
+  timeout: 5s
+  retries: 5
+
+services:
+  # ----------------------------------------------------------------------------
+  juicer:
+    environment:
+      - ENV=production
+    image: ghcr.io/dankobg/juicer:latest
+    restart: always
+    ports:
+      - "${PORT:-1337}:1337"
+    networks:
+      - intranet
+    depends_on:
+      postgresql:
+        condition: service_healthy
+    logging: *prod-logging
+    healthcheck:
+      <<: *prod-healthcheck
+      test:
+        [
+          "CMD",
+          "wget",
+          "--no-verbose",
+          "--tries=1",
+          "--spider",
+          "http://localhost:${PORT:-1337}/api/v1/health/alive",
+        ]
+  # ----------------------------------------------------------------------------
+  redis:
+    environment:
+      - ENV=production
+    image: redis:7.2-rc2-alpine
+    restart: on-failure
+    # command: redis-server --include /usr/local/etc/redis/redis.conf # UNCOMMENT IF USING CUSTOM REDIS CONF
+    volumes:
+      - redis-data:/data
+      # - ./redis/redis.conf:/usr/local/etc/redis/redis.conf # UNCOMMENT IF USING CUSTOM REDIS CONF
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    networks:
+      - intranet
+    logging: *prod-logging
+    healthcheck:
+      <<: *prod-healthcheck
+      test: ["CMD", "redis-cli", "ping"]
+  # ----------------------------------------------------------------------------
+  postgresql:
+    environment:
+      - ENV=production
+    image: postgres:15-alpine
+    restart: always
+    volumes:
+      - postgresql-data:/var/lib/postgresql/data
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    networks:
+      - intranet
+    logging: *prod-logging
+    healthcheck:
+      <<: *prod-healthcheck
+      test:
+        [
+          "CMD",
+          "pg_isready",
+          "-q",
+          "-d",
+          "${POSTGRES_DB}",
+          "-U",
+          "${POSTGRES_USER}",
+        ]
+  # ----------------------------------------------------------------------------
+  kratos:
+    environment:
+      - ENV=production
+    image: oryd/kratos:v1.0.0
+    restart: unless-stopped
+    command:
+      ["serve", "--watch-courier", "--config", "/etc/config/kratos/kratos.yaml"]
+    volumes:
+      - ./ory/kratos:/etc/config/kratos
+    ports:
+      - "${KRATOS_PUBLIC_PORT:-4433}:4433"
+      - "${KRATOS_ADMIN_PORT:-4434}:4434"
+    networks:
+      - intranet
+    depends_on:
+      postgresql:
+        condition: service_healthy
+      kratos-migrate:
+        condition: service_started
+    logging: *prod-logging
+    healthcheck:
+      <<: *prod-healthcheck
+      test:
+        [
+          "CMD",
+          "wget",
+          "--no-verbose",
+          "--tries=1",
+          "--spider",
+          "http://localhost:${KRATOS_PUBLIC_PORT:-4433}/health/alive",
+        ]
+  # ----------------------------------------------------------------------------
+  kratos-migrate:
+    environment:
+      - ENV=production
+    image: oryd/kratos:v1.0.0
+    restart: on-failure
+    volumes:
+      - ./ory/kratos:/etc/config/kratos
+    command:
+      [
+        "migrate",
+        "sql",
+        "--read-from-env",
+        "--config",
+        "/etc/config/kratos/kratos.yaml",
+        "--yes",
+      ]
+    networks:
+      - intranet
+    depends_on:
+      postgresql:
+        condition: service_healthy
+    logging: *prod-logging
+  # ----------------------------------------------------------------------------
+
+volumes:
+  postgresql-data:
+  redis-data:
+
+networks:
+  intranet:
+    driver: bridge

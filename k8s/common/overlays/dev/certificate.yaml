@@ -1,0 +1,17 @@
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: local-cert
+  namespace: dev
+spec:
+  secretName: local-ca-secret
+  issuerRef:
+    name: local-ca-clusterissuer
+    kind: ClusterIssuer
+    group: cert-manager.io
+  privateKey:
+    rotationPolicy: Always
+  dnsNames:
+    - dev-dankop.xyz
+    - "*.dev-dankop.xyz"

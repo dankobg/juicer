@@ -1,0 +1,35 @@
+---
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: cnpg
+spec:
+  imageName: ghcr.io/cloudnative-pg/postgresql:15.3
+  instances: 1
+  primaryUpdateStrategy: unsupervised
+
+  postgresql:
+    parameters:
+      shared_buffers: 512MB
+
+  bootstrap:
+    initdb:
+      database: juicer
+      owner: danko
+      secret:
+        name: postgres-user-secret
+
+  superuserSecret:
+    name: postgres-superuser-secret
+
+  storage:
+    storageClass: do-block-storage
+    size: 1Gi
+
+  resources:
+    requests:
+      memory: 512Mi
+      cpu: 1
+    limits:
+      memory: 1Gi
+      cpu: 2
