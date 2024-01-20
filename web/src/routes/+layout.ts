@@ -1,0 +1,22 @@
+import { kratos } from '$lib/kratos/client';
+import { KratosService } from '$lib/kratos/service';
+import type { LayoutLoad } from './$types';
+
+export const load: LayoutLoad = async () => {
+	try {
+		const result = await kratos.toSession();
+		if (result.status !== 200) {
+			return {
+				svc: new KratosService(null),
+			};
+		}
+
+		const session = result.data;
+		const svc = new KratosService(session);
+		return { svc };
+	} catch (error) {
+		return {
+			svc: new KratosService(null),
+		};
+	}
+};

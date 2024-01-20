@@ -10,11 +10,12 @@ export interface CustomTraits {
 export interface User {
 	id?: string;
 	email?: string;
-	first_name?: string;
-	last_name?: string;
-	avatar_url?: string;
+	firstName?: string;
+	lastName?: string;
+	avatarUrl?: string;
 	role?: string;
 	isEmployee?: boolean;
+	fullName?: string;
 }
 
 export interface SessionService {
@@ -47,14 +48,16 @@ export class KratosService implements SessionService {
 
 		const traits = this.session?.identity?.traits as CustomTraits;
 
-		return {
+		const user: User = {
 			id: this.session?.identity?.id,
 			email: traits.email,
-			first_name: traits.first_name,
-			last_name: traits.last_name,
-			avatar_url: traits.avatar_url,
+			firstName: traits.first_name,
+			lastName: traits.last_name,
+			avatarUrl: traits.avatar_url,
 			role: this.getRole(),
 			isEmployee: this.isEmployee(),
 		};
+
+		return user;
 	}
 }

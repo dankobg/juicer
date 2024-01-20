@@ -3,7 +3,7 @@ app:
   host: https://juicer-dev.xyz
   port: 1337
   base_url: https://juicer-dev.xyz
-  website_url: https://juicer-dev.xyz:1420
+  website_url: https://juicer-dev.xyz:3974
   kratos_public_url: https://juicer-dev.xyz/kratos
   kratos_admin_url: http://kratos:4434
 
@@ -18,7 +18,7 @@ server:
 
 cors:
   allow_origins:
-    - https://juicer.dev.xyz:1420
+    - https://juicer.dev.xyz:3974
   allow_methods:
     - GET
     - POSt
@@ -47,9 +47,9 @@ cors:
   debug: true
 
 postgres:
-  host: postgresql
+  host: pg
   port: 5432
-  db: juicer
+  db: test
   user: test
   password: test
   scheme: postgres

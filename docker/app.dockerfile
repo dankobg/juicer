@@ -1,4 +1,5 @@
-FROM golang:1.21-alpine AS dev
+ARG GO_VERSION=1.21-alpine
+FROM golang:${GO_VERSION} AS dev
 RUN apk update && apk upgrade \ 
   && apk add --no-cache git dpkg gcc musl-dev \
   && go install github.com/go-delve/delve/cmd/dlv@latest

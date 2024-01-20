@@ -1,6 +1,6 @@
 version: v1.0.0
 
-dsn: postgres://test:test@postgresql:5432/juicer?sslmode=disable&max_conns=20&max_idle_conns=4
+dsn: postgres://test:test@pg:5432/test?sslmode=disable&max_conns=20&max_idle_conns=4
 
 serve:
   public:
@@ -12,7 +12,7 @@ serve:
       options_passthrough: true
       max_age: 0
       allowed_origins:
-        - https://dev-dankop.xyz:1420
+        - https://dev-dankop.xyz:3974
       allowed_methods:
         - GET
         - POST
@@ -36,11 +36,11 @@ serve:
     base_url: http://localhost:4434/
 
 selfservice:
-  default_browser_return_url: https://dev-dankop.xyz:1420
+  default_browser_return_url: https://dev-dankop.xyz:3974
   allowed_return_urls:
-    - https://dev-dankop.xyz:1420
-    - https://dev-dankop.xyz:1420/dashboard
-    - https://dev-dankop.xyz:1420/auth/login
+    - https://dev-dankop.xyz:3974
+    - https://dev-dankop.xyz:3974/dashboard
+    - https://dev-dankop.xyz:3974/auth/login
   methods:
     password:
       enabled: true
@@ -74,44 +74,44 @@ selfservice:
 
   flows:
     error:
-      ui_url: https://dev-dankop.xyz:1420/error
+      ui_url: https://dev-dankop.xyz:3974/error
     settings:
-      ui_url: https://dev-dankop.xyz:1420/dashboard/account
+      ui_url: https://dev-dankop.xyz:3974/dashboard/account
       privileged_session_max_age: 1m
       required_aal: highest_available
     recovery:
       enabled: true
-      ui_url: https://dev-dankop.xyz:1420/auth/recovery
+      ui_url: https://dev-dankop.xyz:3974/auth/recovery
       use: code
       after:
-        default_browser_return_url: https://dev-dankop.xyz:1420/auth/login
+        default_browser_return_url: https://dev-dankop.xyz:3974/auth/login
         hooks:
           - hook: revoke_active_sessions
     verification:
       enabled: true
-      ui_url: https://dev-dankop.xyz:1420/auth/verification
+      ui_url: https://dev-dankop.xyz:3974/auth/verification
       use: code
       after:
-        default_browser_return_url: https://dev-dankop.xyz:1420/auth/login
+        default_browser_return_url: https://dev-dankop.xyz:3974/auth/login
     logout:
       after:
-        default_browser_return_url: https://dev-dankop.xyz:1420
+        default_browser_return_url: https://dev-dankop.xyz:3974
     login:
-      ui_url: https://dev-dankop.xyz:1420/auth/login
+      ui_url: https://dev-dankop.xyz:3974/auth/login
       lifespan: 10m
       after:
         password:
           hooks:
             - hook: require_verified_address
         oidc:
-          default_browser_return_url: https://juicer-dev.xyz:1420
+          default_browser_return_url: https://juicer-dev.xyz:3974
     registration:
-      ui_url: https://dev-dankop.xyz:1420/auth/registration
+      ui_url: https://dev-dankop.xyz:3974/auth/registration
       lifespan: 10m
       after:
-        default_browser_return_url: https://dev-dankop.xyz:1420/auth/login
+        default_browser_return_url: https://dev-dankop.xyz:3974/auth/login
         password:
-          default_browser_return_url: https://dev-dankop.xyz:1420/auth/login
+          default_browser_return_url: https://dev-dankop.xyz:3974/auth/login
           # hooks:
           #   - hook: web_hook
           #     config:
@@ -125,7 +125,7 @@ selfservice:
           #         ignore: false
           #         parse: false
         oidc:
-          default_browser_return_url: https://dev-dankop.xyz:1420
+          default_browser_return_url: https://dev-dankop.xyz:3974
           hooks:
             - hook: session
             # - hook: web_hook
