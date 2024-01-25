@@ -13,7 +13,14 @@ export const load: LayoutLoad = async () => {
 
 		const session = result.data;
 		const svc = new KratosService(session);
-		return { svc };
+
+		const logoutResp = await kratos.createBrowserLogoutFlow();
+
+		return {
+			svc,
+			logoutToken: logoutResp.data.logout_token,
+			logoutUrl: logoutResp.data.logout_url,
+		};
 	} catch (error) {
 		return {
 			svc: new KratosService(null),

@@ -1,7 +1,7 @@
 import type { PageLoad } from './$types';
 import type { LoginFlow } from '@ory/client';
 import { kratos } from '$lib/kratos/client';
-import { extractCSRFToken } from '$lib/kratos/helpers';
+import { extractCSRFToken, isAxiosError } from '$lib/kratos/helpers';
 import { browser } from '$app/environment';
 
 export const load: PageLoad = (async ({ url }) => {
@@ -18,11 +18,15 @@ export const load: PageLoad = (async ({ url }) => {
 				id: flowIdParam,
 			});
 
+			console.log('load getLoginFlow success', flowResponse);
+
 			flow = { ...flowResponse.data };
 		} catch (error) {
-			console.log('login error:', error);
-
-			flow = null;
+			if (isAxiosError(error)) {
+				const flowData = error.response?.data as LoginFlow;
+				console.log('load getLoginFlow err:', flowData);
+				flow = flowData;
+			}
 		}
 	} else {
 		const aal: string | undefined = aalParam ? aalParam.toString() : undefined;
@@ -36,16 +40,23 @@ export const load: PageLoad = (async ({ url }) => {
 				refresh,
 			});
 
-			if ([403, 404, 410].includes(flowResponse.status)) {
-				console.log('login createBrowserLoginFlow: [403, 404, 410]');
-			}
 			if (flowResponse.status !== 200) {
-				console.log('login not 200');
+				console.log('load createBrowserLoginFlow status not 200');
+
+				if ([403, 404, 410].includes(flowResponse.status)) {
+					console.log('load createBrowserLoginFlow status [403, 404, 410]');
+				}
 			}
+
+			console.log('load createBrowserLoginFlow success', flowResponse);
 
 			flow = { ...flowResponse.data };
 		} catch (error) {
-			console.log('login:', error);
+			if (isAxiosError(error)) {
+				const flowData = error.response?.data as LoginFlow;
+				console.log('load createBrowserLoginFlow err:', flowData);
+				flow = flowData;
+			}
 		}
 	}
 

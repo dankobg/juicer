@@ -16,9 +16,11 @@ export const load: PageLoad = (async ({ url }) => {
 				id: flowIdParam,
 			});
 
+			console.log('load getRecoveryFlow', flowResponse);
+
 			flow = { ...flowResponse.data };
 		} catch (error) {
-			console.log('recovery error:', error);
+			console.log('load getRecoveryFlow', error);
 
 			flow = null;
 		}
@@ -30,18 +32,18 @@ export const load: PageLoad = (async ({ url }) => {
 				returnTo,
 			});
 
-			console.log('load - recovery flowResponse', flowResponse);
-
-			if ([403, 404, 410].includes(flowResponse.status)) {
-				console.log('[403, 404, 410].includes(flowResponse.status)');
-			}
 			if (flowResponse.status !== 200) {
-				console.log('flowResponse.status !== 200');
+				console.log('load createBrowserRecoveryFlow status not 200');
+
+				if ([403, 404, 410].includes(flowResponse.status)) {
+					console.log('load createBrowserRecoveryFlow status [403, 404, 410]');
+				}
 			}
 
+			console.log('load createBrowserRecoveryFlow', flowResponse);
 			flow = { ...flowResponse.data };
 		} catch (error) {
-			console.log('recovery error2:', error);
+			console.log('load createBrowserRecoveryFlow', error);
 			// case: 400 -> validation err
 			// setFlow(err.resp.data.flow)
 		}

@@ -1,4 +1,5 @@
 import type { LoginFlow, RecoveryFlow, RegistrationFlow, SettingsFlow, VerificationFlow } from '@ory/client';
+import type { AxiosError } from '../../app';
 
 type Provider = {
 	name: string;

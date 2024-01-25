@@ -1,7 +1,6 @@
 <script lang="ts">
 	import type { PageData } from './$types';
 	import type { VerificationFlow, UiNodeInputAttributes, UpdateVerificationFlowWithCodeMethod } from '@ory/client';
-	import { goto } from '$app/navigation';
 	import { kratos } from '$lib/kratos/client';
 	import { Button } from 'flowbite-svelte';
 	import { Section, Register } from 'flowbite-svelte-blocks';
@@ -12,14 +11,14 @@
 	import { isAxiosError } from '$lib/kratos/helpers';
 	import SimpleAlert from '$lib/Alerts/SimpleAlert.svelte';
 	import InputText from '$lib/Inputs/InputText.svelte';
+	import { toast } from 'svelte-sonner';
 
 	export let data: PageData;
 
 	const verificationFormSchema = z.object({
 		csrf_token: z.string().min(1, { message: 'csrf_token is required' }),
-		method: z.string().min(1, { message: 'method is required' }),
-		// code: z.string().length(6, { message: 'Code must have exactly 6 characters' }),
-		code: z.string(),
+		method: z.literal('code'),
+		code: z.string().length(6, { message: 'Code must have exactly 6 characters (check leading or trailing space)' }),
 	});
 
 	type VerificationFormSchema = z.infer<typeof verificationFormSchema>;
@@ -31,6 +30,7 @@
 	};
 
 	const supForm = superForm(initialVerificationForm, {
+		id: 'auth_verification',
 		validators: zod(verificationFormSchema),
 		SPA: true,
 		dataType: 'json',
@@ -40,7 +40,7 @@
 		stickyNavbar: undefined,
 		async onUpdated({ form }) {
 			if (!form.valid) {
-				// toast.error('Invalid form, please fix errors and try again');
+				toast.error('Invalid form, please fix errors and try again');
 				return;
 			}
 
@@ -49,18 +49,37 @@
 
 			if (url) {
 				try {
-					await kratos.updateVerificationFlow({
+					const responseFlow = await kratos.updateVerificationFlow({
 						flow: data.flow?.id ?? '',
 						updateVerificationFlowBody: body,
 					});
 
-					goto('/');
+					console.log('updateVerificationFlow success', responseFlow);
+
+					if (responseFlow.data.state === 'passed_challenge') {
+						for (const item of responseFlow.data.ui.nodes) {
+							if (item.group === 'code') {
+								const attrs = item.attributes;
+
+								if (attrs.node_type === 'a') {
+									window.sessionStorage.setItem(
+										'juicer_email_verified',
+										'Your E-Mail has been verified! You can now log in'
+									);
+									window.location.href = attrs.href;
+									return;
+								}
+							}
+						}
+					}
 				} catch (error) {
 					if (isAxiosError(error)) {
 						const flowData = error?.response?.data as VerificationFlow;
 						data.flow = flowData;
 
-						const nodes = flowData.ui.nodes ?? [];
+						console.log('updateVerificationFlow err', flowData);
+
+						const nodes = flowData?.ui?.nodes ?? [];
 						const fieldErrors = new Map<keyof VerificationFormSchema, string[]>();
 
 						for (const node of nodes) {
@@ -95,7 +114,7 @@
 <Section name="login">
 	<Register href="/">
 		<svelte:fragment slot="top">
-			<img class="w-8 h-8 mr-2" src="/images/logo.jpeg" alt="logo" />
+			<img class="w-8 h-8 mr-2" src="/images/logo.svg" alt="logo" />
 			Juicer
 		</svelte:fragment>
 
@@ -105,7 +124,7 @@
 
 				{#each data?.flow?.ui?.messages ?? [] as msg}
 					{@const err = msg.type === 'error'}
-					<SimpleAlert kind={err ? 'error' : 'info'} title={err ? 'Unable to sign up' : undefined} text={msg.text} />
+					<SimpleAlert kind={err ? 'error' : 'info'} title={err ? 'Unable to sign up' : ''} text={msg.text} />
 				{/each}
 
 				<InputText form={supForm} name="code" label="Verification code" />

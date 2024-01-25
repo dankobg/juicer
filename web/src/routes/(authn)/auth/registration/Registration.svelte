@@ -15,6 +15,7 @@
 	import InputPassword from '$lib/Inputs/InputPassword.svelte';
 	import SimpleAlert from '$lib/Alerts/SimpleAlert.svelte';
 	import InputText from '$lib/Inputs/InputText.svelte';
+	import { toast } from 'svelte-sonner';
 
 	export let data: PageData;
 
@@ -25,7 +26,7 @@
 		traits: z.object({
 			first_name: z.string(),
 			last_name: z.string(),
-			email: z.string().min(1, { message: 'E-Mail is required' }).email('E-Mail must be a valid email'),
+			email: z.string().min(1, { message: 'E-Mail is required' }).email({ message: 'E-Mail must be a valid email' }),
 			avatar_url: z.string(),
 		}),
 		transient_payload: z.object({}).optional(),
@@ -47,6 +48,7 @@
 	};
 
 	const supForm = superForm(initialRegistrationForm, {
+		id: 'auth_registration',
 		validators: zod(registrationFormSchema),
 		SPA: true,
 		dataType: 'json',
@@ -56,7 +58,7 @@
 		stickyNavbar: undefined,
 		async onUpdated({ form }) {
 			if (!form.valid) {
-				// toast.error('Invalid form, please fix errors and try again');
+				toast.error('Invalid form, please fix errors and try again');
 				return;
 			}
 
@@ -69,6 +71,8 @@
 						flow: data.flow?.id ?? '',
 						updateRegistrationFlowBody: body,
 					});
+
+					console.log('updateRegistrationFlow success:', responseFlow.data);
 
 					if (responseFlow.data.continue_with) {
 						for (const item of responseFlow.data.continue_with) {
@@ -85,8 +89,9 @@
 					if (isAxiosError(error)) {
 						const flowData = error?.response?.data as RegistrationFlow;
 						data.flow = flowData;
+						console.log('updateRegistrationFlow err:', flowData);
 
-						const nodes = flowData.ui.nodes ?? [];
+						const nodes = flowData?.ui?.nodes ?? [];
 						const fieldErrors = new Map<keyof RegistrationFormSchema, string[]>();
 
 						for (const node of nodes) {
@@ -121,7 +126,7 @@
 <Section name="register">
 	<Register href="/">
 		<svelte:fragment slot="top">
-			<img class="w-8 h-8 mr-2" src="/images/logo.jpeg" alt="logo" />
+			<img class="w-8 h-8 mr-2" src="/images/logo.svg" alt="logo" />
 			Juicer
 		</svelte:fragment>
 
@@ -166,8 +171,9 @@
 								encType="application/x-www-form-urlencoded"
 								data-provider={provider.name}
 							>
-								<input type="hidden" name="csrf_token" bind:value={data.csrf} readonly required />
+								<input type="hidden" name="csrf_token" bind:value={$form.csrf_token} readonly required />
 								<input type="hidden" name="provider" value={provider.name} readonly required />
+
 								<button id={provider.name} type="submit" class="w-12 h-12">
 									<img
 										class="w-full h-full object-cover"

@@ -81,13 +81,16 @@ stop:
 restart:
 	docker compose restart
 
-# Run docker system prune (without volumes)
+# Run docker system prune (without unused volumes)
 prune:
-	docker system prune -a -f 
-
-# Run docker system prune (including volumes)
-prune-all:
 	docker system prune -a -f --volumes
+
+# Run docker volume prune (annonymous and unused)
+prune-volumes:
+	docker volume prune -a -f 
+
+# Run docker system prune all
+prune-all: prune && prune-volumes
 
 # ----------------------------------------------------------------------------
 

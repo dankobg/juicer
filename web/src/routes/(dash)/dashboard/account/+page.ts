@@ -1,5 +1,5 @@
 import type { PageLoad } from './$types';
-import type { RegistrationFlow } from '@ory/client';
+import type { SettingsFlow } from '@ory/client';
 import { kratos } from '$lib/kratos/client';
 import { extractCSRFToken, isAxiosError } from '$lib/kratos/helpers';
 import { browser } from '$app/environment';
@@ -8,21 +8,21 @@ export const load: PageLoad = (async ({ url }) => {
 	const returnToParam = browser && url.searchParams.get('return_to');
 	const flowIdParam = browser && url.searchParams.get('flow');
 
-	let flow: RegistrationFlow | null = null;
+	let flow: SettingsFlow | null = null;
 
 	if (flowIdParam) {
 		try {
-			const flowResponse = await kratos.getRegistrationFlow({
+			const flowResponse = await kratos.getSettingsFlow({
 				id: flowIdParam,
 			});
 
-			console.log('load getRegistrationFlow success:', flowResponse);
+			console.log('load getSettingsFlow success', flowResponse);
 
-			flow = flowResponse.data;
+			flow = { ...flowResponse.data };
 		} catch (error) {
 			if (isAxiosError(error)) {
-				const flowData = error.response?.data as RegistrationFlow;
-				console.log('load getRegistrationFlow err:', flowData);
+				const flowData = error.response?.data as SettingsFlow;
+				console.log('load getSettingsFlow err:', flowData);
 				flow = flowData;
 			}
 		}
@@ -30,24 +30,26 @@ export const load: PageLoad = (async ({ url }) => {
 		const returnTo: string | undefined = returnToParam ? returnToParam.toString() : undefined;
 
 		try {
-			const flowResponse = await kratos.createBrowserRegistrationFlow({
+			const flowResponse = await kratos.createBrowserSettingsFlow({
 				returnTo,
 			});
 
 			if (flowResponse.status !== 200) {
-				console.log('load createBrowserRegistrationFlow: status not 200');
+				console.log('load createBrowsersettingsFlow status not 200');
 
 				if ([403, 404, 410].includes(flowResponse.status)) {
-					console.log('load createBrowserRegistrationFlow status [403, 404, 410]');
+					console.log('load createBrowsersettingsFlow status [403, 404, 410]');
 				}
 			}
 
-			console.log('load createBrowserRegistrationFlow success', flowResponse.data);
-			flow = flowResponse.data;
+			console.log('load createBrowsersettingsFlow success', flowResponse);
+
+			flow = { ...flowResponse.data };
 		} catch (error) {
 			if (isAxiosError(error)) {
-				const errData = error.response?.data;
-				console.log('load createBrowserRegistrationFlow err:', errData);
+				const flowData = error.response?.data as SettingsFlow;
+				console.log('load createBrowsersettingsFlow err:', flowData);
+				flow = flowData;
 			}
 		}
 	}

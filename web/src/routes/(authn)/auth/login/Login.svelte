@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { PageData } from './$types';
+	import { onMount } from 'svelte';
 	import type { LoginFlow, UiNodeInputAttributes, UpdateLoginFlowWithPasswordMethod } from '@ory/client';
 	import { goto } from '$app/navigation';
 	import { config } from '$lib/kratos/config';
@@ -14,6 +15,7 @@
 	import InputEmail from '$lib/Inputs/InputEmail.svelte';
 	import InputPassword from '$lib/Inputs/InputPassword.svelte';
 	import SimpleAlert from '$lib/Alerts/SimpleAlert.svelte';
+	import { toast } from 'svelte-sonner';
 
 	export let data: PageData;
 
@@ -34,6 +36,7 @@
 	};
 
 	const supForm = superForm(initialLoginForm, {
+		id: 'auth_login',
 		validators: zod(loginFormSchema),
 		SPA: true,
 		dataType: 'json',
@@ -43,7 +46,7 @@
 		stickyNavbar: undefined,
 		async onUpdated({ form }) {
 			if (!form.valid) {
-				// toast.error('Invalid form, please fix errors and try again');
+				toast.error('Invalid form, please fix errors and try again');
 				return;
 			}
 
@@ -52,10 +55,12 @@
 
 			if (url) {
 				try {
-					await kratos.updateLoginFlow({
+					const responseFlow = await kratos.updateLoginFlow({
 						flow: data.flow?.id ?? '',
 						updateLoginFlowBody: body,
 					});
+
+					console.log('updateLoginFlow success', responseFlow);
 
 					goto('/');
 				} catch (error) {
@@ -63,7 +68,9 @@
 						const flowData = error?.response?.data as LoginFlow;
 						data.flow = flowData;
 
-						const nodes = flowData.ui.nodes ?? [];
+						console.log('updateLoginFlow err', flowData);
+
+						const nodes = flowData?.ui?.nodes ?? [];
 						const fieldErrors = new Map<keyof LoginFormSchema, string[]>();
 
 						for (const node of nodes) {
@@ -93,12 +100,36 @@
 	});
 
 	const { form, enhance, errors } = supForm;
+
+	let emailVerified = false;
+	let emailVerifiedMsg = '';
+
+	onMount(() => {
+		const val = window.sessionStorage.getItem('juicer_email_verified');
+
+		if (val) {
+			emailVerified = true;
+			emailVerifiedMsg = val;
+		}
+
+		return () => {
+			emailVerified = false;
+			emailVerifiedMsg = '';
+			sessionStorage.removeItem('juicer_email_verified');
+		};
+	});
 </script>
+
+<svelte:window
+	on:beforeunload={() => {
+		sessionStorage.removeItem('juicer_email_verified');
+	}}
+/>
 
 <Section name="login">
 	<Register href="/">
 		<svelte:fragment slot="top">
-			<img class="w-8 h-8 mr-2" src="/images/logo.jpeg" alt="logo" />
+			<img class="w-8 h-8 mr-2" src="/images/logo.svg" alt="logo" />
 			Juicer
 		</svelte:fragment>
 
@@ -110,6 +141,10 @@
 					{@const err = msg.type === 'error'}
 					<SimpleAlert kind={err ? 'error' : 'info'} title={err ? 'Unable to sign up' : undefined} text={msg.text} />
 				{/each}
+
+				{#if emailVerified}
+					<SimpleAlert kind="success" title={emailVerifiedMsg} />
+				{/if}
 
 				<InputEmail form={supForm} name="identifier" label="Your email" />
 				<InputPassword form={supForm} name="password" label="Your password" />

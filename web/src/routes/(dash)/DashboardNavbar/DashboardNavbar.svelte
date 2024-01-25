@@ -23,7 +23,7 @@
 	$: activeUrl = browser ? $page.url.pathname : '/';
 </script>
 
-<Navbar>
+<Navbar class="border-b border-gray-200 dark:border-gray-700">
 	<NavBrand href="/">
 		<img src="/images/logo.svg" class="me-3 h-6 sm:h-9" alt="Juicer Logo" />
 		<span class="self-center whitespace-nowrap text-xl font-semibold dark:text-white">Juicer</span>
@@ -31,8 +31,8 @@
 
 	<NavUl class="order-1" {activeUrl}>
 		<NavLi href="/">Home</NavLi>
-		<NavLi href="/contact">Contact</NavLi>
 		<NavLi href="/dashboard">Dashboard</NavLi>
+		<NavLi href="/dashboard/account">Account</NavLi>
 	</NavUl>
 
 	{#if user !== null}
@@ -51,7 +51,7 @@
 					{/if}
 				</DropdownHeader>
 			{/if}
-			<DropdownItem href="/dashboard">Dashboard</DropdownItem>
+			<DropdownItem>Dashboard</DropdownItem>
 			<DropdownItem href="/dashboard/account">Account</DropdownItem>
 			<DropdownDivider />
 			<DropdownItem href={logoutUrl}>Log out</DropdownItem>

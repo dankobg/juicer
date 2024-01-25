@@ -12,6 +12,8 @@
 	import { isAxiosError } from '$lib/kratos/helpers';
 	import InputEmail from '$lib/Inputs/InputEmail.svelte';
 	import SimpleAlert from '$lib/Alerts/SimpleAlert.svelte';
+	import { toast } from 'svelte-sonner';
+	import InputText from '$lib/Inputs/InputText.svelte';
 
 	export let data: PageData;
 
@@ -35,6 +37,7 @@
 	};
 
 	const supForm = superForm(initialRecoveryForm, {
+		id: 'auth_recovery',
 		validators: zod(recoveryFormSchema),
 		SPA: true,
 		dataType: 'json',
@@ -44,7 +47,7 @@
 		stickyNavbar: undefined,
 		async onUpdated({ form }) {
 			if (!form.valid) {
-				// toast.error('Invalid form, please fix errors and try again');
+				toast.error('Invalid form, please fix errors and try again');
 				return;
 			}
 
@@ -69,6 +72,8 @@
 
 					codeSentToEmail = true;
 					secondFlowId = flowResponse.data.ui.action.split('flow=')[1];
+
+					console.log('updateRecoveryFlow', flowResponse);
 					// goto('/');
 				} catch (error) {
 					if (isAxiosError(error)) {
@@ -81,7 +86,7 @@
 						const flowData = error?.response?.data as RecoveryFlow;
 						data.flow = flowData;
 
-						const nodes = flowData.ui.nodes ?? [];
+						const nodes = flowData?.ui?.nodes ?? [];
 						const fieldErrors = new Map<keyof RecoveryFormSchema, string[]>();
 
 						for (const node of nodes) {
@@ -114,7 +119,7 @@
 </script>
 
 <Section name="forgotpassword">
-	<ForgotPasswordHeader src="/images/logo.jpeg" alt="logo" href="/">Juicer</ForgotPasswordHeader>
+	<ForgotPasswordHeader src="/images/logo.svg" alt="logo" href="/">Juicer</ForgotPasswordHeader>
 
 	<ForgotPassword>
 		<h1 class="mb-1 text-xl font-bold leading-tight tracking-tight text-gray-900 md:text-2xl dark:text-white">
@@ -131,9 +136,19 @@
 		</p>
 
 		<form method="POST" use:enhance class="mt-4 space-y-4 lg:mt-5 md:space-y-5">
-			<InputEmail form={supForm} name="email" label="Your email" />
+			{#if codeSentToEmail}
+				<InputText form={supForm} name="code" label="Recovery code" />
+			{:else}
+				<InputEmail form={supForm} name="email" label="Your email" />
+			{/if}
 
-			<Button type="submit" color="red" class="font-bold">Reset password</Button>
+			<Button type="submit" color="red" class="font-bold">
+				{#if codeSentToEmail}
+					Recover account
+				{:else}
+					Send recovery code
+				{/if}
+			</Button>
 		</form>
 	</ForgotPassword>
 </Section>

@@ -1,7 +1,7 @@
 import type { PageLoad } from './$types';
 import type { VerificationFlow } from '@ory/client';
 import { kratos } from '$lib/kratos/client';
-import { extractCSRFToken } from '$lib/kratos/helpers';
+import { extractCSRFToken, isAxiosError } from '$lib/kratos/helpers';
 import { browser } from '$app/environment';
 
 export const load: PageLoad = (async ({ url }) => {
@@ -16,9 +16,15 @@ export const load: PageLoad = (async ({ url }) => {
 				id: flowIdParam,
 			});
 
+			console.log('load getVerificationFlow', flowResponse);
+
 			flow = { ...flowResponse.data };
 		} catch (error) {
-			console.log('verification error:', error);
+			if (isAxiosError(error)) {
+				const flowData = error.response?.data as VerificationFlow;
+				console.log('load getVerificationFlow err:', flowData);
+				flow = flowData;
+			}
 
 			// switch (err.response?.status) {
 			//   case 410:
@@ -27,8 +33,6 @@ export const load: PageLoad = (async ({ url }) => {
 			//     // Status code 403 implies some other issue (e.g. CSRF) - let's reload!
 			//     return router.push("/verification")
 			// }
-
-			flow = null;
 		}
 	} else {
 		const returnTo: string | undefined = returnToParam ? returnToParam.toString() : undefined;
@@ -42,16 +46,22 @@ export const load: PageLoad = (async ({ url }) => {
 			// already signed in
 			// goto('/')
 
-			if ([403, 404, 410].includes(flowResponse.status)) {
-				console.log('[403, 404, 410].includes(flowResponse.status)');
-			}
 			if (flowResponse.status !== 200) {
-				console.log('flowResponse.status !== 200');
+				console.log('load createBrowserVerificationFlow status not 200');
+
+				if ([403, 404, 410].includes(flowResponse.status)) {
+					console.log('load createBrowserVerificationFlow status [403, 404, 410]');
+				}
 			}
 
+			console.log('load createBrowserVerificationFlow success', flowResponse);
 			flow = { ...flowResponse.data };
 		} catch (error) {
-			console.log('verification error2:', error);
+			if (isAxiosError(error)) {
+				const flowData = error.response?.data as VerificationFlow;
+				console.log('load createBrowserVerificationFlow err:', flowData);
+				flow = flowData;
+			}
 		}
 	}
 
