@@ -13,8 +13,6 @@
 	import SimpleAlert from '$lib/Alerts/SimpleAlert.svelte';
 	import { toast } from 'svelte-sonner';
 	import InputText from '$lib/Inputs/InputText.svelte';
-	import SuperDebug from 'sveltekit-superforms/client/SuperDebug.svelte';
-
 	export let data: PageData;
 
 	const SettingsFormSchema = z.object({
@@ -127,8 +125,6 @@
 
 	const { form, enhance, errors } = supForm;
 </script>
-
-<SuperDebug data={$form} />
 
 <Card>
 	<form method="POST" use:enhance class="space-y-6" action="/">

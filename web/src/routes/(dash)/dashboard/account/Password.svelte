@@ -70,7 +70,6 @@
 						}
 					}
 
-					goto('/');
 					reset();
 				} catch (error) {
 					if (isAxiosError(error)) {

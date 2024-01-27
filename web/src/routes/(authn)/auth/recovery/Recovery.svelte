@@ -65,7 +65,6 @@
 					const theFlowId = codeSentToEmail ? secondFlowId ?? '' : data.flow?.id ?? '';
 
 					const flowResponse = await kratos.updateRecoveryFlow({
-						// flow: data.flow?.id ?? '',
 						flow: theFlowId,
 						updateRecoveryFlowBody: body,
 					});
@@ -122,8 +121,16 @@
 	<ForgotPasswordHeader src="/images/logo.svg" alt="logo" href="/">Juicer</ForgotPasswordHeader>
 
 	<ForgotPassword>
+		{#if codeSentToEmail}
+			<SimpleAlert kind="success" title="Recovery code was sent to your email successfully" text="" />
+		{/if}
+
 		<h1 class="mb-1 text-xl font-bold leading-tight tracking-tight text-gray-900 md:text-2xl dark:text-white">
-			Forgot your password?
+			{#if codeSentToEmail}
+				Complete the recovery flow
+			{:else}
+				Forgot your password?
+			{/if}
 		</h1>
 
 		{#each data?.flow?.ui?.messages ?? [] as msg}
@@ -132,7 +139,11 @@
 		{/each}
 
 		<p class="font-light text-gray-500 dark:text-gray-400">
-			Don't fret! Just type in your email and we will send you a code to reset your password!
+			{#if codeSentToEmail}
+				Enter the recovery code that was sent via email
+			{:else}
+				Don't fret! Just type in your email and we will send you a code to reset your password!
+			{/if}
 		</p>
 
 		<form method="POST" use:enhance class="mt-4 space-y-4 lg:mt-5 md:space-y-5">
