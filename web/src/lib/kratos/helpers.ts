@@ -15,7 +15,7 @@ export const providers: Provider[] = [
 	{ name: 'spotify', label: 'Spotify' },
 ];
 
-type KratosFlow = LoginFlow | RegistrationFlow | RecoveryFlow | VerificationFlow | SettingsFlow;
+export type KratosFlow = LoginFlow | RegistrationFlow | RecoveryFlow | VerificationFlow | SettingsFlow;
 
 export function extractCSRFToken(flow: KratosFlow | null): string {
 	if (!flow) {

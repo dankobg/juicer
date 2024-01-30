@@ -1,8 +1,11 @@
+import { config } from './../../../../lib/kratos/config';
 import type { PageLoad } from './$types';
-import type { RegistrationFlow } from '@ory/client';
+import type { GenericError, RegistrationFlow } from '@ory/client';
 import { kratos } from '$lib/kratos/client';
 import { extractCSRFToken, isAxiosError } from '$lib/kratos/helpers';
 import { browser } from '$app/environment';
+import { goto } from '$app/navigation';
+import { toast } from 'svelte-sonner';
 
 export const load: PageLoad = (async ({ url }) => {
 	const returnToParam = browser && url.searchParams.get('return_to');
@@ -10,20 +13,34 @@ export const load: PageLoad = (async ({ url }) => {
 
 	let flow: RegistrationFlow | null = null;
 
+	function handleFlowErrAction(redirectUrl: string, errMsg?: string) {
+		if (errMsg) {
+			toast.error(errMsg);
+		}
+		flow = null;
+		goto(redirectUrl);
+		return;
+	}
+
 	if (flowIdParam) {
 		try {
 			const flowResponse = await kratos.getRegistrationFlow({
 				id: flowIdParam,
 			});
-
-			console.log('load getRegistrationFlow success:', flowResponse);
-
 			flow = flowResponse.data;
 		} catch (error) {
-			if (isAxiosError(error)) {
-				const flowData = error.response?.data as RegistrationFlow;
-				console.log('load getRegistrationFlow err:', flowData);
-				flow = flowData;
+			if (!isAxiosError(error)) {
+				console.error('getRegistrationFlow: unknown error occurred');
+				return;
+			}
+
+			const err: GenericError = error?.response?.data?.error;
+
+			if (err.id === 'session_already_available') {
+				handleFlowErrAction('/', err.message);
+			}
+			if (err.id === 'self_service_flow_expired') {
+				handleFlowErrAction(config.routes.registration.path, err.message);
 			}
 		}
 	} else {
@@ -32,22 +49,22 @@ export const load: PageLoad = (async ({ url }) => {
 		try {
 			const flowResponse = await kratos.createBrowserRegistrationFlow({
 				returnTo,
+				// afterVerificationReturnTo: ''
 			});
-
-			if (flowResponse.status !== 200) {
-				console.log('load createBrowserRegistrationFlow: status not 200');
-
-				if ([403, 404, 410].includes(flowResponse.status)) {
-					console.log('load createBrowserRegistrationFlow status [403, 404, 410]');
-				}
+			flow = flowResponse.data;
+		} catch (error: unknown) {
+			if (!isAxiosError(error)) {
+				console.error('createBrowserRegistrationFlow: unknown error occurred');
+				return;
 			}
 
-			console.log('load createBrowserRegistrationFlow success', flowResponse.data);
-			flow = flowResponse.data;
-		} catch (error) {
-			if (isAxiosError(error)) {
-				const errData = error.response?.data;
-				console.log('load createBrowserRegistrationFlow err:', errData);
+			const err: GenericError = error?.response?.data?.error;
+
+			if (err.id === 'session_already_available') {
+				handleFlowErrAction('/', err.message);
+			}
+			if (err.id === 'security_csrf_violation' || err.id === 'security_identity_mismatch') {
+				handleFlowErrAction(config.routes.registration.path, err.message);
 			}
 		}
 	}

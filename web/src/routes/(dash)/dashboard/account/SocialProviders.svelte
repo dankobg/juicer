@@ -4,6 +4,7 @@
 	import { Button, Card } from 'flowbite-svelte';
 
 	export let data: PageData;
+	export let currentFlowForm: 'settings' | 'password' | 'socials' | undefined;
 
 	const filterBy = (n: UiNode, action: 'link' | 'unlink') =>
 		n.group === 'oidc' && n.type === 'input' && n.attributes.node_type === 'input' && n.attributes.name === action;
@@ -22,7 +23,7 @@
 					<input type="hidden" name="link" value={provider.attributes.value} readonly required />
 					<input type="hidden" name="csrf_token" bind:value={data.csrf} readonly required />
 
-					<Button color="alternative" class="w-full font-semibold">
+					<Button color="alternative" class="w-full font-semibold" on:click={() => (currentFlowForm = 'socials')}>
 						Link {provider.attributes.value} account
 						<img
 							class="w-6 h-6 object-cover inline-flex ml-4"
@@ -46,7 +47,7 @@
 					<input type="hidden" name="unlink" value={provider.attributes.value} readonly required />
 					<input type="hidden" name="csrf_token" bind:value={data.csrf} readonly required />
 
-					<Button color="alternative" class="w-full font-semibold">
+					<Button color="alternative" class="w-full font-semibold" on:click={() => (currentFlowForm = 'socials')}>
 						Unlink {provider.attributes.value} account
 						<img
 							class="w-6 h-6 object-cover inline-flex ml-4"

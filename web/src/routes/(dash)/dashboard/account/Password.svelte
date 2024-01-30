@@ -1,10 +1,16 @@
 <script lang="ts">
 	import type { PageData } from './$types';
-	import type { SettingsFlow, UiNodeInputAttributes, UpdateSettingsFlowWithPasswordMethod } from '@ory/client';
+	import type {
+		ErrorBrowserLocationChangeRequired,
+		GenericError,
+		SettingsFlow,
+		UiNodeInputAttributes,
+		UpdateSettingsFlowWithPasswordMethod,
+	} from '@ory/client';
 	import { goto } from '$app/navigation';
 	import { kratos } from '$lib/kratos/client';
 	import { Button, Card } from 'flowbite-svelte';
-	import { superForm } from 'sveltekit-superforms/client';
+	import { superForm, type ValidationErrors } from 'sveltekit-superforms/client';
 	import set from 'just-safe-set';
 	import { zod } from 'sveltekit-superforms/adapters';
 	import { z } from 'zod';
@@ -12,16 +18,27 @@
 	import SimpleAlert from '$lib/Alerts/SimpleAlert.svelte';
 	import InputPassword from '$lib/Inputs/InputPassword.svelte';
 	import { toast } from 'svelte-sonner';
+	import { config } from '$lib/kratos/config';
 
 	export let data: PageData;
+	export let currentFlowForm: 'settings' | 'password' | 'socials' | undefined;
 
-	const PasswordFormSchema = z.object({
+	function handleFlowErrAction(redirectUrl: string, errMsg?: string) {
+		if (errMsg) {
+			toast.error(errMsg);
+		}
+		data.flow = null;
+		goto(redirectUrl);
+		return;
+	}
+
+	const passwordFormSchema = z.object({
 		csrf_token: z.string().min(1, { message: 'csrf_token is required' }),
 		method: z.literal('password'),
 		password: z.string().min(8, { message: 'Password must have min. 8 characters' }),
 	});
 
-	type PasswordFormSchema = z.infer<typeof PasswordFormSchema>;
+	type PasswordFormSchema = z.infer<typeof passwordFormSchema>;
 
 	const initialPasswordForm: PasswordFormSchema = {
 		password: '',
@@ -31,13 +48,13 @@
 
 	const supForm = superForm(initialPasswordForm, {
 		id: 'account_password',
-		validators: zod(PasswordFormSchema),
+		validators: zod(passwordFormSchema),
 		SPA: true,
 		dataType: 'json',
-		errorSelector: '[data-invalid]',
 		scrollToError: 'smooth',
 		autoFocusOnError: 'detect',
 		stickyNavbar: undefined,
+		resetForm: false,
 		async onUpdated({ form }) {
 			if (!form.valid) {
 				toast.error('Invalid form, please fix errors and try again');
@@ -49,17 +66,18 @@
 
 			if (url) {
 				try {
-					const responseFlow = await kratos.updateSettingsFlow({
+					currentFlowForm = 'password';
+
+					const flowResponse = await kratos.updateSettingsFlow({
 						flow: data.flow?.id ?? '',
 						updateSettingsFlowBody: body,
 					});
+					data.flow = flowResponse.data;
 
 					toast.success('Account password have been updated');
 
-					console.log('updateSettingsFlow success', responseFlow);
-
-					if (responseFlow.data.continue_with) {
-						for (const item of responseFlow.data.continue_with) {
+					if (flowResponse.data.continue_with) {
+						for (const item of flowResponse.data.continue_with) {
 							switch (item.action) {
 								case 'show_verification_ui':
 									if (item?.flow?.id) {
@@ -69,59 +87,80 @@
 							}
 						}
 					}
-
-					reset();
 				} catch (error) {
-					if (isAxiosError(error)) {
-						const flowData = error?.response?.data as SettingsFlow;
-						data.flow = flowData;
+					if (!isAxiosError(error)) {
+						console.error('updateSettingsFlow: unknown error occurred');
+						return;
+					}
 
-						console.log('updateSettingsFlow err', flowData);
+					if (error.response?.status === 400) {
+						const errFlowData: SettingsFlow = error.response.data;
+						data.flow = errFlowData;
 
-						const nodes = flowData?.ui?.nodes ?? [];
-						const fieldErrors = new Map<keyof PasswordFormSchema, string[]>();
+						const nodes = errFlowData?.ui?.nodes ?? [];
+						const fieldErrors: ValidationErrors<PasswordFormSchema> = {};
 
 						for (const node of nodes) {
 							const errMsgs: string[] = [];
-							const attrs = node.attributes as UiNodeInputAttributes;
+							const attrs = node.attributes;
 
-							for (const msg of node?.messages ?? []) {
-								errMsgs.push(msg.text);
-								const fieldName = attrs?.name as keyof PasswordFormSchema;
-								fieldErrors.set(fieldName, errMsgs);
+							if (attrs.node_type === 'input') {
+								for (const msg of node?.messages ?? []) {
+									errMsgs.push(msg.text);
+									const fieldName = attrs?.name;
+									set(fieldErrors, fieldName, errMsgs);
+								}
 							}
 						}
 
-						for (const [k, v] of fieldErrors.entries()) {
-							const srvErrors = {};
-							set(srvErrors, k, v.join('; '));
+						errors.set(fieldErrors);
+						return;
+					}
 
-							$errors = {
-								...$errors,
-								...srvErrors,
-							};
+					if (error.response?.status === 422) {
+						const err: ErrorBrowserLocationChangeRequired = error.response.data?.error;
+						window.location.href = err?.redirect_browser_to ?? '/';
+						return;
+					}
+
+					if (error.response?.status) {
+						const err: GenericError = error.response.data?.error;
+
+						if (err.id === 'session_refresh_required') {
+							handleFlowErrAction(
+								config.routes.login.path + `?refresh=true&return_to=${window.location.href}`,
+								err.message
+							);
 						}
+						if (err.id === 'session_inactive') {
+							handleFlowErrAction(config.routes.login.path, err.message);
+						}
+						if (err.id === 'session_already_available') {
+							handleFlowErrAction('/', err.message);
+						}
+						if (err.id === 'security_csrf_violation' || err.id === 'security_identity_mismatch') {
+							handleFlowErrAction(config.routes.settings.path, err.message);
+						}
+						return;
 					}
 				}
 			}
 		},
 	});
 
-	const { form, enhance, errors, reset } = supForm;
+	const { form, enhance, errors } = supForm;
 </script>
 
 <Card>
 	<form method="POST" use:enhance class="space-y-6" action="/">
-		<h3 class="text-xl font-medium text-gray-900 dark:text-white p-0">Change password</h3>
+		{#if currentFlowForm === 'password'}
+			{#each data?.flow?.ui?.messages ?? [] as msg}
+				{@const err = msg.type === 'error'}
+				<SimpleAlert kind={msg.type} title={err ? 'Unable to change password' : ''} text={msg.text} />
+			{/each}
+		{/if}
 
-		{#each data?.flow?.ui?.messages ?? [] as msg}
-			{@const err = msg.type === 'error'}
-			<SimpleAlert
-				kind={err ? 'error' : 'info'}
-				title={err ? 'Unable to change password' : undefined}
-				text={msg.text}
-			/>
-		{/each}
+		<h3 class="text-xl font-medium text-gray-900 dark:text-white p-0">Change password</h3>
 
 		<InputPassword form={supForm} name="password" label="New password" />
 

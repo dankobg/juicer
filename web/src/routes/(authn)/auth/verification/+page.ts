@@ -1,8 +1,11 @@
 import type { PageLoad } from './$types';
-import type { VerificationFlow } from '@ory/client';
+import type { GenericError, VerificationFlow } from '@ory/client';
 import { kratos } from '$lib/kratos/client';
 import { extractCSRFToken, isAxiosError } from '$lib/kratos/helpers';
 import { browser } from '$app/environment';
+import { toast } from 'svelte-sonner';
+import { goto } from '$app/navigation';
+import { config } from '$lib/kratos/config';
 
 export const load: PageLoad = (async ({ url }) => {
 	const returnToParam = browser && url.searchParams.get('return_to');
@@ -10,29 +13,35 @@ export const load: PageLoad = (async ({ url }) => {
 
 	let flow: VerificationFlow | null = null;
 
+	function handleFlowErrAction(redirectUrl: string, errMsg?: string) {
+		if (errMsg) {
+			toast.error(errMsg);
+		}
+		flow = null;
+		goto(redirectUrl);
+		return;
+	}
+
 	if (flowIdParam) {
 		try {
 			const flowResponse = await kratos.getVerificationFlow({
 				id: flowIdParam,
 			});
-
-			console.log('load getVerificationFlow', flowResponse);
-
-			flow = { ...flowResponse.data };
+			flow = flowResponse.data;
 		} catch (error) {
-			if (isAxiosError(error)) {
-				const flowData = error.response?.data as VerificationFlow;
-				console.log('load getVerificationFlow err:', flowData);
-				flow = flowData;
+			if (!isAxiosError(error)) {
+				console.error('getVerificationFlow: unknown error occurred');
+				return;
 			}
 
-			// switch (err.response?.status) {
-			//   case 410:
-			//   // Status code 410 means the request has expired - so let's load a fresh flow!
-			//   case 403:
-			//     // Status code 403 implies some other issue (e.g. CSRF) - let's reload!
-			//     return router.push("/verification")
-			// }
+			const err: GenericError = error?.response?.data?.error;
+
+			if (err.id === 'session_already_available') {
+				handleFlowErrAction('/', err.message);
+			}
+			if (err.id === 'self_service_flow_expired') {
+				handleFlowErrAction(config.routes.verification.path, err.message);
+			}
 		}
 	} else {
 		const returnTo: string | undefined = returnToParam ? returnToParam.toString() : undefined;
@@ -41,26 +50,20 @@ export const load: PageLoad = (async ({ url }) => {
 			const flowResponse = await kratos.createBrowserVerificationFlow({
 				returnTo,
 			});
-
-			// case 400:
-			// already signed in
-			// goto('/')
-
-			if (flowResponse.status !== 200) {
-				console.log('load createBrowserVerificationFlow status not 200');
-
-				if ([403, 404, 410].includes(flowResponse.status)) {
-					console.log('load createBrowserVerificationFlow status [403, 404, 410]');
-				}
+			flow = flowResponse.data;
+		} catch (error) {
+			if (!isAxiosError(error)) {
+				console.error('createBrowserVerificationFlow: unknown error occurred');
+				return;
 			}
 
-			console.log('load createBrowserVerificationFlow success', flowResponse);
-			flow = { ...flowResponse.data };
-		} catch (error) {
-			if (isAxiosError(error)) {
-				const flowData = error.response?.data as VerificationFlow;
-				console.log('load createBrowserVerificationFlow err:', flowData);
-				flow = flowData;
+			const err: GenericError = error?.response?.data?.error;
+
+			if (err.id === 'session_already_available') {
+				handleFlowErrAction('/', err.message);
+			}
+			if (err.id === 'security_csrf_violation' || err.id === 'security_identity_mismatch') {
+				handleFlowErrAction(config.routes.verification.path, err.message);
 			}
 		}
 	}

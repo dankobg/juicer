@@ -39,7 +39,7 @@
 	}
 </script>
 
-<Alert {color} rounded={false} class="border-t-4">
+<Alert {color} rounded={false} class="border-t-4 mb-4">
 	<InfoCircleSolid slot="icon" class="w-4 h-4" />
 	<span class="font-medium">{title}</span>
 	{text}

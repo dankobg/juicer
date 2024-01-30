@@ -1,13 +1,18 @@
 <script lang="ts">
 	import type { PageData } from './$types';
 	import { onMount } from 'svelte';
-	import type { LoginFlow, UiNodeInputAttributes, UpdateLoginFlowWithPasswordMethod } from '@ory/client';
+	import type {
+		ErrorBrowserLocationChangeRequired,
+		GenericError,
+		LoginFlow,
+		UpdateLoginFlowWithPasswordMethod,
+	} from '@ory/client';
 	import { goto } from '$app/navigation';
 	import { config } from '$lib/kratos/config';
 	import { kratos } from '$lib/kratos/client';
 	import { Button, Tooltip } from 'flowbite-svelte';
 	import { Section, Register } from 'flowbite-svelte-blocks';
-	import { superForm } from 'sveltekit-superforms/client';
+	import { superForm, type ValidationErrors } from 'sveltekit-superforms/client';
 	import set from 'just-safe-set';
 	import { zod } from 'sveltekit-superforms/adapters';
 	import { z } from 'zod';
@@ -18,6 +23,15 @@
 	import { toast } from 'svelte-sonner';
 
 	export let data: PageData;
+
+	function handleFlowErrAction(redirectUrl: string, errMsg?: string) {
+		if (errMsg) {
+			toast.error(errMsg);
+		}
+		data.flow = null;
+		goto(redirectUrl);
+		return;
+	}
 
 	const loginFormSchema = z.object({
 		csrf_token: z.string().min(1, { message: 'csrf_token is required' }),
@@ -40,7 +54,6 @@
 		validators: zod(loginFormSchema),
 		SPA: true,
 		dataType: 'json',
-		errorSelector: '[data-invalid]',
 		scrollToError: 'smooth',
 		autoFocusOnError: 'detect',
 		stickyNavbar: undefined,
@@ -55,44 +68,57 @@
 
 			if (url) {
 				try {
-					const responseFlow = await kratos.updateLoginFlow({
+					await kratos.updateLoginFlow({
 						flow: data.flow?.id ?? '',
 						updateLoginFlowBody: body,
 					});
-
-					console.log('updateLoginFlow success', responseFlow);
-
-					goto('/');
+					goto(data.flow?.return_to ?? '/');
 				} catch (error) {
-					if (isAxiosError(error)) {
-						const flowData = error?.response?.data as LoginFlow;
-						data.flow = flowData;
+					if (!isAxiosError(error)) {
+						console.error('updateLoginFlow: unknown error occurred');
+						return;
+					}
 
-						console.log('updateLoginFlow err', flowData);
+					if (error.response?.status === 400) {
+						const errFlowData: LoginFlow = error.response.data;
+						data.flow = errFlowData;
 
-						const nodes = flowData?.ui?.nodes ?? [];
-						const fieldErrors = new Map<keyof LoginFormSchema, string[]>();
+						const nodes = errFlowData?.ui?.nodes ?? [];
+						const fieldErrors: ValidationErrors<LoginFormSchema> = {};
 
 						for (const node of nodes) {
 							const errMsgs: string[] = [];
-							const attrs = node.attributes as UiNodeInputAttributes;
+							const attrs = node.attributes;
 
-							for (const msg of node?.messages ?? []) {
-								errMsgs.push(msg.text);
-								const fieldName = attrs?.name as keyof LoginFormSchema;
-								fieldErrors.set(fieldName, errMsgs);
+							if (attrs.node_type === 'input') {
+								for (const msg of node?.messages ?? []) {
+									errMsgs.push(msg.text);
+									const fieldName = attrs?.name;
+									set(fieldErrors, fieldName, errMsgs);
+								}
 							}
 						}
 
-						for (const [k, v] of fieldErrors.entries()) {
-							const srvErrors = {};
-							set(srvErrors, k, v.join('; '));
+						errors.set(fieldErrors);
+						return;
+					}
 
-							$errors = {
-								...$errors,
-								...srvErrors,
-							};
+					if (error.response?.status === 422) {
+						const err: ErrorBrowserLocationChangeRequired = error.response.data?.error;
+						window.location.href = err?.redirect_browser_to ?? '/';
+						return;
+					}
+
+					if (error.response?.status) {
+						const err: GenericError = error.response.data?.error;
+
+						if (err.id === 'session_already_available') {
+							handleFlowErrAction('/', err.message);
 						}
+						if (err.id === 'security_csrf_violation' || err.id === 'security_identity_mismatch') {
+							handleFlowErrAction(config.routes.login.path, err.message);
+						}
+						return;
 					}
 				}
 			}
@@ -135,16 +161,16 @@
 
 		<div class="p-6 space-y-4 md:space-y-6 sm:p-8">
 			<form method="POST" use:enhance class="flex flex-col space-y-6" action="/">
-				<h3 class="text-xl font-medium text-gray-900 dark:text-white p-0 text-center">Login</h3>
-
 				{#each data?.flow?.ui?.messages ?? [] as msg}
 					{@const err = msg.type === 'error'}
-					<SimpleAlert kind={err ? 'error' : 'info'} title={err ? 'Unable to sign up' : undefined} text={msg.text} />
+					<SimpleAlert kind={msg.type} title={err ? 'Unable to sign up' : ''} text={msg.text} />
 				{/each}
 
 				{#if emailVerified}
 					<SimpleAlert kind="success" title={emailVerifiedMsg} />
 				{/if}
+
+				<h3 class="text-xl font-medium text-gray-900 dark:text-white p-0 text-center">Login</h3>
 
 				<InputEmail form={supForm} name="identifier" label="Your email" />
 				<InputPassword form={supForm} name="password" label="Your password" />

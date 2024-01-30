@@ -1,12 +1,17 @@
 <script lang="ts">
 	import type { PageData } from './$types';
-	import type { RegistrationFlow, UiNodeInputAttributes, UpdateRegistrationFlowWithPasswordMethod } from '@ory/client';
+	import type {
+		GenericError,
+		RegistrationFlow,
+		ErrorBrowserLocationChangeRequired,
+		UpdateRegistrationFlowWithPasswordMethod,
+	} from '@ory/client';
 	import { goto } from '$app/navigation';
 	import { config } from '$lib/kratos/config';
 	import { kratos } from '$lib/kratos/client';
 	import { Button, Tooltip } from 'flowbite-svelte';
 	import { Section, Register } from 'flowbite-svelte-blocks';
-	import { superForm } from 'sveltekit-superforms/client';
+	import { superForm, type ValidationErrors } from 'sveltekit-superforms/client';
 	import set from 'just-safe-set';
 	import { zod } from 'sveltekit-superforms/adapters';
 	import { z } from 'zod';
@@ -18,6 +23,15 @@
 	import { toast } from 'svelte-sonner';
 
 	export let data: PageData;
+
+	function handleFlowErrAction(redirectUrl: string, errMsg?: string) {
+		if (errMsg) {
+			toast.error(errMsg);
+		}
+		data.flow = null;
+		goto(redirectUrl);
+		return;
+	}
 
 	const registrationFormSchema = z.object({
 		csrf_token: z.string().min(1, { message: 'csrf_token is required' }),
@@ -52,7 +66,6 @@
 		validators: zod(registrationFormSchema),
 		SPA: true,
 		dataType: 'json',
-		errorSelector: '[data-invalid]',
 		scrollToError: 'smooth',
 		autoFocusOnError: 'detect',
 		stickyNavbar: undefined,
@@ -67,15 +80,13 @@
 
 			if (url) {
 				try {
-					const responseFlow = await kratos.updateRegistrationFlow({
+					const flowResponse = await kratos.updateRegistrationFlow({
 						flow: data.flow?.id ?? '',
 						updateRegistrationFlowBody: body,
 					});
 
-					console.log('updateRegistrationFlow success:', responseFlow.data);
-
-					if (responseFlow.data.continue_with) {
-						for (const item of responseFlow.data.continue_with) {
+					if (flowResponse.data.continue_with) {
+						for (const item of flowResponse.data.continue_with) {
 							switch (item.action) {
 								case 'show_verification_ui':
 									if (item?.flow?.id) {
@@ -86,34 +97,51 @@
 						}
 					}
 				} catch (error) {
-					if (isAxiosError(error)) {
-						const flowData = error?.response?.data as RegistrationFlow;
-						data.flow = flowData;
-						console.log('updateRegistrationFlow err:', flowData);
+					if (!isAxiosError(error)) {
+						console.error('updateRegistrationFlow: unknown error occurred');
+						return;
+					}
 
-						const nodes = flowData?.ui?.nodes ?? [];
-						const fieldErrors = new Map<keyof RegistrationFormSchema, string[]>();
+					if (error.response?.status === 400) {
+						const errFlowData: RegistrationFlow = error.response.data;
+						data.flow = errFlowData;
+
+						const nodes = errFlowData?.ui?.nodes ?? [];
+						const fieldErrors: ValidationErrors<RegistrationFormSchema> = {};
 
 						for (const node of nodes) {
 							const errMsgs: string[] = [];
-							const attrs = node.attributes as UiNodeInputAttributes;
+							const attrs = node.attributes;
 
-							for (const msg of node?.messages ?? []) {
-								errMsgs.push(msg.text);
-								const fieldName = attrs?.name as keyof RegistrationFormSchema;
-								fieldErrors.set(fieldName, errMsgs);
+							if (attrs.node_type === 'input') {
+								for (const msg of node?.messages ?? []) {
+									errMsgs.push(msg.text);
+									const fieldName = attrs?.name;
+									set(fieldErrors, fieldName, errMsgs);
+								}
 							}
 						}
 
-						for (const [k, v] of fieldErrors.entries()) {
-							const srvErrors = {};
-							set(srvErrors, k, v.join('; '));
+						errors.set(fieldErrors);
+						return;
+					}
 
-							$errors = {
-								...$errors,
-								...srvErrors,
-							};
+					if (error.response?.status === 422) {
+						const err: ErrorBrowserLocationChangeRequired = error.response.data?.error;
+						window.location.href = err?.redirect_browser_to ?? '/';
+						return;
+					}
+
+					if (error.response?.status) {
+						const err: GenericError = error.response.data?.error;
+
+						if (err.id === 'session_already_available') {
+							handleFlowErrAction('/', err.message);
 						}
+						if (err.id === 'security_csrf_violation' || err.id === 'security_identity_mismatch') {
+							handleFlowErrAction(config.routes.registration.path, err.message);
+						}
+						return;
 					}
 				}
 			}
@@ -132,12 +160,12 @@
 
 		<div class="p-6 space-y-4 md:space-y-6 sm:p-8">
 			<form method="POST" use:enhance class="flex flex-col space-y-6">
-				<h3 class="text-xl font-medium text-gray-900 dark:text-white p-0 text-center">Create new account</h3>
-
 				{#each data?.flow?.ui?.messages ?? [] as msg}
 					{@const err = msg.type === 'error'}
-					<SimpleAlert kind={err ? 'error' : 'info'} title={err ? 'Unable to sign up' : undefined} text={msg.text} />
+					<SimpleAlert kind={msg.type} title={err ? 'Unable to sign up' : ''} text={msg.text} />
 				{/each}
+
+				<h3 class="text-xl font-medium text-gray-900 dark:text-white p-0 text-center">Create new account</h3>
 
 				<InputText form={supForm} name="traits.first_name" label="First name" />
 				<InputText form={supForm} name="traits.last_name" label="Last name" />

@@ -1,11 +1,17 @@
 <script lang="ts">
 	import type { PageData } from './$types';
-	import type { RecoveryFlow, UiNodeInputAttributes, UpdateRecoveryFlowWithCodeMethod } from '@ory/client';
+	import type {
+		ErrorBrowserLocationChangeRequired,
+		GenericError,
+		RecoveryFlow,
+		UiNodeInputAttributes,
+		UpdateRecoveryFlowWithCodeMethod,
+	} from '@ory/client';
 	import { goto } from '$app/navigation';
 	import { kratos } from '$lib/kratos/client';
 	import { Button } from 'flowbite-svelte';
 	import { Section, ForgotPasswordHeader, ForgotPassword } from 'flowbite-svelte-blocks';
-	import { superForm } from 'sveltekit-superforms/client';
+	import { superForm, type ValidationErrors } from 'sveltekit-superforms/client';
 	import set from 'just-safe-set';
 	import { zod } from 'sveltekit-superforms/adapters';
 	import { z } from 'zod';
@@ -14,11 +20,21 @@
 	import SimpleAlert from '$lib/Alerts/SimpleAlert.svelte';
 	import { toast } from 'svelte-sonner';
 	import InputText from '$lib/Inputs/InputText.svelte';
+	import { config } from '$lib/kratos/config';
 
 	export let data: PageData;
 
 	let codeSentToEmail = false;
 	let secondFlowId: string | undefined;
+
+	function handleFlowErrAction(redirectUrl: string, errMsg?: string) {
+		if (errMsg) {
+			toast.error(errMsg);
+		}
+		data.flow = null;
+		goto(redirectUrl);
+		return;
+	}
 
 	const recoveryFormSchema = z.object({
 		csrf_token: z.string().min(1, { message: 'csrf_token is required' }),
@@ -41,7 +57,6 @@
 		validators: zod(recoveryFormSchema),
 		SPA: true,
 		dataType: 'json',
-		errorSelector: '[data-invalid]',
 		scrollToError: 'smooth',
 		autoFocusOnError: 'detect',
 		stickyNavbar: undefined,
@@ -69,45 +84,56 @@
 						updateRecoveryFlowBody: body,
 					});
 
+					data.flow = flowResponse.data;
+
 					codeSentToEmail = true;
 					secondFlowId = flowResponse.data.ui.action.split('flow=')[1];
-
-					console.log('updateRecoveryFlow', flowResponse);
 					// goto('/');
 				} catch (error) {
-					if (isAxiosError(error)) {
-						if (error?.response?.status === 422 && error?.response?.data?.redirect_browser_to) {
-							console.log(error.response?.data);
-							goto(error.response?.data?.redirect_browser_to);
-							return;
-						}
+					if (!isAxiosError(error)) {
+						console.error('updateRecoveryFlow: unknown error occurred');
+						return;
+					}
 
-						const flowData = error?.response?.data as RecoveryFlow;
-						data.flow = flowData;
+					if (error.response?.status === 400) {
+						const errFlowData: RecoveryFlow = error.response.data;
+						data.flow = errFlowData;
 
-						const nodes = flowData?.ui?.nodes ?? [];
-						const fieldErrors = new Map<keyof RecoveryFormSchema, string[]>();
+						const nodes = errFlowData?.ui?.nodes ?? [];
+						const fieldErrors: ValidationErrors<RecoveryFormSchema> = {};
 
 						for (const node of nodes) {
 							const errMsgs: string[] = [];
-							const attrs = node.attributes as UiNodeInputAttributes;
+							const attrs = node.attributes;
 
-							for (const msg of node?.messages ?? []) {
-								errMsgs.push(msg.text);
-								const fieldName = attrs?.name as keyof RecoveryFormSchema;
-								fieldErrors.set(fieldName, errMsgs);
+							if (attrs.node_type === 'input') {
+								for (const msg of node?.messages ?? []) {
+									errMsgs.push(msg.text);
+									const fieldName = attrs?.name;
+									set(fieldErrors, fieldName, errMsgs);
+								}
 							}
 						}
 
-						for (const [k, v] of fieldErrors.entries()) {
-							const srvErrors = {};
-							set(srvErrors, k, v.join('; '));
+						errors.set(fieldErrors);
+						return;
+					}
 
-							$errors = {
-								...$errors,
-								...srvErrors,
-							};
+					if (error.response?.status === 422) {
+						const err: ErrorBrowserLocationChangeRequired = error.response.data;
+						window.location.href = err?.redirect_browser_to ?? '/';
+					}
+
+					if (error.response?.status) {
+						const err: GenericError = error.response.data?.error;
+
+						if (err.id === 'session_already_available') {
+							handleFlowErrAction('/', err.message);
 						}
+						if (err.id === 'security_csrf_violation' || err.id === 'security_identity_mismatch') {
+							handleFlowErrAction(config.routes.recovery.path, err.message);
+						}
+						return;
 					}
 				}
 			}
@@ -121,9 +147,10 @@
 	<ForgotPasswordHeader src="/images/logo.svg" alt="logo" href="/">Juicer</ForgotPasswordHeader>
 
 	<ForgotPassword>
-		{#if codeSentToEmail}
-			<SimpleAlert kind="success" title="Recovery code was sent to your email successfully" text="" />
-		{/if}
+		{#each data?.flow?.ui?.messages ?? [] as msg}
+			{@const err = msg.type === 'error'}
+			<SimpleAlert kind={msg.type} title={err ? 'Unable to recover' : ''} text={msg.text} />
+		{/each}
 
 		<h1 class="mb-1 text-xl font-bold leading-tight tracking-tight text-gray-900 md:text-2xl dark:text-white">
 			{#if codeSentToEmail}
@@ -132,11 +159,6 @@
 				Forgot your password?
 			{/if}
 		</h1>
-
-		{#each data?.flow?.ui?.messages ?? [] as msg}
-			{@const err = msg.type === 'error'}
-			<SimpleAlert kind={err ? 'error' : 'info'} title={err ? 'Unable to recover' : undefined} text={msg.text} />
-		{/each}
 
 		<p class="font-light text-gray-500 dark:text-gray-400">
 			{#if codeSentToEmail}

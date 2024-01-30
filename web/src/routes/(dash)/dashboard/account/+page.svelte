@@ -5,10 +5,12 @@
 	import SocialProviders from './SocialProviders.svelte';
 
 	export let data: PageData;
+
+	export let currentFlowForm: 'settings' | 'password' | 'socials' | undefined = 'password';
 </script>
 
 <section class="flex flex-col gap-6">
-	<Settings {data} />
-	<Password {data} />
-	<SocialProviders {data} />
+	<Settings {data} bind:currentFlowForm />
+	<Password {data} bind:currentFlowForm />
+	<SocialProviders {data} bind:currentFlowForm />
 </section>
