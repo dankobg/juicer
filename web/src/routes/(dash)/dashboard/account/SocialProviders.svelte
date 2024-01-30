@@ -23,7 +23,12 @@
 					<input type="hidden" name="link" value={provider.attributes.value} readonly required />
 					<input type="hidden" name="csrf_token" bind:value={data.csrf} readonly required />
 
-					<Button color="alternative" class="w-full font-semibold" on:click={() => (currentFlowForm = 'socials')}>
+					<Button
+						type="submit"
+						color="alternative"
+						class="w-full font-semibold"
+						on:click={() => (currentFlowForm = 'socials')}
+					>
 						Link {provider.attributes.value} account
 						<img
 							class="w-6 h-6 object-cover inline-flex ml-4"
@@ -47,7 +52,12 @@
 					<input type="hidden" name="unlink" value={provider.attributes.value} readonly required />
 					<input type="hidden" name="csrf_token" bind:value={data.csrf} readonly required />
 
-					<Button color="alternative" class="w-full font-semibold" on:click={() => (currentFlowForm = 'socials')}>
+					<Button
+						type="submit"
+						color="alternative"
+						class="w-full font-semibold"
+						on:click={() => (currentFlowForm = 'socials')}
+					>
 						Unlink {provider.attributes.value} account
 						<img
 							class="w-6 h-6 object-cover inline-flex ml-4"
