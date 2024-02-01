@@ -7,7 +7,7 @@
 	export let data: LayoutData;
 </script>
 
-<DashboardNavbar user={data.svc.user} logoutUrl={data.logoutUrl ?? ''} />
+<DashboardNavbar user={data.auth.user} logoutUrl={data.logoutUrl ?? ''} />
 
 <div class="w-full overflow-hidden bg-gray-50 dark:bg-gray-900">
 	<div class="mx-auto flex flex-wrap justify-between container">

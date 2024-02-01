@@ -5,5 +5,5 @@
 	export let data: PageData;
 </script>
 
-<Navbar user={data.svc.user} logoutUrl={data.logoutUrl ?? ''} />
+<Navbar user={data.auth.user} logoutUrl={data.logoutUrl ?? ''} />
 <slot />
