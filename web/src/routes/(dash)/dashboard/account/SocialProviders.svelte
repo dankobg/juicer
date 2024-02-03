@@ -30,6 +30,14 @@
 	});
 </script>
 
+<svelte:window
+	on:beforeunload={() => {
+		if (socialsAction) {
+			sessionStorage.removeItem('socialsAction');
+		}
+	}}
+/>
+
 {#if providersToLink.length > 0}
 	<Card>
 		{#if socialsAction === 'link'}
