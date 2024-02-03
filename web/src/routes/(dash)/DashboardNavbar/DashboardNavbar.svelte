@@ -69,7 +69,7 @@
 				</DropdownHeader>
 			{/if}
 
-			<DropdownItem>Dashboard</DropdownItem>
+			<DropdownItem href="/dashboard">Dashboard</DropdownItem>
 			<DropdownItem href="/dashboard/account">Account</DropdownItem>
 			<DropdownDivider />
 			<DropdownItem href={logoutUrl}>Log out</DropdownItem>

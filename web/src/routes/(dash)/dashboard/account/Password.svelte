@@ -4,7 +4,6 @@
 		ErrorBrowserLocationChangeRequired,
 		GenericError,
 		SettingsFlow,
-		UiNodeInputAttributes,
 		UpdateSettingsFlowWithPasswordMethod,
 	} from '@ory/client';
 	import { goto } from '$app/navigation';
@@ -19,6 +18,7 @@
 	import InputPassword from '$lib/Inputs/InputPassword.svelte';
 	import { toast } from 'svelte-sonner';
 	import { config } from '$lib/kratos/config';
+	import { browser } from '$app/environment';
 
 	export let data: PageData;
 	export let currentFlowForm: 'settings' | 'password' | 'socials' | undefined;
@@ -28,7 +28,11 @@
 			toast.error(errMsg);
 		}
 		data.flow = null;
-		goto(redirectUrl);
+
+		if (browser) {
+			goto(redirectUrl);
+		}
+
 		return;
 	}
 
@@ -43,7 +47,7 @@
 	const initialPasswordForm: PasswordFormSchema = {
 		password: '',
 		method: 'password',
-		csrf_token: data.csrf,
+		csrf_token: data.csrf ?? '',
 	};
 
 	const supForm = superForm(initialPasswordForm, {
@@ -54,7 +58,6 @@
 		scrollToError: 'smooth',
 		autoFocusOnError: 'detect',
 		stickyNavbar: undefined,
-		resetForm: false,
 		async onUpdated({ form }) {
 			if (!form.valid) {
 				toast.error('Invalid form, please fix errors and try again');
@@ -159,6 +162,12 @@
 				<SimpleAlert kind={msg.type} title={err ? 'Unable to change password' : ''} text={msg.text} />
 			{/each}
 		{/if}
+
+		{#each data?.flow?.ui?.messages ?? [] as msg}
+			{#if msg.id.toString().startsWith('106')}
+				<SimpleAlert kind={msg.type} text={msg.text} />
+			{/if}
+		{/each}
 
 		<h3 class="text-xl font-medium text-gray-900 dark:text-white p-0">Change password</h3>
 

@@ -4,7 +4,6 @@
 		ErrorBrowserLocationChangeRequired,
 		GenericError,
 		RecoveryFlow,
-		UiNodeInputAttributes,
 		UpdateRecoveryFlowWithCodeMethod,
 	} from '@ory/client';
 	import { goto } from '$app/navigation';
@@ -21,6 +20,7 @@
 	import { toast } from 'svelte-sonner';
 	import InputText from '$lib/Inputs/InputText.svelte';
 	import { config } from '$lib/kratos/config';
+	import { browser } from '$app/environment';
 
 	export let data: PageData;
 
@@ -32,7 +32,11 @@
 			toast.error(errMsg);
 		}
 		data.flow = null;
-		goto(redirectUrl);
+
+		if (browser) {
+			goto(redirectUrl);
+		}
+
 		return;
 	}
 
@@ -49,7 +53,7 @@
 		email: '',
 		code: '',
 		method: 'code',
-		csrf_token: data.csrf,
+		csrf_token: data.csrf ?? '',
 	};
 
 	const supForm = superForm(initialRecoveryForm, {

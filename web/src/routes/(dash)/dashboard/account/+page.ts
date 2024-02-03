@@ -18,7 +18,11 @@ export const load: PageLoad = (async ({ url }) => {
 			toast.error(errMsg);
 		}
 		flow = null;
-		goto(redirectUrl);
+
+		if (browser) {
+			goto(redirectUrl);
+		}
+
 		return;
 	}
 
@@ -37,7 +41,10 @@ export const load: PageLoad = (async ({ url }) => {
 			const err: GenericError = error?.response?.data?.error;
 
 			if (err.id === 'session_inactive' || err.id === 'session_refresh_required') {
-				handleFlowErrAction(config.routes.login.path + `?return_to${window.location.href}`, err.message);
+				handleFlowErrAction(
+					config.routes.login.path + `?return_to=${encodeURIComponent(window.location.href)}`,
+					err.message
+				);
 			}
 			if (err.id === 'security_csrf_violation' || err.id === 'security_identity_mismatch') {
 				handleFlowErrAction(config.routes.settings.path, err.message);
@@ -60,7 +67,10 @@ export const load: PageLoad = (async ({ url }) => {
 			const err: GenericError = error?.response?.data?.error;
 
 			if (err.id === 'session_inactive') {
-				handleFlowErrAction(config.routes.login.path + `?return_to${window.location.href}`, err.message);
+				handleFlowErrAction(
+					config.routes.login.path + `?return_to=${encodeURIComponent(window.location.href)}`,
+					err.message
+				);
 			}
 			if (err.id === 'security_csrf_violation' || err.id === 'security_identity_mismatch') {
 				handleFlowErrAction(config.routes.settings.path, err.message);

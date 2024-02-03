@@ -18,7 +18,11 @@ export const load: PageLoad = (async ({ url }) => {
 			toast.error(errMsg);
 		}
 		flow = null;
-		goto(redirectUrl);
+
+		if (browser) {
+			goto(redirectUrl);
+		}
+
 		return;
 	}
 

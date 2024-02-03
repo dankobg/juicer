@@ -4,12 +4,26 @@ set dotenv-load
 cwd := justfile_directory()
 dev_domain := "juicer-dev.xyz"
 
-_redis_pwd := if env('REDIS_PASSWORD', "") == "" { "" } else { '-a "${REDIS_PASSWORD}"' }
+redis_pwd := if env('REDIS_PASSWORD', "") == "" { "" } else { '-a "${REDIS_PASSWORD}"' }
+
+sql_drop_public_tables := (
+"""
+DO $\\$
+DECLARE
+	current_table text;
+BEGIN
+	FOR current_table IN (SELECT table_name FROM information_schema.tables WHERE table_schema = 'public')
+	LOOP
+		EXECUTE 'DROP TABLE IF EXISTS public.' || current_table || ' CASCADE';
+		END LOOP;
+END $\\$;
+"""
+)
 
 # ----------------------------------------------------------------------------
 
 default: 
-	just -l
+	@just -l
 
 # Run code generation
 gen:
@@ -151,7 +165,7 @@ sh-web:
 
 # connect to redis via redis-cli
 rediscli:
-	docker compose exec -it redis redis-cli -h "${REDIS_HOST}" -p "${REDIS_PORT}" {{_redis_pwd}}
+	docker compose exec -it redis redis-cli -h "${REDIS_HOST}" -p "${REDIS_PORT}" {{redis_pwd}}
 
 # connect to postgres via psql
 psql:
@@ -162,6 +176,20 @@ psql:
 # Create new migration
 mg-create:
 	mg create	
+
+# ----------------------------------------------------------------------------
+
+# backup postgres with pg_dumpall
+pg-backup:
+	docker compose exec -it pg pg_dumpall -c -U test > /tmp/dumpall_backup.sql
+
+# restore postgres backup
+pg-restore: pg-dropall
+	docker compose exec -T pg psql postgres://test:test@pg:5432/test?sslmode=disable < /tmp/dumpall_backup.sql
+
+# drop all tables in public schema
+pg-dropall:
+	docker compose exec -T pg psql postgres://test:test@pg:5432/test?sslmode=disable -c "{{sql_drop_public_tables}}"
 
 # ----------------------------------------------------------------------------
 

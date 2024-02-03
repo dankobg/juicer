@@ -21,6 +21,7 @@
 	import SimpleAlert from '$lib/Alerts/SimpleAlert.svelte';
 	import InputText from '$lib/Inputs/InputText.svelte';
 	import { toast } from 'svelte-sonner';
+	import { browser } from '$app/environment';
 
 	export let data: PageData;
 
@@ -29,7 +30,11 @@
 			toast.error(errMsg);
 		}
 		data.flow = null;
-		goto(redirectUrl);
+
+		if (browser) {
+			goto(redirectUrl);
+		}
+
 		return;
 	}
 
@@ -51,7 +56,7 @@
 	const initialRegistrationForm: RegistrationFormSchema = {
 		password: '',
 		method: 'password',
-		csrf_token: data.csrf,
+		csrf_token: data.csrf ?? '',
 		traits: {
 			first_name: '',
 			last_name: '',

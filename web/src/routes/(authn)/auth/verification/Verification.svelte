@@ -2,7 +2,6 @@
 	import type { PageData } from './$types';
 	import {
 		type VerificationFlow,
-		type UiNodeInputAttributes,
 		type UpdateVerificationFlowWithCodeMethod,
 		VerificationFlowState,
 		type GenericError,
@@ -21,6 +20,7 @@
 	import { toast } from 'svelte-sonner';
 	import { goto } from '$app/navigation';
 	import { config } from '$lib/kratos/config';
+	import { browser } from '$app/environment';
 
 	export let data: PageData;
 
@@ -29,7 +29,11 @@
 			toast.error(errMsg);
 		}
 		data.flow = null;
-		goto(redirectUrl);
+
+		if (browser) {
+			goto(redirectUrl);
+		}
+
 		return;
 	}
 
@@ -44,7 +48,7 @@
 	const initialVerificationForm: VerificationFormSchema = {
 		code: '',
 		method: 'code',
-		csrf_token: data.csrf,
+		csrf_token: data.csrf ?? '',
 	};
 
 	const supForm = superForm(initialVerificationForm, {
@@ -81,6 +85,7 @@
 										'juicer_email_verified',
 										'Your E-Mail has been verified! You can now log in'
 									);
+
 									window.location.href = attrs.href;
 									return;
 								}

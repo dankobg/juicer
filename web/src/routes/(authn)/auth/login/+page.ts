@@ -21,7 +21,11 @@ export const load: PageLoad = (async ({ url }) => {
 			toast.error(errMsg);
 		}
 		flow = null;
-		goto(redirectUrl);
+
+		if (browser) {
+			goto(redirectUrl);
+		}
+
 		return;
 	}
 
@@ -75,7 +79,9 @@ export const load: PageLoad = (async ({ url }) => {
 				handleFlowErrAction(config.routes.login.path, err.message);
 			}
 			if (err.id === 'session_aal1_required') {
-				goto('/login?aal=aal1&return_to=' + window.location.href);
+				if (browser) {
+					goto('/login?aal=aal1&return_to=' + window.location.href);
+				}
 				return;
 			}
 		}

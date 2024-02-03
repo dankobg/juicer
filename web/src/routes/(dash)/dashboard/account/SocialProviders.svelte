@@ -2,19 +2,43 @@
 	import type { UiNode } from '@ory/client';
 	import type { PageData } from './$types';
 	import { Button, Card } from 'flowbite-svelte';
+	import SimpleAlert from '$lib/Alerts/SimpleAlert.svelte';
+	import { onMount } from 'svelte';
+	import { toast } from 'svelte-sonner';
 
 	export let data: PageData;
-	export let currentFlowForm: 'settings' | 'password' | 'socials' | undefined;
+	let socialsAction: 'link' | 'unlink' | undefined;
 
 	const filterBy = (n: UiNode, action: 'link' | 'unlink') =>
 		n.group === 'oidc' && n.type === 'input' && n.attributes.node_type === 'input' && n.attributes.name === action;
 
 	let providersToLink = data?.flow?.ui?.nodes?.filter(n => filterBy(n, 'link')) ?? [];
 	let providersToUnlink = data?.flow?.ui?.nodes?.filter(n => filterBy(n, 'unlink')) ?? [];
+
+	onMount(() => {
+		const val = window.sessionStorage.getItem('socialsAction') as 'link' | 'unlink' | undefined;
+
+		if (val) {
+			socialsAction = val;
+			toast.success(`Your account has been ${val}ed`);
+		}
+
+		return () => {
+			socialsAction = undefined;
+			sessionStorage.removeItem('socialsAction');
+		};
+	});
 </script>
 
 {#if providersToLink.length > 0}
 	<Card>
+		{#if socialsAction === 'link'}
+			{#each data?.flow?.ui?.messages ?? [] as msg}
+				{@const err = msg.type === 'error'}
+				<SimpleAlert kind={msg.type} title={err ? 'Unable to link account' : ''} text={msg.text} />
+			{/each}
+		{/if}
+
 		<h3 class="text-xl font-medium text-gray-900 dark:text-white p-0">Link social auth providers</h3>
 
 		{#each providersToLink as provider}
@@ -27,7 +51,9 @@
 						type="submit"
 						color="alternative"
 						class="w-full font-semibold"
-						on:click={() => (currentFlowForm = 'socials')}
+						on:click={() => {
+							window.sessionStorage.setItem('socialsAction', 'link');
+						}}
 					>
 						Link {provider.attributes.value} account
 						<img
@@ -44,6 +70,13 @@
 
 {#if providersToUnlink.length > 0}
 	<Card>
+		{#if socialsAction === 'unlink'}
+			{#each data?.flow?.ui?.messages ?? [] as msg}
+				{@const err = msg.type === 'error'}
+				<SimpleAlert kind={msg.type} title={err ? 'Unable to unlink account' : ''} text={msg.text} />
+			{/each}
+		{/if}
+
 		<h3 class="text-xl font-medium text-gray-900 dark:text-white p-0">Unlink social auth providers</h3>
 
 		{#each providersToUnlink as provider}
@@ -56,7 +89,9 @@
 						type="submit"
 						color="alternative"
 						class="w-full font-semibold"
-						on:click={() => (currentFlowForm = 'socials')}
+						on:click={() => {
+							window.sessionStorage.setItem('socialsAction', 'unlink');
+						}}
 					>
 						Unlink {provider.attributes.value} account
 						<img

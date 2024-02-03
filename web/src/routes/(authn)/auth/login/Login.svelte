@@ -21,6 +21,7 @@
 	import InputPassword from '$lib/Inputs/InputPassword.svelte';
 	import SimpleAlert from '$lib/Alerts/SimpleAlert.svelte';
 	import { toast } from 'svelte-sonner';
+	import { browser } from '$app/environment';
 
 	export let data: PageData;
 
@@ -29,7 +30,11 @@
 			toast.error(errMsg);
 		}
 		data.flow = null;
-		goto(redirectUrl);
+
+		if (browser) {
+			goto(redirectUrl);
+		}
+
 		return;
 	}
 
@@ -46,7 +51,7 @@
 		identifier: '',
 		password: '',
 		method: 'password',
-		csrf_token: data.csrf,
+		csrf_token: data.csrf ?? '',
 	};
 
 	const supForm = superForm(initialLoginForm, {

@@ -1,3 +1,4 @@
+import { browser } from '$app/environment';
 import { goto } from '$app/navigation';
 import { config } from '$lib/kratos/config';
 import type { LayoutLoad } from './$types';
@@ -7,7 +8,9 @@ export const load: LayoutLoad = async ({ parent, url }) => {
 	const { auth } = data;
 
 	if (!auth.session?.active) {
-		goto(config.routes.login.path + `?return_to=${encodeURIComponent(url.toString())}`);
+		if (browser) {
+			goto(config.routes.login.path + `?return_to=${encodeURIComponent(url.toString())}`);
+		}
 	}
 
 	return data;

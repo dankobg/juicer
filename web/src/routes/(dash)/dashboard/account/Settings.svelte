@@ -4,7 +4,6 @@
 		ErrorBrowserLocationChangeRequired,
 		GenericError,
 		SettingsFlow,
-		UiNodeInputAttributes,
 		UpdateSettingsFlowWithProfileMethod,
 	} from '@ory/client';
 	import { goto } from '$app/navigation';
@@ -20,6 +19,7 @@
 	import { toast } from 'svelte-sonner';
 	import InputText from '$lib/Inputs/InputText.svelte';
 	import { config } from '$lib/kratos/config';
+	import { browser } from '$app/environment';
 
 	export let data: PageData;
 	export let currentFlowForm: 'settings' | 'password' | 'socials' | undefined;
@@ -29,7 +29,11 @@
 			toast.error(errMsg);
 		}
 		data.flow = null;
-		goto(redirectUrl);
+
+		if (browser) {
+			goto(redirectUrl);
+		}
+
 		return;
 	}
 
@@ -48,7 +52,7 @@
 
 	const initialSettingsForm: SettingsFormSchema = {
 		method: 'profile',
-		csrf_token: data.csrf,
+		csrf_token: data.csrf ?? '',
 		traits: {
 			first_name: data.flow?.identity.traits['first_name'] ?? '',
 			last_name: data.flow?.identity.traits['last_name'] ?? '',
