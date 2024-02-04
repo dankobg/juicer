@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { type AxiosError } from 'axios';
 	import type { PageData } from './$types';
 	import type {
 		ErrorBrowserLocationChangeRequired,
@@ -8,12 +9,12 @@
 	} from '@ory/client';
 	import { goto } from '$app/navigation';
 	import { kratos } from '$lib/kratos/client';
-	import { Button, Card } from 'flowbite-svelte';
+	import Button from 'flowbite-svelte/Button.svelte';
+	import Card from 'flowbite-svelte/Card.svelte';
 	import { superForm, type ValidationErrors } from 'sveltekit-superforms/client';
 	import set from 'just-safe-set';
 	import { zod } from 'sveltekit-superforms/adapters';
 	import { z } from 'zod';
-	import { isAxiosError } from '$lib/kratos/helpers';
 	import SimpleAlert from '$lib/Alerts/SimpleAlert.svelte';
 	import InputPassword from '$lib/Inputs/InputPassword.svelte';
 	import { toast } from 'svelte-sonner';
@@ -91,16 +92,19 @@
 						}
 					}
 				} catch (error) {
-					if (!isAxiosError(error)) {
-						console.error('updateSettingsFlow: unknown error occurred');
+					const axiosErr = error as AxiosError<GenericError>;
+					if (!axiosErr?.isAxiosError) {
+						console.error('getLoginFlow: unknown error occurred');
 						return;
 					}
 
-					if (error.response?.status === 400) {
-						const errFlowData: SettingsFlow = error.response.data;
-						data.flow = errFlowData;
+					if (axiosErr.response?.status === 400) {
+						const axiosErr = error as AxiosError<SettingsFlow>;
+						const errFlow = axiosErr.response?.data;
 
-						const nodes = errFlowData?.ui?.nodes ?? [];
+						data.flow = errFlow;
+
+						const nodes = errFlow?.ui?.nodes ?? [];
 						const fieldErrors: ValidationErrors<PasswordFormSchema> = {};
 
 						for (const node of nodes) {
@@ -120,28 +124,30 @@
 						return;
 					}
 
-					if (error.response?.status === 422) {
-						const err: ErrorBrowserLocationChangeRequired = error.response.data?.error;
+					if (axiosErr.response?.status === 422) {
+						const axiosErr = error as AxiosError<ErrorBrowserLocationChangeRequired>;
+						const err = axiosErr.response?.data;
 						window.location.href = err?.redirect_browser_to ?? '/';
 						return;
 					}
 
-					if (error.response?.status) {
-						const err: GenericError = error.response.data?.error;
+					if (axiosErr.response?.status) {
+						const axiosErr = error as AxiosError<GenericError>;
+						const err = axiosErr.response?.data;
 
-						if (err.id === 'session_refresh_required') {
+						if (err?.id === 'session_refresh_required') {
 							handleFlowErrAction(
 								config.routes.login.path + `?refresh=true&return_to=${window.location.href}`,
 								err.message
 							);
 						}
-						if (err.id === 'session_inactive') {
+						if (err?.id === 'session_inactive') {
 							handleFlowErrAction(config.routes.login.path, err.message);
 						}
-						if (err.id === 'session_already_available') {
+						if (err?.id === 'session_already_available') {
 							handleFlowErrAction('/', err.message);
 						}
-						if (err.id === 'security_csrf_violation' || err.id === 'security_identity_mismatch') {
+						if (err?.id === 'security_csrf_violation' || err?.id === 'security_identity_mismatch') {
 							handleFlowErrAction(config.routes.settings.path, err.message);
 						}
 						return;

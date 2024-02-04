@@ -1,5 +1,4 @@
 import type { LoginFlow, RecoveryFlow, RegistrationFlow, SettingsFlow, VerificationFlow } from '@ory/client';
-import type { AxiosError } from '../../app';
 
 type Provider = {
 	name: string;
@@ -27,8 +26,4 @@ export function extractCSRFToken(flow: KratosFlow | null): string {
 	})?.attributes;
 
 	return csrfAttributes?.node_type === 'input' ? csrfAttributes.value : '';
-}
-
-export function isAxiosError(err: unknown): err is AxiosError {
-	return typeof err === 'object' && err !== null && 'response' in err;
 }

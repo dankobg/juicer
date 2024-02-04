@@ -1,6 +1,6 @@
 <script lang="ts">
-	import { Alert } from 'flowbite-svelte';
-	import { InfoCircleSolid } from 'flowbite-svelte-icons';
+	import Alert from 'flowbite-svelte/Alert.svelte';
+	import InfoCircleSolid from 'flowbite-svelte-icons/InfoCircleSolid.svelte';
 
 	export let title = '';
 	export let text = '';

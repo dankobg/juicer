@@ -1,13 +1,13 @@
 <script lang="ts">
-	import {
-		Sidebar,
-		SidebarGroup,
-		SidebarItem,
-		SidebarWrapper,
-		SidebarDropdownItem,
-		SidebarDropdownWrapper,
-	} from 'flowbite-svelte';
-	import { ChartPieSolid, ShoppingCartSolid, UserSolid } from 'flowbite-svelte-icons';
+	import Sidebar from 'flowbite-svelte/Sidebar.svelte';
+	import SidebarGroup from 'flowbite-svelte/SidebarGroup.svelte';
+	import SidebarItem from 'flowbite-svelte/SidebarItem.svelte';
+	import SidebarWrapper from 'flowbite-svelte/SidebarWrapper.svelte';
+	import SidebarDropdownItem from 'flowbite-svelte/SidebarDropdownItem.svelte';
+	import SidebarDropdownWrapper from 'flowbite-svelte/SidebarDropdownWrapper.svelte';
+	import ChartPieSolid from 'flowbite-svelte-icons/ChartPieSolid.svelte';
+	import ShoppingCartSolid from 'flowbite-svelte-icons/ShoppingCartSolid.svelte';
+	import UserSolid from 'flowbite-svelte-icons/UserSolid.svelte';
 </script>
 
 <Sidebar class="hidden xl:block flex-shrink-0">

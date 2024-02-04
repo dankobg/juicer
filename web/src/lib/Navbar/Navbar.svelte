@@ -3,19 +3,17 @@
 	import { page } from '$app/stores';
 	import { config } from '$lib/kratos/config';
 	import type { User } from '$lib/kratos/service';
-	import {
-		Navbar,
-		NavBrand,
-		NavLi,
-		NavUl,
-		NavHamburger,
-		Button,
-		Avatar,
-		Dropdown,
-		DropdownItem,
-		DropdownHeader,
-		DropdownDivider,
-	} from 'flowbite-svelte';
+	import Navbar from 'flowbite-svelte/Navbar.svelte';
+	import NavBrand from 'flowbite-svelte/NavBrand.svelte';
+	import NavLi from 'flowbite-svelte/NavLi.svelte';
+	import NavUl from 'flowbite-svelte/NavUl.svelte';
+	import NavHamburger from 'flowbite-svelte/NavHamburger.svelte';
+	import Button from 'flowbite-svelte/Button.svelte';
+	import Avatar from 'flowbite-svelte/Avatar.svelte';
+	import Dropdown from 'flowbite-svelte/Dropdown.svelte';
+	import DropdownItem from 'flowbite-svelte/DropdownItem.svelte';
+	import DropdownHeader from 'flowbite-svelte/DropdownHeader.svelte';
+	import DropdownDivider from 'flowbite-svelte/DropdownDivider.svelte';
 
 	export let logoutUrl: string;
 	export let user: User | null;

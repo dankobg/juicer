@@ -3,8 +3,10 @@
 </script>
 
 <script lang="ts" generics="T extends Record<string, unknown>">
-	import { Helper, Input, Label } from 'flowbite-svelte';
 	import { formFieldProxy, type SuperForm, type FormPathLeaves } from 'sveltekit-superforms';
+	import Input from 'flowbite-svelte/Input.svelte';
+	import Label from 'flowbite-svelte/Label.svelte';
+	import Helper from 'flowbite-svelte/Helper.svelte';
 
 	export let form: SuperForm<T, unknown>;
 	export let name: FormPathLeaves<T>;

@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { page } from '$app/stores';
-	import { Breadcrumb, BreadcrumbItem } from 'flowbite-svelte';
+	import Breadcrumb from 'flowbite-svelte/Breadcrumb.svelte';
+	import BreadcrumbItem from 'flowbite-svelte/BreadcrumbItem.svelte';
 
 	let crumbs: Array<{ label: string; href: string }> = [];
 

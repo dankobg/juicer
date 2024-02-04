@@ -125,9 +125,7 @@ certs: _require_mkcert
 	rm -f {{cwd}}/certs/local*.pem && rm -f {{cwd}}/web/certs/local*.pem && \
 	mkcert -cert-file /tmp/local-cert.pem -key-file /tmp/local-key.pem "{{dev_domain}}" "*.{{dev_domain}}" localhost 127.0.0.1 ::1 && \
 	cp /tmp/local-key.pem {{cwd}}/certs && \
-	cp /tmp/local-cert.pem {{cwd}}/certs && \
-	cp /tmp/local-key.pem {{cwd}}/web/certs && \
-	cp /tmp/local-cert.pem {{cwd}}/web/certs
+	cp /tmp/local-cert.pem {{cwd}}/certs
 
 # ----------------------------------------------------------------------------
 

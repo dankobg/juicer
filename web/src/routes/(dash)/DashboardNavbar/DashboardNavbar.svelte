@@ -1,24 +1,24 @@
 <script lang="ts">
 	import type { User } from '$lib/kratos/service';
-	import {
-		Navbar,
-		NavBrand,
-		Button,
-		Avatar,
-		Dropdown,
-		DropdownItem,
-		DropdownHeader,
-		DropdownDivider,
-		Drawer,
-		CloseButton,
-		Sidebar,
-		SidebarDropdownItem,
-		SidebarDropdownWrapper,
-		SidebarGroup,
-		SidebarItem,
-		SidebarWrapper,
-	} from 'flowbite-svelte';
-	import { ChartPieSolid, ShoppingCartSolid, UserSolid } from 'flowbite-svelte-icons';
+	import Navbar from 'flowbite-svelte/Navbar.svelte';
+	import NavBrand from 'flowbite-svelte/NavBrand.svelte';
+	import Button from 'flowbite-svelte/Button.svelte';
+	import Avatar from 'flowbite-svelte/Avatar.svelte';
+	import Dropdown from 'flowbite-svelte/Dropdown.svelte';
+	import DropdownItem from 'flowbite-svelte/DropdownItem.svelte';
+	import DropdownHeader from 'flowbite-svelte/DropdownHeader.svelte';
+	import DropdownDivider from 'flowbite-svelte/DropdownDivider.svelte';
+	import Drawer from 'flowbite-svelte/Drawer.svelte';
+	import CloseButton from 'flowbite-svelte/CloseButton.svelte';
+	import Sidebar from 'flowbite-svelte/Sidebar.svelte';
+	import SidebarDropdownItem from 'flowbite-svelte/SidebarDropdownItem.svelte';
+	import SidebarDropdownWrapper from 'flowbite-svelte/SidebarDropdownWrapper.svelte';
+	import SidebarGroup from 'flowbite-svelte/SidebarGroup.svelte';
+	import SidebarItem from 'flowbite-svelte/SidebarItem.svelte';
+	import SidebarWrapper from 'flowbite-svelte/SidebarWrapper.svelte';
+	import ChartPieSolid from 'flowbite-svelte-icons/ChartPieSolid.svelte';
+	import ShoppingCartSolid from 'flowbite-svelte-icons/ShoppingCartSolid.svelte';
+	import UserSolid from 'flowbite-svelte-icons/UserSolid.svelte';
 	import { sineIn } from 'svelte/easing';
 
 	export let logoutUrl: string;

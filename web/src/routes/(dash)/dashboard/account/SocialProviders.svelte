@@ -1,7 +1,8 @@
 <script lang="ts">
 	import type { UiNode } from '@ory/client';
 	import type { PageData } from './$types';
-	import { Button, Card } from 'flowbite-svelte';
+	import Button from 'flowbite-svelte/Button.svelte';
+	import Card from 'flowbite-svelte/Card.svelte';
 	import SimpleAlert from '$lib/Alerts/SimpleAlert.svelte';
 	import { onMount } from 'svelte';
 	import { toast } from 'svelte-sonner';

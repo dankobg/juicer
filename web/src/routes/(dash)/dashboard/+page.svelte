@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Card } from 'flowbite-svelte';
+	import Card from 'flowbite-svelte/Card.svelte';
 </script>
 
 <div class="grid gap-4 grid-cols-[repeat(auto-fit,minmax(20rem,1fr))]">

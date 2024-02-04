@@ -1,5 +1,6 @@
 <script lang="ts">
-	import { Section, Page404 } from 'flowbite-svelte-blocks';
+	import Section from 'flowbite-svelte-blocks/Section.svelte';
+	import Page404 from 'flowbite-svelte-blocks/Page404.svelte';
 	import { Button } from 'flowbite-svelte';
 </script>
 

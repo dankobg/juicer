@@ -1,7 +1,7 @@
 import type { PageLoad } from './$types';
 import type { GenericError, SettingsFlow } from '@ory/client';
 import { kratos } from '$lib/kratos/client';
-import { extractCSRFToken, isAxiosError } from '$lib/kratos/helpers';
+import { extractCSRFToken } from '$lib/kratos/helpers';
 import { browser } from '$app/environment';
 import { toast } from 'svelte-sonner';
 import { goto } from '$app/navigation';
@@ -33,20 +33,21 @@ export const load: PageLoad = (async ({ url }) => {
 			});
 			flow = flowResponse.data;
 		} catch (error) {
-			if (!isAxiosError(error)) {
-				console.error('getSettingsFlow: unknown error occurred');
+			const axiosErr = error as AxiosError<GenericError>;
+			if (!axiosErr?.isAxiosError) {
+				console.error('getLoginFlow: unknown error occurred');
 				return;
 			}
 
-			const err: GenericError = error?.response?.data?.error;
+			const err = axiosErr.response?.data;
 
-			if (err.id === 'session_inactive' || err.id === 'session_refresh_required') {
+			if (err?.id === 'session_inactive' || err?.id === 'session_refresh_required') {
 				handleFlowErrAction(
 					config.routes.login.path + `?return_to=${encodeURIComponent(window.location.href)}`,
 					err.message
 				);
 			}
-			if (err.id === 'security_csrf_violation' || err.id === 'security_identity_mismatch') {
+			if (err?.id === 'security_csrf_violation' || err?.id === 'security_identity_mismatch') {
 				handleFlowErrAction(config.routes.settings.path, err.message);
 			}
 		}
@@ -59,20 +60,21 @@ export const load: PageLoad = (async ({ url }) => {
 			});
 			flow = flowResponse.data;
 		} catch (error) {
-			if (!isAxiosError(error)) {
-				console.error('createBrowserSettingsFlow: unknown error occurred');
+			const axiosErr = error as AxiosError<GenericError>;
+			if (!axiosErr?.isAxiosError) {
+				console.error('getLoginFlow: unknown error occurred');
 				return;
 			}
 
-			const err: GenericError = error?.response?.data?.error;
+			const err = axiosErr.response?.data;
 
-			if (err.id === 'session_inactive') {
+			if (err?.id === 'session_inactive') {
 				handleFlowErrAction(
 					config.routes.login.path + `?return_to=${encodeURIComponent(window.location.href)}`,
 					err.message
 				);
 			}
-			if (err.id === 'security_csrf_violation' || err.id === 'security_identity_mismatch') {
+			if (err?.id === 'security_csrf_violation' || err?.id === 'security_identity_mismatch') {
 				handleFlowErrAction(config.routes.settings.path, err.message);
 			}
 		}

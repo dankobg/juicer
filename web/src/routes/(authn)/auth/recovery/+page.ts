@@ -1,7 +1,7 @@
 import type { PageLoad } from './$types';
 import type { GenericError, RecoveryFlow } from '@ory/client';
 import { kratos } from '$lib/kratos/client';
-import { extractCSRFToken, isAxiosError } from '$lib/kratos/helpers';
+import { extractCSRFToken } from '$lib/kratos/helpers';
 import { browser } from '$app/environment';
 import { toast } from 'svelte-sonner';
 import { goto } from '$app/navigation';
@@ -33,17 +33,18 @@ export const load: PageLoad = (async ({ url }) => {
 			});
 			flow = flowResponse.data;
 		} catch (error) {
-			if (!isAxiosError(error)) {
-				console.error('getRecoveryFlow: unknown error occurred');
+			const axiosErr = error as AxiosError<GenericError>;
+			if (!axiosErr?.isAxiosError) {
+				console.error('getLoginFlow: unknown error occurred');
 				return;
 			}
 
-			const err: GenericError = error?.response?.data?.error;
+			const err = axiosErr.response?.data;
 
-			if (err.id === 'session_already_available') {
+			if (err?.id === 'session_already_available') {
 				handleFlowErrAction('/', err.message);
 			}
-			if (err.id === 'self_service_flow_expired') {
+			if (err?.id === 'self_service_flow_expired') {
 				handleFlowErrAction(config.routes.recovery.path, err.message);
 			}
 		}
@@ -56,13 +57,15 @@ export const load: PageLoad = (async ({ url }) => {
 			});
 			flow = flowResponse.data;
 		} catch (error) {
-			if (!isAxiosError(error)) {
-				console.error('createBrowserRecoveryFlow: unknown error occurred');
+			const axiosErr = error as AxiosError<GenericError>;
+			if (!axiosErr?.isAxiosError) {
+				console.error('getLoginFlow: unknown error occurred');
 				return;
 			}
 
-			const err: GenericError = error?.response?.data?.error;
-			handleFlowErrAction(config.routes.recovery.path, err.message);
+			const err = axiosErr.response?.data;
+
+			handleFlowErrAction(config.routes.recovery.path, err?.message);
 		}
 	}
 
