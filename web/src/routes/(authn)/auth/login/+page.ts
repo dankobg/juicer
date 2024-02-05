@@ -81,9 +81,9 @@ export const load: PageLoad = (async ({ url }) => {
 			if (err?.id === 'security_csrf_violation') {
 				handleFlowErrAction(config.routes.login.path, err.message);
 			}
-			if (err?.id === 'session_aal1_required') {
+			if (err?.id === 'session_aal2_required') {
 				if (browser) {
-					goto('/login?aal=aal1&return_to=' + window.location.href);
+					goto('/login?aal=aal2&return_to=' + window.location.href);
 				}
 				return;
 			}

@@ -7,18 +7,18 @@ dev_domain := "juicer-dev.xyz"
 redis_pwd := if env('REDIS_PASSWORD', "") == "" { "" } else { '-a "${REDIS_PASSWORD}"' }
 
 sql_drop_public_tables := (
-"""
-DO $\\$
-DECLARE
-	current_table text;
-BEGIN
-	FOR current_table IN (SELECT table_name FROM information_schema.tables WHERE table_schema = 'public')
-	LOOP
-		EXECUTE 'DROP TABLE IF EXISTS public.' || current_table || ' CASCADE';
-		END LOOP;
-END $\\$;
-"""
-)
+	"""
+	DO $\\$
+	DECLARE
+		current_table text;
+	BEGIN
+		FOR current_table IN (SELECT table_name FROM information_schema.tables WHERE table_schema = 'public')
+		LOOP
+			EXECUTE 'DROP TABLE IF EXISTS public.' || current_table || ' CASCADE';
+			END LOOP;
+	END $\\$;
+	"""
+	)
 
 # ----------------------------------------------------------------------------
 
