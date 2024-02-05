@@ -6,6 +6,7 @@ import { browser } from '$app/environment';
 import { toast } from 'svelte-sonner';
 import { goto } from '$app/navigation';
 import { config } from '$lib/kratos/config';
+import type { AxiosError } from 'axios';
 
 export const load: PageLoad = (async ({ url }) => {
 	const returnToParam = browser && url.searchParams.get('return_to');

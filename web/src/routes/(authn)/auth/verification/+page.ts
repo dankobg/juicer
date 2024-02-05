@@ -6,6 +6,7 @@ import { browser } from '$app/environment';
 import { toast } from 'svelte-sonner';
 import { goto } from '$app/navigation';
 import { config } from '$lib/kratos/config';
+import type { AxiosError } from 'axios';
 
 export const load: PageLoad = (async ({ url }) => {
 	const returnToParam = browser && url.searchParams.get('return_to');
@@ -58,10 +59,10 @@ export const load: PageLoad = (async ({ url }) => {
 			flow = flowResponse.data;
 		} catch (error) {
 			const axiosErr = error as AxiosError<GenericError>;
-					if (!axiosErr?.isAxiosError) {
-						console.error('getLoginFlow: unknown error occurred');
-						return;
-					}
+			if (!axiosErr?.isAxiosError) {
+				console.error('getLoginFlow: unknown error occurred');
+				return;
+			}
 
 			const err = axiosErr.response?.data;
 

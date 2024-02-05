@@ -6,6 +6,7 @@ import { extractCSRFToken } from '$lib/kratos/helpers';
 import { browser } from '$app/environment';
 import { goto } from '$app/navigation';
 import { toast } from 'svelte-sonner';
+import type { AxiosError } from 'axios';
 
 export const load: PageLoad = (async ({ url }) => {
 	const returnToParam = browser && url.searchParams.get('return_to');

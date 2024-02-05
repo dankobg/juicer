@@ -3,5 +3,5 @@
 	import '../app.css';
 </script>
 
-<Toaster />
+<Toaster position="top-center" richColors />
 <slot />
