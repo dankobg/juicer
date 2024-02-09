@@ -20,6 +20,12 @@ sql_drop_public_tables := (
 	"""
 	)
 
+migrations_format := (
+	"""
+	'{{ sql . "  " }}' 
+	"""
+)
+
 # ----------------------------------------------------------------------------
 
 default: 
@@ -143,7 +149,7 @@ sh-redis:
 
 # Shell into kratos docker container
 sh-kratos:
-	docker compose exec -it kratossh
+	docker compose exec -it kratos sh
 
 # Shell into keto docker container
 sh-keto:
@@ -171,19 +177,39 @@ psql:
 
 # ----------------------------------------------------------------------------
 
-# Create new migration
-mg-create:
-	mg create	
+# migrations hash the directory
+mg-hash:
+	docker compose run atlas migrate hash
+
+# migrations apply
+mg-apply *flags:
+	docker compose run atlas migrate apply --url "postgres://test:test@pg:5432/test?sslmode=disable&search_path=public" {{flags}}
+
+# migrations create new
+mg-new name *flags:
+	docker compose run atlas migrate new {{flags}} {{name}}
+
+# migrations diff
+mg-diff name *flags:
+	docker compose run atlas migrate diff {{name}} --to "file://schema.sql" --dev-url "postgres://test:test@pg:5432/test_atlas?sslmode=disable&search_path=public" --format {{migrations_format}} {{flags}}
+
+# migrations status
+mg-status *flags:
+	docker compose run atlas migrate status --url "postgres://test:test@pg:5432/test?sslmode=disable&search_path=public" {{flags}}
+
+# migrations validate
+mg-validate *flags:
+	docker compose run atlas migrate validate --dev-url "postgres://test:test@pg:5432/test_atlas?sslmode=disable&search_path=public" {{flags}}
 
 # ----------------------------------------------------------------------------
 
 # backup postgres with pg_dumpall
 pg-backup:
-	docker compose exec -it pg pg_dumpall -c -U test > /tmp/dumpall_backup.sql
+	docker compose exec -it pg pg_dumpall -c -U test > {{cwd}}/db/dev_dump.sql
 
 # restore postgres backup
 pg-restore: pg-dropall
-	docker compose exec -T pg psql postgres://test:test@pg:5432/test?sslmode=disable < /tmp/dumpall_backup.sql
+	docker compose exec -T pg psql postgres://test:test@pg:5432/test?sslmode=disable < {{cwd}}/db/dev_dump.sql
 
 # drop all tables in public schema
 pg-dropall:

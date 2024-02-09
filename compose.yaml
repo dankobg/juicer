@@ -100,6 +100,18 @@ services:
       pg:
         condition: service_healthy
   # ----------------------------------------------------------------------------
+  atlas:
+    image: arigaio/atlas
+    restart: on-failure
+    volumes:
+      - ./db/migrations:/migrations
+      - ./db/schema.sql:/schema.sql
+    networks:
+      - intranet
+    depends_on:
+      pg:
+        condition: service_healthy
+  # ----------------------------------------------------------------------------
 
 volumes:
   pg-data:
