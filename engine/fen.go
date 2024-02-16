@@ -76,7 +76,7 @@ func validateFenMetadataParts(fen string, opts validateFenOps) (fenToken, error)
 	}
 
 	var n uint64
-	if turnColorToken == Black.String() {
+	if turn.IsBlack() {
 		n = 1
 	}
 
