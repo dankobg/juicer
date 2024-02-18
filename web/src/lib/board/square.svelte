@@ -2,7 +2,7 @@
 <!-- svelte-ignore a11y-click-events-have-key-events -->
 
 <script lang="ts">
-	import { type Square } from '$lib/board/board';
+	import type { Square } from './square';
 
 	export let square: Square;
 	export let bordered: boolean = false;

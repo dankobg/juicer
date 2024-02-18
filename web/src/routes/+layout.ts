@@ -1,8 +1,15 @@
 import { kratos } from '$lib/kratos/client';
 import { KratosService } from '$lib/kratos/service';
 import type { LayoutLoad } from './$types';
+import { shittyFirefoxPatchForDragEventPointerCoordinates } from '$lib/util/firefox_dnd_fix';
+import { browser } from '$app/environment';
+
 
 export const load: LayoutLoad = async () => {
+	if (browser) {
+		shittyFirefoxPatchForDragEventPointerCoordinates()
+	}
+
 	try {
 		const result = await kratos.toSession();
 		if (result.status !== 200) {

@@ -2,7 +2,7 @@
 <!-- svelte-ignore a11y-click-events-have-key-events -->
 
 <script lang="ts">
-	import { type Piece } from '$lib/board/board';
+	import type { Piece } from "./piece";
 
 	export let piece: Piece;
 	export let square: number;

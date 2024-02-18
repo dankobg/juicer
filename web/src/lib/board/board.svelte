@@ -1,19 +1,152 @@
 <script lang="ts">
-	import JuicerPiece from './piece.svelte';
+	import { onMount, tick } from 'svelte';
 	import JuicerSquare from './square.svelte';
-	import { type Color, Board, FEN_STARTING_POSITION, WHITE, getRowAndCol, BLACK } from '$lib/board/board';
-	import { onMount } from 'svelte';
-	import { boardStore } from './store';
+	import JuicerPiece from './piece.svelte';
 	import { browser } from '$app/environment';
+	import { BLACK, FEN_STARTING_POSITION } from './common';
+	import { Board } from './board';
+	import { Square } from './square';
 
 	export let fen: string = FEN_STARTING_POSITION;
-	export let boardInitialSize = '30rem';
-	export let orientation: Color = WHITE;
 
-	onMount(() => {
-		initBoardTheme('/images/board/svg/brown.svg');
-		initPieceTheme('cburnett');
-	});
+	let board: Board | null = null;
+	let boardSize = 480;
+
+	let boardElm: HTMLDivElement;
+	let boardWidth: number;
+	let boardHeight: number;
+
+	let transparentDragImage: HTMLImageElement | null = null;
+	let squareElements: NodeListOf<HTMLDivElement>;
+	let pieceElements: NodeListOf<HTMLDivElement>;
+
+	let draggedElm: HTMLDivElement | null = null;
+	let draggedElmId: string = '';
+	let pieceState: 'dragging' | 'idle' | 'waitingSecond' = 'idle';
+	let dragOverSquare: number = -1;
+	let activeSquare: number = -1;
+	let dstSquare: number = -1;
+	let srcSquare: number = -1;
+
+	let xOffset: number = 0;
+	let yOffset: number = 0;
+	let piecesAnimationState: Record<string, { initialX: number; initialY: number; dx: number; dy: number }> = {};
+
+	let firstAnimationPlayed: boolean = false;
+
+	function onBoardDragEnter(event: DragEvent) {
+		event.preventDefault();
+	}
+
+	function onBoardDragLeave(event: DragEvent) {}
+
+	function onBoardDragOver(event: DragEvent) {
+		event.preventDefault();
+		dragOverSquare = getSquareIdxFromDragPos(boardElm, event);
+	}
+
+	function onBoardDrop(event: DragEvent) {
+		event.preventDefault();
+
+		const { target, clientX, clientY } = event;
+		const pieceElm = target as HTMLDivElement;
+
+		const sqIdx = Number.parseInt(pieceElm.dataset.square ?? '-1');
+		const pieceId = pieceElm.dataset.id ?? '';
+		const symbol = pieceElm.dataset.symbol ?? '';
+
+		piecesAnimationState[pieceId].initialX = clientX - xOffset;
+		piecesAnimationState[pieceId].initialY = clientY - yOffset;
+		draggedElm = null;
+		draggedElmId = '';
+		pieceState = 'idle';
+		dragOverSquare = -1;
+		activeSquare = -1;
+		dstSquare = getSquareIdxFromDragPos(boardElm, event);
+		pieceElm.dataset.square = dstSquare.toString();
+	}
+
+	function onPiecePointerUp(event: PointerEvent) {
+		const { target, clientX, clientY } = event;
+		const elm = target as HTMLDivElement;
+		const rect = elm.getBoundingClientRect();
+
+		const sqIdx = Number.parseInt(elm.dataset.square ?? '-1');
+		const pieceId = elm.dataset.id ?? '';
+		const symbol = elm.dataset.symbol ?? '';
+	}
+
+	function onPiecePointerDown(event: PointerEvent) {
+		const { target, clientX, clientY } = event;
+		const elm = target as HTMLDivElement;
+		const rect = elm.getBoundingClientRect();
+
+		const sqIdx = Number.parseInt(elm.dataset.square ?? '-1');
+		const pieceId = elm.dataset.id ?? '';
+		const symbol = elm.dataset.symbol ?? '';
+
+		xOffset = elm.clientWidth / 2;
+		yOffset = elm.clientHeight / 2;
+
+		piecesAnimationState[pieceId].dx = clientX + (piecesAnimationState?.[pieceId]?.dx ?? 0) - rect.left - xOffset;
+		piecesAnimationState[pieceId].dy = clientY + (piecesAnimationState?.[pieceId]?.dy ?? 0) - rect.top - yOffset;
+
+		translateElm(elm, piecesAnimationState[pieceId].dx, piecesAnimationState[pieceId].dy);
+		pieceState = 'waitingSecond';
+	}
+
+	function onPieceDrag(event: DragEvent) {
+		const { target, clientX, clientY } = event;
+		const elm = target as HTMLDivElement;
+
+		const sqIdx = Number.parseInt(elm.dataset.square ?? '-1');
+		const pieceId = elm.dataset.id ?? '';
+		const symbol = elm.dataset.symbol ?? '';
+
+		piecesAnimationState[pieceId].dx = clientX - (piecesAnimationState?.[pieceId]?.initialX ?? 0);
+		piecesAnimationState[pieceId].dy = clientY - (piecesAnimationState?.[pieceId]?.initialY ?? 0);
+
+		translateElm(elm, piecesAnimationState[pieceId].dx, piecesAnimationState[pieceId].dy);
+	}
+
+	function onPieceDragStart(event: DragEvent) {
+		const { target, clientX, clientY } = event;
+		const elm = target as HTMLDivElement;
+
+		const sqIdx = Number.parseInt(elm.dataset.square ?? '-1');
+		const pieceId = elm.dataset.id ?? '';
+		const symbol = elm.dataset.symbol ?? '';
+
+		piecesAnimationState[pieceId].initialX = clientX - (piecesAnimationState?.[pieceId]?.dx ?? 0);
+		piecesAnimationState[pieceId].initialY = clientY - (piecesAnimationState?.[pieceId]?.dy ?? 0);
+
+		pieceState = 'dragging';
+		draggedElm = elm;
+		draggedElmId = pieceId;
+
+		if (transparentDragImage) {
+			event.dataTransfer!.setDragImage(transparentDragImage, 0, 0);
+		}
+
+		if (elm.dataset.square) {
+			srcSquare = Number.parseInt(elm.dataset.square);
+		}
+	}
+
+	function onPieceDragEnd(event: DragEvent) {
+		const { target, clientX, clientY } = event;
+		const elm = target as HTMLDivElement;
+
+		const sqIdx = Number.parseInt(elm.dataset.square ?? '-1');
+		const pieceId = elm.dataset.id ?? '';
+		const symbol = elm.dataset.symbol ?? '';
+
+		piecesAnimationState[pieceId].initialX = clientX;
+		piecesAnimationState[pieceId].initialY = clientY;
+		pieceState = 'idle';
+		draggedElm = null;
+		draggedElmId = '';
+	}
 
 	function initPieceTheme(pieceTheme: string | undefined) {
 		if (browser) {
@@ -79,145 +212,16 @@
 		return dstSquare;
 	}
 
-	let board = new Board(fen);
-	let transparentDragImage: HTMLImageElement | null = null;
-	let squareElements: NodeListOf<HTMLDivElement>;
-	let pieceElements: NodeListOf<HTMLDivElement>;
-	let boardElm: HTMLDivElement;
-	let boardWidth: number;
-	let boardHeight: number;
-
-	let draggedElm: HTMLDivElement | null = null;
-	let draggedElmId: string = '';
-	let dragging: boolean = false;
-	let dragOverSquare: number = -1;
-	let activeSquare: number = -1;
-	let dstSquare: number = -1;
-	let srcSquare: number = -1;
-
-	let xOffset: number = 0;
-	let yOffset: number = 0;
-	let pos: Record<string, { initialX: number; initialY: number; dx: number; dy: number }> = {};
-
-	let firstAnimationPlayed: boolean = false;
-
-	function onBoardDragEnter(event: DragEvent) {
-		event.preventDefault();
-	}
-
-	function onBoardDragLeave(event: DragEvent) {}
-
-	function onBoardDragOver(event: DragEvent) {
-		event.preventDefault();
-		dragOverSquare = getSquareIdxFromDragPos(boardElm, event);
-	}
-
-	function onBoardDrop(event: DragEvent) {
-		event.preventDefault();
-
-		const { target, clientX, clientY } = event;
-		const pieceElm = target as HTMLDivElement;
-
-		const sqIdx = Number.parseInt(pieceElm.dataset.square ?? '-1');
-		const pieceId = pieceElm.dataset.id ?? '';
-		const symbol = pieceElm.dataset.symbol ?? '';
-
-		pos[pieceId].initialX = clientX - xOffset;
-		pos[pieceId].initialY = clientY - yOffset;
-		draggedElm = null;
-		draggedElmId = '';
-		dragging = false;
-		dragOverSquare = -1;
-		activeSquare = -1;
-		dstSquare = getSquareIdxFromDragPos(boardElm, event);
-		pieceElm.dataset.square = dstSquare.toString();
-	}
-
-	function onPieceClick(event: MouseEvent) {}
-
-	function onPiecePointerDown(event: MouseEvent) {
-		const { target, clientX, clientY } = event;
-		const elm = target as HTMLDivElement;
-		const rect = elm.getBoundingClientRect();
-
-		const sqIdx = Number.parseInt(elm.dataset.square ?? '-1');
-		const pieceId = elm.dataset.id ?? '';
-		const symbol = elm.dataset.symbol ?? '';
-
-		xOffset = elm.clientWidth / 2;
-		yOffset = elm.clientHeight / 2;
-
-		pos[pieceId].dx = clientX + (pos?.[pieceId]?.dx ?? 0) - rect.left - xOffset;
-		pos[pieceId].dy = clientY + (pos?.[pieceId]?.dy ?? 0) - rect.top - yOffset;
-
-		translateElm(elm, pos[pieceId].dx, pos[pieceId].dy);
-	}
-
-	function onPieceDragStart(event: DragEvent) {
-		const { target, clientX, clientY } = event;
-		const elm = target as HTMLDivElement;
-
-		const sqIdx = Number.parseInt(elm.dataset.square ?? '-1');
-		const pieceId = elm.dataset.id ?? '';
-		const symbol = elm.dataset.symbol ?? '';
-
-		pos[pieceId].initialX = clientX - (pos?.[pieceId]?.dx ?? 0);
-		pos[pieceId].initialY = clientY - (pos?.[pieceId]?.dy ?? 0);
-
-		dragging = true;
-		draggedElm = elm;
-		draggedElmId = pieceId;
-
-		if (transparentDragImage) {
-			event.dataTransfer!.setDragImage(transparentDragImage, 0, 0);
-		}
-
-		if (elm.dataset.square) {
-			srcSquare = Number.parseInt(elm.dataset.square);
-		}
-	}
-
-	function onPieceDragEnd(event: DragEvent) {
-		const { target, clientX, clientY } = event;
-		const elm = target as HTMLDivElement;
-
-		const sqIdx = Number.parseInt(elm.dataset.square ?? '-1');
-		const pieceId = elm.dataset.id ?? '';
-		const symbol = elm.dataset.symbol ?? '';
-
-		pos[pieceId].initialX = clientX;
-		pos[pieceId].initialY = clientY;
-		dragging = false;
-		draggedElm = null;
-		draggedElmId = '';
-	}
-
-	function onPieceDrag(event: DragEvent) {
-		const { target, clientX, clientY } = event;
-		const elm = target as HTMLDivElement;
-
-		const sqIdx = Number.parseInt(elm.dataset.square ?? '-1');
-		const pieceId = elm.dataset.id ?? '';
-		const symbol = elm.dataset.symbol ?? '';
-
-		pos[pieceId].dx = clientX - (pos?.[pieceId]?.initialX ?? 0);
-		pos[pieceId].dy = clientY - (pos?.[pieceId]?.initialY ?? 0);
-
-		translateElm(elm, pos[pieceId].dx, pos[pieceId].dy);
-	}
-
 	function setupDomElementsAndInitialVars(): void {
 		transparentDragImage = makeTransparentDragImage();
 		pieceElements = document.querySelectorAll('.piece');
 		squareElements = document.querySelectorAll('.square');
 	}
 
-	function setInitialPiecesPositions(): void {
-		if (board) {
-			for (const sq of board.squares) {
-				if (sq.piece !== null) {
-					pos[sq.piece.id] = { initialX: 0, initialY: 0, dx: 0, dy: 0 };
-				}
+	function setInitialPieceAnimationState(squares: Square[]): void {
+		for (const sq of squares) {
+			if (sq.piece !== null) {
+				piecesAnimationState[sq.piece.id] = { initialX: 0, initialY: 0, dx: 0, dy: 0 };
 			}
 		}
 	}
@@ -231,11 +235,13 @@
 				const pieceId = p.dataset.id ?? '';
 				const symbol = p.dataset.symbol ?? '';
 				const color = p.dataset.color ?? '';
-				const { row, col } = getRowAndCol(sqIdx);
+
+				const { row, col } = new Square(sqIdx, null);
+
 				let [dx, dy] = [col * psize, row * psize];
-				if (orientation === BLACK) {
-					dx = (7 - col) * 60;
-					dy = (7 - row) * 60;
+				if (board.orientation === BLACK) {
+					dx = (7 - col) * (boardSize / 8);
+					dy = (7 - row) * (boardSize / 8);
 				}
 				const blackKeyframesFrom = { opacity: 0, transform: `translate(${boardWidth / 2}px, ${-psize}px` };
 				const whiteKeyframesFrom = { opacity: 0, transform: `translate(${boardWidth / 2}px, ${boardHeight}px)` };
@@ -251,8 +257,8 @@
 
 				const anim = p.animate(keyframes, opts);
 				anim.onfinish = () => {
-					pos[pieceId].initialX = dx;
-					pos[pieceId].initialY = dy;
+					piecesAnimationState[pieceId].initialX = dx;
+					piecesAnimationState[pieceId].initialY = dy;
 				};
 			}
 		}
@@ -261,29 +267,36 @@
 	}
 
 	onMount(() => {
-		setupDomElementsAndInitialVars();
-		setInitialPiecesPositions();
-		// animatePiecesMoves();
-	});
+		initBoardTheme('/images/board/svg/brown.svg');
+		initPieceTheme('cburnett');
 
-	$: pieceElements && orientation && animatePiecesMoves();
+		board = new Board(fen);
+
+		tick().then(() => {
+			if (board) {
+				setupDomElementsAndInitialVars();
+				setInitialPieceAnimationState(board.squares);
+				animatePiecesMoves();
+			}
+		});
+	});
 </script>
 
-<div style="--board-size: {boardInitialSize};">
+{#if board}
 	<!-- svelte-ignore a11y-no-static-element-interactions -->
 	<div
 		bind:this={boardElm}
 		bind:clientWidth={boardWidth}
 		bind:clientHeight={boardHeight}
 		class="board"
-		style="--board-size: {boardInitialSize};"
-		data-orientation={orientation}
+		style="--board-size: {boardSize}px;"
+		data-orientation={board.orientation}
 		on:dragenter={onBoardDragEnter}
 		on:dragleave={onBoardDragLeave}
 		on:dragover={onBoardDragOver}
 		on:drop={onBoardDrop}
 	>
-		<div class="rank-notations" data-orientation={orientation}>
+		<div class="rank-notations" data-orientation={board.orientation}>
 			<div>1</div>
 			<div>2</div>
 			<div>3</div>
@@ -293,7 +306,7 @@
 			<div>7</div>
 			<div>8</div>
 		</div>
-		<div class="file-notations" data-orientation={orientation}>
+		<div class="file-notations" data-orientation={board.orientation}>
 			<div>a</div>
 			<div>b</div>
 			<div>c</div>
@@ -304,44 +317,38 @@
 			<div>h</div>
 		</div>
 
-		<!-- {#if $boardStore.board}
-      {#each $boardStore.board.squares as sq} -->
-		{#if board}
-			{#each board.squares as sq}
-				<JuicerSquare
-					square={sq}
-					selected={$boardStore.activeSquare === sq.squareIdx}
-					highlighted={$boardStore.highlightedSquares.includes(sq.squareIdx)}
+		{#each board.squares as sq}
+			<JuicerSquare square={sq} selected={false} highlighted={false} />
+
+			{#if sq.piece !== null}
+				<JuicerPiece
+					square={sq.squareIdx}
+					piece={sq.piece}
+					on:pointerdown={onPiecePointerDown}
+					on:pointerup={onPiecePointerUp}
+					on:drag={onPieceDrag}
+					on:dragstart={onPieceDragStart}
+					on:dragend={onPieceDragEnd}
 				/>
-
-				{#if sq.piece !== null}
-					<JuicerPiece
-						square={sq.squareIdx}
-						piece={sq.piece}
-						on:click={onPieceClick}
-						on:pointerdown={onPiecePointerDown}
-						on:drag={onPieceDrag}
-						on:dragstart={onPieceDragStart}
-						on:dragend={onPieceDragEnd}
-					/>
-				{/if}
-			{/each}
-		{/if}
+			{/if}
+		{/each}
 	</div>
-</div>
+{/if}
 
-<button
-	style="margin-block: 3rem;"
-	on:click={() => {
-		board.orientation = board.orientation === 'w' ? 'b' : 'w';
-		board = board;
-		orientation = orientation === 'w' ? 'b' : 'w';
-		// board.squares = [...board.squares].reverse();
-	}}>rofl</button
->
-
-<pre>{JSON.stringify(board.orientation, null, 2)}</pre>
-<pre style="font-family: Courier;">{board.print()}</pre>
+<pre>{JSON.stringify(
+		{
+			draggedElmId,
+			boardState: pieceState,
+			dragOverSquare,
+			activeSquare,
+			dstSquare,
+			srcSquare,
+			xOffset,
+			yOffset,
+		},
+		null,
+		2
+	)}</pre>
 
 <style>
 	.board {

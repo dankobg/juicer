@@ -1,21 +1,19 @@
+import { fenToBoard } from './board';
 import {
-	type Coordinate,
-	type PieceFenSymbol,
-	type Color,
-	Square,
-	WHITE,
 	BLACK,
-	CastleRights,
-	BOARD_SIZE,
-	Piece,
-	fenToBoard,
-	WHITE_KING,
-	WHITE_QUEEN,
 	BLACK_KING,
-	BLACK_QUEEN,
-	WHITE_PAWN,
 	BLACK_PAWN,
-} from './board';
+	BLACK_QUEEN,
+	BOARD_SIZE,
+	FEN_EMPTY_POSITION,
+	WHITE,
+	WHITE_KING,
+	WHITE_PAWN,
+	WHITE_QUEEN,
+} from './common';
+import { Piece } from './piece';
+import { Square } from './square';
+import { CastleRights, type Color, type Coordinate, type PieceSymbol } from './types';
 
 type FenToken = {
 	halfMoveClock: number;
@@ -124,7 +122,7 @@ export function validateFenMetadataParts(fen: string): FenToken {
 	};
 }
 
-function validatePositionPart(ft: FenToken): Square[] {
+function validatePositionPart(ft: FenToken): void {
 	const ranks = ft.position.split(FEN_POSITION_SEPARATOR);
 	if (ranks.length !== BOARD_SIZE) {
 		throw new Error(`invalid FEN: it does not contain 8 ranks delimited by ${FEN_POSITION_SEPARATOR} character`);
@@ -153,7 +151,7 @@ function validatePositionPart(ft: FenToken): Square[] {
 				if (!RE_FEN_PIECE_SYMBOL.test(ranks[r][f])) {
 					throw new Error('invalid FEN: invalid piece symbol');
 				}
-				const piece = Piece.fromPieceFenSymbol(ranks[r][f] as PieceFenSymbol);
+				const piece = Piece.fromPieceFenSymbol(ranks[r][f] as PieceSymbol);
 				piecesCount[piece.toFenSymbol()]++;
 				sumSquaresInRank++;
 				previousWasNumber = false;
@@ -193,19 +191,34 @@ function validatePositionPart(ft: FenToken): Square[] {
 			throw new Error('invalid FEN: black pawn is on 1st rank');
 		}
 	}
-
-	const squares = fenToBoard(ft.position);
-	return squares;
 }
 
-type PositionMeta = {
+export type PositionMeta = {
 	fenToken: FenToken;
 	squares: Square[];
 };
 
 export function validateFen(fen: string): PositionMeta {
+	if (fen === FEN_EMPTY_POSITION) {
+		const squares = fenToBoard(fen);
+
+		return {
+			fenToken: {
+				castleRights: CastleRights.None,
+				enpSquare: null,
+				fullMoveClock: 1,
+				halfMoveClock: 0,
+				position: fen.split(' ')[0],
+				turnColor: WHITE,
+			},
+			squares,
+		};
+	}
+
 	const fenToken = validateFenMetadataParts(fen);
-	const squares = validatePositionPart(fenToken);
+	validatePositionPart(fenToken);
+
+	const squares = fenToBoard(fenToken.position);
 
 	return {
 		fenToken,
