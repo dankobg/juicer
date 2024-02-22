@@ -1,4 +1,5 @@
 <script lang="ts">
+	import type { DragPosition } from './types';
 	import { onMount, tick } from 'svelte';
 	import JuicerSquare from './square.svelte';
 	import JuicerPiece from './piece.svelte';
@@ -10,142 +11,111 @@
 	export let fen: string = FEN_STARTING_POSITION;
 
 	let board: Board | null = null;
-	let boardSize = 480;
-
 	let boardElm: HTMLDivElement;
 	let boardWidth: number;
 	let boardHeight: number;
+	let boardSize: number = 480;
 
 	let transparentDragImage: HTMLImageElement | null = null;
 	let squareElements: NodeListOf<HTMLDivElement>;
 	let pieceElements: NodeListOf<HTMLDivElement>;
 
+	let dragging: boolean = false;
 	let draggedElm: HTMLDivElement | null = null;
-	let draggedElmId: string = '';
-	let pieceState: 'dragging' | 'idle' | 'waitingSecond' = 'idle';
 	let dragOverSquare: number = -1;
 	let activeSquare: number = -1;
 	let dstSquare: number = -1;
 	let srcSquare: number = -1;
 
-	let xOffset: number = 0;
-	let yOffset: number = 0;
-	let piecesAnimationState: Record<string, { initialX: number; initialY: number; dx: number; dy: number }> = {};
+	let offsetWidth: number = 0;
+	let offsetHeight: number = 0;
 
-	let firstAnimationPlayed: boolean = false;
+	let dragPos: Record<string, DragPosition> = {};
+	let initialDragPos: DragPosition = { initialX: 0, initialY: 0, dx: 0, dy: 0 };
 
-	function onBoardDragEnter(event: DragEvent) {
-		event.preventDefault();
-	}
+	function onPiecePointerDown(event: PointerEvent) {
+		if (event.button !== 0 || event.ctrlKey) {
+			return;
+		}
 
-	function onBoardDragLeave(event: DragEvent) {}
+		const { target, clientX, clientY, offsetX, offsetY } = event;
+		const elm = target as HTMLDivElement;
+		const rect = elm.getBoundingClientRect();
 
-	function onBoardDragOver(event: DragEvent) {
-		event.preventDefault();
-		dragOverSquare = getSquareIdxFromDragPos(boardElm, event);
-	}
+		elm.setPointerCapture(event.pointerId);
+		elm.style.userSelect = 'none';
 
-	function onBoardDrop(event: DragEvent) {
-		event.preventDefault();
+		const pieceId = elm.dataset['id'] ?? '';
+		const pieceSymbol = elm.dataset['symbol'] ?? '';
+		const sqIdx = Number.parseInt(elm.dataset['square'] ?? '-1');
 
-		const { target, clientX, clientY } = event;
-		const pieceElm = target as HTMLDivElement;
+		dragging = true;
+		draggedElm = elm;
 
-		const sqIdx = Number.parseInt(pieceElm.dataset.square ?? '-1');
-		const pieceId = pieceElm.dataset.id ?? '';
-		const symbol = pieceElm.dataset.symbol ?? '';
+		offsetWidth = rect.width / 2;
+		offsetHeight = rect.height / 2;
 
-		piecesAnimationState[pieceId].initialX = clientX - xOffset;
-		piecesAnimationState[pieceId].initialY = clientY - yOffset;
-		draggedElm = null;
-		draggedElmId = '';
-		pieceState = 'idle';
-		dragOverSquare = -1;
-		activeSquare = -1;
-		dstSquare = getSquareIdxFromDragPos(boardElm, event);
-		pieceElm.dataset.square = dstSquare.toString();
+		if (!dragPos[pieceId]) {
+			dragPos[pieceId] = initialDragPos;
+		}
+
+		const newPos = dragPos[pieceId];
+
+		newPos.initialX = clientX - newPos.dx + (offsetWidth - offsetX);
+		newPos.initialY = clientY - newPos.dy + (offsetHeight - offsetY);
+		newPos.dx = clientX - newPos.initialX;
+		newPos.dy = clientY - newPos.initialY;
+
+		dragPos[pieceId] = { ...newPos };
+
+		translateElm(elm, dragPos[pieceId].dx, dragPos[pieceId].dy);
 	}
 
 	function onPiecePointerUp(event: PointerEvent) {
-		const { target, clientX, clientY } = event;
+		const { target } = event;
 		const elm = target as HTMLDivElement;
-		const rect = elm.getBoundingClientRect();
 
-		const sqIdx = Number.parseInt(elm.dataset.square ?? '-1');
-		const pieceId = elm.dataset.id ?? '';
-		const symbol = elm.dataset.symbol ?? '';
+		dragging = false;
+		draggedElm = null;
+		elm.style.userSelect = 'auto';
 	}
 
-	function onPiecePointerDown(event: PointerEvent) {
-		const { target, clientX, clientY } = event;
+	function onPiecePointerCancel(event: PointerEvent) {
+		const { target } = event;
 		const elm = target as HTMLDivElement;
-		const rect = elm.getBoundingClientRect();
 
-		const sqIdx = Number.parseInt(elm.dataset.square ?? '-1');
-		const pieceId = elm.dataset.id ?? '';
-		const symbol = elm.dataset.symbol ?? '';
-
-		xOffset = elm.clientWidth / 2;
-		yOffset = elm.clientHeight / 2;
-
-		piecesAnimationState[pieceId].dx = clientX + (piecesAnimationState?.[pieceId]?.dx ?? 0) - rect.left - xOffset;
-		piecesAnimationState[pieceId].dy = clientY + (piecesAnimationState?.[pieceId]?.dy ?? 0) - rect.top - yOffset;
-
-		translateElm(elm, piecesAnimationState[pieceId].dx, piecesAnimationState[pieceId].dy);
-		pieceState = 'waitingSecond';
+		dragging = false;
+		draggedElm = null;
+		elm.style.userSelect = 'auto';
 	}
 
-	function onPieceDrag(event: DragEvent) {
+	function onPiecePointerMove(event: PointerEvent) {
+		if (!dragging) {
+			return;
+		}
+
+		event.stopPropagation();
+
 		const { target, clientX, clientY } = event;
 		const elm = target as HTMLDivElement;
 
-		const sqIdx = Number.parseInt(elm.dataset.square ?? '-1');
-		const pieceId = elm.dataset.id ?? '';
-		const symbol = elm.dataset.symbol ?? '';
+		const pieceId = elm.dataset['id'] ?? '';
 
-		piecesAnimationState[pieceId].dx = clientX - (piecesAnimationState?.[pieceId]?.initialX ?? 0);
-		piecesAnimationState[pieceId].dy = clientY - (piecesAnimationState?.[pieceId]?.initialY ?? 0);
+		const newPos = dragPos[pieceId];
 
-		translateElm(elm, piecesAnimationState[pieceId].dx, piecesAnimationState[pieceId].dy);
+		newPos.dx = clientX - newPos.initialX;
+		newPos.dy = clientY - newPos.initialY;
+		dragPos[pieceId] = { ...newPos };
+
+		translateElm(elm, dragPos[pieceId].dx, dragPos[pieceId].dy);
+	}
+
+	function onPieceTouchStart(event: TouchEvent) {
+		event.preventDefault();
 	}
 
 	function onPieceDragStart(event: DragEvent) {
-		const { target, clientX, clientY } = event;
-		const elm = target as HTMLDivElement;
-
-		const sqIdx = Number.parseInt(elm.dataset.square ?? '-1');
-		const pieceId = elm.dataset.id ?? '';
-		const symbol = elm.dataset.symbol ?? '';
-
-		piecesAnimationState[pieceId].initialX = clientX - (piecesAnimationState?.[pieceId]?.dx ?? 0);
-		piecesAnimationState[pieceId].initialY = clientY - (piecesAnimationState?.[pieceId]?.dy ?? 0);
-
-		pieceState = 'dragging';
-		draggedElm = elm;
-		draggedElmId = pieceId;
-
-		if (transparentDragImage) {
-			event.dataTransfer!.setDragImage(transparentDragImage, 0, 0);
-		}
-
-		if (elm.dataset.square) {
-			srcSquare = Number.parseInt(elm.dataset.square);
-		}
-	}
-
-	function onPieceDragEnd(event: DragEvent) {
-		const { target, clientX, clientY } = event;
-		const elm = target as HTMLDivElement;
-
-		const sqIdx = Number.parseInt(elm.dataset.square ?? '-1');
-		const pieceId = elm.dataset.id ?? '';
-		const symbol = elm.dataset.symbol ?? '';
-
-		piecesAnimationState[pieceId].initialX = clientX;
-		piecesAnimationState[pieceId].initialY = clientY;
-		pieceState = 'idle';
-		draggedElm = null;
-		draggedElmId = '';
+		event.preventDefault();
 	}
 
 	function initPieceTheme(pieceTheme: string | undefined) {
@@ -219,11 +189,11 @@
 	}
 
 	function setInitialPieceAnimationState(squares: Square[]): void {
-		for (const sq of squares) {
-			if (sq.piece !== null) {
-				piecesAnimationState[sq.piece.id] = { initialX: 0, initialY: 0, dx: 0, dy: 0 };
-			}
-		}
+		// for (const sq of squares) {
+		// 	if (sq.piece !== null) {
+		// 		dragPos[sq.piece.id] = { initialX: 0, initialY: 0, dx: 0, dy: 0 };
+		// 	}
+		// }
 	}
 
 	function animatePiecesMoves(): void {
@@ -252,18 +222,15 @@
 				const opts: KeyframeAnimationOptions = {
 					fill: 'forwards',
 					easing: 'ease-in',
-					duration: !firstAnimationPlayed ? 200 : 0,
+					duration: 200,
 				};
 
 				const anim = p.animate(keyframes, opts);
 				anim.onfinish = () => {
-					piecesAnimationState[pieceId].initialX = dx;
-					piecesAnimationState[pieceId].initialY = dy;
+					dragPos[pieceId] = { ...initialDragPos, initialX: dx, initialY: dy };
 				};
 			}
 		}
-
-		firstAnimationPlayed = true;
 	}
 
 	onMount(() => {
@@ -291,10 +258,6 @@
 		class="board"
 		style="--board-size: {boardSize}px;"
 		data-orientation={board.orientation}
-		on:dragenter={onBoardDragEnter}
-		on:dragleave={onBoardDragLeave}
-		on:dragover={onBoardDragOver}
-		on:drop={onBoardDrop}
 	>
 		<div class="rank-notations" data-orientation={board.orientation}>
 			<div>1</div>
@@ -326,29 +289,17 @@
 					piece={sq.piece}
 					on:pointerdown={onPiecePointerDown}
 					on:pointerup={onPiecePointerUp}
-					on:drag={onPieceDrag}
+					on:pointermove={onPiecePointerMove}
+					on:pointercancel={onPiecePointerCancel}
+					on:touchstart{onPieceTouchStart}
 					on:dragstart={onPieceDragStart}
-					on:dragend={onPieceDragEnd}
 				/>
 			{/if}
 		{/each}
 	</div>
 {/if}
 
-<pre>{JSON.stringify(
-		{
-			draggedElmId,
-			boardState: pieceState,
-			dragOverSquare,
-			activeSquare,
-			dstSquare,
-			srcSquare,
-			xOffset,
-			yOffset,
-		},
-		null,
-		2
-	)}</pre>
+<pre>{JSON.stringify({ dragPos }, null, 2)}</pre>
 
 <style>
 	.board {

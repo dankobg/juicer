@@ -24,6 +24,13 @@ export enum CastleRights {
 	BlackQueenSide = 8,
 }
 
+export type DragPosition = {
+	initialX: number;
+	initialY: number;
+	dx: number;
+	dy: number;
+};
+
 // export class CastleRightsHelper {
 // 	constructor(public cr: CastleRights) {}
 

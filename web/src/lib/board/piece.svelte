@@ -2,7 +2,7 @@
 <!-- svelte-ignore a11y-click-events-have-key-events -->
 
 <script lang="ts">
-	import type { Piece } from "./piece";
+	import type { Piece } from './piece';
 
 	export let piece: Piece;
 	export let square: number;
@@ -15,11 +15,12 @@
 	data-square={square}
 	data-symbol={piece.toFenSymbol()}
 	data-color={piece.color}
-	on:click
 	on:pointerdown
-	on:drag
+	on:pointerup
+	on:pointermove
+	on:pointercancel
+	on:touchstart
 	on:dragstart
-	on:dragend
 />
 
 <style>
@@ -33,6 +34,7 @@
 		background-size: contain;
 		background-position: center;
 		background-repeat: no-repeat;
+		cursor: pointer;
 		z-index: 60;
 	}
 
