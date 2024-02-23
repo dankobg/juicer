@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { DragPosition } from './types';
+	import type { Coordinate, DragPosition } from './types';
 	import { onMount, tick } from 'svelte';
 	import JuicerSquare from './square.svelte';
 	import JuicerPiece from './piece.svelte';
@@ -45,9 +45,11 @@
 		elm.setPointerCapture(event.pointerId);
 		elm.style.userSelect = 'none';
 
-		const pieceId = elm.dataset['id'] ?? '';
-		const pieceSymbol = elm.dataset['symbol'] ?? '';
-		const sqIdx = Number.parseInt(elm.dataset['square'] ?? '-1');
+		const pieceId = elm.dataset.id ?? '';
+
+		const sqIdx = getSquareIdxFromPointer(event);
+		srcSquare = sqIdx;
+		activeSquare = sqIdx;
 
 		dragging = true;
 		draggedElm = elm;
@@ -75,18 +77,33 @@
 		const { target } = event;
 		const elm = target as HTMLDivElement;
 
+		elm.style.userSelect = 'auto';
+
 		dragging = false;
 		draggedElm = null;
-		elm.style.userSelect = 'auto';
+		activeSquare = -1;
+
+		// TODO
+		const elements = document.elementsFromPoint(event.clientX, event.clientY);
+		const dropSquare = elements.find(e => e.className.startsWith('square')) as HTMLDivElement | undefined;
+		if (dropSquare) {
+			const sq = dropSquare.dataset.sq ?? '';
+			const { squareIdx } = Square.fromCoord(sq as Coordinate);
+			dstSquare = squareIdx;
+		} else {
+			dstSquare = -1;
+		}
 	}
 
 	function onPiecePointerCancel(event: PointerEvent) {
 		const { target } = event;
 		const elm = target as HTMLDivElement;
 
+		elm.style.userSelect = 'auto';
+
 		dragging = false;
 		draggedElm = null;
-		elm.style.userSelect = 'auto';
+		activeSquare = -1;
 	}
 
 	function onPiecePointerMove(event: PointerEvent) {
@@ -99,7 +116,10 @@
 		const { target, clientX, clientY } = event;
 		const elm = target as HTMLDivElement;
 
-		const pieceId = elm.dataset['id'] ?? '';
+		const pieceId = elm.dataset.id ?? '';
+
+		const sqIdx = getSquareIdxFromPointer(event);
+		dragOverSquare = sqIdx;
 
 		const newPos = dragPos[pieceId];
 
@@ -169,17 +189,16 @@
 		}
 	}
 
-	function getSquareIdxFromDragPos(boardElm: HTMLDivElement, e: MouseEvent | DragEvent) {
-		const boardSize = boardElm.clientWidth;
+	function getSquareIdxFromPointer(event: PointerEvent) {
 		const squareSize = boardSize / 8;
-		const dx = e.clientX - boardElm.offsetLeft;
-		const dy = e.clientY - boardElm.offsetTop;
+		const dx = event.clientX - boardElm.offsetLeft;
+		const dy = event.clientY - boardElm.offsetTop;
 
 		const file = Math.max(0, Math.min(7, Math.floor(dx / squareSize)));
 		const rank = Math.max(0, Math.min(7, Math.floor(dy / squareSize)));
 
-		const dstSquare = rank * 8 + file;
-		return dstSquare;
+		const sqIdx = rank * 8 + file;
+		return sqIdx;
 	}
 
 	function setupDomElementsAndInitialVars(): void {
@@ -189,11 +208,11 @@
 	}
 
 	function setInitialPieceAnimationState(squares: Square[]): void {
-		// for (const sq of squares) {
-		// 	if (sq.piece !== null) {
-		// 		dragPos[sq.piece.id] = { initialX: 0, initialY: 0, dx: 0, dy: 0 };
-		// 	}
-		// }
+		for (const sq of squares) {
+			if (sq.piece !== null) {
+				dragPos[sq.piece.id] = { initialX: 0, initialY: 0, dx: 0, dy: 0 };
+			}
+		}
 	}
 
 	function animatePiecesMoves(): void {
@@ -201,12 +220,11 @@
 			for (let i = 0; i < pieceElements.length; i++) {
 				const p = pieceElements[i];
 				const psize = p.clientWidth;
-				const sqIdx = Number.parseInt(p.dataset.square ?? '-1');
+				const sq = p.dataset.sq ?? '';
 				const pieceId = p.dataset.id ?? '';
-				const symbol = p.dataset.symbol ?? '';
 				const color = p.dataset.color ?? '';
 
-				const { row, col } = new Square(sqIdx, null);
+				const { row, col } = Square.fromCoord(sq as Coordinate);
 
 				let [dx, dy] = [col * psize, row * psize];
 				if (board.orientation === BLACK) {
@@ -242,12 +260,14 @@
 		tick().then(() => {
 			if (board) {
 				setupDomElementsAndInitialVars();
-				setInitialPieceAnimationState(board.squares);
+				// setInitialPieceAnimationState(board.squares);
 				animatePiecesMoves();
 			}
 		});
 	});
 </script>
+
+<pre>{JSON.stringify({ dragging, dragOverSquare, activeSquare, dstSquare, srcSquare }, null, 2)}</pre>
 
 {#if board}
 	<!-- svelte-ignore a11y-no-static-element-interactions -->
@@ -281,11 +301,19 @@
 		</div>
 
 		{#each board.squares as sq}
-			<JuicerSquare square={sq} selected={false} highlighted={false} />
+			<JuicerSquare
+				square={sq}
+				selected={sq.squareIdx === activeSquare}
+				highlighted={activeSquare === -1 &&
+					srcSquare !== -1 &&
+					dstSquare !== -1 &&
+					(sq.squareIdx === srcSquare || sq.squareIdx === dstSquare)}
+				bordered={activeSquare !== -1 && sq.squareIdx === dragOverSquare && sq.squareIdx !== srcSquare}
+			/>
 
 			{#if sq.piece !== null}
 				<JuicerPiece
-					square={sq.squareIdx}
+					square={sq.coord}
 					piece={sq.piece}
 					on:pointerdown={onPiecePointerDown}
 					on:pointerup={onPiecePointerUp}
@@ -298,8 +326,6 @@
 		{/each}
 	</div>
 {/if}
-
-<pre>{JSON.stringify({ dragPos }, null, 2)}</pre>
 
 <style>
 	.board {

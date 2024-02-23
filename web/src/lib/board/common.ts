@@ -1,4 +1,4 @@
-import type { BlackPieceSymbol, Color, PieceSymbol, WhitePieceSymbol } from './types';
+import type { BlackPieceSymbol, Color, File, PieceSymbol, Rank, WhitePieceSymbol } from './types';
 
 export const WHITE: Color = 'w';
 export const BLACK: Color = 'b';
@@ -34,5 +34,5 @@ export const allPiecesFen = whitePiecesFen.concat(blackPiecesFen);
 export const BOARD_SIZE = 8;
 export const BOARD_TOTAL_SQUARES = 64;
 
-export const FILE_CHARS = 'abcdefgh';
-export const RANK_CHARS = '12345678';
+export const FILES: File[] = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
+export const RANKS: Rank[] = [1, 2, 3, 4, 5, 6, 7, 8];

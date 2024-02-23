@@ -3,16 +3,16 @@
 
 <script lang="ts">
 	import type { Piece } from './piece';
+	import type { Coordinate } from './types';
 
 	export let piece: Piece;
-	export let square: number;
+	export let square: Coordinate;
 </script>
 
 <div
-	draggable="true"
 	class="piece"
 	data-id={piece.id}
-	data-square={square}
+	data-sq={square}
 	data-symbol={piece.toFenSymbol()}
 	data-color={piece.color}
 	on:pointerdown

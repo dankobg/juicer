@@ -5,18 +5,18 @@
 	import type { Square } from './square';
 
 	export let square: Square;
-	export let bordered: boolean = false;
 	export let selected: boolean = false;
+	export let bordered: boolean = false;
 	export let highlighted: boolean = false;
 </script>
 
 <div
 	class="square"
 	style="--row:{square.row}; --col:{square.col};"
-	data-square={square.squareIdx}
-	data-highlighted={highlighted}
+	data-sq={square.coord}
 	data-selected={selected}
 	data-bordered={bordered}
+	data-highlighted={highlighted}
 	data-color={square.color}
 	on:click
 	on:dragenter
@@ -43,14 +43,14 @@
 	}
 
 	.square[data-highlighted='true'] {
-		background-color: rgba(164, 206, 74, 0.5);
+		background-color: rgba(165, 231, 59, 0.5);
 	}
 
 	.square[data-selected='true'] {
-		background-color: rgba(173, 90, 194, 0.5);
+		background-color: rgba(116, 79, 202, 0.5);
 	}
 
 	.square[data-bordered='true'] {
-		border: 3px solid goldenrod;
+		border: 3px solid rgb(201, 126, 77);
 	}
 </style>

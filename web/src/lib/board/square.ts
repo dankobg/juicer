@@ -1,4 +1,4 @@
-import { BLACK, BOARD_SIZE, FILE_CHARS, RANK_CHARS, WHITE } from './common';
+import { BLACK, FILES, RANKS, WHITE } from './common';
 import type { Piece } from './piece';
 import type { Col, Color, Coordinate, Rank, File, Row } from './types';
 
@@ -18,20 +18,21 @@ export class Square {
 	}
 
 	static fromCoord(coord: Coordinate): Square {
-		const rowIndex = RANK_CHARS.indexOf(coord[0]);
-		const colIndex = FILE_CHARS.indexOf(coord[1]);
+		const f = coord[0] as File;
+		const r = Number.parseInt(coord[1]) as Rank;
+
+		const rowIndex = 7 - RANKS.indexOf(r);
+		const colIndex = FILES.indexOf(f);
 		const squareIdx = rowIndex * 8 + colIndex;
 		return new Square(squareIdx, null);
 	}
 
 	get file(): File {
-		const n = this.squareIdx % BOARD_SIZE;
-		return FILE_CHARS.slice(n, n + 1) as File;
+		return FILES[this.col];
 	}
 
 	get rank(): Rank {
-		const n = this.squareIdx / BOARD_SIZE;
-		return Number.parseInt(RANK_CHARS.slice(n, n + 1)) as Rank;
+		return RANKS[7 - this.row];
 	}
 
 	get coord(): Coordinate {
