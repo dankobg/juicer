@@ -11,8 +11,8 @@ export class Square {
 		public squareIdx: number,
 		public piece: Piece | null
 	) {
-		this.color = getSquareColor(squareIdx);
-		const { row, col } = getRowAndCol(squareIdx);
+		this.color = this.getSquareColor();
+		const { row, col } = this.getRowAndCol();
 		this.row = row;
 		this.col = col;
 	}
@@ -25,6 +25,19 @@ export class Square {
 		const colIndex = FILES.indexOf(f);
 		const squareIdx = rowIndex * 8 + colIndex;
 		return new Square(squareIdx, null);
+	}
+
+	private getSquareColor(): Color {
+		if ((this.squareIdx / 8) % 2 === this.squareIdx % 2) {
+			return BLACK;
+		}
+		return WHITE;
+	}
+
+	private getRowAndCol(): { row: Row; col: Col } {
+		const row = Math.floor(this.squareIdx / 8) as Row;
+		const col = (this.squareIdx % 8) as Col;
+		return { row, col };
 	}
 
 	get file(): File {
@@ -82,17 +95,4 @@ export class Square {
 	copy(): Square {
 		return new Square(this.squareIdx, this.piece);
 	}
-}
-
-function getSquareColor(squareIdx: number): Color {
-	if ((squareIdx / 8) % 2 === squareIdx % 2) {
-		return BLACK;
-	}
-	return WHITE;
-}
-
-function getRowAndCol(squareIdx: number): { row: Row; col: Col } {
-	const row = Math.floor(squareIdx / 8) as Row;
-	const col = (squareIdx % 8) as Col;
-	return { row, col };
 }

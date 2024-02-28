@@ -36,6 +36,7 @@
 		background-repeat: no-repeat;
 		cursor: pointer;
 		z-index: 60;
+		touch-action: none;
 	}
 
 	.piece[data-symbol='r'] {

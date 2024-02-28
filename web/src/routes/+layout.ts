@@ -4,10 +4,14 @@ import type { LayoutLoad } from './$types';
 import { shittyFirefoxPatchForDragEventPointerCoordinates } from '$lib/util/firefox_dnd_fix';
 import { browser } from '$app/environment';
 
-
 export const load: LayoutLoad = async () => {
 	if (browser) {
-		shittyFirefoxPatchForDragEventPointerCoordinates()
+		const isFirefoxViaUserAgent = navigator.userAgent.toLowerCase().includes('firefox');
+		const isFirefoxViaFeature = typeof InstallTrigger !== 'undefined';
+
+		if (isFirefoxViaUserAgent || isFirefoxViaFeature) {
+			shittyFirefoxPatchForDragEventPointerCoordinates();
+		}
 	}
 
 	try {

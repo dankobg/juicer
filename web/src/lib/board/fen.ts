@@ -1,4 +1,3 @@
-import { fenToBoard } from './board';
 import {
 	BLACK,
 	BLACK_KING,
@@ -11,6 +10,7 @@ import {
 	WHITE_PAWN,
 	WHITE_QUEEN,
 } from './common';
+import { fenToBoard } from './helpers';
 import { Piece } from './piece';
 import { Square } from './square';
 import { CastleRights, type Color, type Coordinate, type PieceSymbol } from './types';

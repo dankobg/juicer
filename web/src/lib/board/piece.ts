@@ -1,5 +1,6 @@
-import { KING, QUEEN, KNIGHT, BISHOP, ROOK, PAWN, WHITE, BLACK } from './common';
 import type { Color, PieceSymbol } from './types';
+import { KING, QUEEN, KNIGHT, BISHOP, ROOK, PAWN, WHITE, BLACK } from './common';
+import { generateRandomHexId, getPieceColorFromFenSymbol } from './helpers';
 
 export class Piece {
 	id!: string;
@@ -66,30 +67,4 @@ export class Piece {
 	copy(): Piece {
 		return new Piece(this.symbol, this.color);
 	}
-}
-
-function generateRandomHexId(length = 32): string {
-	if (length % 2 !== 0) {
-		throw new Error('Hex ID length must be even.');
-	}
-
-	const characters = '0123456789ABCDEF';
-	let result = '';
-
-	for (let i = 0; i < length; i++) {
-		const randomIndex = Math.floor(Math.random() * characters.length);
-		result += characters.charAt(randomIndex);
-	}
-
-	return result;
-}
-
-function getPieceColorFromFenSymbol(pieceSymbol: PieceSymbol): Color {
-	if (/^[prnbqk]$/.test(pieceSymbol)) {
-		return 'b';
-	}
-	if (/^[PRNBQK]$/.test(pieceSymbol)) {
-		return 'w';
-	}
-	throw new Error('invalid color');
 }

@@ -1,24 +1,34 @@
 <script lang="ts">
-	import type { Coordinate, DragPosition } from './types';
+	import type { Coordinate, DragPosition, DropOffBoardAction } from './types';
 	import { onMount, tick } from 'svelte';
-	import JuicerSquare from './square.svelte';
-	import JuicerPiece from './piece.svelte';
+	import JuicerSquare from './Square.svelte';
+	import JuicerPiece from './Piece.svelte';
 	import { browser } from '$app/environment';
 	import { BLACK, FEN_STARTING_POSITION } from './common';
 	import { Board } from './board';
 	import { Square } from './square';
+	import FileNotations from './FileNotations.svelte';
+	import RankNotations from './RankNotations.svelte';
 
 	export let fen: string = FEN_STARTING_POSITION;
 
+	export let interactive: boolean = false;
+	export let dropOffBoardAction: DropOffBoardAction = 'snapback';
+	export let appearAnimationSpeedMs = 200;
+	export let moveAnimationSpeedMs = 200;
+	export let snapbackAnimationSpeedMs = 50;
+	export let snapAnimationSpeedMs = 25;
+	export let trashAnimationSpeedMs = 50;
+
 	let board: Board | null = null;
+
 	let boardElm: HTMLDivElement;
+	let squareElements: NodeListOf<HTMLDivElement>;
+	let pieceElements: NodeListOf<HTMLDivElement>;
+
 	let boardWidth: number;
 	let boardHeight: number;
 	let boardSize: number = 480;
-
-	let transparentDragImage: HTMLImageElement | null = null;
-	let squareElements: NodeListOf<HTMLDivElement>;
-	let pieceElements: NodeListOf<HTMLDivElement>;
 
 	let dragging: boolean = false;
 	let draggedElm: HTMLDivElement | null = null;
@@ -30,10 +40,22 @@
 	let offsetWidth: number = 0;
 	let offsetHeight: number = 0;
 
+	const dragPositionZero: DragPosition = { initialX: 0, initialY: 0, dx: 0, dy: 0 };
 	let dragPos: Record<string, DragPosition> = {};
-	let initialDragPos: DragPosition = { initialX: 0, initialY: 0, dx: 0, dy: 0 };
+	let lastPos: DragPosition = dragPositionZero; // FIXME
+
+	let offBoardBounds: boolean = false;
+
+	function flipOrientation() {
+		board?.flipOrientation();
+		board = board;
+	}
 
 	function onPiecePointerDown(event: PointerEvent) {
+		if (!interactive) {
+			return;
+		}
+
 		if (event.button !== 0 || event.ctrlKey) {
 			return;
 		}
@@ -57,11 +79,8 @@
 		offsetWidth = rect.width / 2;
 		offsetHeight = rect.height / 2;
 
-		if (!dragPos[pieceId]) {
-			dragPos[pieceId] = initialDragPos;
-		}
-
 		const newPos = dragPos[pieceId];
+		lastPos = { ...newPos }; // FIXME
 
 		newPos.initialX = clientX - newPos.dx + (offsetWidth - offsetX);
 		newPos.initialY = clientY - newPos.dy + (offsetHeight - offsetY);
@@ -74,28 +93,74 @@
 	}
 
 	function onPiecePointerUp(event: PointerEvent) {
-		const { target } = event;
+		if (!interactive) {
+			return;
+		}
+
+		const { target, clientX, clientY } = event;
 		const elm = target as HTMLDivElement;
 
 		elm.style.userSelect = 'auto';
+
+		const pieceId = elm.dataset.id ?? '';
 
 		dragging = false;
 		draggedElm = null;
 		activeSquare = -1;
 
 		// TODO
-		const elements = document.elementsFromPoint(event.clientX, event.clientY);
+		const elements = document.elementsFromPoint(clientX, clientY);
 		const dropSquare = elements.find(e => e.className.startsWith('square')) as HTMLDivElement | undefined;
+
 		if (dropSquare) {
 			const sq = dropSquare.dataset.sq ?? '';
 			const { squareIdx } = Square.fromCoord(sq as Coordinate);
 			dstSquare = squareIdx;
+
+			if (dstSquare === srcSquare) {
+				const keyFrames = { translate: '0' };
+				const opts: KeyframeAnimationOptions = { easing: 'ease', duration: 0 };
+
+				const anim = elm.animate(keyFrames, opts);
+				anim.addEventListener('finish', () => {
+					console.log('FINISHED ');
+
+					dragPos[pieceId] = lastPos;
+					dstSquare = -1;
+					translateElm(elm, 0, 0);
+				});
+			}
 		} else {
-			dstSquare = -1;
+			// #########################################################
+			const keyFrames = { translate: '0' };
+			const opts: KeyframeAnimationOptions = { easing: 'ease', duration: 0 };
+
+			const anim = elm.animate(keyFrames, opts);
+			anim.addEventListener('finish', () => {
+				console.log('FINISHED ');
+
+				dragPos[pieceId] = lastPos;
+				dstSquare = -1;
+				translateElm(elm, 0, 0);
+			});
+			// #########################################################
+
+			// dstSquare = -1;
+
+			// if (dropOffBoardAction === 'trash') {
+			// 	board!.squares[srcSquare].piece = null;
+			// } else if (dropOffBoardAction === 'snapback') {
+			// 	translateElm(elm, 0, 0);
+			// 	dragPos[pieceId] = lastPos;
+			// }
 		}
 	}
 
 	function onPiecePointerCancel(event: PointerEvent) {
+		if (!interactive) {
+			return;
+		}
+
 		const { target } = event;
 		const elm = target as HTMLDivElement;
 
@@ -107,6 +172,10 @@
 	}
 
 	function onPiecePointerMove(event: PointerEvent) {
+		if (!interactive) {
+			return;
+		}
+
 		if (!dragging) {
 			return;
 		}
@@ -119,7 +188,14 @@
 		const pieceId = elm.dataset.id ?? '';
 
 		const sqIdx = getSquareIdxFromPointer(event);
-		dragOverSquare = sqIdx;
+
+		offBoardBounds =
+			clientX < boardElm.offsetLeft ||
+			clientX > boardElm.offsetLeft + boardElm.clientWidth ||
+			clientY < boardElm.offsetTop ||
+			clientY > boardElm.offsetTop + boardElm.clientHeight - 0;
+
+		dragOverSquare = offBoardBounds ? -1 : sqIdx;
 
 		const newPos = dragPos[pieceId];
 
@@ -131,10 +207,18 @@
 	}
 
 	function onPieceTouchStart(event: TouchEvent) {
+		if (!interactive) {
+			return;
+		}
+
 		event.preventDefault();
 	}
 
 	function onPieceDragStart(event: DragEvent) {
+		if (!interactive) {
+			return;
+		}
+
 		event.preventDefault();
 	}
 
@@ -177,12 +261,6 @@
 		}
 	}
 
-	function makeTransparentDragImage(): HTMLImageElement {
-		const img = new Image();
-		img.src = 'data:image/gif;base64,R0lGODlhAQABAIAAAAUEBAAAACwAAAAAAQABAAACAkQBADs=';
-		return img;
-	}
-
 	function translateElm(elm: HTMLDivElement, dx: number, dy: number): void {
 		if (elm) {
 			elm.style.translate = `${dx}px ${dy}px`;
@@ -202,7 +280,6 @@
 	}
 
 	function setupDomElementsAndInitialVars(): void {
-		transparentDragImage = makeTransparentDragImage();
 		pieceElements = document.querySelectorAll('.piece');
 		squareElements = document.querySelectorAll('.square');
 	}
@@ -210,7 +287,7 @@
 	function setInitialPieceAnimationState(squares: Square[]): void {
 		for (const sq of squares) {
 			if (sq.piece !== null) {
-				dragPos[sq.piece.id] = { initialX: 0, initialY: 0, dx: 0, dy: 0 };
+				dragPos[sq.piece.id] = dragPositionZero;
 			}
 		}
 	}
@@ -234,19 +311,18 @@
 				const blackKeyframesFrom = { opacity: 0, transform: `translate(${boardWidth / 2}px, ${-psize}px` };
 				const whiteKeyframesFrom = { opacity: 0, transform: `translate(${boardWidth / 2}px, ${boardHeight}px)` };
 				let keyframes: Keyframe[] = [{ opacity: 1, transform: `translate(${dx}px, ${dy}px)` }];
+				const opts: KeyframeAnimationOptions = { fill: 'forwards', easing: 'ease-in', duration: 200 };
 
 				keyframes.unshift(color === 'w' ? whiteKeyframesFrom : blackKeyframesFrom);
 
-				const opts: KeyframeAnimationOptions = {
-					fill: 'forwards',
-					easing: 'ease-in',
-					duration: 200,
-				};
-
 				const anim = p.animate(keyframes, opts);
-				anim.onfinish = () => {
-					dragPos[pieceId] = { ...initialDragPos, initialX: dx, initialY: dy };
-				};
+				anim.addEventListener('finish', () => {
+					dragPos[pieceId] = {
+						...dragPositionZero,
+						initialX: dx + boardElm.offsetLeft,
+						initialY: dy + boardElm.offsetTop,
+					};
+				});
 			}
 		}
 	}
@@ -260,14 +336,12 @@
 		tick().then(() => {
 			if (board) {
 				setupDomElementsAndInitialVars();
-				// setInitialPieceAnimationState(board.squares);
+				setInitialPieceAnimationState(board.squares);
 				animatePiecesMoves();
 			}
 		});
 	});
 </script>
-
-<pre>{JSON.stringify({ dragging, dragOverSquare, activeSquare, dstSquare, srcSquare }, null, 2)}</pre>
 
 {#if board}
 	<!-- svelte-ignore a11y-no-static-element-interactions -->
@@ -279,26 +353,8 @@
 		style="--board-size: {boardSize}px;"
 		data-orientation={board.orientation}
 	>
-		<div class="rank-notations" data-orientation={board.orientation}>
-			<div>1</div>
-			<div>2</div>
-			<div>3</div>
-			<div>4</div>
-			<div>5</div>
-			<div>6</div>
-			<div>7</div>
-			<div>8</div>
-		</div>
-		<div class="file-notations" data-orientation={board.orientation}>
-			<div>a</div>
-			<div>b</div>
-			<div>c</div>
-			<div>d</div>
-			<div>e</div>
-			<div>f</div>
-			<div>g</div>
-			<div>h</div>
-		</div>
+		<RankNotations orientation={board.orientation} />
+		<FileNotations orientation={board.orientation} />
 
 		{#each board.squares as sq}
 			<JuicerSquare
@@ -327,6 +383,13 @@
 	</div>
 {/if}
 
+<button class="bg-blue-400 mt-5 p-2 rounded hover:bg-blue-500" on:click={flipOrientation}>FLIP ORIENTATION</button>
+
+{#if board}
+	<pre>{JSON.stringify({ dragging, offBoardBounds, dragOverSquare, activeSquare, dstSquare, srcSquare }, null, 2)}</pre>
+	<pre style="margin-top:3rem;">{board.print()}</pre>
+{/if}
+
 <style>
 	.board {
 		width: var(--board-size);
@@ -335,64 +398,5 @@
 		background-size: cover;
 		position: relative;
 		user-select: none;
-	}
-
-	.file-notations {
-		font-size: 1em;
-		font-weight: 500;
-		display: flex;
-		flex-direction: row;
-		position: absolute;
-		width: 100%;
-		bottom: 0;
-		left: 0;
-		margin-inline-start: -2px;
-		margin-block-end: 2px;
-		z-index: 51;
-	}
-	.file-notations[data-orientation='b'] {
-		flex-direction: row-reverse;
-	}
-	.file-notations div {
-		flex: 1;
-		display: flex;
-		justify-content: end;
-	}
-
-	.rank-notations {
-		font-size: 1em;
-		font-weight: 500;
-		display: flex;
-		flex-direction: column-reverse;
-		position: absolute;
-		height: 100%;
-		bottom: 0;
-		left: 0;
-		z-index: 51;
-	}
-	.rank-notations[data-orientation='b'] {
-		flex-direction: column;
-	}
-	.rank-notations div {
-		flex: 1;
-		margin-inline-start: 2px;
-		margin-block-start: 2px;
-	}
-
-	.file-notations[data-orientation='w'] div:nth-child(odd),
-	.rank-notations[data-orientation='w'] div:nth-child(odd) {
-		color: #f6f6f6;
-	}
-	.file-notations[data-orientation='w'] div:nth-child(even),
-	.rank-notations[data-orientation='w'] div:nth-child(even) {
-		color: #333;
-	}
-	.file-notations[data-orientation='b'] div:nth-child(odd),
-	.rank-notations[data-orientation='b'] div:nth-child(odd) {
-		color: #333;
-	}
-	.file-notations[data-orientation='b'] div:nth-child(even),
-	.rank-notations[data-orientation='b'] div:nth-child(even) {
-		color: #f6f6f6;
 	}
 </style>
