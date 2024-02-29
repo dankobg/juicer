@@ -4,7 +4,7 @@
 	import JuicerSquare from './Square.svelte';
 	import JuicerPiece from './Piece.svelte';
 	import { browser } from '$app/environment';
-	import { BLACK, FEN_STARTING_POSITION } from './common';
+	import { BLACK, BOARD_SIZE, FEN_STARTING_POSITION } from './common';
 	import { Board } from './board';
 	import { Square } from './square';
 	import FileNotations from './FileNotations.svelte';
@@ -92,6 +92,13 @@
 		translateElm(elm, dragPos[pieceId].dx, dragPos[pieceId].dy);
 	}
 
+	let rowDiff = 0,
+		colDiff = 0,
+		distDx = 0,
+		distDy = 0,
+		snapDx = 0,
+		snapDy = 0;
+
 	function onPiecePointerUp(event: PointerEvent) {
 		if (!interactive) {
 			return;
@@ -108,51 +115,53 @@
 		draggedElm = null;
 		activeSquare = -1;
 
-		// TODO
 		const elements = document.elementsFromPoint(clientX, clientY);
 		const dropSquare = elements.find(e => e.className.startsWith('square')) as HTMLDivElement | undefined;
 
 		if (dropSquare) {
+			// dropped inside board
 			const sq = dropSquare.dataset.sq ?? '';
-			const { squareIdx } = Square.fromCoord(sq as Coordinate);
+			const { squareIdx, row, col } = Square.fromCoord(sq as Coordinate);
 			dstSquare = squareIdx;
 
 			if (dstSquare === srcSquare) {
-				const keyFrames = { translate: '0' };
-				const opts: KeyframeAnimationOptions = { easing: 'ease', duration: 0 };
+				// dropped to same starting square
+				performSnapback(elm, pieceId);
+			} else {
+				// dropped to any other square except start
+				const squareTopLeftX = col * (boardSize / BOARD_SIZE) + boardElm.offsetLeft;
+				const squareTopLeftY = row * (boardSize / BOARD_SIZE) + boardElm.offsetTop;
 
-				const anim = elm.animate(keyFrames, opts);
-				anim.addEventListener('finish', () => {
-					console.log('FINISHED ');
+				const snapDx = clientX - squareTopLeftX - 30;
+				const snapDy = clientY - squareTopLeftY - 30;
 
-					dragPos[pieceId] = lastPos;
-					dstSquare = -1;
-					translateElm(elm, 0, 0);
-				});
+				console.log({ row, col, squareTopLeftX, squareTopLeftY, snapDx, snapDy });
+
+				dragPos[pieceId].dx -= snapDx;
+				dragPos[pieceId].dy -= snapDy;
+				translateElm(elm, dragPos[pieceId].dx, dragPos[pieceId].dy);
+
+				lastPos = { ...dragPos[pieceId] };
+
+				// [rowDiff, colDiff] = calculateRowAndColDiffs(srcSquare, dstSquare);
+				// distDx = colDiff * (boardSize / BOARD_SIZE);
+				// distDy = rowDiff * (boardSize / BOARD_SIZE);
+				// snapDx = distDx - dragPos[pieceId].dx;
+				// snapDy = distDy - dragPos[pieceId].dy;
+				// // Adjust signs based on direction
+				// if (colDiff < 0) {
+				// 	snapDx *= -1;
+				// }
+				// if (rowDiff < 0) {
+				// 	snapDy *= -1;
+				// }
+				// dragPos[pieceId].dx += snapDx;
+				// dragPos[pieceId].dy += snapDy;
+				// translateElm(elm, dragPos[pieceId].dx, dragPos[pieceId].dy);
 			}
 		} else {
-			// #########################################################
-			const keyFrames = { translate: '0' };
-			const opts: KeyframeAnimationOptions = { easing: 'ease', duration: 0 };
-
-			const anim = elm.animate(keyFrames, opts);
-			anim.addEventListener('finish', () => {
-				console.log('FINISHED ');
-
-				dragPos[pieceId] = lastPos;
-				dstSquare = -1;
-				translateElm(elm, 0, 0);
-			});
-			// #########################################################
-
-			// dstSquare = -1;
-
-			// if (dropOffBoardAction === 'trash') {
-			// 	board!.squares[srcSquare].piece = null;
-			// } else if (dropOffBoardAction === 'snapback') {
-			// 	translateElm(elm, 0, 0);
-			// 	dragPos[pieceId] = lastPos;
-			// }
+			// dropped outside board
+			performSnapback(elm, pieceId);
 		}
 	}
 
@@ -267,6 +276,31 @@
 		}
 	}
 
+	function performSnapback(elm: HTMLDivElement, pieceId: string, duration = 0): void {
+		const keyFrames = { translate: '0' };
+		const opts: KeyframeAnimationOptions = { easing: 'ease', duration };
+
+		const anim = elm.animate(keyFrames, opts);
+		anim.addEventListener('finish', () => {
+			dragPos[pieceId] = lastPos;
+			dstSquare = -1;
+			translateElm(elm, lastPos.dx, lastPos.dy);
+		});
+	}
+
+	function calculateRowAndColDiffs(srcIdx: number, destIdx: number) {
+		const srcRow = Math.floor(srcIdx / BOARD_SIZE);
+		const srcCol = srcIdx % BOARD_SIZE;
+
+		const destRow = Math.floor(destIdx / BOARD_SIZE);
+		const destCol = destIdx % BOARD_SIZE;
+
+		const rowDiff = destRow - srcRow;
+		const colDiff = destCol - srcCol;
+
+		return [rowDiff, colDiff] as const;
+	}
+
 	function getSquareIdxFromPointer(event: PointerEvent) {
 		const squareSize = boardSize / 8;
 		const dx = event.clientX - boardElm.offsetLeft;
@@ -342,6 +376,10 @@
 		});
 	});
 </script>
+
+<pre>{JSON.stringify(lastPos)}</pre>
+<pre>{JSON.stringify(Object.values(dragPos).at(-1))}</pre>
+<pre>{JSON.stringify({ rowDiff, colDiff, distDx, distDy, snapDx, snapDy })}</pre>
 
 {#if board}
 	<!-- svelte-ignore a11y-no-static-element-interactions -->
