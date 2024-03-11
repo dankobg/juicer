@@ -1,8 +1,5 @@
-<!-- svelte-ignore a11y-no-static-element-interactions -->
-<!-- svelte-ignore a11y-click-events-have-key-events -->
-
 <script lang="ts">
-	import type { Square } from './square';
+	import type { Square } from './model';
 
 	export let square: Square;
 	export let selected: boolean = false;
@@ -10,10 +7,12 @@
 	export let highlighted: boolean = false;
 </script>
 
+<!-- svelte-ignore a11y-no-static-element-interactions -->
+<!-- svelte-ignore a11y-click-events-have-key-events -->
 <div
 	class="square"
 	style="--row:{square.row}; --col:{square.col};"
-	data-sq={square.coord}
+	data-sq={square.coordinate}
 	data-selected={selected}
 	data-bordered={bordered}
 	data-highlighted={highlighted}
@@ -28,8 +27,8 @@
 <style>
 	.square {
 		position: absolute;
-		width: calc(var(--board-size) / 8);
-		height: calc(var(--board-size) / 8);
+		width: calc(var(--board-width) / var(--board-files));
+		height: calc(var(--board-height) / var(--board-ranks));
 		display: flex;
 		justify-content: center;
 		align-items: center;
@@ -37,8 +36,8 @@
 		background-position: center;
 		background-repeat: no-repeat;
 		overflow: hidden;
-		top: calc(var(--row) * (var(--board-size) / 8));
-		left: calc(var(--col) * (var(--board-size) / 8));
+		top: calc(var(--row) * (var(--board-height) / var(--board-ranks)));
+		left: calc(var(--col) * (var(--board-width) / var(--board-files)));
 		z-index: 55;
 	}
 

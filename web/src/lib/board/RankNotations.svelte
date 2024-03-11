@@ -1,7 +1,7 @@
 <script lang="ts">
-	import type { Color } from './types';
+	import { WHITE, type Color } from './model';
 
-	export let orientation: Color = 'w';
+	export let orientation: Color = WHITE;
 </script>
 
 <div class="rank-notations" data-orientation={orientation}>

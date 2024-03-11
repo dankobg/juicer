@@ -1,15 +1,15 @@
-<!-- svelte-ignore a11y-no-static-element-interactions -->
-<!-- svelte-ignore a11y-click-events-have-key-events -->
-
 <script lang="ts">
-	import type { Piece } from './piece';
-	import type { Coordinate } from './types';
+	import { type Coordinate, Piece, type DragPosition, dragPositionZero } from './model';
+	import { boardState } from './state';
 
 	export let piece: Piece;
 	export let square: Coordinate;
 </script>
 
+<!-- svelte-ignore a11y-no-static-element-interactions -->
+<!-- svelte-ignore a11y-click-events-have-key-events -->
 <div
+	style="translate: {$boardState.dragPos[piece.id].dx}px {$boardState.dragPos[piece.id].dy}px;"
 	class="piece"
 	data-id={piece.id}
 	data-sq={square}
@@ -26,8 +26,8 @@
 <style>
 	.piece {
 		position: absolute;
-		width: calc(var(--board-size) / 8);
-		height: calc(var(--board-size) / 8);
+		width: calc(var(--board-width) / var(--board-files));
+		height: calc(var(--board-height) / var(--board-ranks));
 		display: flex;
 		justify-content: center;
 		align-items: center;

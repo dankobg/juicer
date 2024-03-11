@@ -17,6 +17,7 @@
 	},
 	"dependencies": {
 		"@ory/client": "^1.5.1",
+		"chess.js": "^1.0.0-beta.8",
 		"flowbite-svelte-blocks": "^1.1.0",
 		"flowbite-svelte-icons": "^1.0.2",
 		"flowbite-typography": "^1.0.3",
