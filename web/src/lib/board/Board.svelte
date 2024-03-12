@@ -76,6 +76,10 @@
 	}
 
 	function onPiecePointerUp(event: PointerEvent): void {
+		if (event.button !== 0 || event.ctrlKey) {
+			return;
+		}
+
 		const eventData = getEventData(event);
 		const { elm, clientX, clientY } = eventData;
 		const pieceId = elm.dataset.id!;
@@ -128,6 +132,10 @@
 	}
 
 	function onPieceDragStart(event: DragEvent): void {
+		event.preventDefault();
+	}
+
+	function onBoardContextMenu(event: Event): void {
 		event.preventDefault();
 	}
 
@@ -258,6 +266,7 @@
 		class="board"
 		style="--board-width: {clientWidth}px; --board-height: {clientHeight}px; --board-ranks: {BOARD_RANKS}; --board-files: {BOARD_FILES};"
 		data-orientation={$boardState.orientation}
+		on:contextmenu={onBoardContextMenu}
 	>
 		<RankNotations orientation={$boardState.orientation} />
 		<FileNotations orientation={$boardState.orientation} />
