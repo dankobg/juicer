@@ -15,6 +15,7 @@
 	data-sq={square}
 	data-symbol={piece.toFenSymbol()}
 	data-color={piece.color}
+	data-dragging={$boardState.dragging && $boardState.draggedElm?.dataset.id === piece.id}
 	on:pointerdown
 	on:pointerup
 	on:pointermove
@@ -37,6 +38,9 @@
 		cursor: pointer;
 		z-index: 60;
 		touch-action: none;
+	}
+	.piece[data-dragging='true'] {
+		z-index: 65;
 	}
 
 	.piece[data-symbol='r'] {

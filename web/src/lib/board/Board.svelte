@@ -11,6 +11,7 @@
 		type Row,
 		type Col,
 		type Coordinate,
+		NO_SQUARE,
 	} from './model';
 	import { boardState } from './state';
 	import RankNotations from './RankNotations.svelte';
@@ -272,13 +273,17 @@
 		<FileNotations orientation={$boardState.orientation} />
 
 		{#each $boardState.board.squares ?? [] as sq}
-			<JuicerSquare square={sq} />
-			<!-- selected={sq.index === activeSquare}
-				highlighted={activeSquare === -1 &&
-					srcSquare !== -1 &&
-					dstSquare !== -1 &&
-					(sq.index === srcSquare || sq.index === dstSquare)}
-				bordered={activeSquare !== -1 && sq.index === dragOverSquare && sq.index !== srcSquare} -->
+			<JuicerSquare
+				square={sq}
+				selected={sq.index === $boardState.activeSquareIndex}
+				highlighted={$boardState.activeSquareIndex === NO_SQUARE &&
+					$boardState.srcSquareIndex !== NO_SQUARE &&
+					$boardState.destSquareIndex !== NO_SQUARE &&
+					(sq.index === $boardState.srcSquareIndex || sq.index === $boardState.destSquareIndex)}
+				bordered={$boardState.activeSquareIndex !== NO_SQUARE &&
+					sq.index === $boardState.dragOverSquareIndex &&
+					sq.index !== $boardState.srcSquareIndex}
+			/>
 
 			{#if sq.piece !== null}
 				{#if interactive}
