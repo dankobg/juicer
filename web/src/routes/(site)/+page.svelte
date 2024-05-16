@@ -1,10 +1,9 @@
 <script lang="ts">
-	import Board from '$lib/board/Board.svelte';
-	import { FEN_START } from '$lib/board/model';
+	import '@dankop/juicer-board';
 
 	let outerSize = '35rem';
 </script>
 
 <div style="width: {outerSize}; height: {outerSize};">
-	<Board interactive fen={FEN_START} />
+	<juicer-board fen="start" coords="inside" files="start" ranks="start" interactive show-ghost></juicer-board>
 </div>
