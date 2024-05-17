@@ -1,4 +1,4 @@
-version: v1.0.0
+version: v1.1.0
 
 dsn: postgres://test:test@pg:5432/test?sslmode=disable&max_conns=20&max_idle_conns=4
 

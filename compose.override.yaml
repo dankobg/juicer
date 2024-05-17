@@ -47,7 +47,6 @@ services:
     labels:
       - traefik.enable=true
       - traefik.http.routers.web.rule=Host(`juicer-dev.xyz`)
-      - traefik.http.routers.web.entrypoints=websecure
       - traefik.http.routers.web.tls=true
       - traefik.http.routers.web.service=web@docker
       - traefik.http.services.web.loadbalancer.server.port=3974
@@ -94,13 +93,11 @@ services:
       # Rest api
       - traefik.enable=true
       - traefik.http.routers.juicer.rule=Host(`juicer-dev.xyz`) && PathPrefix(`/api`)
-      - traefik.http.routers.juicer.entrypoints=websecure
       - traefik.http.routers.juicer.tls=true
       - traefik.http.routers.juicer.service=juicer@docker
       - traefik.http.services.juicer.loadbalancer.server.port=${PORT:-1337}
       # Websocket
       - traefik.http.routers.juicer-ws.rule=Host(`juicer-dev.xyz`) && Path(`/ws`)
-      - traefik.http.routers.juicer-ws.entrypoints=websecure
       - traefik.http.routers.juicer-ws.tls=true
       - traefik.http.routers.juicer-ws.service=juicer-ws@docker
       - traefik.http.services.juicer-ws.loadbalancer.server.port=${PORT:-1337}
@@ -172,7 +169,6 @@ services:
     labels:
       - traefik.enable=true
       - traefik.http.routers.kratos.rule=Host(`juicer-dev.xyz`) && PathPrefix(`/kratos`)
-      - traefik.http.routers.kratos.entrypoints=websecure
       - traefik.http.routers.kratos.tls=true
       - traefik.http.routers.kratos.service=kratos@docker
       - traefik.http.services.kratos.loadbalancer.server.port=4433
@@ -251,13 +247,12 @@ services:
     labels:
       - traefik.enable=true
       - traefik.http.routers.mailpit.rule=Host(`mail.juicer-dev.xyz`)
-      - traefik.http.routers.mailpit.entrypoints=websecure
       - traefik.http.routers.mailpit.tls=true
       - traefik.http.routers.mailpit.service=mailpit@docker
       - traefik.http.services.mailpit.loadbalancer.server.port=8025
   # ----------------------------------------------------------------------------
   traefik:
-    image: traefik
+    image: traefik:v3.0
     ports:
       - "80:80"
       - "443:443"

@@ -22,7 +22,7 @@ spec:
     spec:
       initContainers:
         - name: kratos-migrate
-          image: oryd/kratos:v1.0.0
+          image: oryd/kratos:v1.1.0
           imagePullPolicy: IfNotPresent
           envFrom:
             - configMapRef:
@@ -52,7 +52,7 @@ spec:
             - /etc/config/kratos/kratos.yaml
       containers:
         - name: kratos
-          image: oryd/kratos:v1.0.0
+          image: oryd/kratos:v1.1.0
           imagePullPolicy: IfNotPresent
           env:
             - name: ENV

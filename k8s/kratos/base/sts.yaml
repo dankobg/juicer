@@ -19,7 +19,7 @@ spec:
     spec:
       containers:
         - name: kratos-courier
-          image: oryd/kratos:v1.0.0
+          image: oryd/kratos:v1.1.0
           imagePullPolicy: IfNotPresent
           args:
             - courier
