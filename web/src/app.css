@@ -1,3 +1,19 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+:root {
+	--board-theme: url('images/board/svg/blue.svg');
+	--wr-theme: url('images/piece/gioco/wR.svg');
+	--wb-theme: url('images/piece/gioco/wB.svg');
+	--wn-theme: url('images/piece/gioco/wN.svg');
+	--wk-theme: url('images/piece/gioco/wK.svg');
+	--wq-theme: url('images/piece/gioco/wQ.svg');
+	--wp-theme: url('images/piece/gioco/wP.svg');
+	--br-theme: url('images/piece/gioco/bR.svg');
+	--bb-theme: url('images/piece/gioco/bB.svg');
+	--bn-theme: url('images/piece/gioco/bN.svg');
+	--bk-theme: url('images/piece/gioco/bK.svg');
+	--bq-theme: url('images/piece/gioco/bQ.svg');
+	--bp-theme: url('images/piece/gioco/bP.svg');
+}

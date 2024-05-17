@@ -1,19 +1,10 @@
 import { kratos } from '$lib/kratos/client';
 import { KratosService } from '$lib/kratos/service';
 import type { LayoutLoad } from './$types';
-import { shittyFirefoxPatchForDragEventPointerCoordinates } from '$lib/util/firefox_dnd_fix';
-import { browser } from '$app/environment';
+
+export const prerender = true;
 
 export const load: LayoutLoad = async () => {
-	if (browser) {
-		const isFirefoxViaUserAgent = navigator.userAgent.toLowerCase().includes('firefox');
-		const isFirefoxViaFeature = typeof InstallTrigger !== 'undefined';
-
-		if (isFirefoxViaUserAgent || isFirefoxViaFeature) {
-			shittyFirefoxPatchForDragEventPointerCoordinates();
-		}
-	}
-
 	try {
 		const result = await kratos.toSession();
 		if (result.status !== 200) {
