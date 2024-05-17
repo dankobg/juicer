@@ -17,7 +17,7 @@
 	import SidebarItem from 'flowbite-svelte/SidebarItem.svelte';
 	import SidebarWrapper from 'flowbite-svelte/SidebarWrapper.svelte';
 	import ChartPieSolid from 'flowbite-svelte-icons/ChartPieSolid.svelte';
-	import ShoppingCartSolid from 'flowbite-svelte-icons/ShoppingCartSolid.svelte';
+	import ShoppingBagSolid from 'flowbite-svelte-icons/ShoppingBagSolid.svelte';
 	import UserSolid from 'flowbite-svelte-icons/UserSolid.svelte';
 	import { sineIn } from 'svelte/easing';
 
@@ -103,7 +103,7 @@
 
 				<SidebarDropdownWrapper label="Identities">
 					<svelte:fragment slot="icon">
-						<ShoppingCartSolid
+						<ShoppingBagSolid
 							class="w-5 h-5 text-gray-500 transition duration-75 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white"
 						/>
 					</svelte:fragment>

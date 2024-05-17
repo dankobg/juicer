@@ -6,7 +6,7 @@
 	import SidebarDropdownItem from 'flowbite-svelte/SidebarDropdownItem.svelte';
 	import SidebarDropdownWrapper from 'flowbite-svelte/SidebarDropdownWrapper.svelte';
 	import ChartPieSolid from 'flowbite-svelte-icons/ChartPieSolid.svelte';
-	import ShoppingCartSolid from 'flowbite-svelte-icons/ShoppingCartSolid.svelte';
+	import ShoppingBagSolid from 'flowbite-svelte-icons/ShoppingBagSolid.svelte';
 	import UserSolid from 'flowbite-svelte-icons/UserSolid.svelte';
 </script>
 
@@ -31,7 +31,7 @@
 
 			<SidebarDropdownWrapper label="Identities">
 				<svelte:fragment slot="icon">
-					<ShoppingCartSolid
+					<ShoppingBagSolid
 						class="w-5 h-5 text-gray-500 transition duration-75 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white"
 					/>
 				</svelte:fragment>
