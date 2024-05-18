@@ -22,7 +22,7 @@
 	import { browser } from '$app/environment';
 
 	export let data: PageData;
-	export let currentFlowForm: 'settings' | 'password' | 'socials' | undefined;
+	export let currentFlowForm: 'settings' | 'password' | 'socials' | undefined = undefined
 
 	function handleFlowErrAction(redirectUrl: string, errMsg?: string) {
 		if (errMsg) {

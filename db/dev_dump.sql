@@ -28,7 +28,7 @@ DROP ROLE test;
 --
 
 CREATE ROLE test;
-ALTER ROLE test WITH SUPERUSER INHERIT CREATEROLE CREATEDB LOGIN REPLICATION BYPASSRLS PASSWORD 'SCRAM-SHA-256$4096:yUmZ5IXYoy10TRKMORAp7w==$B/mAnZnODaP2RWv0lc7e9cMh+vaeRsWg4DfHl+p1FUE=:1aOFTrPwBvCCOPTvgBa70JPSuYxKDzRPQLc/1YxDnAk=';
+ALTER ROLE test WITH SUPERUSER INHERIT CREATEROLE CREATEDB LOGIN REPLICATION BYPASSRLS PASSWORD 'SCRAM-SHA-256$4096:beNpk4LJObBGQfhLpc6ftQ==$Uzwf49nX/4STFdEUSXNZb1XVSvBW5VYZksPLTqp+E1w=:7nvG1645fgGFbzxsdWYBjKLMz//zYfAV8g20x52xeGA=';
 
 --
 -- User Configurations
@@ -53,8 +53,8 @@ ALTER ROLE test WITH SUPERUSER INHERIT CREATEROLE CREATEDB LOGIN REPLICATION BYP
 -- PostgreSQL database dump
 --
 
--- Dumped from database version 16.1
--- Dumped by pg_dump version 16.1
+-- Dumped from database version 16.3
+-- Dumped by pg_dump version 16.3
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -138,8 +138,8 @@ GRANT CONNECT ON DATABASE template1 TO PUBLIC;
 -- PostgreSQL database dump
 --
 
--- Dumped from database version 16.1
--- Dumped by pg_dump version 16.1
+-- Dumped from database version 16.3
+-- Dumped by pg_dump version 16.3
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -194,8 +194,8 @@ COMMENT ON DATABASE postgres IS 'default administrative connection database';
 -- PostgreSQL database dump
 --
 
--- Dumped from database version 16.1
--- Dumped by pg_dump version 16.1
+-- Dumped from database version 16.3
+-- Dumped by pg_dump version 16.3
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -213,7 +213,6 @@ SET row_security = off;
 --
 
 CREATE DATABASE test WITH TEMPLATE = template0 ENCODING = 'UTF8' LOCALE_PROVIDER = libc LOCALE = 'en_US.utf8';
-CREATE DATABASE test_atlas WITH TEMPLATE = template0 ENCODING = 'UTF8' LOCALE_PROVIDER = libc LOCALE = 'en_US.utf8';
 
 
 ALTER DATABASE test OWNER TO test;
@@ -230,6 +229,34 @@ SET check_function_bodies = false;
 SET xmloption = content;
 SET client_min_messages = warning;
 SET row_security = off;
+
+--
+-- Name: btree_gin; Type: EXTENSION; Schema: -; Owner: -
+--
+
+CREATE EXTENSION IF NOT EXISTS btree_gin WITH SCHEMA public;
+
+
+--
+-- Name: EXTENSION btree_gin; Type: COMMENT; Schema: -; Owner: 
+--
+
+COMMENT ON EXTENSION btree_gin IS 'support for indexing common datatypes in GIN';
+
+
+--
+-- Name: pg_trgm; Type: EXTENSION; Schema: -; Owner: -
+--
+
+CREATE EXTENSION IF NOT EXISTS pg_trgm WITH SCHEMA public;
+
+
+--
+-- Name: EXTENSION pg_trgm; Type: COMMENT; Schema: -; Owner: 
+--
+
+COMMENT ON EXTENSION pg_trgm IS 'text similarity measurement and index searching based on trigrams';
+
 
 SET default_tablespace = '';
 
@@ -286,7 +313,8 @@ CREATE TABLE public.courier_messages (
     template_type character varying(255) DEFAULT ''::character varying NOT NULL,
     template_data bytea,
     nid uuid,
-    send_count integer DEFAULT 0 NOT NULL
+    send_count integer DEFAULT 0 NOT NULL,
+    channel character varying(32)
 );
 
 
@@ -306,7 +334,9 @@ CREATE TABLE public.identities (
     state character varying(255) DEFAULT 'active'::character varying NOT NULL,
     state_changed_at timestamp without time zone,
     metadata_public jsonb,
-    metadata_admin jsonb
+    metadata_admin jsonb,
+    available_aal character varying(4),
+    organization_id uuid
 );
 
 
@@ -358,6 +388,28 @@ CREATE TABLE public.identity_credentials (
 
 
 ALTER TABLE public.identity_credentials OWNER TO test;
+
+--
+-- Name: identity_login_codes; Type: TABLE; Schema: public; Owner: test
+--
+
+CREATE TABLE public.identity_login_codes (
+    id uuid NOT NULL,
+    code character varying(64) NOT NULL,
+    address character varying(255) NOT NULL,
+    address_type character(36) NOT NULL,
+    used_at timestamp without time zone,
+    expires_at timestamp without time zone DEFAULT '2000-01-01 00:00:00'::timestamp without time zone NOT NULL,
+    issued_at timestamp without time zone DEFAULT '2000-01-01 00:00:00'::timestamp without time zone NOT NULL,
+    selfservice_login_flow_id uuid NOT NULL,
+    identity_id uuid NOT NULL,
+    created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    updated_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    nid uuid NOT NULL
+);
+
+
+ALTER TABLE public.identity_login_codes OWNER TO test;
 
 --
 -- Name: identity_recovery_addresses; Type: TABLE; Schema: public; Owner: test
@@ -421,6 +473,27 @@ CREATE TABLE public.identity_recovery_tokens (
 
 
 ALTER TABLE public.identity_recovery_tokens OWNER TO test;
+
+--
+-- Name: identity_registration_codes; Type: TABLE; Schema: public; Owner: test
+--
+
+CREATE TABLE public.identity_registration_codes (
+    id uuid NOT NULL,
+    code character varying(64) NOT NULL,
+    address character varying(255) NOT NULL,
+    address_type character(36) NOT NULL,
+    used_at timestamp without time zone,
+    expires_at timestamp without time zone DEFAULT '2000-01-01 00:00:00'::timestamp without time zone NOT NULL,
+    issued_at timestamp without time zone DEFAULT '2000-01-01 00:00:00'::timestamp without time zone NOT NULL,
+    selfservice_registration_flow_id uuid NOT NULL,
+    created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    updated_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    nid uuid NOT NULL
+);
+
+
+ALTER TABLE public.identity_registration_codes OWNER TO test;
 
 --
 -- Name: identity_verifiable_addresses; Type: TABLE; Schema: public; Owner: test
@@ -579,7 +652,10 @@ CREATE TABLE public.selfservice_login_flows (
     requested_aal character varying(4) DEFAULT 'aal1'::character varying NOT NULL,
     internal_context jsonb NOT NULL,
     oauth2_login_challenge uuid,
-    oauth2_login_challenge_data text
+    oauth2_login_challenge_data text,
+    state character varying(255),
+    submit_count integer DEFAULT 0 NOT NULL,
+    organization_id uuid
 );
 
 
@@ -628,7 +704,10 @@ CREATE TABLE public.selfservice_registration_flows (
     nid uuid,
     internal_context jsonb NOT NULL,
     oauth2_login_challenge uuid,
-    oauth2_login_challenge_data text
+    oauth2_login_challenge_data text,
+    state character varying(255),
+    submit_count integer DEFAULT 0 NOT NULL,
+    organization_id uuid
 );
 
 
@@ -674,7 +753,11 @@ CREATE TABLE public.selfservice_verification_flows (
     active_method character varying(32),
     ui jsonb,
     nid uuid,
-    submit_count integer DEFAULT 0 NOT NULL
+    submit_count integer DEFAULT 0 NOT NULL,
+    oauth2_login_challenge text,
+    session_id uuid,
+    identity_id uuid,
+    authentication_methods json
 );
 
 
@@ -752,7 +835,7 @@ COPY public.continuity_containers (id, identity_id, name, payload, expires_at, c
 --
 
 COPY public.courier_message_dispatches (id, message_id, status, error, nid, created_at, updated_at) FROM stdin;
-601011e2-f16b-4f2c-91b8-a47915b1fcfb	a720fbb9-2da5-4231-a73a-253bb275f4a0	success	null	8712f917-6eee-4fc0-98b3-364070db5d96	2024-02-09 16:00:36.612791	2024-02-09 16:00:36.612791
+1c32dc9a-8d98-4153-8824-f52742f3a353	90b4378f-947e-4920-abbd-f799586a57f9	success	null	e796004f-1c18-4960-9388-dcd5835741db	2024-05-18 11:25:46.965435	2024-05-18 11:25:46.965435
 \.
 
 
@@ -760,8 +843,8 @@ COPY public.courier_message_dispatches (id, message_id, status, error, nid, crea
 -- Data for Name: courier_messages; Type: TABLE DATA; Schema: public; Owner: test
 --
 
-COPY public.courier_messages (id, type, status, body, subject, recipient, created_at, updated_at, template_type, template_data, nid, send_count) FROM stdin;
-a720fbb9-2da5-4231-a73a-253bb275f4a0	1	2	Hi,\n\nplease verify your account by entering the following code:\n\n143443\n\nor clicking the following link:\n\nhttps://juicer-dev.xyz/kratos/self-service/verification?code=143443&flow=b7f3f3c0-334a-4437-bbb9-2e81152dca1b\n	Please verify your email address	test@test.com	2024-02-09 16:00:35.783748	2024-02-09 16:00:35.783748	verification_code_valid	\\x7b22546f223a227465737440746573742e636f6d222c22566572696669636174696f6e55524c223a2268747470733a2f2f6a75696365722d6465762e78797a2f6b7261746f732f73656c662d736572766963652f766572696669636174696f6e3f636f64653d3134333434335c7530303236666c6f773d62376633663363302d333334612d343433372d626262392d326538313135326463613162222c22566572696669636174696f6e436f6465223a22313433343433222c224964656e74697479223a7b22637265617465645f6174223a22323032342d30322d30395431363a30303a33352e3736333838375a222c226964223a2232393835623062612d643739362d343237632d623161652d626166623236636232356630222c226d657461646174615f7075626c6963223a6e756c6c2c227265636f766572795f616464726573736573223a5b7b22637265617465645f6174223a22323032342d30322d30395431363a30303a33352e3736363939345a222c226964223a2265303339343937342d366432342d343933312d383130352d633364633533383366613932222c22757064617465645f6174223a22323032342d30322d30395431363a30303a33352e3736363939345a222c2276616c7565223a227465737440746573742e636f6d222c22766961223a22656d61696c227d5d2c22736368656d615f6964223a22637573746f6d6572222c22736368656d615f75726c223a2268747470733a2f2f6a75696365722d6465762e78797a2f6b7261746f732f736368656d61732f5933567a644739745a5849222c227374617465223a22616374697665222c2273746174655f6368616e6765645f6174223a22323032342d30322d30395431363a30303a33352e3736323931323230345a222c22747261697473223a7b226176617461725f75726c223a22222c22656d61696c223a227465737440746573742e636f6d222c2266697273745f6e616d65223a22546573744669727374222c226c6173745f6e616d65223a22546573744c617374227d2c22757064617465645f6174223a22323032342d30322d30395431363a30303a33352e3736333838375a222c2276657269666961626c655f616464726573736573223a5b7b22637265617465645f6174223a22323032342d30322d30395431363a30303a33352e3736353136395a222c226964223a2266356130323266622d376664612d346434322d623330352d363936663335356437373263222c22737461747573223a2270656e64696e67222c22757064617465645f6174223a22323032342d30322d30395431363a30303a33352e3736353136395a222c2276616c7565223a227465737440746573742e636f6d222c227665726966696564223a66616c73652c22766961223a22656d61696c227d5d7d7d	8712f917-6eee-4fc0-98b3-364070db5d96	1
+COPY public.courier_messages (id, type, status, body, subject, recipient, created_at, updated_at, template_type, template_data, nid, send_count, channel) FROM stdin;
+90b4378f-947e-4920-abbd-f799586a57f9	1	2	Hi,\n\nplease verify your account by entering the following code:\n\n395337\n\nor clicking the following link:\n\nhttps://juicer-dev.xyz/kratos/self-service/verification?code=395337&flow=f38bd08b-a3ee-475b-8a24-eb89350a3b3f\n	Please verify your email address	test@test.com	2024-05-18 11:25:45.998977	2024-05-18 11:25:45.998977	verification_code_valid	\\x7b22746f223a227465737440746573742e636f6d222c22766572696669636174696f6e5f75726c223a2268747470733a2f2f6a75696365722d6465762e78797a2f6b7261746f732f73656c662d736572766963652f766572696669636174696f6e3f636f64653d3339353333375c7530303236666c6f773d66333862643038622d613365652d343735622d386132342d656238393335306133623366222c22766572696669636174696f6e5f636f6465223a22333935333337222c226964656e74697479223a7b22637265617465645f6174223a22323032342d30352d31385431313a32353a34352e3937323339335a222c226964223a2262623431356432332d643430612d343035642d383237392d313066616232633664396130222c226d657461646174615f7075626c6963223a6e756c6c2c226f7267616e697a6174696f6e5f6964223a6e756c6c2c227265636f766572795f616464726573736573223a5b7b22637265617465645f6174223a22323032342d30352d31385431313a32353a34352e3937353439355a222c226964223a2261656561303338352d383630662d343235392d393030642d613739623231363864323233222c22757064617465645f6174223a22323032342d30352d31385431313a32353a34352e3937353439355a222c2276616c7565223a227465737440746573742e636f6d222c22766961223a22656d61696c227d5d2c22736368656d615f6964223a22637573746f6d6572222c22736368656d615f75726c223a2268747470733a2f2f6a75696365722d6465762e78797a2f6b7261746f732f736368656d61732f5933567a644739745a5849222c227374617465223a22616374697665222c2273746174655f6368616e6765645f6174223a22323032342d30352d31385431313a32353a34352e3937303733373237355a222c22747261697473223a7b226176617461725f75726c223a22222c22656d61696c223a227465737440746573742e636f6d222c2266697273745f6e616d65223a22546573744669727374222c226c6173745f6e616d65223a22546573744c617374227d2c22757064617465645f6174223a22323032342d30352d31385431313a32353a34352e3937323339335a222c2276657269666961626c655f616464726573736573223a5b7b22637265617465645f6174223a22323032342d30352d31385431313a32353a34352e3937333735335a222c226964223a2235343336363833312d343966362d343863332d383739632d613631343738303661383637222c22737461747573223a2270656e64696e67222c22757064617465645f6174223a22323032342d30352d31385431313a32353a34352e3937333735335a222c2276616c7565223a227465737440746573742e636f6d222c227665726966696564223a66616c73652c22766961223a22656d61696c227d5d7d2c22726571756573745f75726c223a2268747470733a2f2f6a75696365722d6465762e78797a2f73656c662d736572766963652f726567697374726174696f6e2f62726f77736572227d	e796004f-1c18-4960-9388-dcd5835741db	1	email
 \.
 
 
@@ -769,8 +852,8 @@ a720fbb9-2da5-4231-a73a-253bb275f4a0	1	2	Hi,\n\nplease verify your account by en
 -- Data for Name: identities; Type: TABLE DATA; Schema: public; Owner: test
 --
 
-COPY public.identities (id, schema_id, traits, created_at, updated_at, nid, state, state_changed_at, metadata_public, metadata_admin) FROM stdin;
-2985b0ba-d796-427c-b1ae-bafb26cb25f0	customer	{"email": "test@test.com", "last_name": "TestLast", "avatar_url": "", "first_name": "TestFirst"}	2024-02-09 16:00:35.763887	2024-02-09 16:00:35.763887	8712f917-6eee-4fc0-98b3-364070db5d96	active	2024-02-09 16:00:35.762912	\N	\N
+COPY public.identities (id, schema_id, traits, created_at, updated_at, nid, state, state_changed_at, metadata_public, metadata_admin, available_aal, organization_id) FROM stdin;
+bb415d23-d40a-405d-8279-10fab2c6d9a0	customer	{"email": "test@test.com", "last_name": "TestLast", "avatar_url": "", "first_name": "TestFirst"}	2024-05-18 11:25:45.972393	2024-05-18 11:25:45.972393	e796004f-1c18-4960-9388-dcd5835741db	active	2024-05-18 11:25:45.970737	\N	\N	aal1	\N
 \.
 
 
@@ -779,7 +862,7 @@ COPY public.identities (id, schema_id, traits, created_at, updated_at, nid, stat
 --
 
 COPY public.identity_credential_identifiers (id, identifier, identity_credential_id, created_at, updated_at, nid, identity_credential_type_id) FROM stdin;
-f6539ad8-0b7b-4618-8e58-6d29fc69dc48	test@test.com	2b137dd9-94d4-48af-bcdb-5db52965c94e	2024-02-09 16:00:35.771996	2024-02-09 16:00:35.771996	8712f917-6eee-4fc0-98b3-364070db5d96	78c1b41d-8341-4507-aa60-aff1d4369670
+e2f7aade-5ac5-4986-9623-687995d849d7	test@test.com	ac552fa8-1118-40c8-9989-7aff8a84295b	2024-05-18 11:25:45.980547	2024-05-18 11:25:45.980547	e796004f-1c18-4960-9388-dcd5835741db	78c1b41d-8341-4507-aa60-aff1d4369670
 \.
 
 
@@ -793,6 +876,7 @@ COPY public.identity_credential_types (id, name) FROM stdin;
 5e29b036-aa47-457f-9fe6-aa8b854a752b	totp
 567a0730-7f48-4dd7-a13d-df87a51c245f	lookup_secret
 6b213fa0-e6ad-46cb-8878-b088d2ce2e3c	webauthn
+14f3b7e2-8725-4068-be39-8a796485fd97	code
 \.
 
 
@@ -801,7 +885,15 @@ COPY public.identity_credential_types (id, name) FROM stdin;
 --
 
 COPY public.identity_credentials (id, config, identity_credential_type_id, identity_id, created_at, updated_at, nid, version) FROM stdin;
-2b137dd9-94d4-48af-bcdb-5db52965c94e	{"hashed_password": "$2a$12$vbCcieZZR7kaZyrPJZ21X./dPZ5dPSw15wxkX2pXhSBRinf1AmEla"}	78c1b41d-8341-4507-aa60-aff1d4369670	2985b0ba-d796-427c-b1ae-bafb26cb25f0	2024-02-09 16:00:35.770638	2024-02-09 16:00:35.770638	8712f917-6eee-4fc0-98b3-364070db5d96	0
+ac552fa8-1118-40c8-9989-7aff8a84295b	{"hashed_password": "$2a$12$JKKFuTFMnHZd30f99aopcOCcs7Ntd9k0H22XhUHmC4ZZd8elRZ5Wi"}	78c1b41d-8341-4507-aa60-aff1d4369670	bb415d23-d40a-405d-8279-10fab2c6d9a0	2024-05-18 11:25:45.979103	2024-05-18 11:25:45.979103	e796004f-1c18-4960-9388-dcd5835741db	0
+\.
+
+
+--
+-- Data for Name: identity_login_codes; Type: TABLE DATA; Schema: public; Owner: test
+--
+
+COPY public.identity_login_codes (id, code, address, address_type, used_at, expires_at, issued_at, selfservice_login_flow_id, identity_id, created_at, updated_at, nid) FROM stdin;
 \.
 
 
@@ -810,7 +902,7 @@ COPY public.identity_credentials (id, config, identity_credential_type_id, ident
 --
 
 COPY public.identity_recovery_addresses (id, via, value, identity_id, created_at, updated_at, nid) FROM stdin;
-e0394974-6d24-4931-8105-c3dc5383fa92	email	test@test.com	2985b0ba-d796-427c-b1ae-bafb26cb25f0	2024-02-09 16:00:35.766994	2024-02-09 16:00:35.766994	8712f917-6eee-4fc0-98b3-364070db5d96
+aeea0385-860f-4259-900d-a79b2168d223	email	test@test.com	bb415d23-d40a-405d-8279-10fab2c6d9a0	2024-05-18 11:25:45.975495	2024-05-18 11:25:45.975495	e796004f-1c18-4960-9388-dcd5835741db
 \.
 
 
@@ -831,11 +923,19 @@ COPY public.identity_recovery_tokens (id, token, used, used_at, identity_recover
 
 
 --
+-- Data for Name: identity_registration_codes; Type: TABLE DATA; Schema: public; Owner: test
+--
+
+COPY public.identity_registration_codes (id, code, address, address_type, used_at, expires_at, issued_at, selfservice_registration_flow_id, created_at, updated_at, nid) FROM stdin;
+\.
+
+
+--
 -- Data for Name: identity_verifiable_addresses; Type: TABLE DATA; Schema: public; Owner: test
 --
 
 COPY public.identity_verifiable_addresses (id, status, via, verified, value, verified_at, identity_id, created_at, updated_at, nid) FROM stdin;
-f5a022fb-7fda-4d42-b305-696f355d772c	completed	email	t	test@test.com	2024-02-09 16:00:43.544788	2985b0ba-d796-427c-b1ae-bafb26cb25f0	2024-02-09 16:00:35.765169	2024-02-09 16:00:35.765169	8712f917-6eee-4fc0-98b3-364070db5d96
+54366831-49f6-48c3-879c-a6147806a867	completed	email	t	test@test.com	2024-05-18 11:25:58.638391	bb415d23-d40a-405d-8279-10fab2c6d9a0	2024-05-18 11:25:45.973753	2024-05-18 11:25:45.973753	e796004f-1c18-4960-9388-dcd5835741db
 \.
 
 
@@ -844,7 +944,7 @@ f5a022fb-7fda-4d42-b305-696f355d772c	completed	email	t	test@test.com	2024-02-09 
 --
 
 COPY public.identity_verification_codes (id, code_hmac, used_at, identity_verifiable_address_id, expires_at, issued_at, selfservice_verification_flow_id, created_at, updated_at, nid) FROM stdin;
-f2c05a0b-2735-4c51-a2f8-31db02d3c69e	b421331b2599bf1d15b3dce1f759353f2aa52f4fbbb613ccd6ea7fc25fd94bd2	2024-02-09 16:00:43.53805	f5a022fb-7fda-4d42-b305-696f355d772c	2024-02-09 16:15:35.779781	2024-02-09 16:00:35.779781	b7f3f3c0-334a-4437-bbb9-2e81152dca1b	2024-02-09 16:00:35.779879	2024-02-09 16:00:35.779879	8712f917-6eee-4fc0-98b3-364070db5d96
+d5b640b6-8c94-4d78-b61e-6fda67731394	172f22b6837ad69506716377c913e3e7cab662d849053f43f86319d5d01c066c	2024-05-18 11:25:58.627061	54366831-49f6-48c3-879c-a6147806a867	2024-05-18 11:40:45.994271	2024-05-18 11:25:45.994271	f38bd08b-a3ee-475b-8a24-eb89350a3b3f	2024-05-18 11:25:45.994332	2024-05-18 11:25:45.994332	e796004f-1c18-4960-9388-dcd5835741db
 \.
 
 
@@ -877,7 +977,7 @@ COPY public.keto_uuid_mappings (id, string_representation) FROM stdin;
 --
 
 COPY public.networks (id, created_at, updated_at) FROM stdin;
-8712f917-6eee-4fc0-98b3-364070db5d96	2024-02-09 15:58:32.663115	2024-02-09 15:58:32.663115
+e796004f-1c18-4960-9388-dcd5835741db	2024-05-18 11:23:08.822098	2024-05-18 11:23:08.822098
 \.
 
 
@@ -1196,7 +1296,19 @@ COPY public.schema_migration (version, version_self) FROM stdin;
 20230614000001000000	0
 20230619000000000001	0
 20230626000000000001	0
+20230703143600000001	0
 20230705000000000001	0
+20230706000000000001	0
+20230707133700000000	0
+20230707133700000001	0
+20230712173852000000	0
+20230811000000000001	0
+20230818000000000001	0
+20230823000000000001	0
+20230907085000000000	0
+20230920171028000000	0
+20231130094628000000	0
+20240119094628000000	0
 \.
 
 
@@ -1212,10 +1324,13 @@ COPY public.selfservice_errors (id, errors, seen_at, was_seen, created_at, updat
 -- Data for Name: selfservice_login_flows; Type: TABLE DATA; Schema: public; Owner: test
 --
 
-COPY public.selfservice_login_flows (id, request_url, issued_at, expires_at, active_method, csrf_token, created_at, updated_at, forced, type, ui, nid, requested_aal, internal_context, oauth2_login_challenge, oauth2_login_challenge_data) FROM stdin;
-9e2e6257-289e-4607-954d-afbc4354cafb	https://juicer-dev.xyz/self-service/login/browser	2024-02-09 16:00:03.902558	2024-02-09 16:10:03.902558		ySvK7RCGhAVz6tAkxWmTQYCpD9wdYD3dfe9T881spRsPRRiVUu/H1QEMCoPE4PfvcZTlkNs60qLIYGmYk9iCkg==	2024-02-09 16:00:03.907012	2024-02-09 16:00:03.907012	f	browser	{"nodes": [{"meta": {"label": {"id": 1010002, "text": "Sign in with discord", "type": "info", "context": {"provider": "discord"}}}, "type": "input", "group": "oidc", "messages": [], "attributes": {"name": "provider", "type": "submit", "value": "discord", "disabled": false, "node_type": "input"}}, {"meta": {"label": {"id": 1010002, "text": "Sign in with facebook", "type": "info", "context": {"provider": "facebook"}}}, "type": "input", "group": "oidc", "messages": [], "attributes": {"name": "provider", "type": "submit", "value": "facebook", "disabled": false, "node_type": "input"}}, {"meta": {"label": {"id": 1010002, "text": "Sign in with github", "type": "info", "context": {"provider": "github"}}}, "type": "input", "group": "oidc", "messages": [], "attributes": {"name": "provider", "type": "submit", "value": "github", "disabled": false, "node_type": "input"}}, {"meta": {"label": {"id": 1010002, "text": "Sign in with google", "type": "info", "context": {"provider": "google"}}}, "type": "input", "group": "oidc", "messages": [], "attributes": {"name": "provider", "type": "submit", "value": "google", "disabled": false, "node_type": "input"}}, {"meta": {"label": {"id": 1010002, "text": "Sign in with slack", "type": "info", "context": {"provider": "slack"}}}, "type": "input", "group": "oidc", "messages": [], "attributes": {"name": "provider", "type": "submit", "value": "slack", "disabled": false, "node_type": "input"}}, {"meta": {"label": {"id": 1010002, "text": "Sign in with spotify", "type": "info", "context": {"provider": "spotify"}}}, "type": "input", "group": "oidc", "messages": [], "attributes": {"name": "provider", "type": "submit", "value": "spotify", "disabled": false, "node_type": "input"}}, {"meta": {"label": {"id": 1010002, "text": "Sign in with twitch", "type": "info", "context": {"provider": "twitch"}}}, "type": "input", "group": "oidc", "messages": [], "attributes": {"name": "provider", "type": "submit", "value": "twitch", "disabled": false, "node_type": "input"}}, {"meta": {}, "type": "input", "group": "default", "messages": [], "attributes": {"name": "csrf_token", "type": "hidden", "value": "ySvK7RCGhAVz6tAkxWmTQYCpD9wdYD3dfe9T881spRsPRRiVUu/H1QEMCoPE4PfvcZTlkNs60qLIYGmYk9iCkg==", "disabled": false, "required": true, "node_type": "input"}}, {"meta": {"label": {"id": 1070004, "text": "ID", "type": "info"}}, "type": "input", "group": "default", "messages": [], "attributes": {"name": "identifier", "type": "text", "value": "", "disabled": false, "required": true, "node_type": "input"}}, {"meta": {"label": {"id": 1070001, "text": "Password", "type": "info"}}, "type": "input", "group": "password", "messages": [], "attributes": {"name": "password", "type": "password", "disabled": false, "required": true, "node_type": "input", "autocomplete": "current-password"}}, {"meta": {"label": {"id": 1010001, "text": "Sign in", "type": "info", "context": {}}}, "type": "input", "group": "password", "messages": [], "attributes": {"name": "method", "type": "submit", "value": "password", "disabled": false, "node_type": "input"}}], "action": "https://juicer-dev.xyz/kratos/self-service/login?flow=9e2e6257-289e-4607-954d-afbc4354cafb", "method": "POST"}	8712f917-6eee-4fc0-98b3-364070db5d96	aal1	{}	\N	\N
-f28668ba-e0ab-4bc2-8356-363f413116a2	https://juicer-dev.xyz/self-service/login/browser	2024-02-09 16:00:44.781616	2024-02-09 16:10:44.781616		f79fViPZEIRWFclYVJX9tRS+/6dOIVsS/cLsCXrbsam9hYuF2zwGJDgjWrZAQu0zPDplTkIJR8dSzN2HU/7N0Q==	2024-02-09 16:00:44.785913	2024-02-09 16:00:44.785913	f	browser	{"nodes": [{"meta": {"label": {"id": 1010002, "text": "Sign in with discord", "type": "info", "context": {"provider": "discord"}}}, "type": "input", "group": "oidc", "messages": [], "attributes": {"name": "provider", "type": "submit", "value": "discord", "disabled": false, "node_type": "input"}}, {"meta": {"label": {"id": 1010002, "text": "Sign in with facebook", "type": "info", "context": {"provider": "facebook"}}}, "type": "input", "group": "oidc", "messages": [], "attributes": {"name": "provider", "type": "submit", "value": "facebook", "disabled": false, "node_type": "input"}}, {"meta": {"label": {"id": 1010002, "text": "Sign in with github", "type": "info", "context": {"provider": "github"}}}, "type": "input", "group": "oidc", "messages": [], "attributes": {"name": "provider", "type": "submit", "value": "github", "disabled": false, "node_type": "input"}}, {"meta": {"label": {"id": 1010002, "text": "Sign in with google", "type": "info", "context": {"provider": "google"}}}, "type": "input", "group": "oidc", "messages": [], "attributes": {"name": "provider", "type": "submit", "value": "google", "disabled": false, "node_type": "input"}}, {"meta": {"label": {"id": 1010002, "text": "Sign in with slack", "type": "info", "context": {"provider": "slack"}}}, "type": "input", "group": "oidc", "messages": [], "attributes": {"name": "provider", "type": "submit", "value": "slack", "disabled": false, "node_type": "input"}}, {"meta": {"label": {"id": 1010002, "text": "Sign in with spotify", "type": "info", "context": {"provider": "spotify"}}}, "type": "input", "group": "oidc", "messages": [], "attributes": {"name": "provider", "type": "submit", "value": "spotify", "disabled": false, "node_type": "input"}}, {"meta": {"label": {"id": 1010002, "text": "Sign in with twitch", "type": "info", "context": {"provider": "twitch"}}}, "type": "input", "group": "oidc", "messages": [], "attributes": {"name": "provider", "type": "submit", "value": "twitch", "disabled": false, "node_type": "input"}}, {"meta": {}, "type": "input", "group": "default", "messages": [], "attributes": {"name": "csrf_token", "type": "hidden", "value": "f79fViPZEIRWFclYVJX9tRS+/6dOIVsS/cLsCXrbsam9hYuF2zwGJDgjWrZAQu0zPDplTkIJR8dSzN2HU/7N0Q==", "disabled": false, "required": true, "node_type": "input"}}, {"meta": {"label": {"id": 1070004, "text": "ID", "type": "info"}}, "type": "input", "group": "default", "messages": [], "attributes": {"name": "identifier", "type": "text", "value": "", "disabled": false, "required": true, "node_type": "input"}}, {"meta": {"label": {"id": 1070001, "text": "Password", "type": "info"}}, "type": "input", "group": "password", "messages": [], "attributes": {"name": "password", "type": "password", "disabled": false, "required": true, "node_type": "input", "autocomplete": "current-password"}}, {"meta": {"label": {"id": 1010001, "text": "Sign in", "type": "info", "context": {}}}, "type": "input", "group": "password", "messages": [], "attributes": {"name": "method", "type": "submit", "value": "password", "disabled": false, "node_type": "input"}}], "action": "https://juicer-dev.xyz/kratos/self-service/login?flow=f28668ba-e0ab-4bc2-8356-363f413116a2", "method": "POST"}	8712f917-6eee-4fc0-98b3-364070db5d96	aal1	{}	\N	\N
-262bbac1-e147-4d80-8f4e-ed57e083b1af	https://juicer-dev.xyz/self-service/login/browser	2024-02-09 16:00:48.551613	2024-02-09 16:10:48.551613	password	pF1uX2svH76q18gL8Zw+tGvgCKTOvPGHDh/HTyrRrlhmZ7qMk8oJHsThW+XlSy4yQ2SSTcKU7VKhEfbBA/TSIA==	2024-02-09 16:00:48.557903	2024-02-09 16:00:48.557903	f	browser	{"nodes": [{"meta": {"label": {"id": 1010002, "text": "Sign in with discord", "type": "info", "context": {"provider": "discord"}}}, "type": "input", "group": "oidc", "messages": [], "attributes": {"name": "provider", "type": "submit", "value": "discord", "disabled": false, "node_type": "input"}}, {"meta": {"label": {"id": 1010002, "text": "Sign in with facebook", "type": "info", "context": {"provider": "facebook"}}}, "type": "input", "group": "oidc", "messages": [], "attributes": {"name": "provider", "type": "submit", "value": "facebook", "disabled": false, "node_type": "input"}}, {"meta": {"label": {"id": 1010002, "text": "Sign in with github", "type": "info", "context": {"provider": "github"}}}, "type": "input", "group": "oidc", "messages": [], "attributes": {"name": "provider", "type": "submit", "value": "github", "disabled": false, "node_type": "input"}}, {"meta": {"label": {"id": 1010002, "text": "Sign in with google", "type": "info", "context": {"provider": "google"}}}, "type": "input", "group": "oidc", "messages": [], "attributes": {"name": "provider", "type": "submit", "value": "google", "disabled": false, "node_type": "input"}}, {"meta": {"label": {"id": 1010002, "text": "Sign in with slack", "type": "info", "context": {"provider": "slack"}}}, "type": "input", "group": "oidc", "messages": [], "attributes": {"name": "provider", "type": "submit", "value": "slack", "disabled": false, "node_type": "input"}}, {"meta": {"label": {"id": 1010002, "text": "Sign in with spotify", "type": "info", "context": {"provider": "spotify"}}}, "type": "input", "group": "oidc", "messages": [], "attributes": {"name": "provider", "type": "submit", "value": "spotify", "disabled": false, "node_type": "input"}}, {"meta": {"label": {"id": 1010002, "text": "Sign in with twitch", "type": "info", "context": {"provider": "twitch"}}}, "type": "input", "group": "oidc", "messages": [], "attributes": {"name": "provider", "type": "submit", "value": "twitch", "disabled": false, "node_type": "input"}}, {"meta": {}, "type": "input", "group": "default", "messages": [], "attributes": {"name": "csrf_token", "type": "hidden", "value": "pF1uX2svH76q18gL8Zw+tGvgCKTOvPGHDh/HTyrRrlhmZ7qMk8oJHsThW+XlSy4yQ2SSTcKU7VKhEfbBA/TSIA==", "disabled": false, "required": true, "node_type": "input"}}, {"meta": {"label": {"id": 1070004, "text": "ID", "type": "info"}}, "type": "input", "group": "default", "messages": [], "attributes": {"name": "identifier", "type": "text", "value": "", "disabled": false, "required": true, "node_type": "input"}}, {"meta": {"label": {"id": 1070001, "text": "Password", "type": "info"}}, "type": "input", "group": "password", "messages": [], "attributes": {"name": "password", "type": "password", "disabled": false, "required": true, "node_type": "input", "autocomplete": "current-password"}}, {"meta": {"label": {"id": 1010001, "text": "Sign in", "type": "info", "context": {}}}, "type": "input", "group": "password", "messages": [], "attributes": {"name": "method", "type": "submit", "value": "password", "disabled": false, "node_type": "input"}}], "action": "https://juicer-dev.xyz/kratos/self-service/login?flow=262bbac1-e147-4d80-8f4e-ed57e083b1af", "method": "POST"}	8712f917-6eee-4fc0-98b3-364070db5d96	aal1	{}	\N	\N
+COPY public.selfservice_login_flows (id, request_url, issued_at, expires_at, active_method, csrf_token, created_at, updated_at, forced, type, ui, nid, requested_aal, internal_context, oauth2_login_challenge, oauth2_login_challenge_data, state, submit_count, organization_id) FROM stdin;
+3e2b092a-1c7e-45ac-a216-2cfd1d97ee3e	https://juicer-dev.xyz/self-service/login/browser	2024-05-18 11:24:05.614924	2024-05-18 11:34:05.614924		C1/xuVDGaKrQsyuibhaUKLALIYbKE4giKjpRscJ2Y4aGE001MO5VZRFwM0IBxJYkxOwUJVvejatZDKQ5Ad6ESg==	2024-05-18 11:24:05.617304	2024-05-18 11:24:05.617304	f	browser	{"nodes": [{"meta": {"label": {"id": 1010002, "text": "Sign in with discord", "type": "info", "context": {"provider": "discord"}}}, "type": "input", "group": "oidc", "messages": [], "attributes": {"name": "provider", "type": "submit", "value": "discord", "disabled": false, "node_type": "input"}}, {"meta": {"label": {"id": 1010002, "text": "Sign in with facebook", "type": "info", "context": {"provider": "facebook"}}}, "type": "input", "group": "oidc", "messages": [], "attributes": {"name": "provider", "type": "submit", "value": "facebook", "disabled": false, "node_type": "input"}}, {"meta": {"label": {"id": 1010002, "text": "Sign in with github", "type": "info", "context": {"provider": "github"}}}, "type": "input", "group": "oidc", "messages": [], "attributes": {"name": "provider", "type": "submit", "value": "github", "disabled": false, "node_type": "input"}}, {"meta": {"label": {"id": 1010002, "text": "Sign in with google", "type": "info", "context": {"provider": "google"}}}, "type": "input", "group": "oidc", "messages": [], "attributes": {"name": "provider", "type": "submit", "value": "google", "disabled": false, "node_type": "input"}}, {"meta": {"label": {"id": 1010002, "text": "Sign in with slack", "type": "info", "context": {"provider": "slack"}}}, "type": "input", "group": "oidc", "messages": [], "attributes": {"name": "provider", "type": "submit", "value": "slack", "disabled": false, "node_type": "input"}}, {"meta": {"label": {"id": 1010002, "text": "Sign in with spotify", "type": "info", "context": {"provider": "spotify"}}}, "type": "input", "group": "oidc", "messages": [], "attributes": {"name": "provider", "type": "submit", "value": "spotify", "disabled": false, "node_type": "input"}}, {"meta": {"label": {"id": 1010002, "text": "Sign in with twitch", "type": "info", "context": {"provider": "twitch"}}}, "type": "input", "group": "oidc", "messages": [], "attributes": {"name": "provider", "type": "submit", "value": "twitch", "disabled": false, "node_type": "input"}}, {"meta": {}, "type": "input", "group": "default", "messages": [], "attributes": {"name": "csrf_token", "type": "hidden", "value": "C1/xuVDGaKrQsyuibhaUKLALIYbKE4giKjpRscJ2Y4aGE001MO5VZRFwM0IBxJYkxOwUJVvejatZDKQ5Ad6ESg==", "disabled": false, "required": true, "node_type": "input"}}, {"meta": {"label": {"id": 1070002, "text": "E-Mail", "type": "info", "context": {"title": "E-Mail"}}}, "type": "input", "group": "default", "messages": [], "attributes": {"name": "identifier", "type": "text", "value": "", "disabled": false, "required": true, "node_type": "input"}}, {"meta": {"label": {"id": 1070001, "text": "Password", "type": "info"}}, "type": "input", "group": "password", "messages": [], "attributes": {"name": "password", "type": "password", "disabled": false, "required": true, "node_type": "input", "autocomplete": "current-password"}}, {"meta": {"label": {"id": 1010001, "text": "Sign in", "type": "info"}}, "type": "input", "group": "password", "messages": [], "attributes": {"name": "method", "type": "submit", "value": "password", "disabled": false, "node_type": "input"}}], "action": "https://juicer-dev.xyz/kratos/self-service/login?flow=3e2b092a-1c7e-45ac-a216-2cfd1d97ee3e", "method": "POST"}	e796004f-1c18-4960-9388-dcd5835741db	aal1	{}	\N	\N	choose_method	0	\N
+0c941e3f-eef1-4080-97ef-b3096c0740c7	https://juicer-dev.xyz/self-service/login/browser	2024-05-18 11:24:28.310728	2024-05-18 11:34:28.310728		EklXw2PaT2C52XKg91Q24I8jMx1NVtMnNIKJ9cthcj2fBetPA/Jyr3gaakCYhjTs+8QGvtyb1q5HtHx9CMmV8Q==	2024-05-18 11:24:28.312672	2024-05-18 11:24:28.312672	f	browser	{"nodes": [{"meta": {"label": {"id": 1010002, "text": "Sign in with discord", "type": "info", "context": {"provider": "discord"}}}, "type": "input", "group": "oidc", "messages": [], "attributes": {"name": "provider", "type": "submit", "value": "discord", "disabled": false, "node_type": "input"}}, {"meta": {"label": {"id": 1010002, "text": "Sign in with facebook", "type": "info", "context": {"provider": "facebook"}}}, "type": "input", "group": "oidc", "messages": [], "attributes": {"name": "provider", "type": "submit", "value": "facebook", "disabled": false, "node_type": "input"}}, {"meta": {"label": {"id": 1010002, "text": "Sign in with github", "type": "info", "context": {"provider": "github"}}}, "type": "input", "group": "oidc", "messages": [], "attributes": {"name": "provider", "type": "submit", "value": "github", "disabled": false, "node_type": "input"}}, {"meta": {"label": {"id": 1010002, "text": "Sign in with google", "type": "info", "context": {"provider": "google"}}}, "type": "input", "group": "oidc", "messages": [], "attributes": {"name": "provider", "type": "submit", "value": "google", "disabled": false, "node_type": "input"}}, {"meta": {"label": {"id": 1010002, "text": "Sign in with slack", "type": "info", "context": {"provider": "slack"}}}, "type": "input", "group": "oidc", "messages": [], "attributes": {"name": "provider", "type": "submit", "value": "slack", "disabled": false, "node_type": "input"}}, {"meta": {"label": {"id": 1010002, "text": "Sign in with spotify", "type": "info", "context": {"provider": "spotify"}}}, "type": "input", "group": "oidc", "messages": [], "attributes": {"name": "provider", "type": "submit", "value": "spotify", "disabled": false, "node_type": "input"}}, {"meta": {"label": {"id": 1010002, "text": "Sign in with twitch", "type": "info", "context": {"provider": "twitch"}}}, "type": "input", "group": "oidc", "messages": [], "attributes": {"name": "provider", "type": "submit", "value": "twitch", "disabled": false, "node_type": "input"}}, {"meta": {}, "type": "input", "group": "default", "messages": [], "attributes": {"name": "csrf_token", "type": "hidden", "value": "EklXw2PaT2C52XKg91Q24I8jMx1NVtMnNIKJ9cthcj2fBetPA/Jyr3gaakCYhjTs+8QGvtyb1q5HtHx9CMmV8Q==", "disabled": false, "required": true, "node_type": "input"}}, {"meta": {"label": {"id": 1070002, "text": "E-Mail", "type": "info", "context": {"title": "E-Mail"}}}, "type": "input", "group": "default", "messages": [], "attributes": {"name": "identifier", "type": "text", "value": "", "disabled": false, "required": true, "node_type": "input"}}, {"meta": {"label": {"id": 1070001, "text": "Password", "type": "info"}}, "type": "input", "group": "password", "messages": [], "attributes": {"name": "password", "type": "password", "disabled": false, "required": true, "node_type": "input", "autocomplete": "current-password"}}, {"meta": {"label": {"id": 1010001, "text": "Sign in", "type": "info"}}, "type": "input", "group": "password", "messages": [], "attributes": {"name": "method", "type": "submit", "value": "password", "disabled": false, "node_type": "input"}}], "action": "https://juicer-dev.xyz/kratos/self-service/login?flow=0c941e3f-eef1-4080-97ef-b3096c0740c7", "method": "POST"}	e796004f-1c18-4960-9388-dcd5835741db	aal1	{}	\N	\N	choose_method	0	\N
+ef1012ab-a33a-4d6b-908d-4f0f7ef4d194	https://juicer-dev.xyz/self-service/login/browser	2024-05-18 11:24:32.644001	2024-05-18 11:34:32.644001		SQXvztFFanlLsu35L2gt+IuG/z0FsUjEx39axKvkuVvESVNCsW1Xtopx9RlAui/0/2HKnpR8TU20Sa9MaExelw==	2024-05-18 11:24:32.649094	2024-05-18 11:24:32.649094	f	browser	{"nodes": [{"meta": {"label": {"id": 1010002, "text": "Sign in with discord", "type": "info", "context": {"provider": "discord"}}}, "type": "input", "group": "oidc", "messages": [], "attributes": {"name": "provider", "type": "submit", "value": "discord", "disabled": false, "node_type": "input"}}, {"meta": {"label": {"id": 1010002, "text": "Sign in with facebook", "type": "info", "context": {"provider": "facebook"}}}, "type": "input", "group": "oidc", "messages": [], "attributes": {"name": "provider", "type": "submit", "value": "facebook", "disabled": false, "node_type": "input"}}, {"meta": {"label": {"id": 1010002, "text": "Sign in with github", "type": "info", "context": {"provider": "github"}}}, "type": "input", "group": "oidc", "messages": [], "attributes": {"name": "provider", "type": "submit", "value": "github", "disabled": false, "node_type": "input"}}, {"meta": {"label": {"id": 1010002, "text": "Sign in with google", "type": "info", "context": {"provider": "google"}}}, "type": "input", "group": "oidc", "messages": [], "attributes": {"name": "provider", "type": "submit", "value": "google", "disabled": false, "node_type": "input"}}, {"meta": {"label": {"id": 1010002, "text": "Sign in with slack", "type": "info", "context": {"provider": "slack"}}}, "type": "input", "group": "oidc", "messages": [], "attributes": {"name": "provider", "type": "submit", "value": "slack", "disabled": false, "node_type": "input"}}, {"meta": {"label": {"id": 1010002, "text": "Sign in with spotify", "type": "info", "context": {"provider": "spotify"}}}, "type": "input", "group": "oidc", "messages": [], "attributes": {"name": "provider", "type": "submit", "value": "spotify", "disabled": false, "node_type": "input"}}, {"meta": {"label": {"id": 1010002, "text": "Sign in with twitch", "type": "info", "context": {"provider": "twitch"}}}, "type": "input", "group": "oidc", "messages": [], "attributes": {"name": "provider", "type": "submit", "value": "twitch", "disabled": false, "node_type": "input"}}, {"meta": {}, "type": "input", "group": "default", "messages": [], "attributes": {"name": "csrf_token", "type": "hidden", "value": "SQXvztFFanlLsu35L2gt+IuG/z0FsUjEx39axKvkuVvESVNCsW1Xtopx9RlAui/0/2HKnpR8TU20Sa9MaExelw==", "disabled": false, "required": true, "node_type": "input"}}, {"meta": {"label": {"id": 1070002, "text": "E-Mail", "type": "info", "context": {"title": "E-Mail"}}}, "type": "input", "group": "default", "messages": [], "attributes": {"name": "identifier", "type": "text", "value": "", "disabled": false, "required": true, "node_type": "input"}}, {"meta": {"label": {"id": 1070001, "text": "Password", "type": "info"}}, "type": "input", "group": "password", "messages": [], "attributes": {"name": "password", "type": "password", "disabled": false, "required": true, "node_type": "input", "autocomplete": "current-password"}}, {"meta": {"label": {"id": 1010001, "text": "Sign in", "type": "info"}}, "type": "input", "group": "password", "messages": [], "attributes": {"name": "method", "type": "submit", "value": "password", "disabled": false, "node_type": "input"}}], "action": "https://juicer-dev.xyz/kratos/self-service/login?flow=ef1012ab-a33a-4d6b-908d-4f0f7ef4d194", "method": "POST"}	e796004f-1c18-4960-9388-dcd5835741db	aal1	{}	\N	\N	choose_method	0	\N
+753c9dc8-a04a-4655-8f9e-66cff204dc50	https://juicer-dev.xyz/self-service/login/browser	2024-05-18 11:25:04.465901	2024-05-18 11:35:04.465901		7Zjwknr9FEH5v/axRPdZwNafY4ltRQy1KaetPRwBF0Bg1EweGtUpjjh87lErJVvMonhWKvyICTxakVi136nwjA==	2024-05-18 11:25:04.469073	2024-05-18 11:25:04.469073	f	browser	{"nodes": [{"meta": {"label": {"id": 1010002, "text": "Sign in with discord", "type": "info", "context": {"provider": "discord"}}}, "type": "input", "group": "oidc", "messages": [], "attributes": {"name": "provider", "type": "submit", "value": "discord", "disabled": false, "node_type": "input"}}, {"meta": {"label": {"id": 1010002, "text": "Sign in with facebook", "type": "info", "context": {"provider": "facebook"}}}, "type": "input", "group": "oidc", "messages": [], "attributes": {"name": "provider", "type": "submit", "value": "facebook", "disabled": false, "node_type": "input"}}, {"meta": {"label": {"id": 1010002, "text": "Sign in with github", "type": "info", "context": {"provider": "github"}}}, "type": "input", "group": "oidc", "messages": [], "attributes": {"name": "provider", "type": "submit", "value": "github", "disabled": false, "node_type": "input"}}, {"meta": {"label": {"id": 1010002, "text": "Sign in with google", "type": "info", "context": {"provider": "google"}}}, "type": "input", "group": "oidc", "messages": [], "attributes": {"name": "provider", "type": "submit", "value": "google", "disabled": false, "node_type": "input"}}, {"meta": {"label": {"id": 1010002, "text": "Sign in with slack", "type": "info", "context": {"provider": "slack"}}}, "type": "input", "group": "oidc", "messages": [], "attributes": {"name": "provider", "type": "submit", "value": "slack", "disabled": false, "node_type": "input"}}, {"meta": {"label": {"id": 1010002, "text": "Sign in with spotify", "type": "info", "context": {"provider": "spotify"}}}, "type": "input", "group": "oidc", "messages": [], "attributes": {"name": "provider", "type": "submit", "value": "spotify", "disabled": false, "node_type": "input"}}, {"meta": {"label": {"id": 1010002, "text": "Sign in with twitch", "type": "info", "context": {"provider": "twitch"}}}, "type": "input", "group": "oidc", "messages": [], "attributes": {"name": "provider", "type": "submit", "value": "twitch", "disabled": false, "node_type": "input"}}, {"meta": {}, "type": "input", "group": "default", "messages": [], "attributes": {"name": "csrf_token", "type": "hidden", "value": "7Zjwknr9FEH5v/axRPdZwNafY4ltRQy1KaetPRwBF0Bg1EweGtUpjjh87lErJVvMonhWKvyICTxakVi136nwjA==", "disabled": false, "required": true, "node_type": "input"}}, {"meta": {"label": {"id": 1070002, "text": "E-Mail", "type": "info", "context": {"title": "E-Mail"}}}, "type": "input", "group": "default", "messages": [], "attributes": {"name": "identifier", "type": "text", "value": "", "disabled": false, "required": true, "node_type": "input"}}, {"meta": {"label": {"id": 1070001, "text": "Password", "type": "info"}}, "type": "input", "group": "password", "messages": [], "attributes": {"name": "password", "type": "password", "disabled": false, "required": true, "node_type": "input", "autocomplete": "current-password"}}, {"meta": {"label": {"id": 1010001, "text": "Sign in", "type": "info"}}, "type": "input", "group": "password", "messages": [], "attributes": {"name": "method", "type": "submit", "value": "password", "disabled": false, "node_type": "input"}}], "action": "https://juicer-dev.xyz/kratos/self-service/login?flow=753c9dc8-a04a-4655-8f9e-66cff204dc50", "method": "POST"}	e796004f-1c18-4960-9388-dcd5835741db	aal1	{}	\N	\N	choose_method	0	\N
+6708f741-71ed-4ed0-b819-3cde079ff3bc	https://juicer-dev.xyz/self-service/login/browser	2024-05-18 11:25:59.77086	2024-05-18 11:35:59.77086		RZ8n0vTGpvdPcNXJO7OIeXzmqFzH9wQfEetTIG2NwYHgc7eKJsoqFrSCOrj7hPFFWpPzEEIPKUP3o1l6/Seixg==	2024-05-18 11:25:59.772348	2024-05-18 11:25:59.772348	f	browser	{"nodes": [{"meta": {"label": {"id": 1010002, "text": "Sign in with discord", "type": "info", "context": {"provider": "discord"}}}, "type": "input", "group": "oidc", "messages": [], "attributes": {"name": "provider", "type": "submit", "value": "discord", "disabled": false, "node_type": "input"}}, {"meta": {"label": {"id": 1010002, "text": "Sign in with facebook", "type": "info", "context": {"provider": "facebook"}}}, "type": "input", "group": "oidc", "messages": [], "attributes": {"name": "provider", "type": "submit", "value": "facebook", "disabled": false, "node_type": "input"}}, {"meta": {"label": {"id": 1010002, "text": "Sign in with github", "type": "info", "context": {"provider": "github"}}}, "type": "input", "group": "oidc", "messages": [], "attributes": {"name": "provider", "type": "submit", "value": "github", "disabled": false, "node_type": "input"}}, {"meta": {"label": {"id": 1010002, "text": "Sign in with google", "type": "info", "context": {"provider": "google"}}}, "type": "input", "group": "oidc", "messages": [], "attributes": {"name": "provider", "type": "submit", "value": "google", "disabled": false, "node_type": "input"}}, {"meta": {"label": {"id": 1010002, "text": "Sign in with slack", "type": "info", "context": {"provider": "slack"}}}, "type": "input", "group": "oidc", "messages": [], "attributes": {"name": "provider", "type": "submit", "value": "slack", "disabled": false, "node_type": "input"}}, {"meta": {"label": {"id": 1010002, "text": "Sign in with spotify", "type": "info", "context": {"provider": "spotify"}}}, "type": "input", "group": "oidc", "messages": [], "attributes": {"name": "provider", "type": "submit", "value": "spotify", "disabled": false, "node_type": "input"}}, {"meta": {"label": {"id": 1010002, "text": "Sign in with twitch", "type": "info", "context": {"provider": "twitch"}}}, "type": "input", "group": "oidc", "messages": [], "attributes": {"name": "provider", "type": "submit", "value": "twitch", "disabled": false, "node_type": "input"}}, {"meta": {}, "type": "input", "group": "default", "messages": [], "attributes": {"name": "csrf_token", "type": "hidden", "value": "RZ8n0vTGpvdPcNXJO7OIeXzmqFzH9wQfEetTIG2NwYHgc7eKJsoqFrSCOrj7hPFFWpPzEEIPKUP3o1l6/Seixg==", "disabled": false, "required": true, "node_type": "input"}}, {"meta": {"label": {"id": 1070002, "text": "E-Mail", "type": "info", "context": {"title": "E-Mail"}}}, "type": "input", "group": "default", "messages": [], "attributes": {"name": "identifier", "type": "text", "value": "", "disabled": false, "required": true, "node_type": "input"}}, {"meta": {"label": {"id": 1070001, "text": "Password", "type": "info"}}, "type": "input", "group": "password", "messages": [], "attributes": {"name": "password", "type": "password", "disabled": false, "required": true, "node_type": "input", "autocomplete": "current-password"}}, {"meta": {"label": {"id": 1010001, "text": "Sign in", "type": "info"}}, "type": "input", "group": "password", "messages": [], "attributes": {"name": "method", "type": "submit", "value": "password", "disabled": false, "node_type": "input"}}], "action": "https://juicer-dev.xyz/kratos/self-service/login?flow=6708f741-71ed-4ed0-b819-3cde079ff3bc", "method": "POST"}	e796004f-1c18-4960-9388-dcd5835741db	aal1	{}	\N	\N	choose_method	0	\N
+488b918a-afc5-4a7f-88e0-1f7c8dcde850	https://juicer-dev.xyz/self-service/login/browser	2024-05-18 11:26:05.734366	2024-05-18 11:36:05.734366	password	V4e2cu2+MlhNpxGHyz/YQk9PxTNygqRy1SowzCJL6KXyayYqP7K+ubZV/vYLCKF+aTqef/d6iS4zYjqWsuGL4g==	2024-05-18 11:26:05.737891	2024-05-18 11:26:05.737891	f	browser	{"nodes": [{"meta": {"label": {"id": 1010002, "text": "Sign in with discord", "type": "info", "context": {"provider": "discord"}}}, "type": "input", "group": "oidc", "messages": [], "attributes": {"name": "provider", "type": "submit", "value": "discord", "disabled": false, "node_type": "input"}}, {"meta": {"label": {"id": 1010002, "text": "Sign in with facebook", "type": "info", "context": {"provider": "facebook"}}}, "type": "input", "group": "oidc", "messages": [], "attributes": {"name": "provider", "type": "submit", "value": "facebook", "disabled": false, "node_type": "input"}}, {"meta": {"label": {"id": 1010002, "text": "Sign in with github", "type": "info", "context": {"provider": "github"}}}, "type": "input", "group": "oidc", "messages": [], "attributes": {"name": "provider", "type": "submit", "value": "github", "disabled": false, "node_type": "input"}}, {"meta": {"label": {"id": 1010002, "text": "Sign in with google", "type": "info", "context": {"provider": "google"}}}, "type": "input", "group": "oidc", "messages": [], "attributes": {"name": "provider", "type": "submit", "value": "google", "disabled": false, "node_type": "input"}}, {"meta": {"label": {"id": 1010002, "text": "Sign in with slack", "type": "info", "context": {"provider": "slack"}}}, "type": "input", "group": "oidc", "messages": [], "attributes": {"name": "provider", "type": "submit", "value": "slack", "disabled": false, "node_type": "input"}}, {"meta": {"label": {"id": 1010002, "text": "Sign in with spotify", "type": "info", "context": {"provider": "spotify"}}}, "type": "input", "group": "oidc", "messages": [], "attributes": {"name": "provider", "type": "submit", "value": "spotify", "disabled": false, "node_type": "input"}}, {"meta": {"label": {"id": 1010002, "text": "Sign in with twitch", "type": "info", "context": {"provider": "twitch"}}}, "type": "input", "group": "oidc", "messages": [], "attributes": {"name": "provider", "type": "submit", "value": "twitch", "disabled": false, "node_type": "input"}}, {"meta": {}, "type": "input", "group": "default", "messages": [], "attributes": {"name": "csrf_token", "type": "hidden", "value": "V4e2cu2+MlhNpxGHyz/YQk9PxTNygqRy1SowzCJL6KXyayYqP7K+ubZV/vYLCKF+aTqef/d6iS4zYjqWsuGL4g==", "disabled": false, "required": true, "node_type": "input"}}, {"meta": {"label": {"id": 1070002, "text": "E-Mail", "type": "info", "context": {"title": "E-Mail"}}}, "type": "input", "group": "default", "messages": [], "attributes": {"name": "identifier", "type": "text", "value": "", "disabled": false, "required": true, "node_type": "input"}}, {"meta": {"label": {"id": 1070001, "text": "Password", "type": "info"}}, "type": "input", "group": "password", "messages": [], "attributes": {"name": "password", "type": "password", "disabled": false, "required": true, "node_type": "input", "autocomplete": "current-password"}}, {"meta": {"label": {"id": 1010001, "text": "Sign in", "type": "info"}}, "type": "input", "group": "password", "messages": [], "attributes": {"name": "method", "type": "submit", "value": "password", "disabled": false, "node_type": "input"}}], "action": "https://juicer-dev.xyz/kratos/self-service/login?flow=488b918a-afc5-4a7f-88e0-1f7c8dcde850", "method": "POST"}	e796004f-1c18-4960-9388-dcd5835741db	aal1	{}	\N	\N	choose_method	0	\N
 \.
 
 
@@ -1224,10 +1339,7 @@ f28668ba-e0ab-4bc2-8356-363f413116a2	https://juicer-dev.xyz/self-service/login/b
 --
 
 COPY public.selfservice_recovery_flows (id, request_url, issued_at, expires_at, active_method, csrf_token, state, recovered_identity_id, created_at, updated_at, type, ui, nid, submit_count, skip_csrf_check) FROM stdin;
-d9172e9f-9356-4b21-a5b1-06da202bffd7	https://juicer-dev.xyz/self-service/recovery/browser	2024-02-09 16:00:07.282344	2024-02-09 17:00:07.282344	code	b7XlqUsIWBTQFNGk/A6cnngeferVwv0vyUGQaTWTq0Gp2zfRCWEbxKLyCwP9h/gwiSOXphOYElB8zqoCayeMyA==	choose_method	\N	2024-02-09 16:00:07.282464	2024-02-09 16:00:07.282464	browser	{"nodes": [{"meta": {}, "type": "input", "group": "default", "messages": [], "attributes": {"name": "csrf_token", "type": "hidden", "value": "b7XlqUsIWBTQFNGk/A6cnngeferVwv0vyUGQaTWTq0Gp2zfRCWEbxKLyCwP9h/gwiSOXphOYElB8zqoCayeMyA==", "disabled": false, "required": true, "node_type": "input"}}, {"meta": {"label": {"id": 1070007, "text": "Email", "type": "info"}}, "type": "input", "group": "code", "messages": [], "attributes": {"name": "email", "type": "email", "disabled": false, "required": true, "node_type": "input"}}, {"meta": {"label": {"id": 1070005, "text": "Submit", "type": "info"}}, "type": "input", "group": "code", "messages": [], "attributes": {"name": "method", "type": "submit", "value": "code", "disabled": false, "node_type": "input"}}], "action": "https://juicer-dev.xyz/kratos/self-service/recovery?flow=d9172e9f-9356-4b21-a5b1-06da202bffd7", "method": "POST"}	8712f917-6eee-4fc0-98b3-364070db5d96	0	f
-0b1a355d-f1ff-4054-b3da-a51bf46678ee	https://juicer-dev.xyz/self-service/recovery/browser	2024-02-09 16:00:07.330801	2024-02-09 17:00:07.330801	code	BTrVDo2rHgjWlFkfugIEEKpmjHbdAeholDVsqWDqj4nDVAd2z8Jd2KRyg7i7i2C+W1tmOhtbBxchulbCPl6oAA==	choose_method	\N	2024-02-09 16:00:07.330926	2024-02-09 16:00:07.330926	browser	{"nodes": [{"meta": {}, "type": "input", "group": "default", "messages": [], "attributes": {"name": "csrf_token", "type": "hidden", "value": "BTrVDo2rHgjWlFkfugIEEKpmjHbdAeholDVsqWDqj4nDVAd2z8Jd2KRyg7i7i2C+W1tmOhtbBxchulbCPl6oAA==", "disabled": false, "required": true, "node_type": "input"}}, {"meta": {"label": {"id": 1070007, "text": "Email", "type": "info"}}, "type": "input", "group": "code", "messages": [], "attributes": {"name": "email", "type": "email", "disabled": false, "required": true, "node_type": "input"}}, {"meta": {"label": {"id": 1070005, "text": "Submit", "type": "info"}}, "type": "input", "group": "code", "messages": [], "attributes": {"name": "method", "type": "submit", "value": "code", "disabled": false, "node_type": "input"}}], "action": "https://juicer-dev.xyz/kratos/self-service/recovery?flow=0b1a355d-f1ff-4054-b3da-a51bf46678ee", "method": "POST"}	8712f917-6eee-4fc0-98b3-364070db5d96	0	f
-9ddb6a2a-e393-40eb-952d-dc8b5f65a47c	https://juicer-dev.xyz/self-service/recovery/browser	2024-02-09 16:00:07.332264	2024-02-09 17:00:07.332264	code	hCafcubfWv9NJwm3P0is6i9rH4AXA8JgJu6vJBSqTUtCSE0KpLYZLz/B0xA+wchE3lb1zNFZLR+TYZVPSh5qwg==	choose_method	\N	2024-02-09 16:00:07.33235	2024-02-09 16:00:07.33235	browser	{"nodes": [{"meta": {}, "type": "input", "group": "default", "messages": [], "attributes": {"name": "csrf_token", "type": "hidden", "value": "hCafcubfWv9NJwm3P0is6i9rH4AXA8JgJu6vJBSqTUtCSE0KpLYZLz/B0xA+wchE3lb1zNFZLR+TYZVPSh5qwg==", "disabled": false, "required": true, "node_type": "input"}}, {"meta": {"label": {"id": 1070007, "text": "Email", "type": "info"}}, "type": "input", "group": "code", "messages": [], "attributes": {"name": "email", "type": "email", "disabled": false, "required": true, "node_type": "input"}}, {"meta": {"label": {"id": 1070005, "text": "Submit", "type": "info"}}, "type": "input", "group": "code", "messages": [], "attributes": {"name": "method", "type": "submit", "value": "code", "disabled": false, "node_type": "input"}}], "action": "https://juicer-dev.xyz/kratos/self-service/recovery?flow=9ddb6a2a-e393-40eb-952d-dc8b5f65a47c", "method": "POST"}	8712f917-6eee-4fc0-98b3-364070db5d96	0	f
-22f1a3d5-3e55-428f-aa16-ca55637e6050	https://juicer-dev.xyz/self-service/recovery/browser	2024-02-09 16:00:13.304148	2024-02-09 17:00:13.304148	code	g+5I0FL2pEUeYMMxYkPkp4rIALCv9wk9+GcVVBMomYRFgJqoEJ/nlWyGGZZjyoAJe/Xq/Gmt5kJN6C8/TZy+DQ==	choose_method	\N	2024-02-09 16:00:13.304293	2024-02-09 16:00:13.304293	browser	{"nodes": [{"meta": {}, "type": "input", "group": "default", "messages": [], "attributes": {"name": "csrf_token", "type": "hidden", "value": "g+5I0FL2pEUeYMMxYkPkp4rIALCv9wk9+GcVVBMomYRFgJqoEJ/nlWyGGZZjyoAJe/Xq/Gmt5kJN6C8/TZy+DQ==", "disabled": false, "required": true, "node_type": "input"}}, {"meta": {"label": {"id": 1070007, "text": "Email", "type": "info"}}, "type": "input", "group": "code", "messages": [], "attributes": {"name": "email", "type": "email", "disabled": false, "required": true, "node_type": "input"}}, {"meta": {"label": {"id": 1070005, "text": "Submit", "type": "info"}}, "type": "input", "group": "code", "messages": [], "attributes": {"name": "method", "type": "submit", "value": "code", "disabled": false, "node_type": "input"}}], "action": "https://juicer-dev.xyz/kratos/self-service/recovery?flow=22f1a3d5-3e55-428f-aa16-ca55637e6050", "method": "POST"}	8712f917-6eee-4fc0-98b3-364070db5d96	0	f
+bf09d528-8833-43f9-a5ce-6c5c79145e1d	https://juicer-dev.xyz/self-service/recovery/browser	2024-05-18 11:24:33.541307	2024-05-18 12:24:33.541307	code	Vej4R3iQ15mD79WLI8PEQnOSH5Y/wHBH+ms1zSP7qs7YpETLGLjqVkIszWtMEcZOB3UqNa4Ndc6JXcBF4FNNAg==	choose_method	\N	2024-05-18 11:24:33.541421	2024-05-18 11:24:33.541421	browser	{"nodes": [{"meta": {}, "type": "input", "group": "default", "messages": [], "attributes": {"name": "csrf_token", "type": "hidden", "value": "Vej4R3iQ15mD79WLI8PEQnOSH5Y/wHBH+ms1zSP7qs7YpETLGLjqVkIszWtMEcZOB3UqNa4Ndc6JXcBF4FNNAg==", "disabled": false, "required": true, "node_type": "input"}}, {"meta": {"label": {"id": 1070007, "text": "Email", "type": "info"}}, "type": "input", "group": "code", "messages": [], "attributes": {"name": "email", "type": "email", "disabled": false, "required": true, "node_type": "input"}}, {"meta": {"label": {"id": 1070005, "text": "Submit", "type": "info"}}, "type": "input", "group": "code", "messages": [], "attributes": {"name": "method", "type": "submit", "value": "code", "disabled": false, "node_type": "input"}}], "action": "https://juicer-dev.xyz/kratos/self-service/recovery?flow=bf09d528-8833-43f9-a5ce-6c5c79145e1d", "method": "POST"}	e796004f-1c18-4960-9388-dcd5835741db	0	f
 \.
 
 
@@ -1235,10 +1347,10 @@ d9172e9f-9356-4b21-a5b1-06da202bffd7	https://juicer-dev.xyz/self-service/recover
 -- Data for Name: selfservice_registration_flows; Type: TABLE DATA; Schema: public; Owner: test
 --
 
-COPY public.selfservice_registration_flows (id, request_url, issued_at, expires_at, active_method, csrf_token, created_at, updated_at, type, ui, nid, internal_context, oauth2_login_challenge, oauth2_login_challenge_data) FROM stdin;
-7a1bc20a-9c00-4d86-aaf2-c3b884fe9ea9	https://juicer-dev.xyz/self-service/registration/browser	2024-02-09 16:00:02.204137	2024-02-09 16:10:02.204137		O3cYMh5E89+zN+BTqMpl3k5mVq0wK55pJyLXvHyLPRX9GcpKXC2wD8HROvSpQwFwv1u84fZxcRaSre3XIj8anA==	2024-02-09 16:00:02.208231	2024-02-09 16:00:02.208231	browser	{"nodes": [{"meta": {}, "type": "input", "group": "default", "messages": [], "attributes": {"name": "csrf_token", "type": "hidden", "value": "O3cYMh5E89+zN+BTqMpl3k5mVq0wK55pJyLXvHyLPRX9GcpKXC2wD8HROvSpQwFwv1u84fZxcRaSre3XIj8anA==", "disabled": false, "required": true, "node_type": "input"}}, {"meta": {"label": {"id": 1040002, "text": "Sign up with discord", "type": "info", "context": {"provider": "discord"}}}, "type": "input", "group": "oidc", "messages": [], "attributes": {"name": "provider", "type": "submit", "value": "discord", "disabled": false, "node_type": "input"}}, {"meta": {"label": {"id": 1040002, "text": "Sign up with facebook", "type": "info", "context": {"provider": "facebook"}}}, "type": "input", "group": "oidc", "messages": [], "attributes": {"name": "provider", "type": "submit", "value": "facebook", "disabled": false, "node_type": "input"}}, {"meta": {"label": {"id": 1040002, "text": "Sign up with github", "type": "info", "context": {"provider": "github"}}}, "type": "input", "group": "oidc", "messages": [], "attributes": {"name": "provider", "type": "submit", "value": "github", "disabled": false, "node_type": "input"}}, {"meta": {"label": {"id": 1040002, "text": "Sign up with google", "type": "info", "context": {"provider": "google"}}}, "type": "input", "group": "oidc", "messages": [], "attributes": {"name": "provider", "type": "submit", "value": "google", "disabled": false, "node_type": "input"}}, {"meta": {"label": {"id": 1040002, "text": "Sign up with slack", "type": "info", "context": {"provider": "slack"}}}, "type": "input", "group": "oidc", "messages": [], "attributes": {"name": "provider", "type": "submit", "value": "slack", "disabled": false, "node_type": "input"}}, {"meta": {"label": {"id": 1040002, "text": "Sign up with spotify", "type": "info", "context": {"provider": "spotify"}}}, "type": "input", "group": "oidc", "messages": [], "attributes": {"name": "provider", "type": "submit", "value": "spotify", "disabled": false, "node_type": "input"}}, {"meta": {"label": {"id": 1040002, "text": "Sign up with twitch", "type": "info", "context": {"provider": "twitch"}}}, "type": "input", "group": "oidc", "messages": [], "attributes": {"name": "provider", "type": "submit", "value": "twitch", "disabled": false, "node_type": "input"}}, {"meta": {"label": {"id": 1070002, "text": "E-Mail", "type": "info"}}, "type": "input", "group": "password", "messages": [], "attributes": {"name": "traits.email", "type": "email", "disabled": false, "required": true, "node_type": "input", "autocomplete": "email"}}, {"meta": {"label": {"id": 1070001, "text": "Password", "type": "info"}}, "type": "input", "group": "password", "messages": [], "attributes": {"name": "password", "type": "password", "disabled": false, "required": true, "node_type": "input", "autocomplete": "new-password"}}, {"meta": {"label": {"id": 1070002, "text": "First name", "type": "info"}}, "type": "input", "group": "password", "messages": [], "attributes": {"name": "traits.first_name", "type": "text", "disabled": false, "node_type": "input"}}, {"meta": {"label": {"id": 1070002, "text": "Last name", "type": "info"}}, "type": "input", "group": "password", "messages": [], "attributes": {"name": "traits.last_name", "type": "text", "disabled": false, "node_type": "input"}}, {"meta": {"label": {"id": 1070002, "text": "Picture", "type": "info"}}, "type": "input", "group": "password", "messages": [], "attributes": {"name": "traits.avatar_url", "type": "text", "disabled": false, "node_type": "input"}}, {"meta": {"label": {"id": 1040001, "text": "Sign up", "type": "info", "context": {}}}, "type": "input", "group": "password", "messages": [], "attributes": {"name": "method", "type": "submit", "value": "password", "disabled": false, "node_type": "input"}}], "action": "https://juicer-dev.xyz/kratos/self-service/registration?flow=7a1bc20a-9c00-4d86-aaf2-c3b884fe9ea9", "method": "POST"}	8712f917-6eee-4fc0-98b3-364070db5d96	{}	\N	\N
-0f5a8f69-779e-4ab8-ad35-dbfcea24d9ed	https://juicer-dev.xyz/self-service/registration/browser	2024-02-09 16:00:17.350746	2024-02-09 16:10:17.350746		hkzv0INmFDG/4KB3CwmTjhElRvFY72Hmkh/T5Zs3HmxAIj2owQ9X4c0GetAKgPcg4BisvZ61jpknkOmOxYM55Q==	2024-02-09 16:00:17.355019	2024-02-09 16:00:17.355019	browser	{"nodes": [{"meta": {}, "type": "input", "group": "default", "messages": [], "attributes": {"name": "csrf_token", "type": "hidden", "value": "hkzv0INmFDG/4KB3CwmTjhElRvFY72Hmkh/T5Zs3HmxAIj2owQ9X4c0GetAKgPcg4BisvZ61jpknkOmOxYM55Q==", "disabled": false, "required": true, "node_type": "input"}}, {"meta": {"label": {"id": 1040002, "text": "Sign up with discord", "type": "info", "context": {"provider": "discord"}}}, "type": "input", "group": "oidc", "messages": [], "attributes": {"name": "provider", "type": "submit", "value": "discord", "disabled": false, "node_type": "input"}}, {"meta": {"label": {"id": 1040002, "text": "Sign up with facebook", "type": "info", "context": {"provider": "facebook"}}}, "type": "input", "group": "oidc", "messages": [], "attributes": {"name": "provider", "type": "submit", "value": "facebook", "disabled": false, "node_type": "input"}}, {"meta": {"label": {"id": 1040002, "text": "Sign up with github", "type": "info", "context": {"provider": "github"}}}, "type": "input", "group": "oidc", "messages": [], "attributes": {"name": "provider", "type": "submit", "value": "github", "disabled": false, "node_type": "input"}}, {"meta": {"label": {"id": 1040002, "text": "Sign up with google", "type": "info", "context": {"provider": "google"}}}, "type": "input", "group": "oidc", "messages": [], "attributes": {"name": "provider", "type": "submit", "value": "google", "disabled": false, "node_type": "input"}}, {"meta": {"label": {"id": 1040002, "text": "Sign up with slack", "type": "info", "context": {"provider": "slack"}}}, "type": "input", "group": "oidc", "messages": [], "attributes": {"name": "provider", "type": "submit", "value": "slack", "disabled": false, "node_type": "input"}}, {"meta": {"label": {"id": 1040002, "text": "Sign up with spotify", "type": "info", "context": {"provider": "spotify"}}}, "type": "input", "group": "oidc", "messages": [], "attributes": {"name": "provider", "type": "submit", "value": "spotify", "disabled": false, "node_type": "input"}}, {"meta": {"label": {"id": 1040002, "text": "Sign up with twitch", "type": "info", "context": {"provider": "twitch"}}}, "type": "input", "group": "oidc", "messages": [], "attributes": {"name": "provider", "type": "submit", "value": "twitch", "disabled": false, "node_type": "input"}}, {"meta": {"label": {"id": 1070002, "text": "E-Mail", "type": "info"}}, "type": "input", "group": "password", "messages": [], "attributes": {"name": "traits.email", "type": "email", "disabled": false, "required": true, "node_type": "input", "autocomplete": "email"}}, {"meta": {"label": {"id": 1070001, "text": "Password", "type": "info"}}, "type": "input", "group": "password", "messages": [], "attributes": {"name": "password", "type": "password", "disabled": false, "required": true, "node_type": "input", "autocomplete": "new-password"}}, {"meta": {"label": {"id": 1070002, "text": "First name", "type": "info"}}, "type": "input", "group": "password", "messages": [], "attributes": {"name": "traits.first_name", "type": "text", "disabled": false, "node_type": "input"}}, {"meta": {"label": {"id": 1070002, "text": "Last name", "type": "info"}}, "type": "input", "group": "password", "messages": [], "attributes": {"name": "traits.last_name", "type": "text", "disabled": false, "node_type": "input"}}, {"meta": {"label": {"id": 1070002, "text": "Picture", "type": "info"}}, "type": "input", "group": "password", "messages": [], "attributes": {"name": "traits.avatar_url", "type": "text", "disabled": false, "node_type": "input"}}, {"meta": {"label": {"id": 1040001, "text": "Sign up", "type": "info", "context": {}}}, "type": "input", "group": "password", "messages": [], "attributes": {"name": "method", "type": "submit", "value": "password", "disabled": false, "node_type": "input"}}], "action": "https://juicer-dev.xyz/kratos/self-service/registration?flow=0f5a8f69-779e-4ab8-ad35-dbfcea24d9ed", "method": "POST"}	8712f917-6eee-4fc0-98b3-364070db5d96	{}	\N	\N
-87df423a-256b-4c03-8aef-03bcbb0b1dcb	https://juicer-dev.xyz/self-service/registration/browser	2024-02-09 16:00:35.459146	2024-02-09 16:10:35.459146		Zml8MM1Ze7tQRmfFrno6Ces29CKARgvZ4GRIA/7kczOgB65IjzA4ayKgvWKv816nGgsebkYc5KZV63JooFBUug==	2024-02-09 16:00:35.466022	2024-02-09 16:00:35.466022	browser	{"nodes": [{"meta": {}, "type": "input", "group": "default", "messages": [], "attributes": {"name": "csrf_token", "type": "hidden", "value": "Zml8MM1Ze7tQRmfFrno6Ces29CKARgvZ4GRIA/7kczOgB65IjzA4ayKgvWKv816nGgsebkYc5KZV63JooFBUug==", "disabled": false, "required": true, "node_type": "input"}}, {"meta": {"label": {"id": 1040002, "text": "Sign up with discord", "type": "info", "context": {"provider": "discord"}}}, "type": "input", "group": "oidc", "messages": [], "attributes": {"name": "provider", "type": "submit", "value": "discord", "disabled": false, "node_type": "input"}}, {"meta": {"label": {"id": 1040002, "text": "Sign up with facebook", "type": "info", "context": {"provider": "facebook"}}}, "type": "input", "group": "oidc", "messages": [], "attributes": {"name": "provider", "type": "submit", "value": "facebook", "disabled": false, "node_type": "input"}}, {"meta": {"label": {"id": 1040002, "text": "Sign up with github", "type": "info", "context": {"provider": "github"}}}, "type": "input", "group": "oidc", "messages": [], "attributes": {"name": "provider", "type": "submit", "value": "github", "disabled": false, "node_type": "input"}}, {"meta": {"label": {"id": 1040002, "text": "Sign up with google", "type": "info", "context": {"provider": "google"}}}, "type": "input", "group": "oidc", "messages": [], "attributes": {"name": "provider", "type": "submit", "value": "google", "disabled": false, "node_type": "input"}}, {"meta": {"label": {"id": 1040002, "text": "Sign up with slack", "type": "info", "context": {"provider": "slack"}}}, "type": "input", "group": "oidc", "messages": [], "attributes": {"name": "provider", "type": "submit", "value": "slack", "disabled": false, "node_type": "input"}}, {"meta": {"label": {"id": 1040002, "text": "Sign up with spotify", "type": "info", "context": {"provider": "spotify"}}}, "type": "input", "group": "oidc", "messages": [], "attributes": {"name": "provider", "type": "submit", "value": "spotify", "disabled": false, "node_type": "input"}}, {"meta": {"label": {"id": 1040002, "text": "Sign up with twitch", "type": "info", "context": {"provider": "twitch"}}}, "type": "input", "group": "oidc", "messages": [], "attributes": {"name": "provider", "type": "submit", "value": "twitch", "disabled": false, "node_type": "input"}}, {"meta": {"label": {"id": 1070002, "text": "E-Mail", "type": "info"}}, "type": "input", "group": "password", "messages": [], "attributes": {"name": "traits.email", "type": "email", "disabled": false, "required": true, "node_type": "input", "autocomplete": "email"}}, {"meta": {"label": {"id": 1070001, "text": "Password", "type": "info"}}, "type": "input", "group": "password", "messages": [], "attributes": {"name": "password", "type": "password", "disabled": false, "required": true, "node_type": "input", "autocomplete": "new-password"}}, {"meta": {"label": {"id": 1070002, "text": "First name", "type": "info"}}, "type": "input", "group": "password", "messages": [], "attributes": {"name": "traits.first_name", "type": "text", "disabled": false, "node_type": "input"}}, {"meta": {"label": {"id": 1070002, "text": "Last name", "type": "info"}}, "type": "input", "group": "password", "messages": [], "attributes": {"name": "traits.last_name", "type": "text", "disabled": false, "node_type": "input"}}, {"meta": {"label": {"id": 1070002, "text": "Picture", "type": "info"}}, "type": "input", "group": "password", "messages": [], "attributes": {"name": "traits.avatar_url", "type": "text", "disabled": false, "node_type": "input"}}, {"meta": {"label": {"id": 1040001, "text": "Sign up", "type": "info", "context": {}}}, "type": "input", "group": "password", "messages": [], "attributes": {"name": "method", "type": "submit", "value": "password", "disabled": false, "node_type": "input"}}], "action": "https://juicer-dev.xyz/kratos/self-service/registration?flow=87df423a-256b-4c03-8aef-03bcbb0b1dcb", "method": "POST"}	8712f917-6eee-4fc0-98b3-364070db5d96	{}	\N	\N
+COPY public.selfservice_registration_flows (id, request_url, issued_at, expires_at, active_method, csrf_token, created_at, updated_at, type, ui, nid, internal_context, oauth2_login_challenge, oauth2_login_challenge_data, state, submit_count, organization_id) FROM stdin;
+fdfe7f91-a68f-42fb-a66b-2d0471520c7c	https://juicer-dev.xyz/self-service/registration/browser	2024-05-18 11:24:30.86869	2024-05-18 11:34:30.86869		RBib4eGakz5xkXvBM1aSh2rQHmZx4ark6yGnf3itF4rJVCdtgbKu8bBSYyFchJCLHjcrxeAsr22YF1L3uwXwRg==	2024-05-18 11:24:30.870018	2024-05-18 11:24:30.870018	browser	{"nodes": [{"meta": {}, "type": "input", "group": "default", "messages": [], "attributes": {"name": "csrf_token", "type": "hidden", "value": "RBib4eGakz5xkXvBM1aSh2rQHmZx4ark6yGnf3itF4rJVCdtgbKu8bBSYyFchJCLHjcrxeAsr22YF1L3uwXwRg==", "disabled": false, "required": true, "node_type": "input"}}, {"meta": {"label": {"id": 1040002, "text": "Sign up with discord", "type": "info", "context": {"provider": "discord"}}}, "type": "input", "group": "oidc", "messages": [], "attributes": {"name": "provider", "type": "submit", "value": "discord", "disabled": false, "node_type": "input"}}, {"meta": {"label": {"id": 1040002, "text": "Sign up with facebook", "type": "info", "context": {"provider": "facebook"}}}, "type": "input", "group": "oidc", "messages": [], "attributes": {"name": "provider", "type": "submit", "value": "facebook", "disabled": false, "node_type": "input"}}, {"meta": {"label": {"id": 1040002, "text": "Sign up with github", "type": "info", "context": {"provider": "github"}}}, "type": "input", "group": "oidc", "messages": [], "attributes": {"name": "provider", "type": "submit", "value": "github", "disabled": false, "node_type": "input"}}, {"meta": {"label": {"id": 1040002, "text": "Sign up with google", "type": "info", "context": {"provider": "google"}}}, "type": "input", "group": "oidc", "messages": [], "attributes": {"name": "provider", "type": "submit", "value": "google", "disabled": false, "node_type": "input"}}, {"meta": {"label": {"id": 1040002, "text": "Sign up with slack", "type": "info", "context": {"provider": "slack"}}}, "type": "input", "group": "oidc", "messages": [], "attributes": {"name": "provider", "type": "submit", "value": "slack", "disabled": false, "node_type": "input"}}, {"meta": {"label": {"id": 1040002, "text": "Sign up with spotify", "type": "info", "context": {"provider": "spotify"}}}, "type": "input", "group": "oidc", "messages": [], "attributes": {"name": "provider", "type": "submit", "value": "spotify", "disabled": false, "node_type": "input"}}, {"meta": {"label": {"id": 1040002, "text": "Sign up with twitch", "type": "info", "context": {"provider": "twitch"}}}, "type": "input", "group": "oidc", "messages": [], "attributes": {"name": "provider", "type": "submit", "value": "twitch", "disabled": false, "node_type": "input"}}, {"meta": {"label": {"id": 1070002, "text": "E-Mail", "type": "info", "context": {"title": "E-Mail"}}}, "type": "input", "group": "password", "messages": [], "attributes": {"name": "traits.email", "type": "email", "disabled": false, "required": true, "node_type": "input", "autocomplete": "email"}}, {"meta": {"label": {"id": 1070001, "text": "Password", "type": "info"}}, "type": "input", "group": "password", "messages": [], "attributes": {"name": "password", "type": "password", "disabled": false, "required": true, "node_type": "input", "autocomplete": "new-password"}}, {"meta": {"label": {"id": 1070002, "text": "First name", "type": "info", "context": {"title": "First name"}}}, "type": "input", "group": "password", "messages": [], "attributes": {"name": "traits.first_name", "type": "text", "disabled": false, "node_type": "input"}}, {"meta": {"label": {"id": 1070002, "text": "Last name", "type": "info", "context": {"title": "Last name"}}}, "type": "input", "group": "password", "messages": [], "attributes": {"name": "traits.last_name", "type": "text", "disabled": false, "node_type": "input"}}, {"meta": {"label": {"id": 1070002, "text": "Picture", "type": "info", "context": {"title": "Picture"}}}, "type": "input", "group": "password", "messages": [], "attributes": {"name": "traits.avatar_url", "type": "text", "disabled": false, "node_type": "input"}}, {"meta": {"label": {"id": 1040001, "text": "Sign up", "type": "info"}}, "type": "input", "group": "password", "messages": [], "attributes": {"name": "method", "type": "submit", "value": "password", "disabled": false, "node_type": "input"}}], "action": "https://juicer-dev.xyz/kratos/self-service/registration?flow=fdfe7f91-a68f-42fb-a66b-2d0471520c7c", "method": "POST"}	e796004f-1c18-4960-9388-dcd5835741db	{}	\N	\N	choose_method	0	\N
+619c6561-50e5-4f6d-bdb7-4e56ec6cbfe8	https://juicer-dev.xyz/self-service/registration/browser	2024-05-18 11:25:22.609103	2024-05-18 11:35:22.609103		lCUyFlzAcZ44Bnz8X7AW1P9T7tgKj4u11v6IeR+CXuYZaY6aPOhMUfnFZBwwYhTYi7Tbe5tCjjylyH3x3Cq5Kg==	2024-05-18 11:25:22.61169	2024-05-18 11:25:22.61169	browser	{"nodes": [{"meta": {}, "type": "input", "group": "default", "messages": [], "attributes": {"name": "csrf_token", "type": "hidden", "value": "lCUyFlzAcZ44Bnz8X7AW1P9T7tgKj4u11v6IeR+CXuYZaY6aPOhMUfnFZBwwYhTYi7Tbe5tCjjylyH3x3Cq5Kg==", "disabled": false, "required": true, "node_type": "input"}}, {"meta": {"label": {"id": 1040002, "text": "Sign up with discord", "type": "info", "context": {"provider": "discord"}}}, "type": "input", "group": "oidc", "messages": [], "attributes": {"name": "provider", "type": "submit", "value": "discord", "disabled": false, "node_type": "input"}}, {"meta": {"label": {"id": 1040002, "text": "Sign up with facebook", "type": "info", "context": {"provider": "facebook"}}}, "type": "input", "group": "oidc", "messages": [], "attributes": {"name": "provider", "type": "submit", "value": "facebook", "disabled": false, "node_type": "input"}}, {"meta": {"label": {"id": 1040002, "text": "Sign up with github", "type": "info", "context": {"provider": "github"}}}, "type": "input", "group": "oidc", "messages": [], "attributes": {"name": "provider", "type": "submit", "value": "github", "disabled": false, "node_type": "input"}}, {"meta": {"label": {"id": 1040002, "text": "Sign up with google", "type": "info", "context": {"provider": "google"}}}, "type": "input", "group": "oidc", "messages": [], "attributes": {"name": "provider", "type": "submit", "value": "google", "disabled": false, "node_type": "input"}}, {"meta": {"label": {"id": 1040002, "text": "Sign up with slack", "type": "info", "context": {"provider": "slack"}}}, "type": "input", "group": "oidc", "messages": [], "attributes": {"name": "provider", "type": "submit", "value": "slack", "disabled": false, "node_type": "input"}}, {"meta": {"label": {"id": 1040002, "text": "Sign up with spotify", "type": "info", "context": {"provider": "spotify"}}}, "type": "input", "group": "oidc", "messages": [], "attributes": {"name": "provider", "type": "submit", "value": "spotify", "disabled": false, "node_type": "input"}}, {"meta": {"label": {"id": 1040002, "text": "Sign up with twitch", "type": "info", "context": {"provider": "twitch"}}}, "type": "input", "group": "oidc", "messages": [], "attributes": {"name": "provider", "type": "submit", "value": "twitch", "disabled": false, "node_type": "input"}}, {"meta": {"label": {"id": 1070002, "text": "E-Mail", "type": "info", "context": {"title": "E-Mail"}}}, "type": "input", "group": "password", "messages": [], "attributes": {"name": "traits.email", "type": "email", "disabled": false, "required": true, "node_type": "input", "autocomplete": "email"}}, {"meta": {"label": {"id": 1070001, "text": "Password", "type": "info"}}, "type": "input", "group": "password", "messages": [], "attributes": {"name": "password", "type": "password", "disabled": false, "required": true, "node_type": "input", "autocomplete": "new-password"}}, {"meta": {"label": {"id": 1070002, "text": "First name", "type": "info", "context": {"title": "First name"}}}, "type": "input", "group": "password", "messages": [], "attributes": {"name": "traits.first_name", "type": "text", "disabled": false, "node_type": "input"}}, {"meta": {"label": {"id": 1070002, "text": "Last name", "type": "info", "context": {"title": "Last name"}}}, "type": "input", "group": "password", "messages": [], "attributes": {"name": "traits.last_name", "type": "text", "disabled": false, "node_type": "input"}}, {"meta": {"label": {"id": 1070002, "text": "Picture", "type": "info", "context": {"title": "Picture"}}}, "type": "input", "group": "password", "messages": [], "attributes": {"name": "traits.avatar_url", "type": "text", "disabled": false, "node_type": "input"}}, {"meta": {"label": {"id": 1040001, "text": "Sign up", "type": "info"}}, "type": "input", "group": "password", "messages": [], "attributes": {"name": "method", "type": "submit", "value": "password", "disabled": false, "node_type": "input"}}], "action": "https://juicer-dev.xyz/kratos/self-service/registration?flow=619c6561-50e5-4f6d-bdb7-4e56ec6cbfe8", "method": "POST"}	e796004f-1c18-4960-9388-dcd5835741db	{}	\N	\N	choose_method	0	\N
+84bf4142-7cd9-4a65-b14c-e88d38d70d64	https://juicer-dev.xyz/self-service/registration/browser	2024-05-18 11:25:45.710556	2024-05-18 11:35:45.710556		aqiSAOldoJ3x430h9vvCDzYxeJEVmxY7SAFE4IuFsNLn5C6MiXWdUjAgZcGZKcADQtZNMoRWE7I7N7FoSC1XHg==	2024-05-18 11:25:45.715301	2024-05-18 11:25:45.715301	browser	{"nodes": [{"meta": {}, "type": "input", "group": "default", "messages": [], "attributes": {"name": "csrf_token", "type": "hidden", "value": "aqiSAOldoJ3x430h9vvCDzYxeJEVmxY7SAFE4IuFsNLn5C6MiXWdUjAgZcGZKcADQtZNMoRWE7I7N7FoSC1XHg==", "disabled": false, "required": true, "node_type": "input"}}, {"meta": {"label": {"id": 1040002, "text": "Sign up with discord", "type": "info", "context": {"provider": "discord"}}}, "type": "input", "group": "oidc", "messages": [], "attributes": {"name": "provider", "type": "submit", "value": "discord", "disabled": false, "node_type": "input"}}, {"meta": {"label": {"id": 1040002, "text": "Sign up with facebook", "type": "info", "context": {"provider": "facebook"}}}, "type": "input", "group": "oidc", "messages": [], "attributes": {"name": "provider", "type": "submit", "value": "facebook", "disabled": false, "node_type": "input"}}, {"meta": {"label": {"id": 1040002, "text": "Sign up with github", "type": "info", "context": {"provider": "github"}}}, "type": "input", "group": "oidc", "messages": [], "attributes": {"name": "provider", "type": "submit", "value": "github", "disabled": false, "node_type": "input"}}, {"meta": {"label": {"id": 1040002, "text": "Sign up with google", "type": "info", "context": {"provider": "google"}}}, "type": "input", "group": "oidc", "messages": [], "attributes": {"name": "provider", "type": "submit", "value": "google", "disabled": false, "node_type": "input"}}, {"meta": {"label": {"id": 1040002, "text": "Sign up with slack", "type": "info", "context": {"provider": "slack"}}}, "type": "input", "group": "oidc", "messages": [], "attributes": {"name": "provider", "type": "submit", "value": "slack", "disabled": false, "node_type": "input"}}, {"meta": {"label": {"id": 1040002, "text": "Sign up with spotify", "type": "info", "context": {"provider": "spotify"}}}, "type": "input", "group": "oidc", "messages": [], "attributes": {"name": "provider", "type": "submit", "value": "spotify", "disabled": false, "node_type": "input"}}, {"meta": {"label": {"id": 1040002, "text": "Sign up with twitch", "type": "info", "context": {"provider": "twitch"}}}, "type": "input", "group": "oidc", "messages": [], "attributes": {"name": "provider", "type": "submit", "value": "twitch", "disabled": false, "node_type": "input"}}, {"meta": {"label": {"id": 1070002, "text": "E-Mail", "type": "info", "context": {"title": "E-Mail"}}}, "type": "input", "group": "password", "messages": [], "attributes": {"name": "traits.email", "type": "email", "disabled": false, "required": true, "node_type": "input", "autocomplete": "email"}}, {"meta": {"label": {"id": 1070001, "text": "Password", "type": "info"}}, "type": "input", "group": "password", "messages": [], "attributes": {"name": "password", "type": "password", "disabled": false, "required": true, "node_type": "input", "autocomplete": "new-password"}}, {"meta": {"label": {"id": 1070002, "text": "First name", "type": "info", "context": {"title": "First name"}}}, "type": "input", "group": "password", "messages": [], "attributes": {"name": "traits.first_name", "type": "text", "disabled": false, "node_type": "input"}}, {"meta": {"label": {"id": 1070002, "text": "Last name", "type": "info", "context": {"title": "Last name"}}}, "type": "input", "group": "password", "messages": [], "attributes": {"name": "traits.last_name", "type": "text", "disabled": false, "node_type": "input"}}, {"meta": {"label": {"id": 1070002, "text": "Picture", "type": "info", "context": {"title": "Picture"}}}, "type": "input", "group": "password", "messages": [], "attributes": {"name": "traits.avatar_url", "type": "text", "disabled": false, "node_type": "input"}}, {"meta": {"label": {"id": 1040001, "text": "Sign up", "type": "info"}}, "type": "input", "group": "password", "messages": [], "attributes": {"name": "method", "type": "submit", "value": "password", "disabled": false, "node_type": "input"}}], "action": "https://juicer-dev.xyz/kratos/self-service/registration?flow=84bf4142-7cd9-4a65-b14c-e88d38d70d64", "method": "POST"}	e796004f-1c18-4960-9388-dcd5835741db	{}	\N	\N	choose_method	0	\N
 \.
 
 
@@ -1247,7 +1359,6 @@ COPY public.selfservice_registration_flows (id, request_url, issued_at, expires_
 --
 
 COPY public.selfservice_settings_flows (id, request_url, issued_at, expires_at, identity_id, created_at, updated_at, active_method, state, type, ui, nid, internal_context) FROM stdin;
-fffa7987-5d71-4aaa-8ce6-8b39934f0bc0	https://juicer-dev.xyz/self-service/settings/browser	2024-02-09 16:01:02.168319	2024-02-09 17:01:02.168319	2985b0ba-d796-427c-b1ae-bafb26cb25f0	2024-02-09 16:01:02.1986	2024-02-09 16:01:02.1986	\N	show_form	browser	{"nodes": [{"meta": {}, "type": "input", "group": "default", "messages": [], "attributes": {"name": "csrf_token", "type": "hidden", "value": "2TC5uhGdbLOD6nXHsb+rRdcPJ9dyDR2W0Ou137AwQoxDJ2A9yh6dDrudCCs8hw7ZX6VXZwGc4ajXgrzjtnVt5g==", "disabled": false, "required": true, "node_type": "input"}}, {"meta": {"label": {"id": 1070002, "text": "E-Mail", "type": "info"}}, "type": "input", "group": "profile", "messages": [], "attributes": {"name": "traits.email", "type": "email", "value": "test@test.com", "disabled": false, "required": true, "node_type": "input", "autocomplete": "email"}}, {"meta": {"label": {"id": 1070002, "text": "First name", "type": "info"}}, "type": "input", "group": "profile", "messages": [], "attributes": {"name": "traits.first_name", "type": "text", "value": "TestFirst", "disabled": false, "node_type": "input"}}, {"meta": {"label": {"id": 1070002, "text": "Last name", "type": "info"}}, "type": "input", "group": "profile", "messages": [], "attributes": {"name": "traits.last_name", "type": "text", "value": "TestLast", "disabled": false, "node_type": "input"}}, {"meta": {"label": {"id": 1070002, "text": "Picture", "type": "info"}}, "type": "input", "group": "profile", "messages": [], "attributes": {"name": "traits.avatar_url", "type": "text", "value": "", "disabled": false, "node_type": "input"}}, {"meta": {"label": {"id": 1070003, "text": "Save", "type": "info"}}, "type": "input", "group": "profile", "messages": [], "attributes": {"name": "method", "type": "submit", "value": "profile", "disabled": false, "node_type": "input"}}, {"meta": {"label": {"id": 1070001, "text": "Password", "type": "info"}}, "type": "input", "group": "password", "messages": [], "attributes": {"name": "password", "type": "password", "disabled": false, "required": true, "node_type": "input", "autocomplete": "new-password"}}, {"meta": {"label": {"id": 1070003, "text": "Save", "type": "info"}}, "type": "input", "group": "password", "messages": [], "attributes": {"name": "method", "type": "submit", "value": "password", "disabled": false, "node_type": "input"}}, {"meta": {"label": {"id": 1050002, "text": "Link discord", "type": "info", "context": {"provider": "discord"}}}, "type": "input", "group": "oidc", "messages": [], "attributes": {"name": "link", "type": "submit", "value": "discord", "disabled": false, "node_type": "input"}}, {"meta": {"label": {"id": 1050002, "text": "Link facebook", "type": "info", "context": {"provider": "facebook"}}}, "type": "input", "group": "oidc", "messages": [], "attributes": {"name": "link", "type": "submit", "value": "facebook", "disabled": false, "node_type": "input"}}, {"meta": {"label": {"id": 1050002, "text": "Link github", "type": "info", "context": {"provider": "github"}}}, "type": "input", "group": "oidc", "messages": [], "attributes": {"name": "link", "type": "submit", "value": "github", "disabled": false, "node_type": "input"}}, {"meta": {"label": {"id": 1050002, "text": "Link google", "type": "info", "context": {"provider": "google"}}}, "type": "input", "group": "oidc", "messages": [], "attributes": {"name": "link", "type": "submit", "value": "google", "disabled": false, "node_type": "input"}}, {"meta": {"label": {"id": 1050002, "text": "Link slack", "type": "info", "context": {"provider": "slack"}}}, "type": "input", "group": "oidc", "messages": [], "attributes": {"name": "link", "type": "submit", "value": "slack", "disabled": false, "node_type": "input"}}, {"meta": {"label": {"id": 1050002, "text": "Link spotify", "type": "info", "context": {"provider": "spotify"}}}, "type": "input", "group": "oidc", "messages": [], "attributes": {"name": "link", "type": "submit", "value": "spotify", "disabled": false, "node_type": "input"}}, {"meta": {"label": {"id": 1050002, "text": "Link twitch", "type": "info", "context": {"provider": "twitch"}}}, "type": "input", "group": "oidc", "messages": [], "attributes": {"name": "link", "type": "submit", "value": "twitch", "disabled": false, "node_type": "input"}}, {"meta": {"label": {"id": 1050008, "text": "Generate new backup recovery codes", "type": "info"}}, "type": "input", "group": "lookup_secret", "messages": [], "attributes": {"name": "lookup_secret_regenerate", "type": "submit", "value": "true", "disabled": false, "node_type": "input"}}, {"meta": {"label": {"id": 1050005, "text": "Authenticator app QR code", "type": "info"}}, "type": "img", "group": "totp", "messages": [], "attributes": {"id": "totp_qr", "src": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAQAAAAEAEAAAAAApiSv5AAAHM0lEQVR4nOyd0W4juQ4Fby7m/3959i1tYAk1aR63saiqp8HYrVaSgkBQIvXn79//CZj/f3sC8l0UAI4CwFEAOH+uf/78JAasgsrzyN0w9BplE7hufsrrvee5VJ92/687yobXt7kCwFEAOAoARwHg/Kn+cx5kdcO86nvpgKr73up7Fdez3bnMZzoP7lJ/I1cAOAoARwHgKACcMgi8yARPm1zfPIA8B23Vs5s5n8er6P7WMu+9+zlcAeAoABwFgKMAcG6CwAzzPOEmoOoGfN1t2XR4WdH9OfK4AsBRADgKAEcB4DwSBF5sNmjPT2QyaPNzeOfsZfe9F08X6rgCwFEAOAoARwHg3ASBmZCkm+fqngk8fzovwajGyzwxH2X+G9/9jVwB4CgAHAWAowBwyiAwU4N6HnketGWqg89zudjMr0umYGaHKwAcBYCjAHAUAM5LEPjERuQ8ZHoiBOuyCby+Nec7XAHgKAAcBYCjAHDKPoGZMGW+fZs5kXdmE3xWn3bzifMZnGfVxepgOaIAcBQAjgLACRWGpDN855HnAeTmRN68tjk9yqa2+Q5XADgKAEcB4CgAnHI7eN6gZdMsuiJTCdwNo84jp0s65i1x5j9HRT1TVwA4CgBHAeAoAJyba+M2gc352XkxRkW3oOJzubl5t8Ezm+Y4ZgJljALAUQA4CgDnJ3O77UUm3NqwKSD5XCOXzLV2mYphM4HyiwLAUQA4CgBn1SJm09MuHfClR9ncCdzNgWYqn3cnBl0B4CgAHAWAowBwyiBwXtd7ZlPEsCmZmAdjFd185yY3N+8TeH7v+R1mAuUXBYCjAHAUAE67T+CmyGIT+lXMZ5AOo+aBYXoben6C00ygFCgAHAWAowBwbs4EtoeJnHjrjrdhPtNNgPa5nGpmLq4AeBQAjgLAUQA4ZRBYkW5Tshk53XPv/Lbze9N9Arvv3TzrdrD8ogBwFACOAsBpVwdfPJHdeiJfd/5ed36bbegz6ebT1aeuAHgUAI4CwFEAODeZwNS9FMcpRILF9Ew31cvpmWbOBFoYIgUKAEcB4CgAnJvq4M9tcXbpvjd9x8gTHQM3jaEv5g1uXnEFgKMAcBQAjgLAafcJ7IcVPTbFIrumKInx5sxnkOmpaGGIHFEAOAoARwHgvHFjSKbN88V8Q7r69CIz502gmemfmP49V+91BcCjAHAUAI4CwLnJBGbOoM3Z3Lmx6Qk4b9qcqZrOzPmdzKwrABwFgKMAcBQAThkEztlcmZYZr3r2TGbO5+AzcydwNV6qu6IrABwFgKMAcBQATigInOegNrm+J5pPZ8Ky81zSN6nM5+cKgEcB4CgAHAWAswoC5xu+mRKHinRxRzekO79jHhhucpvvhJyuAHAUAI4CwFEAODdBYPoquYt0k+rPlYM8W7SRaVddYSZQChQAjgLAUQA4N30Cu3yrCOQ8ynwDedMIpxqlW3G92f7enTt0BYCjAHAUAI4CwPn51l0Vn7sYriKT4ctUAm+ezY/sCgBHAeAoABwFgPNGi5huxutiUzYyryJO33IyD1efaKfTzXx6d7AcUQA4CgBHAeDcZALfGDBypi3TuDrTjHnTyGUz8ub/qrl4JlAKFACOAsBRADgvmcBND7punrAiHQ5utqbnucNdq+bp27oZyP6JRlcAOAoARwHgKACc9t3B87KH87PnT9N1uOmq383296aief7brZ51O1h+UQA4CgBHAeC8BIFP31VxevY8SiZk6r5tfhqyGyJmOh+euQtrXQHgKAAcBYCjAHDKM4GZ5sTdZzP5xCdG7r7t/L2LdNb0HVwB4CgAHAWAowBwfp5oy7IJZ9JtmTeNlzOZu0yInQmJXQHwKAAcBYCjAHBugsCKTDHG+Xvzt6Xric+zOjMPB9O5yH520BUAjgLAUQA4CgCnPBM4DyYyBRVnNgHaPNu4CSoz7bTP43VnWmEmUH5RADgKAEcB4LTvDr44tx9Jt3TJkGk+XX3viVltml5bGCJHFACOAsBRADhln8CKz50O3Lxt07imS7oXYfcdc975C7oCwFEAOAoARwHgxG8MeRn6Sx0DM6Uum+zbmc3vZTOeQaAUKAAcBYCjAHDamcAu/bsq/v29+fm6TUe+Jzoffm4bOvXzugLAUQA4CgBHAeCUZwLn2cF5acX5e+eRN7O6yPyUmRKRajO7IhNYv+IKAEcB4CgAHAWA80ZhyMUmM1Z9mr4U7XxisEu6/U06MKye6OMKAEcB4CgAHAWAcxMEZuhe1bYJdj5XQZtpQ5Mp/Zhz915XADgKAEcB4CgAnEeCwDPdXNo8I9fNr20aUp/n0mUT1s5PSL7iCgBHAeAoABwFgHMTBG5qhzO1vheZnoWbZtGZiuFN2ciZdzauXQHgKAAcBYCjAHDKIDCzYZkJ8zbMyyjmc0nfqVI98clr6FwB4CgAHAWAowBwPtgnUP4LuALAUQA4CgBHAeAoAJx/AgAA//+C02JunQdY/QAAAABJRU5ErkJggg==", "width": 256, "height": 256, "node_type": "img"}}, {"meta": {"label": {"id": 1050017, "text": "This is your authenticator app secret. Use it if you can not scan the QR code.", "type": "info"}}, "type": "text", "group": "totp", "messages": [], "attributes": {"id": "totp_secret_key", "text": {"id": 1050006, "text": "CF4EXMBHQKHH2FH2T6JZHY34JA4BT6OJ", "type": "info", "context": {"secret": "CF4EXMBHQKHH2FH2T6JZHY34JA4BT6OJ"}}, "node_type": "text"}}, {"meta": {"label": {"id": 1070006, "text": "Verify code", "type": "info"}}, "type": "input", "group": "totp", "messages": [], "attributes": {"name": "totp_code", "type": "text", "disabled": false, "required": true, "node_type": "input"}}, {"meta": {"label": {"id": 1070003, "text": "Save", "type": "info"}}, "type": "input", "group": "totp", "messages": [], "attributes": {"name": "method", "type": "submit", "value": "totp", "disabled": false, "node_type": "input"}}], "action": "https://juicer-dev.xyz/kratos/self-service/settings?flow=fffa7987-5d71-4aaa-8ce6-8b39934f0bc0", "method": "POST"}	8712f917-6eee-4fc0-98b3-364070db5d96	{"totp_url": "otpauth://totp/juicer-dev.xyz:test@test.com?algorithm=SHA1&digits=6&issuer=juicer-dev.xyz&period=30&secret=CF4EXMBHQKHH2FH2T6JZHY34JA4BT6OJ"}
 \.
 
 
@@ -1255,8 +1366,8 @@ fffa7987-5d71-4aaa-8ce6-8b39934f0bc0	https://juicer-dev.xyz/self-service/setting
 -- Data for Name: selfservice_verification_flows; Type: TABLE DATA; Schema: public; Owner: test
 --
 
-COPY public.selfservice_verification_flows (id, request_url, issued_at, expires_at, csrf_token, created_at, updated_at, type, state, active_method, ui, nid, submit_count) FROM stdin;
-b7f3f3c0-334a-4437-bbb9-2e81152dca1b	https://juicer-dev.xyz/self-service/registration/browser?return_to=	2024-02-09 16:00:35.776842	2024-02-09 17:00:35.776842	F+bT/Cc3ri1QEDAddEyK+TzMy3zauXjjyxS+RPs9yHbV3Acv39K4jT4mo/Ngm5p/FEhRldaRZDZkGo/K0hi0Dg==	2024-02-09 16:00:35.776936	2024-02-09 16:00:35.776936	browser	passed_challenge	code	{"nodes": [{"meta": {}, "type": "input", "group": "default", "messages": [], "attributes": {"name": "csrf_token", "type": "hidden", "value": "F+bT/Cc3ri1QEDAddEyK+TzMy3zauXjjyxS+RPs9yHbV3Acv39K4jT4mo/Ngm5p/FEhRldaRZDZkGo/K0hi0Dg==", "disabled": false, "required": true, "node_type": "input"}}, {"meta": {"label": {"id": 1070009, "text": "Continue", "type": "info"}}, "type": "a", "group": "code", "messages": [], "attributes": {"id": "continue", "href": "https://juicer-dev.xyz/auth/login", "title": {"id": 1070009, "text": "Continue", "type": "info"}, "node_type": "a"}}], "action": "https://juicer-dev.xyz/auth/login", "method": "GET", "messages": [{"id": 1080002, "text": "You successfully verified your email address.", "type": "success"}]}	8712f917-6eee-4fc0-98b3-364070db5d96	1
+COPY public.selfservice_verification_flows (id, request_url, issued_at, expires_at, csrf_token, created_at, updated_at, type, state, active_method, ui, nid, submit_count, oauth2_login_challenge, session_id, identity_id, authentication_methods) FROM stdin;
+f38bd08b-a3ee-475b-8a24-eb89350a3b3f	https://juicer-dev.xyz/self-service/registration/browser	2024-05-18 11:25:45.991181	2024-05-18 12:25:45.991181	wvWljLXuhTT9Ana//Vgq0wlVB8dmDafvOgQW1USrkRdnGTXUZ+IJ1Qbwmc49b1PvLyBci+P1irPcTByP1AHyUA==	2024-05-18 11:25:45.991294	2024-05-18 11:25:45.991294	browser	passed_challenge	code	{"nodes": [{"meta": {}, "type": "input", "group": "default", "messages": [], "attributes": {"name": "csrf_token", "type": "hidden", "value": "wvWljLXuhTT9Ana//Vgq0wlVB8dmDafvOgQW1USrkRdnGTXUZ+IJ1Qbwmc49b1PvLyBci+P1irPcTByP1AHyUA==", "disabled": false, "required": true, "node_type": "input"}}, {"meta": {"label": {"id": 1070009, "text": "Continue", "type": "info"}}, "type": "a", "group": "code", "messages": [], "attributes": {"id": "continue", "href": "https://juicer-dev.xyz/auth/login", "title": {"id": 1070009, "text": "Continue", "type": "info"}, "node_type": "a"}}], "action": "https://juicer-dev.xyz/auth/login", "method": "GET", "messages": [{"id": 1080002, "text": "You successfully verified your email address.", "type": "success"}]}	e796004f-1c18-4960-9388-dcd5835741db	1	\N	89699db2-5162-4ddf-8ae0-9c1cb369a560	bb415d23-d40a-405d-8279-10fab2c6d9a0	[{"method":"password","aal":"aal1","completed_at":"2024-05-18T11:25:45.985282398Z"}]
 \.
 
 
@@ -1265,7 +1376,8 @@ b7f3f3c0-334a-4437-bbb9-2e81152dca1b	https://juicer-dev.xyz/self-service/registr
 --
 
 COPY public.session_devices (id, ip_address, user_agent, location, nid, session_id, created_at, updated_at) FROM stdin;
-79fc8d02-26a2-4003-93a4-26c3f9ff9a81	172.18.0.1	Mozilla/5.0 (X11; Linux x86_64; rv:122.0) Gecko/20100101 Firefox/122.0		8712f917-6eee-4fc0-98b3-364070db5d96	1f8ac415-ab47-487c-aea3-bdb7b09bc52a	2024-02-09 16:00:48.814731	2024-02-09 16:00:48.814731
+647c511c-5855-4629-9957-6195d6eeb471	172.19.0.1	Mozilla/5.0 (X11; Linux x86_64; rv:125.0) Gecko/20100101 Firefox/125.0		e796004f-1c18-4960-9388-dcd5835741db	89699db2-5162-4ddf-8ae0-9c1cb369a560	2024-05-18 11:25:45.987481	2024-05-18 11:25:45.987481
+e6b0db9d-9f65-4fcb-bc7b-239d69cbb003	172.19.0.1	Mozilla/5.0 (X11; Linux x86_64; rv:125.0) Gecko/20100101 Firefox/125.0		e796004f-1c18-4960-9388-dcd5835741db	ea4c3a90-0de5-4a1b-80bd-720c25d788a6	2024-05-18 11:26:05.997376	2024-05-18 11:26:05.997376
 \.
 
 
@@ -1282,7 +1394,8 @@ COPY public.session_token_exchanges (id, nid, flow_id, session_id, init_code, re
 --
 
 COPY public.sessions (id, issued_at, expires_at, authenticated_at, identity_id, created_at, updated_at, token, active, nid, logout_token, aal, authentication_methods) FROM stdin;
-1f8ac415-ab47-487c-aea3-bdb7b09bc52a	2024-02-09 16:00:48.81095	2024-02-10 16:00:48.81095	2024-02-09 16:00:48.81095	2985b0ba-d796-427c-b1ae-bafb26cb25f0	2024-02-09 16:00:48.81219	2024-02-09 16:00:48.81219	ory_st_OKTxPVfZaIo4GyDf7cnXBtYEg3Zk5rah	f	8712f917-6eee-4fc0-98b3-364070db5d96	ory_lo_D60uATUnL0Mo4U72rUOkSeIGfdZgZvtu	aal1	[{"aal": "aal1", "method": "password", "completed_at": "2024-02-09T16:00:48.810947051Z"}]
+89699db2-5162-4ddf-8ae0-9c1cb369a560	2024-05-18 11:25:45.985282	2024-05-19 11:25:45.985282	2024-05-18 11:25:45.98529	bb415d23-d40a-405d-8279-10fab2c6d9a0	2024-05-18 11:25:45.985461	2024-05-18 11:25:45.985461	ory_st_vr6FqKptPopNJWzGMPVwB95GedZsG2MI	t	e796004f-1c18-4960-9388-dcd5835741db	ory_lo_QNyLXwMFTDntUy3ce1SYCTMBTIyQLbJI	aal1	[{"aal": "aal1", "method": "password", "completed_at": "2024-05-18T11:25:45.985282398Z"}]
+ea4c3a90-0de5-4a1b-80bd-720c25d788a6	2024-05-18 11:26:05.994303	2024-05-19 11:26:05.994303	2024-05-18 11:26:05.994303	bb415d23-d40a-405d-8279-10fab2c6d9a0	2024-05-18 11:26:05.994711	2024-05-18 11:26:05.994711	ory_st_N5v1cBTcwy9tAM2dU5ugQDpdcu0CTc9P	t	e796004f-1c18-4960-9388-dcd5835741db	ory_lo_Tig4958FFQtNxYIMbHFNcbAtxt6jJhuK	aal1	[{"aal": "aal1", "method": "password", "completed_at": "2024-05-18T11:26:05.99428343Z"}]
 \.
 
 
@@ -1343,6 +1456,14 @@ ALTER TABLE ONLY public.identity_credentials
 
 
 --
+-- Name: identity_login_codes identity_login_codes_pkey; Type: CONSTRAINT; Schema: public; Owner: test
+--
+
+ALTER TABLE ONLY public.identity_login_codes
+    ADD CONSTRAINT identity_login_codes_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: identity_recovery_addresses identity_recovery_addresses_pkey; Type: CONSTRAINT; Schema: public; Owner: test
 --
 
@@ -1364,6 +1485,14 @@ ALTER TABLE ONLY public.identity_recovery_codes
 
 ALTER TABLE ONLY public.identity_recovery_tokens
     ADD CONSTRAINT identity_recovery_tokens_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: identity_registration_codes identity_registration_codes_pkey; Type: CONSTRAINT; Schema: public; Owner: test
+--
+
+ALTER TABLE ONLY public.identity_registration_codes
+    ADD CONSTRAINT identity_registration_codes_pkey PRIMARY KEY (id);
 
 
 --
@@ -1607,6 +1736,13 @@ CREATE INDEX identity_credential_identifiers_nid_id_idx ON public.identity_crede
 
 
 --
+-- Name: identity_credential_identifiers_nid_identifier_gin; Type: INDEX; Schema: public; Owner: test
+--
+
+CREATE INDEX identity_credential_identifiers_nid_identifier_gin ON public.identity_credential_identifiers USING gin (nid, identifier public.gin_trgm_ops);
+
+
+--
 -- Name: identity_credential_identifiers_nid_identity_credential_id_idx; Type: INDEX; Schema: public; Owner: test
 --
 
@@ -1639,6 +1775,20 @@ CREATE INDEX identity_credentials_nid_id_idx ON public.identity_credentials USIN
 --
 
 CREATE INDEX identity_credentials_nid_identity_id_idx ON public.identity_credentials USING btree (identity_id, nid);
+
+
+--
+-- Name: identity_login_codes_id_nid_idx; Type: INDEX; Schema: public; Owner: test
+--
+
+CREATE INDEX identity_login_codes_id_nid_idx ON public.identity_login_codes USING btree (id, nid);
+
+
+--
+-- Name: identity_login_codes_nid_flow_id_idx; Type: INDEX; Schema: public; Owner: test
+--
+
+CREATE INDEX identity_login_codes_nid_flow_id_idx ON public.identity_login_codes USING btree (nid, selfservice_login_flow_id);
 
 
 --
@@ -1751,6 +1901,20 @@ CREATE INDEX identity_recovery_tokens_selfservice_recovery_flow_id_idx ON public
 --
 
 CREATE INDEX identity_recovery_tokens_token_nid_used_idx ON public.identity_recovery_tokens USING btree (nid, token, used);
+
+
+--
+-- Name: identity_registration_codes_id_nid_idx; Type: INDEX; Schema: public; Owner: test
+--
+
+CREATE INDEX identity_registration_codes_id_nid_idx ON public.identity_registration_codes USING btree (id, nid);
+
+
+--
+-- Name: identity_registration_codes_nid_flow_id_idx; Type: INDEX; Schema: public; Owner: test
+--
+
+CREATE INDEX identity_registration_codes_nid_flow_id_idx ON public.identity_registration_codes USING btree (nid, selfservice_registration_flow_id);
 
 
 --
@@ -2041,6 +2205,13 @@ CREATE UNIQUE INDEX sessions_logout_token_uq_idx ON public.sessions USING btree 
 
 
 --
+-- Name: sessions_nid_created_at_id_idx; Type: INDEX; Schema: public; Owner: test
+--
+
+CREATE INDEX sessions_nid_created_at_id_idx ON public.sessions USING btree (nid, created_at DESC, id);
+
+
+--
 -- Name: sessions_nid_id_identity_id_idx; Type: INDEX; Schema: public; Owner: test
 --
 
@@ -2158,6 +2329,22 @@ ALTER TABLE ONLY public.identity_credentials
 
 
 --
+-- Name: identity_login_codes identity_login_codes_networks_id_fk; Type: FK CONSTRAINT; Schema: public; Owner: test
+--
+
+ALTER TABLE ONLY public.identity_login_codes
+    ADD CONSTRAINT identity_login_codes_networks_id_fk FOREIGN KEY (nid) REFERENCES public.networks(id) ON UPDATE RESTRICT ON DELETE CASCADE;
+
+
+--
+-- Name: identity_login_codes identity_login_codes_selfservice_login_flows_id_fk; Type: FK CONSTRAINT; Schema: public; Owner: test
+--
+
+ALTER TABLE ONLY public.identity_login_codes
+    ADD CONSTRAINT identity_login_codes_selfservice_login_flows_id_fk FOREIGN KEY (selfservice_login_flow_id) REFERENCES public.selfservice_login_flows(id) ON DELETE CASCADE;
+
+
+--
 -- Name: identity_recovery_addresses identity_recovery_addresses_identity_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: test
 --
 
@@ -2235,6 +2422,22 @@ ALTER TABLE ONLY public.identity_recovery_tokens
 
 ALTER TABLE ONLY public.identity_recovery_tokens
     ADD CONSTRAINT identity_recovery_tokens_selfservice_recovery_request_id_fkey FOREIGN KEY (selfservice_recovery_flow_id) REFERENCES public.selfservice_recovery_flows(id) ON DELETE CASCADE;
+
+
+--
+-- Name: identity_registration_codes identity_registration_codes_networks_id_fk; Type: FK CONSTRAINT; Schema: public; Owner: test
+--
+
+ALTER TABLE ONLY public.identity_registration_codes
+    ADD CONSTRAINT identity_registration_codes_networks_id_fk FOREIGN KEY (nid) REFERENCES public.networks(id) ON UPDATE RESTRICT ON DELETE CASCADE;
+
+
+--
+-- Name: identity_registration_codes identity_registration_codes_selfservice_registration_flows_id_f; Type: FK CONSTRAINT; Schema: public; Owner: test
+--
+
+ALTER TABLE ONLY public.identity_registration_codes
+    ADD CONSTRAINT identity_registration_codes_selfservice_registration_flows_id_f FOREIGN KEY (selfservice_registration_flow_id) REFERENCES public.selfservice_registration_flows(id) ON DELETE CASCADE;
 
 
 --
