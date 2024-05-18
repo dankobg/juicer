@@ -1,5 +1,5 @@
 import { kratos } from '$lib/kratos/client';
-import { KratosService } from '$lib/kratos/service';
+import { createSessionService } from '$lib/kratos/service';
 import type { LayoutLoad } from './$types';
 
 export const prerender = true;
@@ -9,13 +9,11 @@ export const load: LayoutLoad = async () => {
 		const result = await kratos.toSession();
 		if (result.status !== 200) {
 			return {
-				auth: new KratosService(null),
+				auth: createSessionService(result.data),
 			};
 		}
 
-		const session = result.data;
-		const svc = new KratosService(session);
-
+		const svc = createSessionService(result.data);
 		const logoutResp = await kratos.createBrowserLogoutFlow();
 
 		return {
@@ -25,7 +23,7 @@ export const load: LayoutLoad = async () => {
 		};
 	} catch (error) {
 		return {
-			auth: new KratosService(null),
+			auth: createSessionService(null),
 		};
 	}
 };

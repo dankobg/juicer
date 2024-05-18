@@ -80,7 +80,7 @@
 						flow: data.flow?.id ?? '',
 						updateLoginFlowBody: body,
 					});
-					goto(data.flow?.return_to ?? '/');
+					goto(data.flow?.return_to ?? '/', { invalidateAll: true });
 				} catch (error) {
 					const axiosErr = error as AxiosError<GenericError>;
 					if (!axiosErr?.isAxiosError) {
