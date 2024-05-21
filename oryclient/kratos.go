@@ -1,55 +1,55 @@
 package oryclient
 
-// import kratos "github.com/ory/client-go"
+import kratos "github.com/ory/client-go"
 
-// type KratosClient struct {
-// 	PublicApi *kratos.APIClient
-// 	AdminApi  *kratos.APIClient
-// }
+type KratosClient struct {
+	Public *kratos.APIClient
+	Admin  *kratos.APIClient
+}
 
-// func NewKratosClient(publicURL, adminURL string) *KratosClient {
-// 	publicConf := kratos.NewConfiguration()
-// 	adminConf := kratos.NewConfiguration()
+func NewKratosClient(publicURL, adminURL string) *KratosClient {
+	publicConf := kratos.NewConfiguration()
+	adminConf := kratos.NewConfiguration()
 
-// 	publicConf.Servers = kratos.ServerConfigurations{{
-// 		URL:         publicURL,
-// 		Description: "Kratos public server",
-// 		Variables: map[string]kratos.ServerVariable{
-// 			"api": {
-// 				Description:  "Target the public API.",
-// 				DefaultValue: "public",
-// 				EnumValues:   []string{"public"},
-// 			},
-// 			"tenant": {
-// 				Description:  "Tenant ID as provided by Ory Cloud.",
-// 				DefaultValue: "animond",
-// 			},
-// 		},
-// 	}}
+	publicConf.Servers = kratos.ServerConfigurations{{
+		URL:         publicURL,
+		Description: "Kratos public server",
+		Variables: map[string]kratos.ServerVariable{
+			"api": {
+				Description:  "Target the public API.",
+				DefaultValue: "public",
+				EnumValues:   []string{"public"},
+			},
+			"tenant": {
+				Description:  "Juicer tenant",
+				DefaultValue: "juicer",
+			},
+		},
+	}}
 
-// 	adminConf.Servers = kratos.ServerConfigurations{{
-// 		URL:         adminURL,
-// 		Description: "Kratos admin server",
-// 		Variables: map[string]kratos.ServerVariable{
-// 			"api": {
-// 				Description:  "Target the administrative API.",
-// 				DefaultValue: "admin",
-// 				EnumValues:   []string{"admin"},
-// 			},
-// 			"tenant": {
-// 				Description:  "Tenant ID as provided by Ory Cloud.",
-// 				DefaultValue: "animond",
-// 			},
-// 		},
-// 	}}
+	adminConf.Servers = kratos.ServerConfigurations{{
+		URL:         adminURL,
+		Description: "Kratos admin server",
+		Variables: map[string]kratos.ServerVariable{
+			"api": {
+				Description:  "Target the administrative API.",
+				DefaultValue: "admin",
+				EnumValues:   []string{"admin"},
+			},
+			"tenant": {
+				Description:  "Juicer tenant",
+				DefaultValue: "juicer",
+			},
+		},
+	}}
 
-// 	public := kratos.NewAPIClient(publicConf)
-// 	admin := kratos.NewAPIClient(adminConf)
+	public := kratos.NewAPIClient(publicConf)
+	admin := kratos.NewAPIClient(adminConf)
 
-// 	c := &KratosClient{
-// 		PublicApi: public,
-// 		AdminApi:  admin,
-// 	}
+	c := &KratosClient{
+		Public: public,
+		Admin:  admin,
+	}
 
-// 	return c
-// }
+	return c
+}

@@ -13,7 +13,7 @@ package mailer
 // 	"testing"
 // 	"time"
 
-// 	"github.com/dankobg/animond-api/config"
+// 	"github.com/dankobg/juicer-api/config"
 // 	"github.com/ory/dockertest/v3"
 // 	"github.com/ory/dockertest/v3/docker"
 // 	"github.com/rs/zerolog"
@@ -57,8 +57,8 @@ package mailer
 // 			htmlContent:      "<h1>test html</h1>",
 // 			subject:          "test",
 // 			replyTo:          "test@test.com",
-// 			fromAddress:      mail.Address{Name: "animond", Address: "office@animond.xyz"},
-// 			toAddress:        mail.Address{Name: "animond", Address: "office@animond.xyz"},
+// 			fromAddress:      mail.Address{Name: "juicer", Address: "office@juicer.xyz"},
+// 			toAddress:        mail.Address{Name: "juicer", Address: "office@juicer.xyz"},
 // 		}
 
 // 		err := s.mailer.Send(context.Background(), &md)
@@ -153,8 +153,8 @@ package mailer
 // 	cfg := &config.EmailSettings{
 // 		Enabled:         false,
 // 		TLS:             false,
-// 		FromName:        "Animond",
-// 		FromAddress:     "office@animond.xyz",
+// 		FromName:        "juicer",
+// 		FromAddress:     "office@juicer.xyz",
 // 		DevSMTPHost:     devSMTPHost,
 // 		DevSMTPPort:     devSMTPPort,
 // 		DevSMTPUsername: "test",
