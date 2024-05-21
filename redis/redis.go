@@ -1,37 +1,29 @@
 package redis
 
-import (
-	"net"
-	"os"
-	"strconv"
+// func New() (*redis.Client, error) {
+// 	// host := os.Getenv("REDIS_ADDRESS")
+// 	// port := os.Getenv("REDIS_PASSWORD")
+// 	// db := os.Getenv("REDIS_DB")
+// 	// pwd := os.Getenv("REDIS_PASSWORD")
 
-	"github.com/redis/go-redis/v9"
-)
+// 	os.Getenv("REDIS_DB")
+// 	host := "redis"
+// 	port := "6379"
+// 	db := "0"
+// 	pwd := ""
 
-func New() (*redis.Client, error) {
-	// host := os.Getenv("REDIS_ADDRESS")
-	// port := os.Getenv("REDIS_PASSWORD")
-	// db := os.Getenv("REDIS_DB")
-	// pwd := os.Getenv("REDIS_PASSWORD")
+// 	addr := net.JoinHostPort(host, port)
 
-	os.Getenv("REDIS_DB")
-	host := "redis"
-	port := "6379"
-	db := "0"
-	pwd := ""
+// 	dbv, err := strconv.Atoi(db)
+// 	if err != nil {
+// 		return nil, err
+// 	}
 
-	addr := net.JoinHostPort(host, port)
+// 	rdb := redis.NewClient(&redis.Options{
+// 		Addr:     addr,
+// 		Password: pwd,
+// 		DB:       dbv,
+// 	})
 
-	dbv, err := strconv.Atoi(db)
-	if err != nil {
-		return nil, err
-	}
-
-	rdb := redis.NewClient(&redis.Options{
-		Addr:     addr,
-		Password: pwd,
-		DB:       dbv,
-	})
-
-	return rdb, nil
-}
+// 	return rdb, nil
+// }

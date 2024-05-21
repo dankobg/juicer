@@ -1,67 +1,66 @@
+// package main
+
+// import (
+// 	"github.com/dankobg/juicer/cmd"
+// 	"log"
+// )
+
+//	func main() {
+//		if err := cmd.Run(); err != nil {
+//			log.Fatalf("failed to run juicer chess server")
+//		}
+//	}
 package main
 
 import (
-	"embed"
-	"fmt"
-	"html/template"
-	"io"
-	"io/fs"
-	"net/http"
+	"bytes"
+	"context"
+	"log"
+	"mime"
+	"net/mail"
 
-	"github.com/dankobg/juicer/config"
-	"github.com/labstack/echo/v4"
-	"github.com/labstack/gommon/log"
+	"github.com/dankobg/juicer/mailer"
 )
 
-//go:embed public/*
-var embeddedPublic embed.FS
-
-//go:embed templates/*
-var embeddedTemplates embed.FS
-
-type TemplateRenderer struct {
-	templates *template.Template
-}
-
-func (tr *TemplateRenderer) Render(w io.Writer, name string, data any, c echo.Context) error {
-	return tr.templates.ExecuteTemplate(w, name, data)
-}
-
 func main() {
-	cfg, _, err := config.New()
-	if err != nil {
-		log.Fatal(err)
+	c := mailer.SmtpClient{
+		Host:       "localhost",
+		Port:       465,
+		Username:   "danko",
+		Password:   "danko1995bgd",
+		TLS:        true,
+		AuthMethod: "PLAIN",
 	}
 
-	publicFS, err := fs.Sub(embeddedPublic, "public")
-	if err != nil {
-		log.Fatalf("failed to get FS subtree out of embedded public files")
+	b := &bytes.Buffer{}
+	b.WriteRune('😀')
+	b.WriteString("hello dudes")
+
+	m := mailer.Message{
+		From:    mail.Address{Name: "Danko Petrovic", Address: "danbkop@gmail.com"},
+		To:      []mail.Address{{Name: "Danko Petrovic", Address: "dankop@gmail.com"}},
+		Subject: "Naslov",
+		ReplyTo: "kurac@kurac.com",
+		HTML:    "<h1>big html</h1>",
+		Text:    "some plain text hyaa",
+		Bcc:     []mail.Address{{Name: "Kurva mac", Address: "kurva@gmail.com"}, {Name: "Wtf shit", Address: "wtf@gmail.com"}},
+		Cc:      []mail.Address{{Name: "Rofel bobic", Address: "rofel@gmail.com"}, {Name: "Le maoo", Address: "lemao@gmail.com"}},
+		Headers: map[string]string{
+			"X-Mailer":   "Custom OG lang",
+			"User-Agent": "Agent Smith",
+		},
+		Attachments: []mailer.Attachment{
+			{
+				FileName:    "rofl.png",
+				Description: "some file",
+				Content:     b,
+				Inline:      false,
+				ContentType: mime.TypeByExtension(".png"),
+			},
+		},
 	}
 
-	tr := &TemplateRenderer{
-		templates: template.Must(template.ParseFS(embeddedTemplates, "templates/*.tmpl")),
+	if err := c.Send(context.Background(), &m); err != nil {
+		log.Fatalln(err)
 	}
-
-	e := echo.New()
-	e.Renderer = tr
-
-	e.GET("/public/*", echo.WrapHandler(http.StripPrefix("/public/", http.FileServer(http.FS(publicFS)))))
-
-	e.GET("/api/v1/", func(c echo.Context) error {
-		return c.JSON(http.StatusOK, map[string]any{
-			"path": "/api/v1/",
-			"data": "wtf rofl",
-		})
-	})
-
-	e.GET("/api/v1/health/alive", func(c echo.Context) error {
-		return c.JSON(http.StatusOK, map[string]any{
-			"health": "alive",
-		})
-	})
-
-	fmt.Printf("%+v\n", cfg.App.Port)
-	fmt.Printf("%+v\n", cfg)
-
-	e.Logger.Fatal(e.Start(":1337"))
 }
