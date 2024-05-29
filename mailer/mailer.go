@@ -28,6 +28,6 @@ type Attachment struct {
 	FileName    string
 	Description string
 	Content     io.Reader
-	Inline      bool
 	ContentType string
+	Inline      bool
 }

@@ -1,73 +1,95 @@
 package cmd
 
-// package main
+import (
+	"context"
+	"errors"
+	"fmt"
+	"html/template"
+	"io"
+	"io/fs"
+	"log/slog"
+	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
 
-// import (
-// 	"embed"
-// 	"fmt"
-// 	"html/template"
-// 	"io"
-// 	"io/fs"
-// 	"log"
-// 	"net/http"
+	"github.com/dankobg/juicer/config"
+	"github.com/dankobg/juicer/keto"
+	"github.com/dankobg/juicer/kratos"
+	"github.com/dankobg/juicer/server"
+	"github.com/labstack/echo/v4"
+)
 
-// 	"github.com/dankobg/juicer/config"
-// 	"github.com/labstack/echo/v4"
-// )
+type TemplateRenderer struct {
+	templates *template.Template
+}
 
-// //go:embed public/*
-// var embeddedPublic embed.FS
+func (tr *TemplateRenderer) Render(w io.Writer, name string, data any, c echo.Context) error {
+	return tr.templates.ExecuteTemplate(w, name, data)
+}
 
-// //go:embed templates/*
-// var embeddedTemplates embed.FS
+func Run(publicFiles, templateFiles fs.FS) error {
+	cfg, _, err := config.New()
+	if err != nil {
+		slog.Error("failed to initialize config", err)
+		return err
+	}
 
-// type TemplateRenderer struct {
-// 	templates *template.Template
-// }
+	logger := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
+		AddSource: false,
+		Level:     slog.LevelDebug,
+	}))
 
-// func (tr *TemplateRenderer) Render(w io.Writer, name string, data any, c echo.Context) error {
-// 	return tr.templates.ExecuteTemplate(w, name, data)
-// }
+	publicFS, err := fs.Sub(publicFiles, "public")
+	if err != nil {
+		return fmt.Errorf("failed to get FS subtree out of embedded public files dir")
+	}
 
-// func main() {
-// 	cfg, _, err := config.New()
-// 	if err != nil {
-// 		log.Fatal(err)
-// 	}
+	tr := &TemplateRenderer{
+		templates: template.Must(template.ParseFS(templateFiles, "templates/*.tmpl")),
+	}
 
-// 	publicFS, err := fs.Sub(embeddedPublic, "public")
-// 	if err != nil {
-// 		log.Fatalf("failed to get FS subtree out of embedded public files")
-// 	}
+	kratosClient := kratos.NewClient(cfg.KratosPublicURL, cfg.KratosAdminURL)
+	ketoClient := keto.NewClient()
 
-// 	tr := &TemplateRenderer{
-// 		templates: template.Must(template.ParseFS(embeddedTemplates, "templates/*.tmpl")),
-// 	}
+	hub := server.NewHub(logger)
 
-// 	e := echo.New()
-// 	e.Renderer = tr
+	apiHandler := server.NewApiHandler(logger, kratosClient, ketoClient, hub)
+	apiHandler.Echo.Renderer = tr
 
-// 	e.GET("/public/*", echo.WrapHandler(http.StripPrefix("/public/", http.FileServer(http.FS(publicFS)))))
+	srv := server.NewServer(logger, apiHandler, kratosClient, ketoClient)
 
-// 	e.GET("/api/v1/", func(c echo.Context) error {
-// 		return c.JSON(http.StatusOK, map[string]any{
-// 			"path": "/api/v1/",
-// 			"data": "wtf rofl",
-// 		})
-// 	})
+	server.SetupRoutes(apiHandler.Echo, apiHandler, publicFS)
 
-// 	e.GET("/api/v1/health/alive", func(c echo.Context) error {
-// 		return c.JSON(http.StatusOK, map[string]any{
-// 			"health": "alive",
-// 		})
-// 	})
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT, syscall.SIGHUP)
+	defer stop()
 
-// 	fmt.Printf("%+v\n", cfg.App.Port)
-// 	fmt.Printf("%+v\n", cfg)
+	go func() {
+		logger.Info("server is listening", slog.String("url", "https://localhost:1337"))
+		if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+			logger.Error("server failed to start", err)
+			os.Exit(1)
+		}
+	}()
 
-// 	e.Logger.Fatal(e.Start(":1337"))
-// }
+	go func() {
+		logger.Info("hub is running")
+		apiHandler.Hub.Run()
+	}()
 
-func Run() error {
+	<-ctx.Done()
+	logger.Info("received interruption signal, starting shutdown process")
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), time.Second*30)
+	defer cancel()
+
+	if err := srv.Shutdown(shutdownCtx); err != nil {
+		logger.Error("server shutdown failed", err)
+		return err
+	}
+
+	// close other resources
+
+	logger.Info("server shut down")
 	return nil
 }

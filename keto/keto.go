@@ -1,4 +1,11 @@
-package oryclient
+package keto
+
+type Client struct {
+}
+
+func NewClient() *Client {
+	return &Client{}
+}
 
 // import (
 // 	"fmt"

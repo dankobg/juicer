@@ -1,13 +1,13 @@
-package oryclient
+package kratos
 
 import kratos "github.com/ory/client-go"
 
-type KratosClient struct {
+type Client struct {
 	Public *kratos.APIClient
 	Admin  *kratos.APIClient
 }
 
-func NewKratosClient(publicURL, adminURL string) *KratosClient {
+func NewClient(publicURL, adminURL string) *Client {
 	publicConf := kratos.NewConfiguration()
 	adminConf := kratos.NewConfiguration()
 
@@ -46,7 +46,7 @@ func NewKratosClient(publicURL, adminURL string) *KratosClient {
 	public := kratos.NewAPIClient(publicConf)
 	admin := kratos.NewAPIClient(adminConf)
 
-	c := &KratosClient{
+	c := &Client{
 		Public: public,
 		Admin:  admin,
 	}

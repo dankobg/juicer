@@ -125,18 +125,18 @@ services:
           "${POSTGRES_USER:-test}",
         ]
   # ----------------------------------------------------------------------------
-  redis:
-    environment:
-      - ENV=development
-      - REDIS_HOST=${REDIS_HOST:-redis}
-      - REDIS_PORT=${REDIS_PORT:-6379}
-      - REDIS_PASSWORD=${REDIS_PASSWORD:-}
-    ports:
-      - "${REDIS_PORT:-6379}:6379"
-    logging: *dev-logging
-    healthcheck:
-      <<: *dev-healthcheck
-      test: ["CMD", "redis-cli", "ping"]
+  # redis:
+  #   environment:
+  #     - ENV=development
+  #     - REDIS_HOST=${REDIS_HOST:-redis}
+  #     - REDIS_PORT=${REDIS_PORT:-6379}
+  #     - REDIS_PASSWORD=${REDIS_PASSWORD:-}
+  #   ports:
+  #     - "${REDIS_PORT:-6379}:6379"
+  #   logging: *dev-logging
+  #   healthcheck:
+  #     <<: *dev-healthcheck
+  #     test: ["CMD", "redis-cli", "ping"]
   # ----------------------------------------------------------------------------
   kratos:
     environment:
