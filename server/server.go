@@ -4,12 +4,9 @@ import (
 	"log/slog"
 	"net/http"
 	"time"
-
-	"github.com/dankobg/juicer/keto"
-	"github.com/dankobg/juicer/kratos"
 )
 
-func NewServer(log *slog.Logger, h http.Handler, kratos *kratos.Client, keto *keto.Client) *http.Server {
+func NewServer(log *slog.Logger, h http.Handler) *http.Server {
 	srv := http.Server{
 		Addr:              ":1337",
 		Handler:           h,

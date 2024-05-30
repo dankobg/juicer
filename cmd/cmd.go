@@ -17,6 +17,7 @@ import (
 	"github.com/dankobg/juicer/config"
 	"github.com/dankobg/juicer/keto"
 	"github.com/dankobg/juicer/kratos"
+	"github.com/dankobg/juicer/redis"
 	"github.com/dankobg/juicer/server"
 	"github.com/labstack/echo/v4"
 )
@@ -50,15 +51,19 @@ func Run(publicFiles, templateFiles fs.FS) error {
 		templates: template.Must(template.ParseFS(templateFiles, "templates/*.tmpl")),
 	}
 
+	rdb, err := redis.New()
+	if err != nil {
+		return fmt.Errorf("failed to initialize redis client")
+	}
+
 	kratosClient := kratos.NewClient(cfg.KratosPublicURL, cfg.KratosAdminURL)
 	ketoClient := keto.NewClient()
-
 	hub := server.NewHub(logger)
 
-	apiHandler := server.NewApiHandler(logger, kratosClient, ketoClient, hub)
+	apiHandler := server.NewApiHandler(logger, rdb, kratosClient, ketoClient, hub)
 	apiHandler.Echo.Renderer = tr
 
-	srv := server.NewServer(logger, apiHandler, kratosClient, ketoClient)
+	srv := server.NewServer(logger, apiHandler)
 
 	server.SetupRoutes(apiHandler.Echo, apiHandler, publicFS)
 

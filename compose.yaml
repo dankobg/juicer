@@ -27,27 +27,15 @@ services:
     networks:
       - intranet
   # ----------------------------------------------------------------------------
-  # redis:
-  #   image: redis:7.2.4-alpine
-  #   restart: on-failure
-  #   # command: redis-server --include /usr/local/etc/redis/redis.conf # UNCOMMENT IF USING CUSTOM REDIS CONF
-  #   volumes:
-  #     - redis-data:/data
-  #     # - ./redis/redis.conf:/usr/local/etc/redis/redis.conf # UNCOMMENT IF USING CUSTOM REDIS CONF
-  #   networks:
-  #     - intranet
-  # ----------------------------------------------------------------------------
-  # nats:
-  #   image: nats:2.10.14
-  #   restart: on-failure
-  #   ports:
-  #     - "4222:4222"
-  #     - "6222:6222"
-  #     - "8222:8222"
-  #   volumes:
-  #     - nats-data:/data
-  #   networks:
-  #     - intranet
+  redis:
+    image: redis:7.2.5-alpine
+    restart: on-failure
+    # command: redis-server --include /usr/local/etc/redis/redis.conf # UNCOMMENT IF USING CUSTOM REDIS CONF
+    volumes:
+      - redis-data:/data
+      # - ./redis/redis.conf:/usr/local/etc/redis/redis.conf # UNCOMMENT IF USING CUSTOM REDIS CONF
+    networks:
+      - intranet
   # ----------------------------------------------------------------------------
   kratos:
     image: oryd/kratos:v1.1.0
@@ -128,7 +116,6 @@ services:
 volumes:
   pg-data:
   redis-data:
-  # nats-data:
 
 networks:
   intranet:

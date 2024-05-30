@@ -7,6 +7,7 @@ import (
 	"github.com/dankobg/juicer/keto"
 	"github.com/dankobg/juicer/kratos"
 	"github.com/labstack/echo/v4"
+	"github.com/redis/go-redis/v9"
 )
 
 type ApiHandler struct {
@@ -15,9 +16,10 @@ type ApiHandler struct {
 	Keto   *keto.Client
 	Hub    *Hub
 	Echo   *echo.Echo
+	Rdb    *redis.Client
 }
 
-func NewApiHandler(log *slog.Logger, kratos *kratos.Client, keto *keto.Client, hub *Hub) *ApiHandler {
+func NewApiHandler(log *slog.Logger, rdb *redis.Client, kratos *kratos.Client, keto *keto.Client, hub *Hub) *ApiHandler {
 	e := echo.New()
 	e.HideBanner = true
 
@@ -27,6 +29,7 @@ func NewApiHandler(log *slog.Logger, kratos *kratos.Client, keto *keto.Client, h
 		Keto:   keto,
 		Echo:   echo.New(),
 		Hub:    hub,
+		Rdb:    rdb,
 	}
 }
 

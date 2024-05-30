@@ -4,8 +4,8 @@
 	let outerSize = '35rem';
 
 	let ws: WebSocket;
-	let stubMsg = { type: 'stub_msg', data: { id: 69, nice: true } };
-	let payload = JSON.stringify(stubMsg);
+	let lobbyClients = 0;
+	let activeRooms = 0;
 
 	onMount(() => {
 		ws = new WebSocket('wss://juicer-dev.xyz/ws');
@@ -21,6 +21,11 @@
 		};
 		ws.onmessage = e => {
 			console.log(`recv: ${e.data}`);
+			const msg = JSON.parse(e.data);
+			if (msg.t === 'clients_count') {
+				lobbyClients = msg.d.lobby;
+				activeRooms = msg.d.rooms;
+			}
 		};
 
 		return () => {
@@ -29,10 +34,14 @@
 	});
 </script>
 
+<p>clients in lobby: {lobbyClients}</p>
+<p>total rooms: {activeRooms}</p>
+
 <button
 	class="bg-purple-500 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded mb-2"
 	on:click={() => {
-		ws.send(payload);
+		const msg = JSON.stringify({ t: 'stub_msg', d: { id: 69, nice: true } });
+		ws.send(msg);
 	}}>SEND STUB MSG</button
 >
 

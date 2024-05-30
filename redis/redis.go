@@ -1,29 +1,30 @@
 package redis
 
-// func New() (*redis.Client, error) {
-// 	// host := os.Getenv("REDIS_ADDRESS")
-// 	// port := os.Getenv("REDIS_PASSWORD")
-// 	// db := os.Getenv("REDIS_DB")
-// 	// pwd := os.Getenv("REDIS_PASSWORD")
+import (
+	"context"
+	"fmt"
+	"net"
 
-// 	os.Getenv("REDIS_DB")
-// 	host := "redis"
-// 	port := "6379"
-// 	db := "0"
-// 	pwd := ""
+	"github.com/redis/go-redis/v9"
+)
 
-// 	addr := net.JoinHostPort(host, port)
+func New() (*redis.Client, error) {
+	host := "redis"
+	port := "6379"
+	db := 0
+	pwd := ""
 
-// 	dbv, err := strconv.Atoi(db)
-// 	if err != nil {
-// 		return nil, err
-// 	}
+	addr := net.JoinHostPort(host, port)
 
-// 	rdb := redis.NewClient(&redis.Options{
-// 		Addr:     addr,
-// 		Password: pwd,
-// 		DB:       dbv,
-// 	})
+	rdb := redis.NewClient(&redis.Options{
+		Addr:     addr,
+		Password: pwd,
+		DB:       db,
+	})
 
-// 	return rdb, nil
-// }
+	if err := rdb.Ping(context.TODO()).Err(); err != nil {
+		return nil, fmt.Errorf("failed to ping Redis server: %w", err)
+	}
+
+	return rdb, nil
+}

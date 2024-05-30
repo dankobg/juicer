@@ -8,8 +8,8 @@ import (
 )
 
 type Message struct {
-	Type string          `json:"type"`
-	Data json.RawMessage `json:"data"`
+	Type string          `json:"t"`
+	Data json.RawMessage `json:"d"`
 }
 
 type Hub struct {
@@ -55,17 +55,33 @@ func (h *Hub) removeClient(client *Client) {
 	delete(h.Clients, client.ID)
 }
 
+func (h *Hub) addRoom(room *Room) {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	h.Rooms[room.ID] = room
+}
+
+func (h *Hub) removeRoom(room *Room) {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	delete(h.Rooms, room.ID)
+}
+
 func (h *Hub) HandleClientConnected(client *Client) {
 	h.Log.Info("client connected", slog.String("client_id", client.ID), slog.String("room_id", client.RoomID), slog.String("remote_addr", client.Conn.RemoteAddr().String()))
 
-	clientJoinedMsg := &Message{Type: "client_joined", Data: []byte(fmt.Sprintf(`{"msg":"client joined","id":"%s"}`, client.ID))}
-	for range h.Clients {
-		h.Broadcast <- clientJoinedMsg
-	}
-
 	h.addClient(client)
 
-	h.Log.Info("Hub info counts", slog.Int("clients_count", h.ClientsCount()), slog.Int("rooms_count", h.RoomsCount()))
+	h.Log.Info("Hub clients info", slog.Int("clients_count", h.ClientsCount()), slog.Int("rooms_count", h.RoomsCount()))
+
+	clientJoinedMsg := &Message{Type: "client_joined", Data: []byte(fmt.Sprintf(`{"msg":"client joined","id":"%s"}`, client.ID))}
+	clientsCountMsg := &Message{Type: "clients_count", Data: []byte(fmt.Sprintf(`{"lobby":"%d","rooms":"%d"}`, h.ClientsCount(), h.RoomsCount()))}
+	for _, lobbyClient := range h.Clients {
+		h.Broadcast <- clientsCountMsg
+		if lobbyClient.ID != client.ID {
+			h.Broadcast <- clientJoinedMsg
+		}
+	}
 }
 
 func (h *Hub) HandleClientDisconnected(client *Client) {
@@ -75,8 +91,10 @@ func (h *Hub) HandleClientDisconnected(client *Client) {
 	close(client.Send)
 
 	clientLeftMsg := &Message{Type: "client_left", Data: []byte(fmt.Sprintf(`{"msg": "client left", "id": "%s"}`, client.ID))}
+	clientsCountMsg := &Message{Type: "clients_count", Data: []byte(fmt.Sprintf(`{"lobby":"%d","rooms":"%d"}`, h.ClientsCount(), h.RoomsCount()))}
 	for range h.Clients {
 		h.Broadcast <- clientLeftMsg
+		h.Broadcast <- clientsCountMsg
 	}
 }
 
@@ -91,7 +109,6 @@ func (h *Hub) HandleBroadcast(msg *Message) {
 			close(client.Send)
 		}
 	}
-
 }
 
 func (h *Hub) Run() {
