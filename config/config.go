@@ -14,8 +14,17 @@ import (
 	"github.com/knadh/koanf/v2"
 )
 
-// App contains common app settings
-type App struct {
+const (
+	prefix     = "JUICER"
+	oldDelim   = "_"
+	newDelim   = "."
+	sliceDelim = ","
+)
+
+var knownKeys = []string{"server", "cors", "postgres", "redis", "email", "logger"}
+
+// Juicer contains common juicer app settings
+type Juicer struct {
 	ENV             string `koanf:"env"`
 	Host            string `koanf:"host"`
 	Port            int    `koanf:"port"`
@@ -92,7 +101,7 @@ type LoggerConfig struct {
 
 // Config represents the app config
 type Config struct {
-	App      `koanf:",squash"`
+	Juicer   `koanf:",squash"`
 	Server   ServerConfig   `koanf:"server"`
 	Cors     CorsConfig     `koanf:"cors"`
 	Database DatabaseConfig `koanf:"postgres"`
@@ -102,8 +111,8 @@ type Config struct {
 }
 
 // loadEnv loads env files by convention: https://github.com/bkeepers/dotenv#what-other-env-files-can-i-use
-func loadEnv(k *koanf.Koanf) error {
-	env := os.Getenv("ENV")
+func loadEnv() error {
+	env := os.Getenv("JUICER_ENV")
 	if env == "" {
 		env = "development"
 	}
@@ -130,18 +139,16 @@ func loadEnv(k *koanf.Koanf) error {
 }
 
 func loadFromEnv(k *koanf.Koanf) error {
-	p := env.ProviderWithValue("", ".", func(s string, v string) (string, interface{}) {
-		prefixes := []string{"server", "cors", "postgres", "redis", "email", "logger"}
+	p := env.ProviderWithValue(prefix, newDelim, func(s string, v string) (string, interface{}) {
+		str := strings.ToLower(strings.TrimPrefix(s, prefix+oldDelim))
+		key := strings.Replace(str, oldDelim, newDelim, 1)
 
-		str := strings.ToLower(strings.TrimPrefix(s, "JUICER_"))
-
-		key := str
-		if slices.Contains(prefixes, str) {
-			key = strings.Replace(str, "_", ".", 1)
+		if !slices.Contains(knownKeys, strings.Split(key, newDelim)[0]) {
+			key = strings.Replace(key, newDelim, oldDelim, 1)
 		}
 
-		if strings.Contains(v, ",") {
-			return key, strings.Split(v, ",")
+		if strings.Contains(v, sliceDelim) {
+			return key, strings.Split(v, sliceDelim)
 		}
 
 		return key, v
@@ -167,7 +174,7 @@ func getConfig(k *koanf.Koanf) (*Config, error) {
 func New() (*Config, *koanf.Koanf, error) {
 	k := koanf.New(".")
 
-	if err := loadEnv(k); err != nil {
+	if err := loadEnv(); err != nil {
 		return nil, nil, err
 	}
 

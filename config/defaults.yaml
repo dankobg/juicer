@@ -1,24 +1,23 @@
-app:
-  env: development
-  host: https://juicer-dev.xyz
-  port: 1337
-  base_url: https://juicer-dev.xyz
-  website_url: https://juicer-dev.xyz:3974
-  kratos_public_url: https://juicer-dev.xyz/kratos
-  kratos_admin_url: http://kratos:4434
+env: development
+host: https://juicer-dev.xyz
+port: 1337
+base_url: https://juicer-dev.xyz
+website_url: https://juicer-dev.xyz
+kratos_public_url: http://kratos:4433
+kratos_admin_url: http://kratos:4434
 
 server:
   read_header_timeout: 5s
-  read_timeout: 7s
-  write_timeout: 10s
-  idle_timeout: 45s
+  read_timeout: 15s
+  write_timeout: 15s
+  idle_timeout: 120s
   use_tls: false
   cert_file: xxxxx
   key_file: xxxxx
 
 cors:
   allow_origins:
-    - https://juicer.dev.xyz:3974
+    - https://juicer.dev.xyz
   allow_methods:
     - GET
     - POSt

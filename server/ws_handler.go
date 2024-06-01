@@ -2,12 +2,17 @@ package server
 
 import (
 	"fmt"
+	"log/slog"
+	"math/rand/v2"
 	"net/http"
+	"strconv"
+	"time"
 
-	"github.com/dankobg/juicer/random"
 	"github.com/gorilla/websocket"
 	"github.com/labstack/echo/v4"
 )
+
+const juicerClientIDCookieName = "juicer_client_id"
 
 var upgrader = websocket.Upgrader{
 	ReadBufferSize:  1024,
@@ -17,16 +22,53 @@ var upgrader = websocket.Upgrader{
 	},
 }
 
-func (h *ApiHandler) ws(c echo.Context) error {
-	conn, err := upgrader.Upgrade(c.Response(), c.Request(), nil)
+func newClientIDCookie(clientID string) *http.Cookie {
+	expires := time.Now().AddDate(10, 0, 0)
+	maxAge := int(time.Until(expires).Seconds())
+
+	return &http.Cookie{
+		Name:     juicerClientIDCookieName,
+		Value:    clientID,
+		Path:     "/",
+		Expires:  expires,
+		MaxAge:   maxAge,
+		HttpOnly: true,
+		Secure:   true,
+		SameSite: http.SameSiteLaxMode,
+	}
+}
+
+func (h *ApiHandler) serverWs(c echo.Context) error {
+	sess := GetSession(c.Request().Context())
+	var anonymous bool
+	var clientID string
+
+	if sess != nil && sess.Active != nil && *sess.Active {
+		clientID = sess.Identity.Id
+	} else {
+		anonymous = true
+		cookie, err := c.Cookie(juicerClientIDCookieName)
+		if err != nil {
+			clientID = strconv.Itoa(rand.Int())
+		} else {
+			clientID = cookie.Value
+		}
+	}
+
+	h.Log.Info("ws client connected", slog.String("client_id", clientID), slog.Bool("anonymous", anonymous))
+
+	respHeader := http.Header{}
+	if anonymous {
+		respHeader.Set("Set-Cookie", newClientIDCookie(clientID).String())
+	}
+
+	conn, err := upgrader.Upgrade(c.Response(), c.Request(), respHeader)
 	if err != nil {
 		return fmt.Errorf("failed to upgrade connection: %w", err)
 	}
 
-	id := random.AlphaNumeric(32)
-
 	client := &Client{
-		ID:   id,
+		ID:   clientID,
 		Conn: conn,
 		Send: make(chan *Message, 256),
 		Hub:  h.Hub,

@@ -27,7 +27,7 @@ func NewApiHandler(log *slog.Logger, rdb *redis.Client, kratos *kratos.Client, k
 		Log:    log,
 		Kratos: kratos,
 		Keto:   keto,
-		Echo:   echo.New(),
+		Echo:   e,
 		Hub:    hub,
 		Rdb:    rdb,
 	}
