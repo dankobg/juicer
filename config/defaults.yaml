@@ -77,5 +77,4 @@ email:
   dev_smtp_password: test
 
 logger:
-  pretty_console: false
   level: debug

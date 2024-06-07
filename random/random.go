@@ -6,7 +6,7 @@ import (
 	"encoding/base64"
 	"encoding/binary"
 	"io"
-	"math/rand"
+	"math/rand/v2"
 	"strings"
 )
 
@@ -22,7 +22,7 @@ var (
 
 func rndByte(n int) []byte {
 	b := make([]byte, n)
-	_, err := rand.Read(b)
+	_, err := cryptorand.Read(b)
 	if err != nil {
 		panic(err)
 	}
@@ -114,40 +114,40 @@ func Token(length int) string {
 
 // AlphaInRange generates a random alphabet string in range
 func AlphaInRange(min, max int) string {
-	n := rand.Intn((max-min)+1) + min
+	n := rand.IntN((max-min)+1) + min
 	return Alpha(n)
 }
 
 // AlphaNumericInRange generates a random alphanumeric string in range
 func AlphaNumericInRange(min, max int) string {
-	n := rand.Intn((max-min)+1) + min
+	n := rand.IntN((max-min)+1) + min
 	return AlphaNumeric(n)
 }
 
 // AlphaLowercaseInRange generates a random alphabet lowercase string in range
 func AlphaLowercaseInRange(min, max int) string {
-	n := rand.Intn((max-min)+1) + min
+	n := rand.IntN((max-min)+1) + min
 	return AlphaLowercase(n)
 }
 
 // AlphaUppercaseInRange generates a random alphabet uppercase string in range
 func AlphaUppercaseInRange(min, max int) string {
-	n := rand.Intn((max-min)+1) + min
+	n := rand.IntN((max-min)+1) + min
 	return AlphaUppercase(n)
 }
 
 // AsciiInRange generates a random ascii string in range
 func AsciiInRange(min, max int) string {
-	n := rand.Intn((max-min)+1) + min
+	n := rand.IntN((max-min)+1) + min
 	return Ascii(n)
 }
 
 // IntInRange generates a random int in range
 func IntInRange(min, max int) int {
-	return rand.Intn((max-min)+1) + min
+	return rand.IntN((max-min)+1) + min
 }
 
 // Bool generates a random bool
 func Bool() bool {
-	return rand.Intn(2) == 1
+	return rand.IntN(2) == 1
 }

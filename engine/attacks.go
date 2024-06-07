@@ -2,8 +2,7 @@ package juicer
 
 import (
 	"fmt"
-	"hash/maphash"
-	"math/rand"
+	"math/rand/v2"
 	"sync"
 )
 
@@ -390,8 +389,7 @@ func SetOccupancy(index, count int, attack bitboard) bitboard {
 
 // generateRandomMagicNumberCandidate generates random bitboard with few non-zero bits for magic number candidates
 func generateRandomMagicNumberCandidate() bitboard {
-	rnd := rand.New(rand.NewSource(int64(new(maphash.Hash).Sum64())))
-	return bitboard(rnd.Uint64() & rnd.Uint64() & rnd.Uint64())
+	return bitboard(rand.Uint64() & rand.Uint64() & rand.Uint64())
 }
 
 // findMagicNumbers finds the magic numbers with a brute force approach for a square

@@ -1,8 +1,7 @@
 package server
 
 import (
-	"hash/maphash"
-	"math/rand"
+	"math/rand/v2"
 
 	"github.com/dankobg/juicer/random"
 )
@@ -18,14 +17,12 @@ func (r *Room) String() string {
 }
 
 func NewRoom(c1, c2 *Client) (*Room, error) {
-	rnd := rand.New(rand.NewSource(int64(new(maphash.Hash).Sum64())))
-
 	roomId := random.AlphaNumeric(32)
 
 	white := &Player{ID: c1.ID}
 	black := &Player{ID: c2.ID}
 
-	if rnd.Intn(2) == 1 {
+	if rand.IntN(2) == 1 {
 		white.ID = c2.ID
 		black.ID = c1.ID
 	}
@@ -46,4 +43,8 @@ func NewRoom(c1, c2 *Client) (*Room, error) {
 	}
 
 	return room, nil
+}
+
+func (r *Room) StartGame() error {
+	return nil
 }

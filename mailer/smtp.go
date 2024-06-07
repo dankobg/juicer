@@ -22,14 +22,151 @@ const (
 	SmtpXOauth2     SmtpAuthType = "XOAUTH2"
 )
 
+type mailerOpts struct {
+	devHost     string
+	devPort     int
+	devUsername string
+	devPassword string
+	enabled     bool
+	host        string
+	port        int
+	username    string
+	password    string
+	tLS         bool
+	authMethod  SmtpAuthType
+	fromName    string
+	fromAddress string
+	log         *slog.Logger
+}
+
+type SmtpClientOption interface {
+	apply(*mailerOpts)
+}
+
+type SmtpClientOptions []SmtpClientOption
+
+func (o SmtpClientOptions) apply(s *mailerOpts) {
+	for _, opt := range o {
+		opt.apply(s)
+	}
+}
+
+type enabledOpt bool
+
+func (o enabledOpt) apply(c *mailerOpts)     { c.enabled = bool(o) }
+func WithEnabled(flag bool) SmtpClientOption { return enabledOpt(flag) }
+
+type devHostOpt string
+
+func (o devHostOpt) apply(c *mailerOpts)       { c.host = string(o) }
+func WithDevHost(host string) SmtpClientOption { return devHostOpt(host) }
+
+type devPortOpt int
+
+func (o devPortOpt) apply(c *mailerOpts)    { c.port = int(o) }
+func WithDevPort(port int) SmtpClientOption { return devPortOpt(port) }
+
+type devUsernameOpt string
+
+func (o devUsernameOpt) apply(c *mailerOpts)           { c.username = string(o) }
+func WithDevUsername(username string) SmtpClientOption { return devUsernameOpt(username) }
+
+type devPasswordOpt string
+
+func (o devPasswordOpt) apply(c *mailerOpts)      { c.password = string(o) }
+func WithDevPassword(pwd string) SmtpClientOption { return devPasswordOpt(pwd) }
+
+type hostOpt string
+
+func (o hostOpt) apply(c *mailerOpts)       { c.host = string(o) }
+func WithHost(host string) SmtpClientOption { return hostOpt(host) }
+
+type portOpt int
+
+func (o portOpt) apply(c *mailerOpts)    { c.port = int(o) }
+func WithPort(port int) SmtpClientOption { return portOpt(port) }
+
+type usernameOpt string
+
+func (o usernameOpt) apply(c *mailerOpts)           { c.username = string(o) }
+func WithUsername(username string) SmtpClientOption { return usernameOpt(username) }
+
+type passwordOpt string
+
+func (o passwordOpt) apply(c *mailerOpts)      { c.password = string(o) }
+func WithPassword(pwd string) SmtpClientOption { return passwordOpt(pwd) }
+
+type tlsOpt bool
+
+func (o tlsOpt) apply(c *mailerOpts)     { c.tLS = bool(o) }
+func WithTLS(flag bool) SmtpClientOption { return tlsOpt(flag) }
+
+type authMethodOpt SmtpAuthType
+
+func (o authMethodOpt) apply(c *mailerOpts)             { c.authMethod = SmtpAuthType(o) }
+func WithAuthMethod(auth SmtpAuthType) SmtpClientOption { return authMethodOpt(auth) }
+
+type fromNameOpt string
+
+func (o fromNameOpt) apply(c *mailerOpts)       { c.fromName = string(o) }
+func WithFromName(name string) SmtpClientOption { return fromNameOpt(name) }
+
+type fromAddressOpt string
+
+func (o fromAddressOpt) apply(c *mailerOpts)          { c.fromAddress = string(o) }
+func WithFromAddress(address string) SmtpClientOption { return fromAddressOpt(address) }
+
+type logOpt struct{ log *slog.Logger }
+
+func (o logOpt) apply(c *mailerOpts)            { c.log = o.log }
+func WithLog(log *slog.Logger) SmtpClientOption { return logOpt{log: log} }
+
 type SmtpClient struct {
-	Log        *slog.Logger
-	Host       string
-	Port       int
-	Username   string
-	Password   string
-	TLS        bool
-	AuthMethod SmtpAuthType
+	Host        string
+	Port        int
+	Username    string
+	Password    string
+	TLS         bool
+	AuthMethod  SmtpAuthType
+	FromName    string
+	FromAddress string
+	Log         *slog.Logger
+}
+
+func NewSmtpClient(opts ...SmtpClientOption) *SmtpClient {
+	mopts := &mailerOpts{
+		authMethod:  SmtpAuthPlain,
+		fromName:    "Juicer",
+		devHost:     "mailpit",
+		devPort:     1025,
+		devUsername: "test",
+		devPassword: "test",
+	}
+
+	for _, o := range opts {
+		o.apply(mopts)
+	}
+
+	client := &SmtpClient{
+		Host:        mopts.devHost,
+		Port:        mopts.devPort,
+		Username:    mopts.devUsername,
+		Password:    mopts.devPassword,
+		TLS:         mopts.tLS,
+		AuthMethod:  mopts.authMethod,
+		FromName:    mopts.fromName,
+		FromAddress: mopts.fromAddress,
+		Log:         mopts.log,
+	}
+
+	if mopts.enabled {
+		client.Host = mopts.host
+		client.Port = mopts.port
+		client.Username = mopts.username
+		client.Password = mopts.password
+	}
+
+	return client
 }
 
 func getAuthType(authType SmtpAuthType) gomail.SMTPAuthType {
@@ -83,19 +220,19 @@ func (client *SmtpClient) Send(ctx context.Context, msg *Message) error {
 	m := gomail.NewMsg()
 
 	if err := m.From(msg.From.Address); err != nil {
-		client.Log.Error("invalid `from` header: %w", err)
+		client.Log.Error("invalid `from` header: %w", slog.Any("error", err))
 		return err
 	}
 	if err := m.To(formatAddresses(msg.To, true)...); err != nil {
-		client.Log.Error("invalid `to` header: %w", err)
+		client.Log.Error("invalid `to` header: %w", slog.Any("error", err))
 		return err
 	}
 	if err := m.Cc(formatAddresses(msg.Cc, true)...); err != nil {
-		client.Log.Error("invalid `Cc` header: %w", err)
+		client.Log.Error("invalid `Cc` header: %w", slog.Any("error", err))
 		return err
 	}
 	if err := m.Bcc(formatAddresses(msg.Bcc, true)...); err != nil {
-		client.Log.Error("invalid `Bcc` header: %w", err)
+		client.Log.Error("invalid `Bcc` header: %w", slog.Any("error", err))
 		return err
 	}
 

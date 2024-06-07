@@ -17,6 +17,7 @@ import (
 	"github.com/dankobg/juicer/config"
 	"github.com/dankobg/juicer/keto"
 	"github.com/dankobg/juicer/kratos"
+	"github.com/dankobg/juicer/mailer"
 	"github.com/dankobg/juicer/redis"
 	"github.com/dankobg/juicer/server"
 	"github.com/labstack/echo/v4"
@@ -33,7 +34,7 @@ func (tr *TemplateRenderer) Render(w io.Writer, name string, data any, c echo.Co
 func Run(publicFiles, templateFiles fs.FS) error {
 	cfg, _, err := config.New()
 	if err != nil {
-		slog.Error("failed to initialize config", err)
+		slog.Error("failed to initialize config", slog.Any("error", err))
 		return err
 	}
 
@@ -41,6 +42,7 @@ func Run(publicFiles, templateFiles fs.FS) error {
 		AddSource: false,
 		Level:     slog.LevelDebug,
 	}))
+	slog.SetDefault(logger)
 
 	publicFS, err := fs.Sub(publicFiles, "public")
 	if err != nil {
@@ -51,19 +53,44 @@ func Run(publicFiles, templateFiles fs.FS) error {
 		templates: template.Must(template.ParseFS(templateFiles, "templates/*.tmpl")),
 	}
 
-	rdb, err := redis.New()
+	smtpClient := mailer.NewSmtpClient(
+		mailer.WithEnabled(cfg.ENV == "production"),
+		mailer.WithDevHost(cfg.Email.DevSMTPHost),
+		mailer.WithDevPort(cfg.Email.DevSMTPPort),
+		mailer.WithDevUsername(cfg.Email.DevSMTPUsername),
+		mailer.WithDevPassword(cfg.Email.DevSMTPPassword),
+		mailer.WithHost(cfg.Email.SMTPHost),
+		mailer.WithPort(cfg.Email.SMTPPort),
+		mailer.WithUsername(cfg.Email.SMTPUsername),
+		mailer.WithPassword(cfg.Email.SMTPPassword),
+		mailer.WithTLS(true),
+		mailer.WithFromName("Juicer"),
+		mailer.WithFromAddress("juicer@chess.com"),
+		mailer.WithLog(logger),
+	)
+
+	rdb, err := redis.New(cfg.Redis)
 	if err != nil {
 		return fmt.Errorf("failed to initialize redis client")
 	}
 
 	kratosClient := kratos.NewClient(cfg.KratosPublicURL, cfg.KratosAdminURL)
 	ketoClient := keto.NewClient()
-	hub := server.NewHub(logger)
 
-	apiHandler := server.NewApiHandler(logger, rdb, kratosClient, ketoClient, hub)
+	hub := server.NewHub(logger, rdb)
+
+	apiHandler := server.NewApiHandler(logger, rdb, kratosClient, ketoClient, smtpClient, hub)
 	apiHandler.Echo.Renderer = tr
 
-	srv := server.NewServer(logger, apiHandler)
+	srv := server.NewServer(
+		server.WithHostPort(cfg.Host, cfg.Port),
+		server.WithHandler(apiHandler),
+		server.WithReadTimeout(cfg.Server.ReadTimeout),
+		server.WithReadHeaderTimeout(cfg.Server.ReadHeaderTimeout),
+		server.WithWriteTimeout(cfg.Server.WriteTimeout),
+		server.WithIdleTimeout(cfg.Server.IdleTimeout),
+		server.WithErrorSlog(logger, slog.LevelDebug),
+	)
 
 	server.SetupRoutes(apiHandler.Echo, apiHandler, publicFS)
 
@@ -71,16 +98,16 @@ func Run(publicFiles, templateFiles fs.FS) error {
 	defer stop()
 
 	go func() {
-		logger.Info("server is listening", slog.String("url", "https://localhost:1337"))
+		logger.Info("server is listening", slog.String("addr", "https://localhost:1337"))
 		if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
-			logger.Error("server failed to start", err)
+			logger.Error("server failed to start", slog.Any("error", err))
 			os.Exit(1)
 		}
 	}()
 
 	go func() {
 		logger.Info("hub is running")
-		apiHandler.Hub.Run()
+		apiHandler.Hub.Run(context.TODO())
 	}()
 
 	<-ctx.Done()
@@ -89,7 +116,7 @@ func Run(publicFiles, templateFiles fs.FS) error {
 	defer cancel()
 
 	if err := srv.Shutdown(shutdownCtx); err != nil {
-		logger.Error("server shutdown failed", err)
+		logger.Error("server shutdown failed", slog.Any("error", err))
 		return err
 	}
 

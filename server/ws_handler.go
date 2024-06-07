@@ -3,11 +3,10 @@ package server
 import (
 	"fmt"
 	"log/slog"
-	"math/rand/v2"
 	"net/http"
-	"strconv"
 	"time"
 
+	"github.com/dankobg/juicer/random"
 	"github.com/gorilla/websocket"
 	"github.com/labstack/echo/v4"
 )
@@ -49,13 +48,13 @@ func (h *ApiHandler) serverWs(c echo.Context) error {
 		anonymous = true
 		cookie, err := c.Cookie(juicerClientIDCookieName)
 		if err != nil {
-			clientID = strconv.Itoa(rand.Int())
+			clientID = random.AlphaNumeric(32)
 		} else {
 			clientID = cookie.Value
 		}
 	}
 
-	h.Log.Info("ws client connected", slog.String("client_id", clientID), slog.Bool("anonymous", anonymous))
+	h.Log.Debug("ws client connected", slog.String("client_id", clientID), slog.Bool("anonymous", anonymous))
 
 	respHeader := http.Header{}
 	if anonymous {

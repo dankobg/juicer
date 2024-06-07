@@ -95,8 +95,7 @@ type EmailConfig struct {
 
 // LoggerConfig contains the logger settings
 type LoggerConfig struct {
-	PrettyConsole bool   `koanf:"pretty_console"`
-	Level         string `koanf:"level"`
+	Level string `koanf:"level"`
 }
 
 // Config represents the app config
