@@ -35,7 +35,7 @@
 
 	{#if user !== null}
 		<div class="flex items-center md:order-2">
-			<Avatar id="avatar-menu" src="/images/logo.svg" class="cursor-pointer" />
+			<Avatar id="avatar-menu" src={user.avatarUrl || '/images/logo.svg'} class="cursor-pointer" />
 			<NavHamburger class1="w-full md:flex md:w-auto md:order-1" />
 		</div>
 		<Dropdown placement="bottom" triggeredBy="#avatar-menu">
