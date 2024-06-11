@@ -83,7 +83,7 @@ func Run(publicFiles, templateFiles fs.FS) error {
 	apiHandler.Echo.Renderer = tr
 
 	srv := server.NewServer(
-		server.WithHostPort(cfg.Host, cfg.Port),
+		server.WithHostPort("", cfg.Port),
 		server.WithHandler(apiHandler),
 		server.WithReadTimeout(cfg.Server.ReadTimeout),
 		server.WithReadHeaderTimeout(cfg.Server.ReadHeaderTimeout),
@@ -92,13 +92,15 @@ func Run(publicFiles, templateFiles fs.FS) error {
 		server.WithErrorSlog(logger, slog.LevelDebug),
 	)
 
+	logger.Info("juicer info", slog.String("env", cfg.ENV), slog.String("website_url", cfg.WebsiteURL))
+
 	server.SetupRoutes(apiHandler.Echo, apiHandler, publicFS)
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT, syscall.SIGHUP)
 	defer stop()
 
 	go func() {
-		logger.Info("server is listening", slog.String("addr", "https://localhost:1337"))
+		logger.Info("server is listening", slog.String("addr", srv.Addr))
 		if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			logger.Error("server failed to start", slog.Any("error", err))
 			os.Exit(1)

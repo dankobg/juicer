@@ -118,6 +118,7 @@ prune-all: prune && prune-volumes
 
 # ----------------------------------------------------------------------------
 
+# checks if mkcert is installed
 _require_mkcert:
 	#!/usr/bin/env sh
 	command -v mkcert >/dev/null 2>&1 || { echo >&2 "mkcert is required, please install it to work with certs"; exit 1; }
@@ -130,45 +131,18 @@ certs-install: _require_mkcert
 certs-uninstall: _require_mkcert
 	mkcert -uninstall && rm -rf "$(mkcert -CAROOT)"
 
-# setup certs for api and web
+# generate certs
 certs: _require_mkcert
-	rm -f {{cwd}}/certs/local*.pem \
+	rm -f {{cwd}}/certs/local*.pem && \
 	mkcert -cert-file /tmp/local-cert.pem -key-file /tmp/local-key.pem "{{dev_domain}}" "*.{{dev_domain}}" localhost 127.0.0.1 ::1 && \
-	cp /tmp/local-key.pem {{cwd}}/certs && cp /tmp/local-cert.pem {{cwd}}/certs
+	cp /tmp/local-{key,cert}.pem {{cwd}}/certs && \
+	rm -f /tmp/local-{cert,key}.pem
 
 # ----------------------------------------------------------------------------
 
-# Shell into juicer docker container
-sh-juicer:
-	docker compose exec -it juicer sh
-
-# Shell into postgres docker container
-sh-pg:
-	docker compose exec -it pg sh
-
-# Shell into redis docker container
-sh-redis:
-	docker compose exec -it redis sh
-
-# Shell into kratos docker container
-sh-kratos:
-	docker compose exec -it kratos sh
-
-# Shell into keto docker container
-sh-keto:
-	docker compose exec -it keto sh
-
-# Shell into mailpit docker container
-sh-mailpit:
-	docker compose exec -it mailpit sh
-
-# Shell into traefik docker container
-sh-traefik:
-	docker compose exec -it traefik sh
-
-# Shell into web docker container
-sh-web:
-	docker compose exec -it web sh
+# Shell into a docker compose container by service name
+sh name:
+	docker compose exec -it {{name}} sh
 
 # connect to redis via redis-cli
 rediscli:

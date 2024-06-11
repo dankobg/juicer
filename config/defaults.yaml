@@ -1,5 +1,5 @@
 env: development
-host: https://juicer-dev.xyz
+host: localhost
 port: 1337
 base_url: https://juicer-dev.xyz
 website_url: https://juicer-dev.xyz
@@ -17,7 +17,7 @@ server:
 
 cors:
   allow_origins:
-    - https://juicer.dev.xyz
+    - https://juicer-dev.xyz
   allow_methods:
     - GET
     - POSt
