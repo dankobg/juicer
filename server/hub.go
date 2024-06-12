@@ -12,9 +12,18 @@ import (
 )
 
 type Message struct {
-	Type     string          `json:"t"`
-	ClientID string          `json:"c"`
-	Data     json.RawMessage `json:"d"`
+	Type string          `json:"t"`
+	Data json.RawMessage `json:"d"`
+}
+
+type ClientMessage struct {
+	*Message
+	ClientID string `json:"c"`
+}
+
+type GameInfo struct {
+	GameID string
+	RoomID string
 }
 
 type Hub struct {
@@ -23,10 +32,11 @@ type Hub struct {
 	Rooms              map[string]*Room
 	ClientConnected    chan *Client
 	ClientDisconnected chan *Client
-	Broadcast          chan *Message
+	BroadcastLobby     chan *Message
 	BroadcastRoom      chan *Message
 	Log                *slog.Logger
 	Rdb                *redis.Client
+	ClientsInGame      map[string]GameInfo
 }
 
 func NewHub(logger *slog.Logger, rdb *redis.Client) *Hub {
@@ -36,20 +46,24 @@ func NewHub(logger *slog.Logger, rdb *redis.Client) *Hub {
 		Rooms:              make(map[string]*Room),
 		ClientConnected:    make(chan *Client),
 		ClientDisconnected: make(chan *Client),
-		Broadcast:          make(chan *Message, 256),
+		BroadcastLobby:     make(chan *Message, 256),
 		BroadcastRoom:      make(chan *Message, 256),
 		Log:                logger,
 		Rdb:                rdb,
+		ClientsInGame:      make(map[string]GameInfo),
 	}
 }
 
 func (h *Hub) ClientsCount() int {
 	return len(h.Clients)
-
 }
 
 func (h *Hub) RoomsCount() int {
 	return len(h.Rooms)
+}
+
+func (h *Hub) ClientsInGameCount() int {
+	return len(h.ClientsInGame)
 }
 
 func (h *Hub) addClient(client *Client) {
@@ -79,6 +93,12 @@ func (h *Hub) removeRoom(room *Room) {
 func (h *Hub) HandleClientConnected(client *Client) {
 	h.addClient(client)
 
+	if _, ok := h.ClientsInGame[client.ID]; ok {
+		fmt.Printf("----------------- CLIENT IN GAME ----------------- %v", ok)
+	} else {
+		fmt.Printf("------------------ NOT IN GAME ------------------- %v", ok)
+	}
+
 	h.Log.Debug("client connected",
 		slog.String("client_id", client.ID),
 		slog.String("room_id", client.RoomID),
@@ -87,14 +107,11 @@ func (h *Hub) HandleClientConnected(client *Client) {
 		slog.Int("rooms_count", h.RoomsCount()),
 	)
 
-	clientJoinedMsg := &Message{Type: "client_joined", Data: []byte(fmt.Sprintf(`{"msg":"client joined","id":"%s"}`, client.ID))}
-	clientsCountMsg := &Message{Type: "clients_count", Data: []byte(fmt.Sprintf(`{"lobby":"%d","rooms":"%d"}`, h.ClientsCount(), h.RoomsCount()))}
-	for _, lobbyClient := range h.Clients {
-		h.Broadcast <- clientsCountMsg
-		if lobbyClient.ID != client.ID {
-			h.Broadcast <- clientJoinedMsg
-		}
-	}
+	clientsCountMsg := &Message{Type: "clients_count", Data: []byte(fmt.Sprintf(`{"lobby":"%d","rooms":"%d","in_game":"%d"}`, h.ClientsCount(), h.RoomsCount(), h.ClientsInGameCount()))}
+	h.BroadcastLobby <- clientsCountMsg
+
+	// clientJoinedMsg := &Message{Type: "client_joined", Data: []byte(fmt.Sprintf(`{"msg":"client joined","id":"%s"}`, client.ID))}
+	// h.BroadcastLobby <- clientJoinedMsg
 }
 
 func (h *Hub) HandleClientDisconnected(client *Client) {
@@ -110,26 +127,33 @@ func (h *Hub) HandleClientDisconnected(client *Client) {
 
 	close(client.Send)
 
-	clientLeftMsg := &Message{Type: "client_left", Data: []byte(fmt.Sprintf(`{"msg": "client left", "id": "%s"}`, client.ID))}
-	clientsCountMsg := &Message{Type: "clients_count", Data: []byte(fmt.Sprintf(`{"lobby":"%d","rooms":"%d"}`, h.ClientsCount(), h.RoomsCount()))}
-	for range h.Clients {
-		h.Broadcast <- clientLeftMsg
-		h.Broadcast <- clientsCountMsg
-	}
+	clientsCountMsg := &Message{Type: "clients_count", Data: []byte(fmt.Sprintf(`{"lobby":"%d","rooms":"%d","in_game":"%d"}`, h.ClientsCount(), h.RoomsCount(), h.ClientsInGameCount()))}
+	h.BroadcastLobby <- clientsCountMsg
+
+	// clientLeftMsg := &Message{Type: "client_left", Data: []byte(fmt.Sprintf(`{"msg": "client left", "id": "%s"}`, client.ID))}
+	// h.BroadcastLobby <- clientLeftMsg
+
 }
 
-func (h *Hub) ProcessMessage(msg *Message) error {
+func (h *Hub) ProcessMessage(client *Client, msg *Message) error {
+	cmsg := &ClientMessage{
+		ClientID: client.ID,
+		Message:  msg,
+	}
+
 	switch msg.Type {
+	case "echo":
+		h.onClientEcho(cmsg)
 	case "seek_game":
-		h.onClientSeekGame(msg)
+		h.onClientSeekGame(cmsg)
 	case "cancel_seek_game":
-		h.onClientCancelSeekGame(msg)
+		h.onClientCancelSeekGame(cmsg)
 	}
 
 	return nil
 }
 
-func (h *Hub) HandleBroadcast(msg *Message) {
+func (h *Hub) HandleBroadcastToLobby(msg *Message) {
 	h.Log.Debug("broadcast recv", slog.String("type", msg.Type), slog.String("data", string(msg.Data)))
 
 	for _, client := range h.Clients {
@@ -161,58 +185,75 @@ func (h *Hub) HandleBroadcastToRoom(roomID string, msg *Message) {
 	}
 }
 
-func (h *Hub) onClientSeekGame(msg *Message) {
+func (h *Hub) HandleBroadcastToClient(clientID string, msg *Message) {
+	if c, ok := h.Clients[clientID]; ok {
+		select {
+		case c.Send <- msg:
+		default:
+			h.removeClient(c)
+			close(c.Send)
+		}
+	}
+}
+
+func (h *Hub) onClientEcho(cms *ClientMessage) {
+	h.HandleBroadcastToClient(cms.ClientID, cms.Message)
+}
+
+func (h *Hub) onClientSeekGame(cmsg *ClientMessage) {
 	ctx := context.TODO()
 
 	type clientSeekingGame struct {
 		GameMode string `json:"game_mode"`
 	}
 	data := clientSeekingGame{}
-	if err := json.Unmarshal(msg.Data, &data); err != nil {
-		h.Log.Error("seeking_game unmarshal msg", slog.String("client_id", msg.ClientID), slog.Any("error", err))
+	if err := json.Unmarshal(cmsg.Data, &data); err != nil {
+		h.Log.Error("seeking_game unmarshal msg", slog.String("client_id", cmsg.ClientID), slog.Any("error", err))
 		return
 	}
 
 	if _, err := h.Rdb.Pipelined(ctx, func(p redis.Pipeliner) error {
-		if err := p.ZAdd(ctx, "seeking_game", redis.Z{Score: 1500, Member: msg.ClientID}).Err(); err != nil {
-			h.Log.Error("seeking_game add to priority queue", slog.String("client_id", msg.ClientID), slog.Any("error", err))
+		if err := p.ZAdd(ctx, "seeking_game", redis.Z{Score: 1500, Member: cmsg.ClientID}).Err(); err != nil {
+			h.Log.Error("seeking_game add to priority queue", slog.String("client_id", cmsg.ClientID), slog.Any("error", err))
 		}
-		if err := p.Publish(ctx, "seeking_game:joined", msg.ClientID).Err(); err != nil {
-			h.Log.Error("seeking_game publish joined", slog.String("client_id", msg.ClientID), slog.Any("error", err))
+		if err := p.Publish(ctx, "seeking_game:joined", cmsg.ClientID).Err(); err != nil {
+			h.Log.Error("seeking_game publish joined", slog.String("client_id", cmsg.ClientID), slog.Any("error", err))
 		}
 		return nil
 	}); err != nil {
-		h.Log.Error("seeking_game pipeline", slog.String("client_id", msg.ClientID), slog.Any("error", err))
+		h.Log.Error("seeking_game pipeline", slog.String("client_id", cmsg.ClientID), slog.Any("error", err))
 	}
 
-	h.Log.Debug("seek game success", slog.String("client_id", msg.ClientID))
+	h.updateSeekingPlayersCount()
+
+	h.Log.Debug("seek game success", slog.String("client_id", cmsg.ClientID))
 }
 
-func (h *Hub) onClientCancelSeekGame(msg *Message) {
+func (h *Hub) onClientCancelSeekGame(cmsg *ClientMessage) {
 	ctx := context.TODO()
 
-	type clientCancelSeekingGame struct {
-		ClientID string `json:"client_id"`
-	}
-	data := clientCancelSeekingGame{}
-	if err := json.Unmarshal(msg.Data, &data); err != nil {
-		h.Log.Error("cancel_seeking_game unmarshal msg", slog.String("client_id", msg.ClientID), slog.Any("error", err))
-		return
-	}
+	// type clientCancelSeekingGame struct{}
+	// data := clientCancelSeekingGame{}
+	// if err := json.Unmarshal(cmsg.Data, &data); err != nil {
+	// 	h.Log.Error("cancel_seeking_game unmarshal msg", slog.String("client_id", cmsg.ClientID), slog.Any("error", err))
+	// 	return
+	// }
 
 	if _, err := h.Rdb.Pipelined(ctx, func(p redis.Pipeliner) error {
-		if err := p.ZRem(ctx, "seeking_game", msg.ClientID).Err(); err != nil {
-			h.Log.Error("cancel_seeking_game remove from priority queue", slog.String("client_id", msg.ClientID), slog.Any("error", err))
+		if err := p.ZRem(ctx, "seeking_game", cmsg.ClientID).Err(); err != nil {
+			h.Log.Error("cancel_seeking_game remove from priority queue", slog.String("client_id", cmsg.ClientID), slog.Any("error", err))
 		}
-		if err := p.Publish(ctx, "seeking_game:left", msg.ClientID).Err(); err != nil {
-			h.Log.Error("cancel_seeking_game publish left", slog.String("client_id", msg.ClientID), slog.Any("error", err))
+		if err := p.Publish(ctx, "seeking_game:left", cmsg.ClientID).Err(); err != nil {
+			h.Log.Error("cancel_seeking_game publish left", slog.String("client_id", cmsg.ClientID), slog.Any("error", err))
 		}
 		return nil
 	}); err != nil {
-		h.Log.Error("cancel_seeking_game pipeline", slog.String("client_id", msg.ClientID), slog.Any("error", err))
+		h.Log.Error("cancel_seeking_game pipeline", slog.String("client_id", cmsg.ClientID), slog.Any("error", err))
 	}
 
-	h.Log.Debug("cancel seek game success", slog.String("client_id", msg.ClientID))
+	h.updateSeekingPlayersCount()
+
+	h.Log.Debug("cancel seek game success", slog.String("client_id", cmsg.ClientID))
 }
 
 func (h *Hub) Run(ctx context.Context) {
@@ -226,8 +267,8 @@ func (h *Hub) Run(ctx context.Context) {
 			h.HandleClientConnected(client)
 		case client := <-h.ClientDisconnected:
 			h.HandleClientDisconnected(client)
-		case msg := <-h.Broadcast:
-			h.HandleBroadcast(msg)
+		case msg := <-h.BroadcastLobby:
+			h.HandleBroadcastToLobby(msg)
 		// case msg := <-h.BroadcastRoom:
 		// 	h.HandleBroadcastToRoom("???????????????????????????",msg)
 		case <-ctx.Done():
@@ -290,7 +331,48 @@ func (h *Hub) TryMatchPlayers(ctx context.Context) {
 		h.Log.Error("match found pipeline", slog.String("room_id", room.ID), slog.Any("error", err))
 	}
 
+	gameInfo := GameInfo{
+		RoomID: room.ID,
+		GameID: room.GameState.GameID,
+	}
+
+	h.addClientsToGame(gameInfo, c1.ID, c2.ID)
+	h.updateSeekingPlayersCount()
+
+	matchFoundData := []byte(fmt.Sprintf(`{"room_id":"%s","game_id":"%s"}`, room.ID, room.GameState.GameID))
+	h.HandleBroadcastToClient(c1.ID, &Message{Type: "match_found", Data: matchFoundData})
+	h.HandleBroadcastToClient(c2.ID, &Message{Type: "match_found", Data: matchFoundData})
+
+	clientsCountMsg := &Message{Type: "clients_count", Data: []byte(fmt.Sprintf(`{"lobby":"%d","rooms":"%d","in_game":"%d"}`, h.ClientsCount(), h.RoomsCount(), h.ClientsInGameCount()))}
+	h.BroadcastLobby <- clientsCountMsg
+
+	fmt.Printf("CLIENTS IN GAME: %+v\n", h.ClientsInGame)
+
 	h.Log.Debug("match found success", slog.String("room_id", room.ID))
+}
+
+func (h *Hub) addClientsToGame(info GameInfo, c1, c2 string) {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	h.ClientsInGame[c1] = info
+	h.ClientsInGame[c2] = info
+}
+
+func (h *Hub) removeClientsFromGame(clientIDs ...string) {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	for _, id := range clientIDs {
+		delete(h.ClientsInGame, id)
+	}
+}
+
+func (h *Hub) updateSeekingPlayersCount() {
+	seekingCount, err := h.seekingGamePlayersCount()
+	if err != nil {
+		h.Log.Debug("seeking players zcard", slog.Any("error", err))
+		return
+	}
+	h.BroadcastLobby <- &Message{Type: "seeking_count", Data: []byte(fmt.Sprint(seekingCount))}
 }
 
 func (h *Hub) RunMatchmaking(ctx context.Context) {
@@ -306,4 +388,9 @@ func (h *Hub) RunMatchmaking(ctx context.Context) {
 			fmt.Println("matchmaking context done")
 		}
 	}
+}
+
+func (h *Hub) seekingGamePlayersCount() (int64, error) {
+	ctx := context.TODO()
+	return h.Rdb.ZCard(ctx, "seeking_game").Result()
 }

@@ -1,6 +1,9 @@
 package server
 
-import juicer "github.com/dankobg/juicer/engine"
+import (
+	juicer "github.com/dankobg/juicer/engine"
+	"github.com/dankobg/juicer/random"
+)
 
 type GameType uint8
 
@@ -33,6 +36,7 @@ type Player struct {
 }
 
 type GameState struct {
+	GameID       string
 	Chess        *juicer.Chess
 	White, Black *Player
 	GameType     GameType
@@ -41,12 +45,15 @@ type GameState struct {
 }
 
 func NewGameState(white, black *Player, gameType GameType, gameMode GameMode) (*GameState, error) {
+	gameID := random.AlphaNumeric(32)
+
 	chess, err := juicer.NewChess(juicer.FENStartingPosition)
 	if err != nil {
 		return nil, err
 	}
 
 	gs := &GameState{
+		GameID:   gameID,
 		Chess:    chess,
 		White:    white,
 		Black:    black,

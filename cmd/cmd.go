@@ -3,6 +3,7 @@ package cmd
 import (
 	"context"
 	"errors"
+	"expvar"
 	"fmt"
 	"html/template"
 	"io"
@@ -11,6 +12,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"runtime"
 	"syscall"
 	"time"
 
@@ -21,6 +23,10 @@ import (
 	"github.com/dankobg/juicer/redis"
 	"github.com/dankobg/juicer/server"
 	"github.com/labstack/echo/v4"
+)
+
+var (
+	numGoroutinesVar = expvar.NewInt("goroutines")
 )
 
 type TemplateRenderer struct {
@@ -112,9 +118,24 @@ func Run(publicFiles, templateFiles fs.FS) error {
 		apiHandler.Hub.Run(context.TODO())
 	}()
 
+	go func() {
+		numGoroutinesVar.Set(int64(runtime.NumGoroutine()))
+		ticker := time.NewTicker(time.Second * 60)
+		defer ticker.Stop()
+
+		for {
+			select {
+			case <-ticker.C:
+				numGoroutinesVar.Set(int64(runtime.NumGoroutine()))
+			case <-ctx.Done():
+				return
+			}
+		}
+	}()
+
 	<-ctx.Done()
 	logger.Info("received interruption signal, starting shutdown process")
-	shutdownCtx, cancel := context.WithTimeout(context.Background(), time.Second*30)
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), cfg.Server.GracefulShutdownTimeout)
 	defer cancel()
 
 	if err := srv.Shutdown(shutdownCtx); err != nil {

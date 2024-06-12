@@ -211,10 +211,10 @@ services:
       - .env
     logging: *dev-logging
   # ----------------------------------------------------------------------------
-  atlas:
-    environment:
-      - ENV=development
-    logging: *dev-logging
+  # atlas:
+  #   environment:
+  #     - ENV=development
+  #   logging: *dev-logging
   # ----------------------------------------------------------------------------
   mailpit:
     image: axllent/mailpit:latest

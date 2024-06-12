@@ -36,13 +36,14 @@ type Juicer struct {
 
 // ServerConfig contains the http server settings
 type ServerConfig struct {
-	ReadHeaderTimeout time.Duration `koanf:"read_header_timeout"`
-	ReadTimeout       time.Duration `koanf:"read_timeout"`
-	WriteTimeout      time.Duration `koanf:"write_timeout"`
-	IdleTimeout       time.Duration `koanf:"idle_timeout"`
-	UseTLS            bool          `koanf:"use_tls"`
-	CERT_FILE         string        `koanf:"cert_file"`
-	KEY_FILE          string        `koanf:"key_file"`
+	ReadHeaderTimeout       time.Duration `koanf:"read_header_timeout"`
+	ReadTimeout             time.Duration `koanf:"read_timeout"`
+	WriteTimeout            time.Duration `koanf:"write_timeout"`
+	IdleTimeout             time.Duration `koanf:"idle_timeout"`
+	GracefulShutdownTimeout time.Duration `koanf:"graceful_shutdown_timeout"`
+	UseTLS                  bool          `koanf:"use_tls"`
+	CERT_FILE               string        `koanf:"cert_file"`
+	KEY_FILE                string        `koanf:"key_file"`
 }
 
 // CorsConfig contains the CORS settings

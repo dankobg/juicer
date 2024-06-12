@@ -82,11 +82,11 @@ test-coverage:
 # ----------------------------------------------------------------------------
 
 # Run docker compose watch
-watch-build:
+watch:
 	docker compose watch
 
-# Run docker compose watch without build
-watch:
+# Run docker compose watch without building & starting services
+watch-only:
 	docker compose watch --no-up
 
 # Run docker compose up -d

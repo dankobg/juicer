@@ -64,8 +64,7 @@ func (c *Client) readPump() {
 		}
 
 		c.Log.Debug("readpump recv", slog.String("client_id", c.ID), slog.String("type", msg.Type), slog.String("data", string(msg.Data)))
-		msg.ClientID = c.ID
-		if err := c.Hub.ProcessMessage(msg); err != nil {
+		if err := c.Hub.ProcessMessage(c, msg); err != nil {
 			c.Log.Error("hub process message", slog.Any("error", err))
 			c.sendErrorMsg(err)
 			continue
