@@ -1,6 +1,8 @@
 package server
 
 import (
+	"time"
+
 	juicer "github.com/dankobg/juicer/engine"
 	"github.com/dankobg/juicer/random"
 )
@@ -22,10 +24,10 @@ const (
 	GameModeHyperBullet
 )
 
-type State uint8
+type MatchState uint8
 
 const (
-	StateIdle State = iota
+	WaitingStart MatchState = iota
 	StateStarted
 	StateFinished
 )
@@ -41,7 +43,8 @@ type GameState struct {
 	White, Black *Player
 	GameType     GameType
 	GameMode     GameMode
-	State        State
+	MatchState   MatchState
+	StartTime    time.Time
 }
 
 func NewGameState(white, black *Player, gameType GameType, gameMode GameMode) (*GameState, error) {
@@ -53,13 +56,13 @@ func NewGameState(white, black *Player, gameType GameType, gameMode GameMode) (*
 	}
 
 	gs := &GameState{
-		GameID:   gameID,
-		Chess:    chess,
-		White:    white,
-		Black:    black,
-		GameType: gameType,
-		GameMode: gameMode,
-		State:    StateIdle,
+		GameID:     gameID,
+		Chess:      chess,
+		White:      white,
+		Black:      black,
+		GameType:   gameType,
+		GameMode:   gameMode,
+		MatchState: WaitingStart,
 	}
 
 	return gs, nil

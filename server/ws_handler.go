@@ -39,13 +39,13 @@ func newClientIDCookie(clientID string) *http.Cookie {
 
 func (h *ApiHandler) serverWs(c echo.Context) error {
 	sess := GetSession(c.Request().Context())
-	var anonymous bool
 	var clientID string
+	authStatus := clientAnonymous
 
 	if sess != nil && sess.Active != nil && *sess.Active {
 		clientID = sess.Identity.Id
+		authStatus = clientAuth
 	} else {
-		anonymous = true
 		cookie, err := c.Cookie(juicerClientIDCookieName)
 		if err != nil {
 			clientID = random.AlphaNumeric(32)
@@ -54,10 +54,10 @@ func (h *ApiHandler) serverWs(c echo.Context) error {
 		}
 	}
 
-	h.Log.Debug("ws client connected", slog.String("client_id", clientID), slog.Bool("anonymous", anonymous))
+	h.Log.Debug("ws client connected", slog.String("client_id", clientID), slog.String("auth_status", authStatus.String()))
 
 	respHeader := http.Header{}
-	if anonymous {
+	if authStatus.Anonymous() {
 		respHeader.Set("Set-Cookie", newClientIDCookie(clientID).String())
 	}
 

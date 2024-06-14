@@ -14,6 +14,32 @@ const (
 	maxMessageSize = 1024
 )
 
+type clientAuthStatus uint8
+
+const (
+	clientAuth clientAuthStatus = iota + 1
+	clientAnonymous
+)
+
+func (cas clientAuthStatus) String() string {
+	switch cas {
+	case clientAuth:
+		return "auth"
+	case clientAnonymous:
+		return "anonymous"
+	default:
+		return "unknown"
+	}
+}
+
+func (cas clientAuthStatus) Anonymous() bool {
+	return cas == clientAnonymous
+}
+
+func (cas clientAuthStatus) Authed() bool {
+	return cas == clientAuth
+}
+
 type Client struct {
 	ID     string
 	RoomID string

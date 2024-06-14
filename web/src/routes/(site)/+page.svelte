@@ -2,6 +2,7 @@
 	import { JuicerWS } from '$lib/ws/ws';
 	import { onMount } from 'svelte';
 	import { Spinner } from 'flowbite-svelte';
+	import Chat from '$lib/chat/Chat.svelte';
 
 	let outerSize = '35rem';
 
@@ -15,7 +16,8 @@
 
 	let roomId = '';
 	let gameId = '';
-	let seekingGame = false;
+
+	let state: 'idle' | 'seeking' | 'playing' = 'idle';
 
 	onMount(() => {
 		ws.connect();
@@ -41,10 +43,9 @@
 						break;
 
 					case 'match_found':
-						seekingGame = false;
+						state = 'playing';
 						roomId = msg.d.room_id;
 						gameId = msg.d.game_id;
-						seekingGame = false;
 						break;
 
 					default:
@@ -89,7 +90,7 @@
 	class="bg-green-500 text-white py-2 px-4 rounded mb-2"
 	on:click={() => {
 		ws.send(JSON.stringify({ t: 'seek_game', d: { game_mode: 'blitz' } }));
-		seekingGame = true;
+		state = 'seeking';
 	}}
 >
 	SEEK GAME</button
@@ -99,19 +100,25 @@
 	class="bg-orange-500 text-white py-2 px-4 rounded mb-2"
 	on:click={() => {
 		ws.send(JSON.stringify({ t: 'cancel_seek_game' }));
-		seekingGame = false;
+		state = 'idle';
 	}}
 >
 	CANCEL SEEK GAME</button
 >
 
-{#if seekingGame}
+{#if state === 'seeking'}
 	<div class="flex gap-3 m-4">
 		<Spinner />
 		<p class="">Searching for game...</p>
 	</div>
 {/if}
 
-<!-- <div style="width: {outerSize}; height: {outerSize};">
-	<juicer-board fen="start" coords="inside" files="start" ranks="start" interactive show-ghost></juicer-board>
-</div> -->
+{#if state === 'playing'}
+	<div style="display:flex;flex-wrap:wrap;gap:1rem;">
+		<div style="width: {outerSize}; height: {outerSize};">
+			<juicer-board fen="start" coords="inside" files="start" ranks="start" interactive show-ghost></juicer-board>
+		</div>
+
+		<Chat />
+	</div>
+{/if}

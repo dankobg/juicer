@@ -2,6 +2,7 @@ package server
 
 import (
 	"math/rand/v2"
+	"sync"
 
 	"github.com/dankobg/juicer/random"
 )
@@ -10,6 +11,7 @@ type Room struct {
 	ID        string
 	Clients   map[string]*Client
 	GameState *GameState
+	mu        sync.Mutex
 }
 
 func (r *Room) String() string {
@@ -32,17 +34,28 @@ func NewRoom(c1, c2 *Client) (*Room, error) {
 		return nil, err
 	}
 
-	clients := make(map[string]*Client)
-	clients[c1.ID] = c1
-	clients[c2.ID] = c2
-
 	room := &Room{
 		ID:        roomId,
-		Clients:   clients,
 		GameState: gs,
+		Clients:   make(map[string]*Client),
 	}
 
+	room.addClient(c1)
+	room.addClient(c2)
+
 	return room, nil
+}
+
+func (r *Room) addClient(client *Client) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	r.Clients[client.ID] = client
+}
+
+func (r *Room) removeClient(clientID string) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	delete(r.Clients, clientID)
 }
 
 func (r *Room) StartGame() error {

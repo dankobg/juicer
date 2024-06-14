@@ -19,6 +19,7 @@ import (
 	"github.com/dankobg/juicer/config"
 	"github.com/dankobg/juicer/keto"
 	"github.com/dankobg/juicer/kratos"
+	"github.com/dankobg/juicer/loggerx"
 	"github.com/dankobg/juicer/mailer"
 	"github.com/dankobg/juicer/redis"
 	"github.com/dankobg/juicer/server"
@@ -26,7 +27,7 @@ import (
 )
 
 var (
-	numGoroutinesVar = expvar.NewInt("goroutines")
+	numGoroutinesVar = expvar.NewInt("num_goroutines")
 )
 
 type TemplateRenderer struct {
@@ -44,11 +45,10 @@ func Run(publicFiles, templateFiles fs.FS) error {
 		return err
 	}
 
-	logger := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
-		AddSource: false,
-		Level:     slog.LevelDebug,
-	}))
-	slog.SetDefault(logger)
+	logger := loggerx.New(
+		loggerx.WithConsolePretty(cfg.ENV != "production" && cfg.Logger.Pretty),
+		loggerx.WithLevel(slog.LevelDebug),
+	)
 
 	publicFS, err := fs.Sub(publicFiles, "public")
 	if err != nil {

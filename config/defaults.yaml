@@ -79,3 +79,4 @@ email:
 
 logger:
   level: debug
+  pretty: true

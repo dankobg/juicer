@@ -96,7 +96,8 @@ type EmailConfig struct {
 
 // LoggerConfig contains the logger settings
 type LoggerConfig struct {
-	Level string `koanf:"level"`
+	Level  string `koanf:"level"`
+	Pretty bool   `koanf:"pretty"`
 }
 
 // Config represents the app config

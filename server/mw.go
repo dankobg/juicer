@@ -1,6 +1,7 @@
 package server
 
 import (
+	"expvar"
 	"time"
 
 	"github.com/labstack/echo/v4"
@@ -47,3 +48,12 @@ var (
 		},
 	}
 )
+
+var numRequestsVar = expvar.NewInt("num_requests")
+
+func requestsCount(next echo.HandlerFunc) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		numRequestsVar.Add(1)
+		return next(c)
+	}
+}

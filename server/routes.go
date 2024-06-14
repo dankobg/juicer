@@ -16,6 +16,7 @@ func SetupRoutes(mux *echo.Echo, h *ApiHandler, publicFiles fs.FS) {
 	mux.Use(middleware.CORSWithConfig(corsConfig))
 	mux.Use(middleware.RateLimiterWithConfig(rateLimiterConfig))
 	mux.Use(h.AttachSessionData)
+	mux.Use(requestsCount)
 
 	// expvar routes
 	mux.GET("/debug/vars", echo.WrapHandler(expvar.Handler()))

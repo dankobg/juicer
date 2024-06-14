@@ -3,10 +3,12 @@ package juicer
 import (
 	"bufio"
 	"fmt"
+	"os"
 	"os/exec"
 	"sort"
 	"strconv"
 	"strings"
+	"text/tabwriter"
 	"time"
 )
 
@@ -156,9 +158,7 @@ func CompareWithStockfishPerft(fen string, depth int, sfBinaryPath *string) {
 		}
 
 		if !strings.HasPrefix(line, "Stockfish") &&
-			!strings.HasPrefix(line, "Fen") &&
-			!strings.HasPrefix(line, "Key") &&
-			!strings.HasPrefix(line, "Checkers") &&
+			!strings.HasPrefix(line, "info") &&
 			!strings.HasPrefix(line, "Nodes searched") &&
 			line != "" {
 			pair := strings.Split(line, ": ")
@@ -179,16 +179,19 @@ func CompareWithStockfishPerft(fen string, depth int, sfBinaryPath *string) {
 
 	cmd.Wait()
 
-	fmt.Printf("%6v | %8v | %8v | %8v", "move", "sfish", "juicer", "dif")
-	fmt.Printf("\n-------------------------------------------\n")
+	tw := tabwriter.NewWriter(os.Stdout, 11, 4, 1, ' ', tabwriter.Debug)
+
+	fmt.Fprintf(tw, "+----------------------------------------------+\n")
+	fmt.Fprintf(tw, "| Move\t Stockfish\t Juicer\t Diff\t\n")
+	fmt.Fprintf(tw, "+----------------------------------------------+\n")
 
 	for k, v := range sf {
 		if k != "total" {
-			fmt.Printf("%6v | %8v | %8v | %8v\n", k, v, mine[k], v-mine[k])
+			fmt.Fprintf(tw, "| %v\t %v\t %v\t %v\t\n", k, v, mine[k], v-mine[k])
 		}
 	}
-
-	fmt.Printf("---------------------------------------------")
-	fmt.Printf("\n%6v | %8v | %8v | %8v\n", "Nodes", sf["total"], mine["total"], sf["total"]-mine["total"])
-	fmt.Printf("---------------------------------------------\n\n")
+	fmt.Fprintf(tw, "+----------------------------------------------+\n")
+	fmt.Fprintf(tw, "| %v\t %v\t %v\t %v\t\n", "Nodes", sf["total"], mine["total"], sf["total"]-mine["total"])
+	fmt.Fprintf(tw, "+----------------------------------------------+\n")
+	tw.Flush()
 }
