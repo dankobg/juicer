@@ -1,4 +1,4 @@
-package juicer
+package engine
 
 import (
 	"math/rand/v2"

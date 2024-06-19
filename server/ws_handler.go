@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"time"
 
+	pb "github.com/dankobg/juicer/pb/proto/juicer"
 	"github.com/dankobg/juicer/random"
 	"github.com/gorilla/websocket"
 	"github.com/labstack/echo/v4"
@@ -57,7 +58,7 @@ func (h *ApiHandler) serverWs(c echo.Context) error {
 	h.Log.Debug("ws client connected", slog.String("client_id", clientID), slog.String("auth_status", authStatus.String()))
 
 	respHeader := http.Header{}
-	if authStatus.Anonymous() {
+	if authStatus.anonymous() {
 		respHeader.Set("Set-Cookie", newClientIDCookie(clientID).String())
 	}
 
@@ -66,15 +67,15 @@ func (h *ApiHandler) serverWs(c echo.Context) error {
 		return fmt.Errorf("failed to upgrade connection: %w", err)
 	}
 
-	client := &Client{
-		ID:   clientID,
-		Conn: conn,
-		Send: make(chan *Message, 256),
-		Hub:  h.Hub,
-		Log:  h.Log,
+	client := &client{
+		id:   clientID,
+		conn: conn,
+		send: make(chan *pb.Message, 256),
+		hub:  h.Hub,
+		log:  h.Log,
 	}
 
-	h.Hub.ClientConnected <- client
+	h.Hub.clientConnected <- client
 
 	go client.writePump()
 	go client.readPump()

@@ -35,6 +35,11 @@ default:
 gen:
 	go generate ./...
 
+# Generate protobuf
+bufgen:
+	protoc -I=./ --go_out=paths=source_relative:./pb ./proto/juicer/juicer.proto
+	cd web  && npm run bufgen
+
 # Run go vet
 vet:
 	go vet ./...

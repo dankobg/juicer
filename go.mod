@@ -10,9 +10,11 @@ require (
 	github.com/knadh/koanf/providers/file v0.1.0
 	github.com/knadh/koanf/v2 v2.1.1
 	github.com/labstack/echo/v4 v4.12.0
+	github.com/lmittmann/tint v1.0.4
 	github.com/ory/client-go v1.11.7
 	github.com/redis/go-redis/v9 v9.5.1
 	github.com/wneessen/go-mail v0.4.1
+	google.golang.org/protobuf v1.34.2
 )
 
 require (
@@ -23,7 +25,6 @@ require (
 	github.com/golang-jwt/jwt v3.2.2+incompatible // indirect
 	github.com/knadh/koanf/maps v0.1.1 // indirect
 	github.com/labstack/gommon v0.4.2 // indirect
-	github.com/lmittmann/tint v1.0.4 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect

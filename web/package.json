@@ -13,7 +13,9 @@
 		"lint": "prettier --check . && eslint .",
 		"format": "prettier --write .",
 		"test:integration": "playwright test",
-		"test:unit": "vitest"
+		"test:unit": "vitest",
+		"bufgen1": "npx buf generate proto",
+		"bufgen": "npx buf generate ../proto/juicer"
 	},
 	"dependencies": {
 		"@dankop/juicer-board": "^1.3.2",
@@ -27,6 +29,9 @@
 		"zod-to-json-schema": "^3.23.0"
 	},
 	"devDependencies": {
+		"@bufbuild/buf": "^1.33.0",
+		"@bufbuild/protobuf": "^1.10.0",
+		"@bufbuild/protoc-gen-es": "^1.10.0",
 		"@playwright/test": "^1.44.0",
 		"@sveltejs/adapter-static": "^3.0.1",
 		"@sveltejs/kit": "^2.5.8",

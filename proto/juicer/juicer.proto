@@ -1,0 +1,56 @@
+syntax = "proto3";
+
+package pb;
+option go_package = "github.com/dankobg/juicer/pb";
+
+
+message Message {
+  oneof event {
+		Error error = 1;
+    Echo echo = 2;
+		ClientConnected client_connected = 3;
+		ClientDisconnected client_disconnected = 4;
+		HubInfo hub_info = 5;
+		MatchFound match_found = 6;
+		SeekingCount seeking_count = 7;
+		SeekGame seek_game = 8;
+		CancelSeekGame cancel_seek_game = 9;
+  }
+}
+
+message Error {
+	string message = 1;
+}
+
+message Echo {
+  string message = 1;
+}
+
+message ClientConnected {
+  string id = 1;
+}
+
+message ClientDisconnected {
+  string id = 1;
+}
+
+message HubInfo {
+  int32 lobby = 1;
+  int32 rooms = 2;
+  int32 playing = 3;
+}
+
+message MatchFound {
+  string game_id = 1;
+  string room_id = 2;
+}
+
+message SeekingCount {
+  int32 count = 1;
+}
+
+message SeekGame {
+  string game_mode = 1;
+}
+
+message CancelSeekGame {}

@@ -3,6 +3,7 @@
 	import { onMount } from 'svelte';
 	import { Spinner } from 'flowbite-svelte';
 	import Chat from '$lib/chat/Chat.svelte';
+	import { CancelSeekGame, Echo, Message, SeekGame } from '$lib/gen/juicer_pb';
 
 	let outerSize = '35rem';
 
@@ -12,7 +13,7 @@
 	let lobbyCount = 0;
 	let roomsCount = 0;
 	let seekingCount = 0;
-	let inGameCount = 0;
+	let playingCount = 0;
 
 	let roomId = '';
 	let gameId = '';
@@ -24,31 +25,36 @@
 
 		ws.onmessage = (event: MessageEvent) => {
 			try {
-				const msg = JSON.parse(event.data);
-				console.debug(msg.t, msg.d);
+				const msg = Message.fromJsonString(event.data);
 
-				switch (msg.t) {
+				switch (msg.event.case) {
 					case 'error':
-						wsErr = msg.d;
+						wsErr = msg.event.value.message;
 						break;
-
-					case 'clients_count':
-						lobbyCount = msg.d.lobby;
-						roomsCount = msg.d.rooms;
-						inGameCount = msg.d.in_game;
+					case 'echo':
+						console.log('echo resp:', msg.event.value);
 						break;
-
-					case 'seeking_count':
-						seekingCount = msg.d;
+					case 'clientConnected':
+						console.log('client joined:', msg.event.value.id);
 						break;
-
-					case 'match_found':
+					case 'clientDisconnected':
+						console.log('client left:', msg.event.value.id);
+						break;
+					case 'hubInfo':
+						lobbyCount = msg.event.value.lobby;
+						roomsCount = msg.event.value.rooms;
+						playingCount = msg.event.value.playing;
+						break;
+					case 'seekingCount':
+						seekingCount = msg.event.value.count;
+						break;
+					case 'matchFound':
 						state = 'playing';
-						roomId = msg.d.room_id;
-						gameId = msg.d.game_id;
+						roomId = msg.event.value.roomId;
+						gameId = msg.event.value.gameId;
 						break;
-
 					default:
+						console.log('unkown message', msg.event.case, msg.event.value);
 						break;
 				}
 			} catch (error) {
@@ -67,7 +73,7 @@
 {/if}
 <p>In lobby: <strong>{lobbyCount}</strong></p>
 <p>rooms: <strong>{roomsCount}</strong></p>
-<p>In game: <strong>{inGameCount}</strong></p>
+<p>Playing: <strong>{playingCount}</strong></p>
 <p>seeking game: <strong>{seekingCount}</strong></p>
 
 {#if gameId}
@@ -80,7 +86,8 @@
 <button
 	class="bg-purple-500 text-white py-2 px-4 rounded mb-2"
 	on:click={() => {
-		ws.send(JSON.stringify({ t: 'echo', d: 'hello bozo' }));
+		const echoMsg = new Message({ event: { case: 'echo', value: new Echo({ message: 'hello bozo' }) } });
+		ws.send(echoMsg.toJsonString());
 	}}
 >
 	SEND ECHO MSG</button
@@ -89,7 +96,8 @@
 <button
 	class="bg-green-500 text-white py-2 px-4 rounded mb-2"
 	on:click={() => {
-		ws.send(JSON.stringify({ t: 'seek_game', d: { game_mode: 'blitz' } }));
+		const seekMsg = new Message({ event: { case: 'seekGame', value: new SeekGame({ gameMode: 'blitz' }) } });
+		ws.send(seekMsg.toJsonString());
 		state = 'seeking';
 	}}
 >
@@ -99,7 +107,8 @@
 <button
 	class="bg-orange-500 text-white py-2 px-4 rounded mb-2"
 	on:click={() => {
-		ws.send(JSON.stringify({ t: 'cancel_seek_game' }));
+		const cancelSeekMsg = new Message({ event: { case: 'cancelSeekGame', value: new CancelSeekGame() } });
+		ws.send(cancelSeekMsg.toJsonString());
 		state = 'idle';
 	}}
 >

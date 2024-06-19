@@ -1,4 +1,4 @@
-package juicer
+package engine
 
 import (
 	"bufio"

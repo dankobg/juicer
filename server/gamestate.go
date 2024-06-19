@@ -7,47 +7,77 @@ import (
 	"github.com/dankobg/juicer/random"
 )
 
-type GameType uint8
+type gameType uint8
 
 const (
-	GameTypeStandard GameType = iota
-	GameTypeChess960
+	gameTypeStandard gameType = iota
+	gameTypeChess960
 )
 
-type GameMode uint8
+type gameMode uint8
 
 const (
-	GameModeClassical GameMode = iota
-	GameModeRapid
-	GameModeBlitz
-	GameModeBullet
-	GameModeHyperBullet
+	gameModeClassical gameMode = iota
+	gameModeRapid
+	gameModeBlitz
+	gameModeBullet
+	gameModeHyperBullet
+)
+
+type result uint8
+
+const (
+	resultWhiteWon result = iota
+	resultBlackWon
+	resultDraw
+)
+
+type ResultStatus uint8
+
+const (
+	resultStatusUnknown ResultStatus = iota
+	resultStatusCheckmate
+	resultStatusInsufficientMaterial
+	resultStatusThreeFoldRepetition
+	resultStatusFiveFoldRepetition
+	resultStatusFiftyMoveRule
+	resultStatusSeventyFiveMoveRule
+	resultStatusStalemate
+	resultStatusResignation
+	resultStatusDrawAgreed
+	resultStatusFlagged
+	resultStatusAdjudication
+	resultStatusTimedOut
 )
 
 type MatchState uint8
 
 const (
-	WaitingStart MatchState = iota
-	StateStarted
-	StateFinished
+	matchStateIdle MatchState = iota
+	matchStateWaitingStart
+	matchStateStarted
+	matchStateFinished
+	matchStateAborted
 )
 
-type Player struct {
+type player struct {
 	ID   string
 	Name string
 }
 
-type GameState struct {
+type gameState struct {
 	GameID       string
 	Chess        *juicer.Chess
-	White, Black *Player
-	GameType     GameType
-	GameMode     GameMode
+	White, Black *player
+	GameType     gameType
+	GameMode     gameMode
+	Result       result
+	ResultStatus ResultStatus
 	MatchState   MatchState
 	StartTime    time.Time
 }
 
-func NewGameState(white, black *Player, gameType GameType, gameMode GameMode) (*GameState, error) {
+func NewGameState(white, black *player, gameType gameType, gameMode gameMode) (*gameState, error) {
 	gameID := random.AlphaNumeric(32)
 
 	chess, err := juicer.NewChess(juicer.FENStartingPosition)
@@ -55,14 +85,15 @@ func NewGameState(white, black *Player, gameType GameType, gameMode GameMode) (*
 		return nil, err
 	}
 
-	gs := &GameState{
-		GameID:     gameID,
-		Chess:      chess,
-		White:      white,
-		Black:      black,
-		GameType:   gameType,
-		GameMode:   gameMode,
-		MatchState: WaitingStart,
+	gs := &gameState{
+		GameID:       gameID,
+		Chess:        chess,
+		White:        white,
+		Black:        black,
+		GameType:     gameType,
+		GameMode:     gameMode,
+		MatchState:   matchStateWaitingStart,
+		ResultStatus: resultStatusUnknown,
 	}
 
 	return gs, nil
