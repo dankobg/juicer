@@ -77,8 +77,8 @@ func (h *ApiHandler) serverWs(c echo.Context) error {
 
 	h.Hub.clientConnected <- client
 
-	go client.writePump()
-	go client.readPump()
+	go client.writer()
+	go client.reader()
 
 	return nil
 }

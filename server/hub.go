@@ -33,9 +33,10 @@ type hub struct {
 	broadcastLobby     chan *lobbyMessage
 	broadcastRoom      chan *roomMessage
 	broadcastClient    chan *clientMessage
-	mu                 sync.RWMutex
 	log                *slog.Logger
 	rdb                *redis.Client
+	mu                 *sync.RWMutex
+	wg                 *sync.WaitGroup
 }
 
 func NewHub(logger *slog.Logger, rdb *redis.Client) *hub {
@@ -48,10 +49,15 @@ func NewHub(logger *slog.Logger, rdb *redis.Client) *hub {
 		broadcastLobby:     make(chan *lobbyMessage, 256),
 		broadcastRoom:      make(chan *roomMessage, 256),
 		broadcastClient:    make(chan *clientMessage, 256),
-		mu:                 sync.RWMutex{},
 		log:                logger,
 		rdb:                rdb,
+		mu:                 &sync.RWMutex{},
+		wg:                 &sync.WaitGroup{},
 	}
+}
+
+func (h *hub) Stop(ctx context.Context) error {
+	return nil
 }
 
 func (h *hub) lobbyClientsCount() int {
@@ -91,7 +97,7 @@ func (h *hub) removeRoom(room *room) {
 }
 
 func (h *hub) broadcastToLobby(msg *lobbyMessage) {
-	h.log.Debug("broadcast recv", slog.String("msg", msg.String()))
+	h.log.Debug("lobby broadcast", slog.String("msg", msg.String()))
 
 	for _, client := range h.lobbyClients {
 		select {
@@ -104,11 +110,11 @@ func (h *hub) broadcastToLobby(msg *lobbyMessage) {
 }
 
 func (h *hub) broadcastToRoom(msg *roomMessage) {
-	h.log.Debug("broadcast room recv", slog.String("room_id", msg.RoomID), slog.String("msg", msg.String()))
+	h.log.Debug("room broadcast", slog.String("room_id", msg.RoomID), slog.String("msg", msg.String()))
 
 	room, ok := h.rooms[msg.RoomID]
 	if !ok {
-		h.log.Debug("broadcast room missing", slog.String("room_id", msg.RoomID), slog.String("msg", msg.String()))
+		h.log.Debug("room send, room_id does not exist", slog.String("room_id", msg.RoomID), slog.String("msg", msg.String()))
 		return
 	}
 
@@ -123,6 +129,8 @@ func (h *hub) broadcastToRoom(msg *roomMessage) {
 }
 
 func (h *hub) broadcastToClient(msg *clientMessage) {
+	h.log.Debug("client broadcast", slog.String("client_id", msg.ClientID), slog.String("msg", msg.String()))
+
 	if c, ok := h.lobbyClients[msg.ClientID]; ok {
 		select {
 		case c.send <- msg.Message:
@@ -245,7 +253,7 @@ func (h *hub) onClientSeekGame(msg *clientMessage) {
 
 	seekGameMsg := msg.Message.GetSeekGame()
 	if seekGameMsg == nil {
-		h.log.Error("nil message", slog.String("msg", msg.String()))
+		h.log.Error("nil pb message", slog.String("msg", msg.String()))
 		return
 	}
 
@@ -348,19 +356,19 @@ func (h *hub) tryMatchPlayers(ctx context.Context) {
 	c2.roomID = room.id
 	h.addRoom(room)
 
+	gameErr := make(chan error, 1)
+
 	if _, err := h.rdb.Pipelined(ctx, func(p redis.Pipeliner) error {
 		if err := p.ZRem(ctx, "seeking_game", res[0], res[1]).Err(); err != nil {
 			h.log.Error("match found remove from priority queue", slog.String("client1_id", c1.id), slog.String("client2_id", c2.id), slog.String("room_id", room.id), slog.Any("error", err))
 			return err
 		}
-		if err := room.startGame(); err != nil {
-			h.log.Error("match found startgame", slog.String("client1_id", c1.id), slog.String("client2_id", c2.id), slog.String("room_id", room.id), slog.Any("error", err))
-			return err
-		}
+
 		if err := p.Publish(ctx, "game_found", room.id).Err(); err != nil {
 			h.log.Error("match found publish pair success", slog.String("client1_id", c1.id), slog.String("client2_id", c2.id), slog.String("game_id", room.gameState.GameID), slog.String("room_id", room.id), slog.Any("error", err))
 			return err
 		}
+
 		return nil
 	}); err != nil {
 		h.removeRoom(room)
@@ -373,12 +381,13 @@ func (h *hub) tryMatchPlayers(ctx context.Context) {
 	}
 
 	h.addClientsToGame(gameInfo, c1.id, c2.id)
-	h.sendSeekingPlayersCount()
+
+	go room.startGame(ctx, gameErr)
 
 	matchFoundMsg := &pb.Message{
 		Event: &pb.Message_MatchFound{MatchFound: &pb.MatchFound{GameId: room.gameState.GameID, RoomId: room.id}},
 	}
-	h.broadcastRoom <- &roomMessage{Message: matchFoundMsg}
+	h.broadcastRoom <- &roomMessage{RoomID: room.id, Message: matchFoundMsg}
 
 	hubInfoMsg := &pb.Message{
 		Event: &pb.Message_HubInfo{HubInfo: &pb.HubInfo{Lobby: int32(h.lobbyClientsCount()), Rooms: int32(h.roomsCount()), Playing: int32(h.clientsInGameCount())}},
@@ -434,8 +443,4 @@ func (h *hub) runMatchmaking(ctx context.Context) {
 func (h *hub) seekingGamePlayersCount() (int64, error) {
 	ctx := context.TODO()
 	return h.rdb.ZCard(ctx, "seeking_game").Result()
-}
-
-func (h *hub) abortGame(info gameInfo) {
-	h.log.Info("ABORTING GAME")
 }

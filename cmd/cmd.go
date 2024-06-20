@@ -3,18 +3,16 @@ package cmd
 import (
 	"context"
 	"errors"
-	"expvar"
 	"fmt"
 	"html/template"
 	"io"
 	"io/fs"
 	"log/slog"
+	"net"
 	"net/http"
 	"os"
 	"os/signal"
-	"runtime"
 	"syscall"
-	"time"
 
 	"github.com/dankobg/juicer/config"
 	"github.com/dankobg/juicer/keto"
@@ -24,10 +22,6 @@ import (
 	"github.com/dankobg/juicer/redis"
 	"github.com/dankobg/juicer/server"
 	"github.com/labstack/echo/v4"
-)
-
-var (
-	numGoroutinesVar = expvar.NewInt("num_goroutines")
 )
 
 type TemplateRenderer struct {
@@ -70,8 +64,8 @@ func Run(publicFiles, templateFiles fs.FS) error {
 		mailer.WithUsername(cfg.Email.SMTPUsername),
 		mailer.WithPassword(cfg.Email.SMTPPassword),
 		mailer.WithTLS(true),
-		mailer.WithFromName("Juicer"),
-		mailer.WithFromAddress("juicer@chess.com"),
+		mailer.WithFromName(cfg.Email.FromName),
+		mailer.WithFromAddress(cfg.Email.FromAddress),
 		mailer.WithLog(logger),
 	)
 
@@ -88,6 +82,9 @@ func Run(publicFiles, templateFiles fs.FS) error {
 	apiHandler := server.NewApiHandler(logger, rdb, kratosClient, ketoClient, smtpClient, hub)
 	apiHandler.Echo.Renderer = tr
 
+	rootCtx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT, syscall.SIGHUP)
+	defer stop()
+
 	srv := server.NewServer(
 		server.WithHostPort("", cfg.Port),
 		server.WithHandler(apiHandler),
@@ -96,46 +93,38 @@ func Run(publicFiles, templateFiles fs.FS) error {
 		server.WithWriteTimeout(cfg.Server.WriteTimeout),
 		server.WithIdleTimeout(cfg.Server.IdleTimeout),
 		server.WithErrorSlog(logger, slog.LevelDebug),
+		server.WithBaseContext(func(l net.Listener) context.Context { return rootCtx }),
 	)
 
-	logger.Info("juicer info", slog.String("env", cfg.ENV), slog.String("website_url", cfg.WebsiteURL))
+	logger.Info("juicer info", slog.String("env", cfg.ENV), slog.String("website_url", cfg.WebsiteURL), slog.String("logger_level", cfg.Logger.Level), slog.Bool("mailer_enabled", cfg.Email.Enabled))
 
 	server.SetupRoutes(apiHandler.Echo, apiHandler, publicFS)
 
-	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT, syscall.SIGHUP)
-	defer stop()
+	srvErr := make(chan error, 1)
 
 	go func() {
 		logger.Info("server is listening", slog.String("addr", srv.Addr))
 		if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			logger.Error("server failed to start", slog.Any("error", err))
-			os.Exit(1)
+			srvErr <- err
 		}
 	}()
 
 	go func() {
 		logger.Info("hub is running")
-		apiHandler.Hub.Run(context.TODO())
+		apiHandler.Hub.Run(rootCtx)
 	}()
 
-	go func() {
-		numGoroutinesVar.Set(int64(runtime.NumGoroutine()))
-		ticker := time.NewTicker(time.Second * 60)
-		defer ticker.Stop()
+	select {
+	case <-rootCtx.Done():
+		logger.Info("received interruption signal")
+	case err := <-srvErr:
+		logger.Error("received server err", slog.Any("error", err))
+		stop()
+	}
 
-		for {
-			select {
-			case <-ticker.C:
-				numGoroutinesVar.Set(int64(runtime.NumGoroutine()))
-			case <-ctx.Done():
-				return
-			}
-		}
-	}()
-
-	<-ctx.Done()
-	logger.Info("received interruption signal, starting shutdown process")
-	shutdownCtx, cancel := context.WithTimeout(context.Background(), cfg.Server.GracefulShutdownTimeout)
+	logger.Info("starting shutdown", slog.Duration("graceful_timeout", cfg.Server.GracefulTimeout))
+	shutdownCtx, cancel := context.WithTimeoutCause(context.Background(), cfg.Server.GracefulTimeout, fmt.Errorf("graceful shutdown timeout"))
 	defer cancel()
 
 	if err := srv.Shutdown(shutdownCtx); err != nil {
@@ -143,7 +132,10 @@ func Run(publicFiles, templateFiles fs.FS) error {
 		return err
 	}
 
-	// close other resources
+	if err := apiHandler.Hub.Stop(shutdownCtx); err != nil {
+		logger.Error("server shutdown failed", slog.Any("error", err))
+		return err
+	}
 
 	logger.Info("server shut down")
 	return nil

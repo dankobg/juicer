@@ -1,10 +1,12 @@
+import { Message } from '$lib/gen/juicer_pb';
+
 export class JuicerWS {
 	#url = 'wss://juicer-dev.xyz/ws';
 	#ws: WebSocket | null = null;
 	#reconnectAttempts: number = 0;
-	#maxReconnectAttempts: number = 5;
-	#baseReconnectDelay: number = 350;
-	#maxReconnectDelay: number = 10_000;
+	#maxReconnectAttempts: number = 8;
+	#baseReconnectDelay: number = 150;
+	#maxReconnectDelay: number = 15_000;
 	#timerid: NodeJS.Timeout | null = null;
 	onmessage: (event: MessageEvent) => void = () => {};
 
@@ -59,12 +61,12 @@ export class JuicerWS {
 		this.#ws?.close();
 	}
 
-	send(data: string) {
+	send(msg: Message) {
 		if (!this.#ws) {
 			return;
 		}
 		if (this.#ws.readyState === WebSocket.OPEN) {
-			this.#ws.send(data);
+			this.#ws.send(msg.toJsonString());
 		} else {
 			console.debug('ws is not open, cannot send message');
 		}

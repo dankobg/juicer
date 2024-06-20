@@ -15,6 +15,7 @@ message Message {
 		SeekingCount seeking_count = 7;
 		SeekGame seek_game = 8;
 		CancelSeekGame cancel_seek_game = 9;
+		GameAborted game_aborted = 10;
   }
 }
 
@@ -54,3 +55,9 @@ message SeekGame {
 }
 
 message CancelSeekGame {}
+
+message GameAborted {
+  string game_id = 1;
+  string room_id = 2;
+  string reason = 3;
+}

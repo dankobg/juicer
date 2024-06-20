@@ -67,6 +67,12 @@ export class Message extends Message$1<Message> {
      */
     value: CancelSeekGame;
     case: "cancelSeekGame";
+  } | {
+    /**
+     * @generated from field: pb.GameAborted game_aborted = 10;
+     */
+    value: GameAborted;
+    case: "gameAborted";
   } | { case: undefined; value?: undefined } = { case: undefined };
 
   constructor(data?: PartialMessage<Message>) {
@@ -86,6 +92,7 @@ export class Message extends Message$1<Message> {
     { no: 7, name: "seeking_count", kind: "message", T: SeekingCount, oneof: "event" },
     { no: 8, name: "seek_game", kind: "message", T: SeekGame, oneof: "event" },
     { no: 9, name: "cancel_seek_game", kind: "message", T: CancelSeekGame, oneof: "event" },
+    { no: 10, name: "game_aborted", kind: "message", T: GameAborted, oneof: "event" },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): Message {
@@ -447,6 +454,55 @@ export class CancelSeekGame extends Message$1<CancelSeekGame> {
 
   static equals(a: CancelSeekGame | PlainMessage<CancelSeekGame> | undefined, b: CancelSeekGame | PlainMessage<CancelSeekGame> | undefined): boolean {
     return proto3.util.equals(CancelSeekGame, a, b);
+  }
+}
+
+/**
+ * @generated from message pb.GameAborted
+ */
+export class GameAborted extends Message$1<GameAborted> {
+  /**
+   * @generated from field: string game_id = 1;
+   */
+  gameId = "";
+
+  /**
+   * @generated from field: string room_id = 2;
+   */
+  roomId = "";
+
+  /**
+   * @generated from field: string reason = 3;
+   */
+  reason = "";
+
+  constructor(data?: PartialMessage<GameAborted>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "pb.GameAborted";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "game_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "room_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "reason", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GameAborted {
+    return new GameAborted().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GameAborted {
+    return new GameAborted().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GameAborted {
+    return new GameAborted().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GameAborted | PlainMessage<GameAborted> | undefined, b: GameAborted | PlainMessage<GameAborted> | undefined): boolean {
+    return proto3.util.equals(GameAborted, a, b);
   }
 }
 

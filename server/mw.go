@@ -1,7 +1,11 @@
 package server
 
 import (
+	"cmp"
+	"context"
+	"errors"
 	"expvar"
+	"log/slog"
 	"time"
 
 	"github.com/labstack/echo/v4"
@@ -46,6 +50,33 @@ var (
 				Internal: err,
 			}
 		},
+	}
+
+	reqLoggerConfig = func(ctx context.Context, log *slog.Logger) middleware.RequestLoggerConfig {
+		return middleware.RequestLoggerConfig{
+			LogStatus:   true,
+			LogURI:      true,
+			LogError:    true,
+			HandleError: true,
+			LogValuesFunc: func(c echo.Context, v middleware.RequestLoggerValues) error {
+				log.LogAttrs(ctx, slog.LevelDebug, "req",
+					slog.String("id", v.RequestID),
+					slog.String("remote_ip", v.RemoteIP),
+					slog.String("host", v.Host),
+					slog.String("method", v.Method),
+					slog.String("uri", v.URI),
+					slog.String("user_agent", v.UserAgent),
+					slog.Int("status", v.Status),
+					slog.String("referer", v.Referer),
+					slog.String("err", cmp.Or(v.Error, errors.New("")).Error()),
+					slog.Duration("latency", v.Latency),
+					slog.String("bytes_in", v.ContentLength),
+					slog.Int64("bytes_out", v.ResponseSize),
+				)
+
+				return nil
+			},
+		}
 	}
 )
 

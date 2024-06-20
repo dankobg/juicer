@@ -12,6 +12,7 @@ import (
 
 func SetupRoutes(mux *echo.Echo, h *ApiHandler, publicFiles fs.FS) {
 	mux.Use(middleware.Recover())
+	mux.Use(middleware.RequestID())
 	mux.Use(middleware.BodyLimitWithConfig(bodyLimitConfig))
 	mux.Use(middleware.CORSWithConfig(corsConfig))
 	mux.Use(middleware.RateLimiterWithConfig(rateLimiterConfig))

@@ -19,6 +19,7 @@
 	let gameId = '';
 
 	let state: 'idle' | 'seeking' | 'playing' = 'idle';
+	let abortReason = '';
 
 	onMount(() => {
 		ws.connect();
@@ -53,6 +54,12 @@
 						roomId = msg.event.value.roomId;
 						gameId = msg.event.value.gameId;
 						break;
+					case 'gameAborted':
+						state = 'idle';
+						roomId = '';
+						gameId = '';
+						abortReason = msg.event.value.reason;
+						break;
 					default:
 						console.log('unkown message', msg.event.case, msg.event.value);
 						break;
@@ -72,9 +79,12 @@
 	err: {wsErr}
 {/if}
 <p>In lobby: <strong>{lobbyCount}</strong></p>
-<p>rooms: <strong>{roomsCount}</strong></p>
+<p>Rooms: <strong>{roomsCount}</strong></p>
 <p>Playing: <strong>{playingCount}</strong></p>
-<p>seeking game: <strong>{seekingCount}</strong></p>
+
+{#if abortReason}
+	<p>Abort reason: <strong>{abortReason}</strong></p>
+{/if}
 
 {#if gameId}
 	<p>Game ID: <strong>{gameId}</strong></p>
@@ -86,8 +96,7 @@
 <button
 	class="bg-purple-500 text-white py-2 px-4 rounded mb-2"
 	on:click={() => {
-		const echoMsg = new Message({ event: { case: 'echo', value: new Echo({ message: 'hello bozo' }) } });
-		ws.send(echoMsg.toJsonString());
+		ws.send(new Message({ event: { case: 'echo', value: new Echo({ message: 'hello bozo' }) } }));
 	}}
 >
 	SEND ECHO MSG</button
@@ -96,9 +105,9 @@
 <button
 	class="bg-green-500 text-white py-2 px-4 rounded mb-2"
 	on:click={() => {
-		const seekMsg = new Message({ event: { case: 'seekGame', value: new SeekGame({ gameMode: 'blitz' }) } });
-		ws.send(seekMsg.toJsonString());
+		ws.send(new Message({ event: { case: 'seekGame', value: new SeekGame({ gameMode: 'blitz' }) } }));
 		state = 'seeking';
+		abortReason = '';
 	}}
 >
 	SEEK GAME</button
@@ -107,17 +116,18 @@
 <button
 	class="bg-orange-500 text-white py-2 px-4 rounded mb-2"
 	on:click={() => {
-		const cancelSeekMsg = new Message({ event: { case: 'cancelSeekGame', value: new CancelSeekGame() } });
-		ws.send(cancelSeekMsg.toJsonString());
+		ws.send(new Message({ event: { case: 'cancelSeekGame', value: new CancelSeekGame() } }));
 		state = 'idle';
+		abortReason = '';
 	}}
 >
 	CANCEL SEEK GAME</button
 >
 
 {#if state === 'seeking'}
-	<div class="flex gap-3 m-4">
+	<div class="flex flex-col gap-3 m-4 p-8 border-solid border-2 border-sky-500">
 		<Spinner />
+		<p>Players seeking: <strong>{seekingCount}</strong></p>
 		<p class="">Searching for game...</p>
 	</div>
 {/if}

@@ -1,10 +1,13 @@
 package server
 
 import (
+	"context"
+	"log/slog"
 	"math/rand/v2"
 	"sync"
 	"time"
 
+	pb "github.com/dankobg/juicer/pb/proto/juicer"
 	"github.com/dankobg/juicer/random"
 )
 
@@ -32,8 +35,6 @@ func (r *room) String() string {
 }
 
 func NewRoom(hub *hub, c1, c2 *client) (*room, error) {
-	roomId := random.AlphaNumeric(32)
-
 	white := &player{ID: c1.id}
 	black := &player{ID: c2.id}
 
@@ -48,7 +49,7 @@ func NewRoom(hub *hub, c1, c2 *client) (*room, error) {
 	}
 
 	room := &room{
-		id:          roomId,
+		id:          random.AlphaNumeric(32),
 		gameState:   gs,
 		clients:     make(map[string]*client),
 		hub:         hub,
@@ -75,17 +76,17 @@ func (r *room) removeClient(clientID string) {
 }
 
 func (r *room) startDisconnectTimer() {
+	r.hub.log.Debug("starting room disconnect timer")
 	r.startWaiting <- struct{}{}
 }
 
 func (r *room) stopDisconnectTimer() {
+	r.hub.log.Debug("stopping room disconnect timer")
 	r.stopWaiting <- struct{}{}
 }
 
-func (r *room) startGame() error {
-	r.hub.log.Debug("starting")
-
-	// gs.wg.Add(1)
+func (r *room) startGame(ctx context.Context, gameErr chan error) {
+	r.hub.log.Debug("room starting game", slog.String("room_id", r.id), slog.String("game_id", r.gameState.GameID))
 
 	tick := func(tkr *time.Timer) <-chan time.Time {
 		if tkr != nil {
@@ -96,17 +97,16 @@ func (r *room) startGame() error {
 
 	go func() {
 		defer func() {
-			// gs.wg.Done()
-
 			if r.waitTimer != nil {
 				r.waitTimer.Stop()
+				r.waitTimer = nil
 			}
 		}()
 
 		for {
 			select {
 			case <-r.startWaiting:
-				r.hub.log.Debug("start wait timer")
+				r.hub.log.Debug("room starting wait timer")
 				if r.waitTimer == nil {
 					r.waitTimer = time.NewTimer(r.waitTimeout)
 				} else {
@@ -114,32 +114,37 @@ func (r *room) startGame() error {
 				}
 
 			case <-r.stopWaiting:
-				r.hub.log.Debug("stop wait timer")
+				r.hub.log.Debug("room stopping wait timer")
 				if r.waitTimer != nil {
 					r.waitTimer.Stop()
 					r.waitTimer = nil
 				}
 
 			case <-tick(r.waitTimer):
-				r.hub.log.Debug("timed out, aborting game")
-				// r.abortGame()
+				r.hub.log.Debug("room wait timer timed out, aborting game")
+				r.abortGame()
+				return
+
+			case <-ctx.Done():
+				r.hub.log.Debug("room context done")
+				r.abortGame()
+				return
+
+			case err := <-gameErr:
+				r.hub.log.Debug("game had error", slog.Any("error", err))
+				r.abortGame()
 				return
 			}
 		}
 	}()
-
-	// gs.wg.Wait()
-	return nil
 }
 
 func (r *room) abortGame() {
+	r.hub.log.Debug("abort game called")
 	r.gameState.MatchState = matchStateAborted
-	r.hub.broadcastRoom <- &roomMessage{}
 
-	info := gameInfo{
-		RoomID: r.id,
-		GameID: r.gameState.GameID,
+	gameAbortedMsg := &pb.Message{
+		Event: &pb.Message_GameAborted{GameAborted: &pb.GameAborted{GameId: r.gameState.GameID, RoomId: r.id, Reason: "timeout"}},
 	}
-
-	r.hub.abortGame(info)
+	r.hub.broadcastRoom <- &roomMessage{Message: gameAbortedMsg}
 }
