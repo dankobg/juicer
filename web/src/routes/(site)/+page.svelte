@@ -78,9 +78,12 @@
 {#if wsErr}
 	err: {wsErr}
 {/if}
-<p>In lobby: <strong>{lobbyCount}</strong></p>
-<p>Rooms: <strong>{roomsCount}</strong></p>
-<p>Playing: <strong>{playingCount}</strong></p>
+
+{#if state !== 'playing'}
+	<p>In lobby: <strong>{lobbyCount}</strong></p>
+	<p>Rooms: <strong>{roomsCount}</strong></p>
+	<p>Playing: <strong>{playingCount}</strong></p>
+{/if}
 
 {#if abortReason}
 	<p>Abort reason: <strong>{abortReason}</strong></p>

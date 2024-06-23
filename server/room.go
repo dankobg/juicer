@@ -17,12 +17,12 @@ type gameInfo struct {
 }
 
 type room struct {
-	id        string
-	clients   map[string]*client
-	gameState *gameState
-	mu        sync.Mutex
-	hub       *hub
-
+	id           string
+	clients      map[string]*client
+	clientIDS    [2]string
+	gameState    *gameState
+	mu           sync.Mutex
+	hub          *hub
 	waitTimeout  time.Duration
 	waitTimer    *time.Timer
 	startWaiting chan struct{}
@@ -49,12 +49,15 @@ func NewRoom(hub *hub, c1, c2 *client) (*room, error) {
 	}
 
 	room := &room{
-		id:          random.AlphaNumeric(32),
-		gameState:   gs,
-		clients:     make(map[string]*client),
-		hub:         hub,
-		waitTimeout: time.Second * 10,
-		wg:          &sync.WaitGroup{},
+		id:           random.AlphaNumeric(32),
+		gameState:    gs,
+		clients:      make(map[string]*client),
+		clientIDS:    [2]string{c1.id, c2.id},
+		hub:          hub,
+		waitTimeout:  time.Second * 10,
+		wg:           &sync.WaitGroup{},
+		startWaiting: make(chan struct{}),
+		stopWaiting:  make(chan struct{}),
 	}
 
 	room.addClient(c1)
@@ -75,25 +78,31 @@ func (r *room) removeClient(clientID string) {
 	delete(r.clients, clientID)
 }
 
+func (r *room) removeClients() {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	for _, c := range r.clients {
+		delete(r.clients, c.id)
+	}
+}
+
 func (r *room) startDisconnectTimer() {
-	r.hub.log.Debug("starting room disconnect timer")
-	r.startWaiting <- struct{}{}
+	go func() {
+		r.startWaiting <- struct{}{}
+	}()
 }
 
 func (r *room) stopDisconnectTimer() {
-	r.hub.log.Debug("stopping room disconnect timer")
-	r.stopWaiting <- struct{}{}
+	go func() {
+		r.stopWaiting <- struct{}{}
+	}()
 }
 
-func (r *room) startGame(ctx context.Context, gameErr chan error) {
+func (r *room) startGame(ctx context.Context) {
 	r.hub.log.Debug("room starting game", slog.String("room_id", r.id), slog.String("game_id", r.gameState.GameID))
 
-	tick := func(tkr *time.Timer) <-chan time.Time {
-		if tkr != nil {
-			return tkr.C
-		}
-		return nil
-	}
+	r.wg.Add(1)
 
 	go func() {
 		defer func() {
@@ -101,6 +110,7 @@ func (r *room) startGame(ctx context.Context, gameErr chan error) {
 				r.waitTimer.Stop()
 				r.waitTimer = nil
 			}
+			r.wg.Done()
 		}()
 
 		for {
@@ -120,7 +130,12 @@ func (r *room) startGame(ctx context.Context, gameErr chan error) {
 					r.waitTimer = nil
 				}
 
-			case <-tick(r.waitTimer):
+			case <-func() <-chan time.Time {
+				if r.waitTimer != nil {
+					return r.waitTimer.C
+				}
+				return nil
+			}():
 				r.hub.log.Debug("room wait timer timed out, aborting game")
 				r.abortGame()
 				return
@@ -129,22 +144,33 @@ func (r *room) startGame(ctx context.Context, gameErr chan error) {
 				r.hub.log.Debug("room context done")
 				r.abortGame()
 				return
-
-			case err := <-gameErr:
-				r.hub.log.Debug("game had error", slog.Any("error", err))
-				r.abortGame()
-				return
 			}
 		}
 	}()
+
+	r.wg.Wait()
+	r.hub.log.Debug("room cleaned up")
 }
 
 func (r *room) abortGame() {
 	r.hub.log.Debug("abort game called")
-	r.gameState.MatchState = matchStateAborted
 
 	gameAbortedMsg := &pb.Message{
 		Event: &pb.Message_GameAborted{GameAborted: &pb.GameAborted{GameId: r.gameState.GameID, RoomId: r.id, Reason: "timeout"}},
 	}
-	r.hub.broadcastRoom <- &roomMessage{Message: gameAbortedMsg}
+	for _, c := range r.clients {
+		if _, ok := r.hub.lobbyClients[c.id]; !ok {
+			r.hub.addClientToLobby(c)
+		}
+		r.hub.broadcastClient <- &clientMessage{ClientID: c.id, Message: gameAbortedMsg}
+	}
+
+	for _, cid := range r.clientIDS {
+		r.removeClient(cid)
+		r.hub.removeClientsFromGame(cid)
+	}
+
+	r.gameState.MatchState = matchStateAborted
+	r.hub.removeRoom(r.id)
+	r.hub.broadcastHubInfo()
 }

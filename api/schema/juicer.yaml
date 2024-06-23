@@ -1,0 +1,81 @@
+openapi: 3.0.2
+servers:
+  - url: https://juicer-dev.xyz/api/v1
+info:
+  version: 1.0.0
+  title: Juicer schema
+tags:
+  - name: juicer
+    description: Everything about juicer
+  - name: health
+    description: Juicer health status
+paths:
+  /health/alive:
+    get:
+      tags:
+        - health
+      summary: Check if server is healthy
+      description: Checks if the server is healthy
+      operationId: healthAlive
+      responses:
+        "200":
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Healthy"
+        default:
+          description: unexpected error
+          content:
+            "application/json":
+              schema:
+                $ref: "#/components/schemas/Error"
+  /health/ready:
+    get:
+      tags:
+        - health
+      summary: Check if server is ready
+      description: Checks if the server is ready
+      operationId: healthReady
+      responses:
+        "200":
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Ready"
+        default:
+          description: unexpected error
+          content:
+            "application/json":
+              schema:
+                $ref: "#/components/schemas/Error"
+components:
+  schemas:
+    Error:
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: integer
+          format: int32
+          description: Error code
+        message:
+          type: string
+          description: Error message
+    Healthy:
+      type: object
+      required:
+        - alive
+      properties:
+        alive:
+          type: boolean
+    Ready:
+      type: object
+      required:
+        - ready
+      properties:
+        ready:
+          type: boolean

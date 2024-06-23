@@ -16,12 +16,13 @@ type lobbyMessage struct {
 
 type clientMessage struct {
 	*pb.Message
-	ClientID string `json:"c"`
+	RoomID   string
+	ClientID string
 }
 
 type roomMessage struct {
 	*pb.Message
-	RoomID string `json:"r"`
+	RoomID string
 }
 
 type hub struct {
@@ -78,10 +79,10 @@ func (h *hub) addClientToLobby(client *client) {
 	h.lobbyClients[client.id] = client
 }
 
-func (h *hub) removeClientFromLobby(client *client) {
+func (h *hub) removeClientFromLobby(clientID string) {
 	h.mu.Lock()
 	defer h.mu.Unlock()
-	delete(h.lobbyClients, client.id)
+	delete(h.lobbyClients, clientID)
 }
 
 func (h *hub) addRoom(room *room) {
@@ -90,10 +91,10 @@ func (h *hub) addRoom(room *room) {
 	h.rooms[room.id] = room
 }
 
-func (h *hub) removeRoom(room *room) {
+func (h *hub) removeRoom(roomID string) {
 	h.mu.Lock()
 	defer h.mu.Unlock()
-	delete(h.rooms, room.id)
+	delete(h.rooms, roomID)
 }
 
 func (h *hub) broadcastToLobby(msg *lobbyMessage) {
@@ -103,7 +104,7 @@ func (h *hub) broadcastToLobby(msg *lobbyMessage) {
 		select {
 		case client.send <- msg.Message:
 		default:
-			h.removeClientFromLobby(client)
+			h.removeClientFromLobby(client.id)
 			close(client.send)
 		}
 	}
@@ -122,7 +123,7 @@ func (h *hub) broadcastToRoom(msg *roomMessage) {
 		select {
 		case roomClient.send <- msg.Message:
 		default:
-			h.removeClientFromLobby(roomClient)
+			h.removeClientFromLobby(roomClient.id)
 			close(roomClient.send)
 		}
 	}
@@ -131,12 +132,25 @@ func (h *hub) broadcastToRoom(msg *roomMessage) {
 func (h *hub) broadcastToClient(msg *clientMessage) {
 	h.log.Debug("client broadcast", slog.String("client_id", msg.ClientID), slog.String("msg", msg.String()))
 
-	if c, ok := h.lobbyClients[msg.ClientID]; ok {
-		select {
-		case c.send <- msg.Message:
-		default:
-			h.removeClientFromLobby(c)
-			close(c.send)
+	if msg.RoomID != "" {
+		if r, ok := h.rooms[msg.RoomID]; ok {
+			if c, ok := r.clients[msg.ClientID]; ok {
+				select {
+				case c.send <- msg.Message:
+				default:
+					h.removeClientFromLobby(c.id)
+					close(c.send)
+				}
+			}
+		}
+	} else {
+		if c, ok := h.lobbyClients[msg.ClientID]; ok {
+			select {
+			case c.send <- msg.Message:
+			default:
+				h.removeClientFromLobby(c.id)
+				close(c.send)
+			}
 		}
 	}
 }
@@ -154,20 +168,29 @@ func (h *hub) handleBroadcastToClient(msg *clientMessage) {
 }
 
 func (h *hub) handleClientConnected(client *client) {
-	h.addClientToLobby(client)
-
 	info, inGame := h.clientsInGame[client.id]
 	if inGame {
 		client.roomID = info.RoomID
 		if r, ok := h.rooms[info.RoomID]; ok {
 			r.addClient(client)
 			r.stopDisconnectTimer()
-		}
 
-		matchFoundMsg := &pb.Message{
-			Event: &pb.Message_MatchFound{MatchFound: &pb.MatchFound{GameId: info.GameID, RoomId: info.RoomID}},
+			for _, c := range r.clients {
+				if c.id == client.id {
+					continue
+				}
+				clientConnectedMsg := &pb.Message{
+					Event: &pb.Message_ClientConnected{ClientConnected: &pb.ClientConnected{Id: client.id}},
+				}
+				h.broadcastClient <- &clientMessage{RoomID: r.id, ClientID: c.id, Message: clientConnectedMsg}
+			}
+			matchFoundMsg := &pb.Message{
+				Event: &pb.Message_MatchFound{MatchFound: &pb.MatchFound{GameId: info.GameID, RoomId: info.RoomID}},
+			}
+			h.broadcastClient <- &clientMessage{RoomID: r.id, ClientID: client.id, Message: matchFoundMsg}
 		}
-		h.broadcastClient <- &clientMessage{ClientID: client.id, Message: matchFoundMsg}
+	} else {
+		h.addClientToLobby(client)
 	}
 
 	h.log.Debug("client connected",
@@ -180,10 +203,7 @@ func (h *hub) handleClientConnected(client *client) {
 		slog.Int("rooms_count", h.roomsCount()),
 	)
 
-	hubInfoMsg := &pb.Message{
-		Event: &pb.Message_HubInfo{HubInfo: &pb.HubInfo{Lobby: int32(h.lobbyClientsCount()), Rooms: int32(h.roomsCount()), Playing: int32(h.clientsInGameCount())}},
-	}
-	h.broadcastLobby <- &lobbyMessage{Message: hubInfoMsg}
+	h.broadcastHubInfo()
 
 	clientConnectedMsg := &pb.Message{
 		Event: &pb.Message_ClientConnected{ClientConnected: &pb.ClientConnected{Id: client.id}},
@@ -192,7 +212,7 @@ func (h *hub) handleClientConnected(client *client) {
 }
 
 func (h *hub) handleClientDisconnected(client *client) {
-	h.removeClientFromLobby(client)
+	h.removeClientFromLobby(client.id)
 
 	info, inGame := h.clientsInGame[client.id]
 	if inGame {
@@ -200,6 +220,16 @@ func (h *hub) handleClientDisconnected(client *client) {
 		if r, ok := h.rooms[info.RoomID]; ok {
 			r.removeClient(client.id)
 			r.startDisconnectTimer()
+
+			for _, c := range r.clients {
+				if c.id == client.id {
+					continue
+				}
+				clientDisconnectedMsg := &pb.Message{
+					Event: &pb.Message_ClientDisconnected{ClientDisconnected: &pb.ClientDisconnected{Id: client.id}},
+				}
+				h.broadcastClient <- &clientMessage{RoomID: r.id, ClientID: c.id, Message: clientDisconnectedMsg}
+			}
 		}
 	}
 
@@ -215,10 +245,7 @@ func (h *hub) handleClientDisconnected(client *client) {
 
 	close(client.send)
 
-	hubInfoMsg := &pb.Message{
-		Event: &pb.Message_HubInfo{HubInfo: &pb.HubInfo{Lobby: int32(h.lobbyClientsCount()), Rooms: int32(h.roomsCount()), Playing: int32(h.clientsInGameCount())}},
-	}
-	h.broadcastLobby <- &lobbyMessage{Message: hubInfoMsg}
+	h.broadcastHubInfo()
 
 	clientDisconnectedMsg := &pb.Message{
 		Event: &pb.Message_ClientDisconnected{ClientDisconnected: &pb.ClientDisconnected{Id: client.id}},
@@ -300,6 +327,13 @@ func (h *hub) onClientCancelSeekGame(msg *clientMessage) {
 	h.log.Debug("cancel seek game success", slog.String("client_id", msg.ClientID))
 }
 
+func (h *hub) broadcastHubInfo() {
+	hubInfoMsg := &pb.Message{
+		Event: &pb.Message_HubInfo{HubInfo: &pb.HubInfo{Lobby: int32(h.lobbyClientsCount()), Rooms: int32(h.roomsCount()), Playing: int32(h.clientsInGameCount())}},
+	}
+	h.broadcastLobby <- &lobbyMessage{Message: hubInfoMsg}
+}
+
 func (h *hub) Run(ctx context.Context) {
 	go func() {
 		h.runMatchmaking(ctx)
@@ -356,8 +390,6 @@ func (h *hub) tryMatchPlayers(ctx context.Context) {
 	c2.roomID = room.id
 	h.addRoom(room)
 
-	gameErr := make(chan error, 1)
-
 	if _, err := h.rdb.Pipelined(ctx, func(p redis.Pipeliner) error {
 		if err := p.ZRem(ctx, "seeking_game", res[0], res[1]).Err(); err != nil {
 			h.log.Error("match found remove from priority queue", slog.String("client1_id", c1.id), slog.String("client2_id", c2.id), slog.String("room_id", room.id), slog.Any("error", err))
@@ -371,7 +403,7 @@ func (h *hub) tryMatchPlayers(ctx context.Context) {
 
 		return nil
 	}); err != nil {
-		h.removeRoom(room)
+		h.removeRoom(room.id)
 		h.log.Error("match found pipeline", slog.String("room_id", room.id), slog.Any("error", err))
 	}
 
@@ -381,18 +413,17 @@ func (h *hub) tryMatchPlayers(ctx context.Context) {
 	}
 
 	h.addClientsToGame(gameInfo, c1.id, c2.id)
+	h.removeClientFromLobby(c1.id)
+	h.removeClientFromLobby(c2.id)
 
-	go room.startGame(ctx, gameErr)
+	go room.startGame(ctx)
 
 	matchFoundMsg := &pb.Message{
 		Event: &pb.Message_MatchFound{MatchFound: &pb.MatchFound{GameId: room.gameState.GameID, RoomId: room.id}},
 	}
 	h.broadcastRoom <- &roomMessage{RoomID: room.id, Message: matchFoundMsg}
 
-	hubInfoMsg := &pb.Message{
-		Event: &pb.Message_HubInfo{HubInfo: &pb.HubInfo{Lobby: int32(h.lobbyClientsCount()), Rooms: int32(h.roomsCount()), Playing: int32(h.clientsInGameCount())}},
-	}
-	h.broadcastLobby <- &lobbyMessage{Message: hubInfoMsg}
+	h.broadcastHubInfo()
 
 	h.log.Debug("match found success", slog.String("room_id", room.id), slog.String("game_id", room.gameState.GameID))
 }
