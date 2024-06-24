@@ -173,7 +173,7 @@ func (h *hub) handleClientConnected(client *client) {
 		client.roomID = info.RoomID
 		if r, ok := h.rooms[info.RoomID]; ok {
 			r.addClient(client)
-			r.stopDisconnectTimer()
+			r.stopDisconnectTimer(client.id)
 
 			for _, c := range r.clients {
 				if c.id == client.id {
@@ -219,7 +219,7 @@ func (h *hub) handleClientDisconnected(client *client) {
 		client.roomID = info.RoomID
 		if r, ok := h.rooms[info.RoomID]; ok {
 			r.removeClient(client.id)
-			r.startDisconnectTimer()
+			r.startDisconnectTimer(client.id)
 
 			for _, c := range r.clients {
 				if c.id == client.id {
@@ -243,7 +243,7 @@ func (h *hub) handleClientDisconnected(client *client) {
 		slog.Int("rooms_count", h.roomsCount()),
 	)
 
-	close(client.send)
+	// close(client.send)
 
 	h.broadcastHubInfo()
 

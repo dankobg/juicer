@@ -96,38 +96,40 @@
 	<p>Room ID: <strong>{roomId}</strong></p>
 {/if}
 
-<button
-	class="bg-purple-500 text-white py-2 px-4 rounded mb-2"
-	on:click={() => {
-		ws.send(new Message({ event: { case: 'echo', value: new Echo({ message: 'hello bozo' }) } }));
-	}}
->
-	SEND ECHO MSG</button
->
+{#if state === 'idle'}
+	<button
+		class="bg-purple-500 text-white py-2 px-4 rounded mb-2"
+		on:click={() => {
+			ws.send(new Message({ event: { case: 'echo', value: new Echo({ message: 'hello bozo' }) } }));
+		}}
+	>
+		SEND ECHO MSG</button
+	>
 
-<button
-	class="bg-green-500 text-white py-2 px-4 rounded mb-2"
-	on:click={() => {
-		ws.send(new Message({ event: { case: 'seekGame', value: new SeekGame({ gameMode: 'blitz' }) } }));
-		state = 'seeking';
-		abortReason = '';
-	}}
->
-	SEEK GAME</button
->
-
-<button
-	class="bg-orange-500 text-white py-2 px-4 rounded mb-2"
-	on:click={() => {
-		ws.send(new Message({ event: { case: 'cancelSeekGame', value: new CancelSeekGame() } }));
-		state = 'idle';
-		abortReason = '';
-	}}
->
-	CANCEL SEEK GAME</button
->
+	<button
+		class="bg-green-500 text-white py-2 px-4 rounded mb-2"
+		on:click={() => {
+			ws.send(new Message({ event: { case: 'seekGame', value: new SeekGame({ gameMode: 'blitz' }) } }));
+			state = 'seeking';
+			abortReason = '';
+		}}
+	>
+		SEEK GAME</button
+	>
+{/if}
 
 {#if state === 'seeking'}
+	<button
+		class="bg-orange-500 text-white py-2 px-4 rounded mb-2"
+		on:click={() => {
+			ws.send(new Message({ event: { case: 'cancelSeekGame', value: new CancelSeekGame() } }));
+			state = 'idle';
+			abortReason = '';
+		}}
+	>
+		CANCEL SEEK GAME</button
+	>
+
 	<div class="flex flex-col gap-3 m-4 p-8 border-solid border-2 border-sky-500">
 		<Spinner />
 		<p>Players seeking: <strong>{seekingCount}</strong></p>

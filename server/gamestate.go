@@ -60,15 +60,11 @@ const (
 	matchStateAborted
 )
 
-type player struct {
-	ID   string
-	Name string
-}
-
 type gameState struct {
 	GameID       string
 	Chess        *juicer.Chess
-	White, Black *player
+	WhiteID      string
+	BlackID      string
 	GameType     gameType
 	GameMode     gameMode
 	Result       result
@@ -77,7 +73,7 @@ type gameState struct {
 	StartTime    time.Time
 }
 
-func NewGameState(white, black *player, gameType gameType, gameMode gameMode) (*gameState, error) {
+func NewGameState(whiteID, blackID string, gameType gameType, gameMode gameMode) (*gameState, error) {
 	gameID := random.AlphaNumeric(32)
 
 	chess, err := juicer.NewChess(juicer.FENStartingPosition)
@@ -88,8 +84,8 @@ func NewGameState(white, black *player, gameType gameType, gameMode gameMode) (*
 	gs := &gameState{
 		GameID:       gameID,
 		Chess:        chess,
-		White:        white,
-		Black:        black,
+		WhiteID:      whiteID,
+		BlackID:      blackID,
 		GameType:     gameType,
 		GameMode:     gameMode,
 		MatchState:   matchStateWaitingStart,
