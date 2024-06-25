@@ -24,22 +24,55 @@ const (
 	gameModeHyperBullet
 )
 
+func (gm gameMode) String() string {
+	switch gm {
+	case gameModeClassical:
+		return "classical"
+	case gameModeRapid:
+		return "rapid"
+	case gameModeBlitz:
+		return "blitz"
+	case gameModeBullet:
+		return "bullet"
+	case gameModeHyperBullet:
+		return "hyperbullet"
+	default:
+		return "unknown"
+	}
+}
+
 type result uint8
 
 const (
 	resultWhiteWon result = iota
 	resultBlackWon
 	resultDraw
+	resultAborted
 )
 
-type ResultStatus uint8
+func (r result) String() string {
+	switch r {
+	case resultWhiteWon:
+		return "white won"
+	case resultBlackWon:
+		return "black won"
+	case resultDraw:
+		return "draw"
+	case resultAborted:
+		return "aborted"
+	default:
+		return "unknown"
+	}
+}
+
+type resultStatus uint8
 
 const (
-	resultStatusUnknown ResultStatus = iota
+	resultStatusUnknown resultStatus = iota
 	resultStatusCheckmate
 	resultStatusInsufficientMaterial
-	resultStatusThreeFoldRepetition
-	resultStatusFiveFoldRepetition
+	resultStatusThreefoldRepetition
+	resultStatusFivefoldRepetition
 	resultStatusFiftyMoveRule
 	resultStatusSeventyFiveMoveRule
 	resultStatusStalemate
@@ -48,7 +81,43 @@ const (
 	resultStatusFlagged
 	resultStatusAdjudication
 	resultStatusTimedOut
+	resultStatusAborted
 )
+
+func (rs resultStatus) String() string {
+	switch rs {
+	case resultStatusUnknown:
+		return "unknown"
+	case resultStatusCheckmate:
+		return "checkmate"
+	case resultStatusInsufficientMaterial:
+		return "insufficient material"
+	case resultStatusThreefoldRepetition:
+		return "threefold repetition"
+	case resultStatusFivefoldRepetition:
+		return "fivefold repetition"
+	case resultStatusFiftyMoveRule:
+		return "fifty move rule"
+	case resultStatusSeventyFiveMoveRule:
+		return "seventy five move rule"
+	case resultStatusStalemate:
+		return "stalemate"
+	case resultStatusResignation:
+		return "resignation"
+	case resultStatusDrawAgreed:
+		return "draw agreed"
+	case resultStatusFlagged:
+		return "flagged"
+	case resultStatusAdjudication:
+		return "adjudication"
+	case resultStatusTimedOut:
+		return "timed out"
+	case resultStatusAborted:
+		return "aborted"
+	default:
+		return "unknown"
+	}
+}
 
 type MatchState uint8
 
@@ -68,7 +137,7 @@ type gameState struct {
 	GameType     gameType
 	GameMode     gameMode
 	Result       result
-	ResultStatus ResultStatus
+	ResultStatus resultStatus
 	MatchState   MatchState
 	StartTime    time.Time
 }

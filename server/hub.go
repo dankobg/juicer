@@ -261,21 +261,58 @@ func (h *hub) processClientMessage(client *client, msg *pb.Message) error {
 
 	switch msg.Event.(type) {
 	case *pb.Message_Echo:
-		h.onClientEcho(cmsg)
+		h.onEcho(cmsg)
+	case *pb.Message_Chat:
+		h.onChat(cmsg)
 	case *pb.Message_SeekGame:
-		h.onClientSeekGame(cmsg)
+		h.onSeekGame(cmsg)
 	case *pb.Message_CancelSeekGame:
-		h.onClientCancelSeekGame(cmsg)
+		h.onCancelSeekGame(cmsg)
+	case *pb.Message_AbortGame:
+		h.onAbortGame(cmsg)
+	case *pb.Message_OfferDraw:
+		h.onOfferDraw(cmsg)
+	case *pb.Message_AcceptDraw:
+		h.onAcceptDraw(cmsg)
+	case *pb.Message_PlayMoveUci:
+		h.onPlayMoveUCI(cmsg)
 	}
 
 	return nil
 }
 
-func (h *hub) onClientEcho(msg *clientMessage) {
+func (h *hub) onEcho(msg *clientMessage) {
 	h.broadcastClient <- msg
 }
 
-func (h *hub) onClientSeekGame(msg *clientMessage) {
+func (h *hub) onChat(msg *clientMessage) {
+	// ctx := context.TODO()
+
+	chatMsg := msg.Message.GetChat()
+	if chatMsg == nil {
+		h.log.Error("nil pb message", slog.String("msg", msg.String()))
+		return
+	}
+
+	info, inGame := h.clientsInGame[msg.ClientID]
+	if inGame {
+		if r, ok := h.rooms[info.RoomID]; ok {
+			chatMsg := &pb.Message{
+				Event: &pb.Message_Chat{Chat: &pb.Chat{Message: chatMsg.Message}},
+			}
+			var otherPlayerID string
+			for _, cid := range r.clientIDS {
+				if cid == msg.ClientID {
+					continue
+				}
+				otherPlayerID = cid
+			}
+			h.broadcastClient <- &clientMessage{ClientID: otherPlayerID, RoomID: r.id, Message: chatMsg}
+		}
+	}
+}
+
+func (h *hub) onSeekGame(msg *clientMessage) {
 	ctx := context.TODO()
 
 	seekGameMsg := msg.Message.GetSeekGame()
@@ -301,7 +338,7 @@ func (h *hub) onClientSeekGame(msg *clientMessage) {
 	h.log.Debug("seek game success", slog.String("client_id", msg.ClientID))
 }
 
-func (h *hub) onClientCancelSeekGame(msg *clientMessage) {
+func (h *hub) onCancelSeekGame(msg *clientMessage) {
 	ctx := context.TODO()
 
 	cancelSeekGameMsg := msg.Message.GetCancelSeekGame()
@@ -326,6 +363,69 @@ func (h *hub) onClientCancelSeekGame(msg *clientMessage) {
 
 	h.log.Debug("cancel seek game success", slog.String("client_id", msg.ClientID))
 }
+
+func (h *hub) onAbortGame(msg *clientMessage) {
+	// ctx := context.TODO()
+
+	abortGameMsg := msg.Message.GetAbortGame()
+	if abortGameMsg == nil {
+		h.log.Error("nil message", slog.String("event", msg.String()))
+		return
+	}
+
+	info, inGame := h.clientsInGame[msg.ClientID]
+	if inGame {
+		if r, ok := h.rooms[info.RoomID]; ok {
+			r.finishGame <- finishGame{clientID: msg.ClientID, result: resultAborted, status: resultStatusAborted}
+		}
+	}
+}
+
+func (h *hub) onOfferDraw(msg *clientMessage) {
+	// ctx := context.TODO()
+
+	offerDrawMsg := msg.Message.GetOfferDraw()
+	if offerDrawMsg == nil {
+		h.log.Error("nil message", slog.String("event", msg.String()))
+		return
+	}
+
+	info, inGame := h.clientsInGame[msg.ClientID]
+	if inGame {
+		if r, ok := h.rooms[info.RoomID]; ok {
+			offerDrawMsg := &pb.Message{
+				Event: &pb.Message_OfferDraw{OfferDraw: &pb.OfferDraw{}},
+			}
+			var otherPlayerID string
+			for _, cid := range r.clientIDS {
+				if cid == msg.ClientID {
+					continue
+				}
+				otherPlayerID = cid
+			}
+			h.broadcastClient <- &clientMessage{ClientID: otherPlayerID, RoomID: r.id, Message: offerDrawMsg}
+		}
+	}
+}
+
+func (h *hub) onAcceptDraw(msg *clientMessage) {
+	// ctx := context.TODO()
+
+	acceptDrawMsg := msg.Message.GetAcceptDraw()
+	if acceptDrawMsg == nil {
+		h.log.Error("nil message", slog.String("event", msg.String()))
+		return
+	}
+
+	info, inGame := h.clientsInGame[msg.ClientID]
+	if inGame {
+		if r, ok := h.rooms[info.RoomID]; ok {
+			r.finishGame <- finishGame{clientID: msg.ClientID, result: resultDraw, status: resultStatusDrawAgreed}
+		}
+	}
+}
+
+func (h *hub) onPlayMoveUCI(msg *clientMessage) {}
 
 func (h *hub) broadcastHubInfo() {
 	hubInfoMsg := &pb.Message{

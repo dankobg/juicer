@@ -2,8 +2,8 @@
 	import { JuicerWS } from '$lib/ws/ws';
 	import { onMount } from 'svelte';
 	import { Spinner } from 'flowbite-svelte';
-	import Chat from '$lib/chat/Chat.svelte';
-	import { CancelSeekGame, Echo, Message, SeekGame } from '$lib/gen/juicer_pb';
+	import GameChat from '$lib/gamechat/GameChat.svelte';
+	import { AbortGame, AcceptDraw, CancelSeekGame, Chat, Echo, Message, OfferDraw, SeekGame } from '$lib/gen/juicer_pb';
 
 	let outerSize = '35rem';
 
@@ -19,7 +19,18 @@
 	let gameId = '';
 
 	let state: 'idle' | 'seeking' | 'playing' = 'idle';
-	let abortReason = '';
+	let gameResult = '';
+	let gameStatus = '';
+
+	let drawOffered = false;
+
+	function onChatMessage(event: CustomEvent<{ text: string }>) {
+		const msg = event.detail.text;
+		if (!msg) {
+			return;
+		}
+		ws.send(new Message({ event: { case: 'chat', value: new Chat({ message: msg }) } }));
+	}
 
 	onMount(() => {
 		ws.connect();
@@ -54,11 +65,15 @@
 						roomId = msg.event.value.roomId;
 						gameId = msg.event.value.gameId;
 						break;
-					case 'gameAborted':
+					case 'gameFinished':
 						state = 'idle';
 						roomId = '';
 						gameId = '';
-						abortReason = msg.event.value.reason;
+						gameResult = msg.event.value.result;
+						gameStatus = msg.event.value.status;
+						break;
+					case 'offerDraw':
+						drawOffered = true;
 						break;
 					default:
 						console.log('unkown message', msg.event.case, msg.event.value);
@@ -85,8 +100,11 @@
 	<p>Playing: <strong>{playingCount}</strong></p>
 {/if}
 
-{#if abortReason}
-	<p>Abort reason: <strong>{abortReason}</strong></p>
+{#if gameResult}
+	<p>Game result: <strong>{gameResult}</strong></p>
+{/if}
+{#if gameStatus}
+	<p>Game status: <strong>{gameStatus}</strong></p>
 {/if}
 
 {#if gameId}
@@ -111,7 +129,8 @@
 		on:click={() => {
 			ws.send(new Message({ event: { case: 'seekGame', value: new SeekGame({ gameMode: 'blitz' }) } }));
 			state = 'seeking';
-			abortReason = '';
+			gameResult = '';
+			gameStatus = '';
 		}}
 	>
 		SEEK GAME</button
@@ -124,7 +143,8 @@
 		on:click={() => {
 			ws.send(new Message({ event: { case: 'cancelSeekGame', value: new CancelSeekGame() } }));
 			state = 'idle';
-			abortReason = '';
+			gameResult = '';
+			gameStatus = '';
 		}}
 	>
 		CANCEL SEEK GAME</button
@@ -138,11 +158,43 @@
 {/if}
 
 {#if state === 'playing'}
+	<button
+		class="bg-orange-500 text-white py-2 px-4 rounded mb-2"
+		on:click={() => {
+			ws.send(new Message({ event: { case: 'abortGame', value: new AbortGame() } }));
+			state = 'idle';
+			gameResult = '';
+			gameStatus = '';
+		}}
+	>
+		Abort game</button
+	>
+
+	<button
+		class="bg-blue-500 text-white py-2 px-4 rounded mb-2"
+		on:click={() => {
+			ws.send(new Message({ event: { case: 'offerDraw', value: new OfferDraw() } }));
+		}}
+	>
+		Offer draw</button
+	>
+
+	{#if drawOffered}
+		<button
+			class="bg-green-500 text-white py-2 px-4 rounded mb-2"
+			on:click={() => {
+				ws.send(new Message({ event: { case: 'acceptDraw', value: new AcceptDraw() } }));
+			}}
+		>
+			Accept draw</button
+		>
+	{/if}
+
 	<div style="display:flex;flex-wrap:wrap;gap:1rem;">
 		<div style="width: {outerSize}; height: {outerSize};">
 			<juicer-board fen="start" coords="inside" files="start" ranks="start" interactive show-ghost></juicer-board>
 		</div>
 
-		<Chat />
+		<GameChat on:message={onChatMessage} />
 	</div>
 {/if}

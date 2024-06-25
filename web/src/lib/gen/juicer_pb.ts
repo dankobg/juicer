@@ -69,10 +69,40 @@ export class Message extends Message$1<Message> {
     case: "cancelSeekGame";
   } | {
     /**
-     * @generated from field: pb.GameAborted game_aborted = 10;
+     * @generated from field: pb.GameFinished game_finished = 10;
      */
-    value: GameAborted;
-    case: "gameAborted";
+    value: GameFinished;
+    case: "gameFinished";
+  } | {
+    /**
+     * @generated from field: pb.AbortGame abort_game = 11;
+     */
+    value: AbortGame;
+    case: "abortGame";
+  } | {
+    /**
+     * @generated from field: pb.OfferDraw offer_draw = 12;
+     */
+    value: OfferDraw;
+    case: "offerDraw";
+  } | {
+    /**
+     * @generated from field: pb.AcceptDraw accept_draw = 13;
+     */
+    value: AcceptDraw;
+    case: "acceptDraw";
+  } | {
+    /**
+     * @generated from field: pb.PlayMoveUCI play_move_uci = 14;
+     */
+    value: PlayMoveUCI;
+    case: "playMoveUci";
+  } | {
+    /**
+     * @generated from field: pb.Chat chat = 15;
+     */
+    value: Chat;
+    case: "chat";
   } | { case: undefined; value?: undefined } = { case: undefined };
 
   constructor(data?: PartialMessage<Message>) {
@@ -92,7 +122,12 @@ export class Message extends Message$1<Message> {
     { no: 7, name: "seeking_count", kind: "message", T: SeekingCount, oneof: "event" },
     { no: 8, name: "seek_game", kind: "message", T: SeekGame, oneof: "event" },
     { no: 9, name: "cancel_seek_game", kind: "message", T: CancelSeekGame, oneof: "event" },
-    { no: 10, name: "game_aborted", kind: "message", T: GameAborted, oneof: "event" },
+    { no: 10, name: "game_finished", kind: "message", T: GameFinished, oneof: "event" },
+    { no: 11, name: "abort_game", kind: "message", T: AbortGame, oneof: "event" },
+    { no: 12, name: "offer_draw", kind: "message", T: OfferDraw, oneof: "event" },
+    { no: 13, name: "accept_draw", kind: "message", T: AcceptDraw, oneof: "event" },
+    { no: 14, name: "play_move_uci", kind: "message", T: PlayMoveUCI, oneof: "event" },
+    { no: 15, name: "chat", kind: "message", T: Chat, oneof: "event" },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): Message {
@@ -458,9 +493,9 @@ export class CancelSeekGame extends Message$1<CancelSeekGame> {
 }
 
 /**
- * @generated from message pb.GameAborted
+ * @generated from message pb.GameFinished
  */
-export class GameAborted extends Message$1<GameAborted> {
+export class GameFinished extends Message$1<GameFinished> {
   /**
    * @generated from field: string game_id = 1;
    */
@@ -472,37 +507,210 @@ export class GameAborted extends Message$1<GameAborted> {
   roomId = "";
 
   /**
-   * @generated from field: string reason = 3;
+   * @generated from field: string result = 3;
    */
-  reason = "";
+  result = "";
 
-  constructor(data?: PartialMessage<GameAborted>) {
+  /**
+   * @generated from field: string status = 4;
+   */
+  status = "";
+
+  constructor(data?: PartialMessage<GameFinished>) {
     super();
     proto3.util.initPartial(data, this);
   }
 
   static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "pb.GameAborted";
+  static readonly typeName = "pb.GameFinished";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "game_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "room_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 3, name: "reason", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "result", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "status", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GameAborted {
-    return new GameAborted().fromBinary(bytes, options);
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GameFinished {
+    return new GameFinished().fromBinary(bytes, options);
   }
 
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GameAborted {
-    return new GameAborted().fromJson(jsonValue, options);
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GameFinished {
+    return new GameFinished().fromJson(jsonValue, options);
   }
 
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GameAborted {
-    return new GameAborted().fromJsonString(jsonString, options);
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GameFinished {
+    return new GameFinished().fromJsonString(jsonString, options);
   }
 
-  static equals(a: GameAborted | PlainMessage<GameAborted> | undefined, b: GameAborted | PlainMessage<GameAborted> | undefined): boolean {
-    return proto3.util.equals(GameAborted, a, b);
+  static equals(a: GameFinished | PlainMessage<GameFinished> | undefined, b: GameFinished | PlainMessage<GameFinished> | undefined): boolean {
+    return proto3.util.equals(GameFinished, a, b);
+  }
+}
+
+/**
+ * @generated from message pb.AbortGame
+ */
+export class AbortGame extends Message$1<AbortGame> {
+  constructor(data?: PartialMessage<AbortGame>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "pb.AbortGame";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): AbortGame {
+    return new AbortGame().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): AbortGame {
+    return new AbortGame().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): AbortGame {
+    return new AbortGame().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: AbortGame | PlainMessage<AbortGame> | undefined, b: AbortGame | PlainMessage<AbortGame> | undefined): boolean {
+    return proto3.util.equals(AbortGame, a, b);
+  }
+}
+
+/**
+ * @generated from message pb.OfferDraw
+ */
+export class OfferDraw extends Message$1<OfferDraw> {
+  constructor(data?: PartialMessage<OfferDraw>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "pb.OfferDraw";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): OfferDraw {
+    return new OfferDraw().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): OfferDraw {
+    return new OfferDraw().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): OfferDraw {
+    return new OfferDraw().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: OfferDraw | PlainMessage<OfferDraw> | undefined, b: OfferDraw | PlainMessage<OfferDraw> | undefined): boolean {
+    return proto3.util.equals(OfferDraw, a, b);
+  }
+}
+
+/**
+ * @generated from message pb.AcceptDraw
+ */
+export class AcceptDraw extends Message$1<AcceptDraw> {
+  constructor(data?: PartialMessage<AcceptDraw>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "pb.AcceptDraw";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): AcceptDraw {
+    return new AcceptDraw().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): AcceptDraw {
+    return new AcceptDraw().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): AcceptDraw {
+    return new AcceptDraw().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: AcceptDraw | PlainMessage<AcceptDraw> | undefined, b: AcceptDraw | PlainMessage<AcceptDraw> | undefined): boolean {
+    return proto3.util.equals(AcceptDraw, a, b);
+  }
+}
+
+/**
+ * @generated from message pb.PlayMoveUCI
+ */
+export class PlayMoveUCI extends Message$1<PlayMoveUCI> {
+  /**
+   * @generated from field: string move = 1;
+   */
+  move = "";
+
+  constructor(data?: PartialMessage<PlayMoveUCI>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "pb.PlayMoveUCI";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "move", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): PlayMoveUCI {
+    return new PlayMoveUCI().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): PlayMoveUCI {
+    return new PlayMoveUCI().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): PlayMoveUCI {
+    return new PlayMoveUCI().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: PlayMoveUCI | PlainMessage<PlayMoveUCI> | undefined, b: PlayMoveUCI | PlainMessage<PlayMoveUCI> | undefined): boolean {
+    return proto3.util.equals(PlayMoveUCI, a, b);
+  }
+}
+
+/**
+ * @generated from message pb.Chat
+ */
+export class Chat extends Message$1<Chat> {
+  /**
+   * @generated from field: string message = 1;
+   */
+  message = "";
+
+  constructor(data?: PartialMessage<Chat>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "pb.Chat";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "message", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): Chat {
+    return new Chat().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): Chat {
+    return new Chat().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): Chat {
+    return new Chat().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: Chat | PlainMessage<Chat> | undefined, b: Chat | PlainMessage<Chat> | undefined): boolean {
+    return proto3.util.equals(Chat, a, b);
   }
 }
 

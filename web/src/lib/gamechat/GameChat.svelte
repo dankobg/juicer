@@ -1,15 +1,19 @@
 <script lang="ts">
+	import { createEventDispatcher } from 'svelte';
 	import { Input, Button } from 'flowbite-svelte';
 
 	export let messages: string[] = [];
-	export let msg: string = '';
+	let msg: string = '';
+
+	const dispatch = createEventDispatcher();
 
 	export function sendMessage() {
 		if (!msg) {
 			return;
 		}
-		messages = [...messages, msg];
+		dispatch('message', { text: msg });
 		msg = '';
+		messages = [...messages, msg];
 	}
 </script>
 

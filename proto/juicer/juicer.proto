@@ -15,7 +15,12 @@ message Message {
 		SeekingCount seeking_count = 7;
 		SeekGame seek_game = 8;
 		CancelSeekGame cancel_seek_game = 9;
-		GameAborted game_aborted = 10;
+		GameFinished game_finished= 10;
+		AbortGame abort_game = 11;
+		OfferDraw offer_draw = 12;
+		AcceptDraw accept_draw = 13;
+		PlayMoveUCI play_move_uci = 14;
+		Chat chat = 15;
   }
 }
 
@@ -56,8 +61,23 @@ message SeekGame {
 
 message CancelSeekGame {}
 
-message GameAborted {
+message GameFinished {
   string game_id = 1;
   string room_id = 2;
-  string reason = 3;
+  string result = 3;
+  string status = 4;
+}
+
+message AbortGame {}
+
+message OfferDraw {}
+
+message AcceptDraw {}
+
+message PlayMoveUCI {
+  string move = 1;
+}
+
+message Chat {
+  string message = 1;
 }

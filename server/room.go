@@ -16,9 +16,17 @@ type gameInfo struct {
 	RoomID string
 }
 
+type finishGame struct {
+	clientID string
+	result   result
+	status   resultStatus
+}
+
 type room struct {
 	id                string
 	clients           map[string]*client
+	whiteID           string
+	blackID           string
 	clientIDS         [2]string
 	gameState         *gameState
 	mu                sync.Mutex
@@ -28,6 +36,7 @@ type room struct {
 	firstMoveTimeout  time.Duration
 	timerEvent        chan timerEvent
 	players           map[string]*player
+	finishGame        chan finishGame
 }
 
 func (r *room) String() string {
@@ -52,6 +61,8 @@ func NewRoom(hub *hub, c1, c2 *client) (*room, error) {
 		id:                random.AlphaNumeric(32),
 		gameState:         gs,
 		clients:           make(map[string]*client),
+		whiteID:           whiteID,
+		blackID:           blackID,
 		clientIDS:         [2]string{c1.id, c2.id},
 		hub:               hub,
 		wg:                &sync.WaitGroup{},
@@ -62,6 +73,7 @@ func NewRoom(hub *hub, c1, c2 *client) (*room, error) {
 			whiteID: {id: whiteID, color: "w"},
 			blackID: {id: blackID, color: "b"},
 		},
+		finishGame: make(chan finishGame),
 	}
 
 	room.addClient(c1)
@@ -147,7 +159,12 @@ func (r *room) handleTimerEvent(event timerEvent) {
 }
 
 func (r *room) startGame(ctx context.Context) {
-	r.hub.log.Debug("room starting game", slog.String("room_id", r.id), slog.String("game_id", r.gameState.GameID))
+	whitep := r.players[r.gameState.WhiteID]
+	blackp := r.players[r.gameState.BlackID]
+
+	r.hub.log.Debug("room starting game", slog.String("room_id", r.id), slog.String("game_id", r.gameState.GameID), slog.String("white", whitep.id), slog.String("black", blackp.id))
+
+	r.startFirstMoveTimer(whitep.id)
 
 	r.wg.Add(1)
 	go func() {
@@ -159,9 +176,6 @@ func (r *room) startGame(ctx context.Context) {
 			r.wg.Done()
 		}()
 
-		whitep := r.players[r.gameState.WhiteID]
-		blackp := r.players[r.gameState.BlackID]
-
 		for {
 			select {
 			case event := <-r.timerEvent:
@@ -169,27 +183,32 @@ func (r *room) startGame(ctx context.Context) {
 
 			case <-tick(whitep.firstMoveTimer):
 				r.hub.log.Debug("white first move timer timed out")
-				r.abortGame()
+				r.abortGame(resultAborted, resultStatusTimedOut)
 				return
 
 			case <-tick(blackp.firstMoveTimer):
 				r.hub.log.Debug("black first move timer timed out")
-				r.abortGame()
+				r.abortGame(resultAborted, resultStatusTimedOut)
 				return
 
 			case <-tick(whitep.disconnectTimer):
 				r.hub.log.Debug("white disconnect timer timed out")
-				r.abortGame()
+				r.abortGame(resultAborted, resultStatusTimedOut)
 				return
 
 			case <-tick(blackp.disconnectTimer):
 				r.hub.log.Debug("black disconnect timer timed out")
-				r.abortGame()
+				r.abortGame(resultAborted, resultStatusTimedOut)
+				return
+
+			case sg := <-r.finishGame:
+				r.hub.log.Debug("room stop received", slog.String("status", sg.status.String()))
+				r.abortGame(sg.result, sg.status)
 				return
 
 			case <-ctx.Done():
 				r.hub.log.Debug("room context done")
-				r.abortGame()
+				r.abortGame(resultAborted, resultStatusAborted)
 				return
 			}
 		}
@@ -199,11 +218,11 @@ func (r *room) startGame(ctx context.Context) {
 	r.hub.log.Debug("room cleaned up")
 }
 
-func (r *room) abortGame() {
+func (r *room) abortGame(result result, status resultStatus) {
 	r.hub.log.Debug("abort game called")
 
 	gameAbortedMsg := &pb.Message{
-		Event: &pb.Message_GameAborted{GameAborted: &pb.GameAborted{GameId: r.gameState.GameID, RoomId: r.id, Reason: "timeout"}},
+		Event: &pb.Message_GameFinished{GameFinished: &pb.GameFinished{GameId: r.gameState.GameID, RoomId: r.id, Result: result.String(), Status: status.String()}},
 	}
 	for _, c := range r.clients {
 		if _, ok := r.hub.lobbyClients[c.id]; !ok {
