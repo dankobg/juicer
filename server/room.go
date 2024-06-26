@@ -164,7 +164,7 @@ func (r *room) startGame(ctx context.Context) {
 
 	r.hub.log.Debug("room starting game", slog.String("room_id", r.id), slog.String("game_id", r.gameState.GameID), slog.String("white", whitep.id), slog.String("black", blackp.id))
 
-	r.startFirstMoveTimer(whitep.id)
+	// r.startFirstMoveTimer(whitep.id)
 
 	r.wg.Add(1)
 	go func() {

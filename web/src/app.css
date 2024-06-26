@@ -2,6 +2,12 @@
 @tailwind components;
 @tailwind utilities;
 
+*,
+*:before,
+*:after {
+	box-sizing: border-box;
+}
+
 :root {
 	--board-theme: url('images/board/svg/blue.svg');
 	--wr-theme: url('images/piece/gioco/wR.svg');

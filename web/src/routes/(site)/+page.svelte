@@ -4,6 +4,7 @@
 	import { Spinner } from 'flowbite-svelte';
 	import GameChat from '$lib/gamechat/GameChat.svelte';
 	import { AbortGame, AcceptDraw, CancelSeekGame, Chat, Echo, Message, OfferDraw, SeekGame } from '$lib/gen/juicer_pb';
+	import { chatMessages } from '$lib/gamechat/messages';
 
 	let outerSize = '35rem';
 
@@ -46,6 +47,11 @@
 					case 'echo':
 						console.log('echo resp:', msg.event.value);
 						break;
+					case 'chat':
+						const chatMsg = msg.event.value.message;
+						console.log('chat recv:', chatMsg);
+						chatMessages.update(msgs => [...msgs, { own: false, text: chatMsg }]);
+						break;
 					case 'clientConnected':
 						console.log('client joined:', msg.event.value.id);
 						break;
@@ -64,6 +70,7 @@
 						state = 'playing';
 						roomId = msg.event.value.roomId;
 						gameId = msg.event.value.gameId;
+						drawOffered = false;
 						break;
 					case 'gameFinished':
 						state = 'idle';
@@ -71,6 +78,7 @@
 						gameId = '';
 						gameResult = msg.event.value.result;
 						gameStatus = msg.event.value.status;
+						drawOffered = false;
 						break;
 					case 'offerDraw':
 						drawOffered = true;
@@ -165,6 +173,7 @@
 			state = 'idle';
 			gameResult = '';
 			gameStatus = '';
+			drawOffered = false;
 		}}
 	>
 		Abort game</button
@@ -184,6 +193,7 @@
 			class="bg-green-500 text-white py-2 px-4 rounded mb-2"
 			on:click={() => {
 				ws.send(new Message({ event: { case: 'acceptDraw', value: new AcceptDraw() } }));
+				drawOffered = false;
 			}}
 		>
 			Accept draw</button
