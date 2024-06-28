@@ -425,7 +425,16 @@ func (h *hub) onAcceptDraw(msg *clientMessage) {
 	}
 }
 
-func (h *hub) onPlayMoveUCI(msg *clientMessage) {}
+func (h *hub) onPlayMoveUCI(msg *clientMessage) {
+	// ctx := context.TODO()
+
+	playMoveUciMsg := msg.Message.GetPlayMoveUci()
+	if playMoveUciMsg == nil {
+		h.log.Error("nil message", slog.String("event", msg.String()))
+		return
+	}
+
+}
 
 func (h *hub) broadcastHubInfo() {
 	hubInfoMsg := &pb.Message{

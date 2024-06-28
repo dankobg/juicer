@@ -130,16 +130,19 @@ const (
 )
 
 type gameState struct {
-	GameID       string
-	Chess        *juicer.Chess
-	WhiteID      string
-	BlackID      string
-	GameType     gameType
-	GameMode     gameMode
-	Result       result
-	ResultStatus resultStatus
-	MatchState   MatchState
-	StartTime    time.Time
+	GameID             string
+	Chess              *juicer.Chess
+	WhiteID            string
+	BlackID            string
+	GameType           gameType
+	GameMode           gameMode
+	Result             result
+	ResultStatus       resultStatus
+	MatchState         MatchState
+	StartTime          time.Time
+	LastMove           time.Time
+	RemainingTimeWhite time.Duration
+	RemainingTimeBlack time.Duration
 }
 
 func NewGameState(whiteID, blackID string, gameType gameType, gameMode gameMode) (*gameState, error) {
@@ -151,14 +154,16 @@ func NewGameState(whiteID, blackID string, gameType gameType, gameMode gameMode)
 	}
 
 	gs := &gameState{
-		GameID:       gameID,
-		Chess:        chess,
-		WhiteID:      whiteID,
-		BlackID:      blackID,
-		GameType:     gameType,
-		GameMode:     gameMode,
-		MatchState:   matchStateWaitingStart,
-		ResultStatus: resultStatusUnknown,
+		GameID:             gameID,
+		Chess:              chess,
+		WhiteID:            whiteID,
+		BlackID:            blackID,
+		GameType:           gameType,
+		GameMode:           gameMode,
+		MatchState:         matchStateWaitingStart,
+		ResultStatus:       resultStatusUnknown,
+		RemainingTimeWhite: time.Minute * 5,
+		RemainingTimeBlack: time.Minute * 5,
 	}
 
 	return gs, nil

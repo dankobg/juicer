@@ -9,6 +9,10 @@ import (
 )
 
 func TestPerft(t *testing.T) {
+	if os.Getenv("SKIP_PERFT") != "" {
+		t.Skip("Skipping perft tests")
+	}
+
 	InitPrecalculatedTables()
 
 	const maxDepthToCheck = 5

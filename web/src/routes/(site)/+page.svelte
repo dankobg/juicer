@@ -1,15 +1,32 @@
 <script lang="ts">
-	import { JuicerWS } from '$lib/ws/ws';
 	import { onMount } from 'svelte';
+	import { JuicerWS } from '$lib/ws/ws';
 	import { Spinner } from 'flowbite-svelte';
 	import GameChat from '$lib/gamechat/GameChat.svelte';
-	import { AbortGame, AcceptDraw, CancelSeekGame, Chat, Echo, Message, OfferDraw, SeekGame } from '$lib/gen/juicer_pb';
+	import {
+		AbortGame,
+		AcceptDraw,
+		CancelSeekGame,
+		Chat,
+		Echo,
+		Message,
+		OfferDraw,
+		PlayMoveUCI,
+		SeekGame,
+	} from '$lib/gen/juicer_pb';
 	import { chatMessages } from '$lib/gamechat/messages';
+	import type { JuicerBoard, MoveCancelEvent, MoveStartEvent, MoveFinishEvent } from '@dankop/juicer-board';
 
 	let outerSize = '35rem';
 
 	let ws: JuicerWS = new JuicerWS();
 	let wsErr = '';
+
+	let board: JuicerBoard;
+
+	let opponentDisconnectIntervalId: NodeJS.Timeout | undefined;
+	let opponentDisconnectTimer = 0;
+	let showpOpponentDisconnectTimer = false;
 
 	let lobbyCount = 0;
 	let roomsCount = 0;
@@ -33,7 +50,62 @@
 		ws.send(new Message({ event: { case: 'chat', value: new Chat({ message: msg }) } }));
 	}
 
+	function startOpponentDisconnectTimer() {
+		stopOpponentDisconnectTimer();
+
+		showpOpponentDisconnectTimer = true;
+		opponentDisconnectTimer = 10;
+
+		opponentDisconnectIntervalId = setInterval(() => {
+			if (opponentDisconnectTimer > 0) {
+				opponentDisconnectTimer--;
+			} else {
+				clearInterval(opponentDisconnectIntervalId);
+				opponentDisconnectIntervalId = undefined;
+			}
+		}, 1000);
+	}
+
+	function stopOpponentDisconnectTimer() {
+		showpOpponentDisconnectTimer = false;
+
+		if (opponentDisconnectIntervalId) {
+			clearTimeout(opponentDisconnectIntervalId);
+		}
+		opponentDisconnectTimer = 0;
+	}
+
+	function onBoardMoveStart(event: MoveStartEvent) {}
+
+	function onBoardMoveCancel(event: MoveCancelEvent) {}
+
+	function onBoardMoveFinish(event: MoveFinishEvent) {
+		const uci = event.data.srcCoord + event.data.destCoord;
+		console.log('uci:', uci);
+		ws.send(new Message({ event: { case: 'playMoveUci', value: new PlayMoveUCI({ move: uci }) } }));
+	}
+
+	function addBoardEventListeners() {
+		if (board) {
+			board.addEventListener('movestart', onBoardMoveStart);
+			board.addEventListener('movecancel', onBoardMoveCancel);
+			board.addEventListener('movefinish', onBoardMoveFinish);
+		}
+	}
+
+	function removeBoardEventListeners() {
+		if (board) {
+			board.removeEventListener('movestart', onBoardMoveStart);
+			board.removeEventListener('movecancel', onBoardMoveCancel);
+			board.removeEventListener('movefinish', onBoardMoveFinish);
+		}
+	}
+
 	onMount(() => {
+		if (board) {
+			addBoardEventListeners();
+		}
+
 		ws.connect();
 
 		ws.onmessage = (event: MessageEvent) => {
@@ -54,9 +126,11 @@
 						break;
 					case 'clientConnected':
 						console.log('client joined:', msg.event.value.id);
+						stopOpponentDisconnectTimer();
 						break;
 					case 'clientDisconnected':
 						console.log('client left:', msg.event.value.id);
+						startOpponentDisconnectTimer();
 						break;
 					case 'hubInfo':
 						lobbyCount = msg.event.value.lobby;
@@ -79,6 +153,7 @@
 						gameResult = msg.event.value.result;
 						gameStatus = msg.event.value.status;
 						drawOffered = false;
+						showpOpponentDisconnectTimer = false;
 						break;
 					case 'offerDraw':
 						drawOffered = true;
@@ -94,8 +169,11 @@
 
 		return () => {
 			ws.close();
+			removeBoardEventListeners();
 		};
 	});
+
+	$: board && addBoardEventListeners();
 </script>
 
 {#if wsErr}
@@ -120,6 +198,10 @@
 {/if}
 {#if roomId}
 	<p>Room ID: <strong>{roomId}</strong></p>
+{/if}
+
+{#if showpOpponentDisconnectTimer}
+	<p>Opponent time to rejoin the game: {opponentDisconnectTimer}</p>
 {/if}
 
 {#if state === 'idle'}
@@ -202,9 +284,15 @@
 
 	<div style="display:flex;flex-wrap:wrap;gap:1rem;">
 		<div style="width: {outerSize}; height: {outerSize};">
-			<juicer-board fen="start" coords="inside" files="start" ranks="start" interactive show-ghost></juicer-board>
+			<juicer-board bind:this={board} fen="start" coords="inside" files="start" ranks="start" interactive show-ghost
+			></juicer-board>
 		</div>
 
 		<GameChat on:message={onChatMessage} />
 	</div>
 {/if}
+
+<div style="width: {outerSize}; height: {outerSize};">
+	<juicer-board bind:this={board} fen="start" coords="inside" files="start" ranks="start" interactive show-ghost
+	></juicer-board>
+</div>

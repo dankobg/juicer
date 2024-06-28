@@ -41,7 +41,7 @@ func TestZobristTransposition(t *testing.T) {
 	p2.MakeMove(newQuietMove(G1, F3, WhiteKnight))
 	p2.MakeMove(newDoublePawnMove(E7, E5, BlackPawn))
 	p2.MakeMove(newDoublePawnMove(E2, E4, WhitePawn))
-	p2.MakeMove(newQuietMove(A8, C6, BlackKnight))
+	p2.MakeMove(newQuietMove(B8, C6, BlackKnight))
 
 	if p1.hash != p2.hash {
 		t.Fatalf("zobrist transposition hashes are not equal: (%v, %v)", p1.hash, p2.hash)
