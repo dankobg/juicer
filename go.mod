@@ -11,7 +11,7 @@ require (
 	github.com/knadh/koanf/v2 v2.1.1
 	github.com/labstack/echo/v4 v4.12.0
 	github.com/lmittmann/tint v1.0.4
-	github.com/ory/client-go v1.11.11
+	github.com/ory/client-go v1.12.1
 	github.com/redis/go-redis/v9 v9.5.3
 	github.com/wneessen/go-mail v0.4.1
 	google.golang.org/protobuf v1.34.2
