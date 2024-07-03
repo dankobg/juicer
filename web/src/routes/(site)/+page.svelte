@@ -16,11 +16,12 @@
 	} from '$lib/gen/juicer_pb';
 	import { chatMessages } from '$lib/gamechat/messages';
 	import type { JuicerBoard, MoveCancelEvent, MoveStartEvent, MoveFinishEvent } from '@dankop/juicer-board';
+	import { BLACK, WHITE } from 'chess.js';
 
 	let outerSize = '35rem';
 
 	let ws: JuicerWS = new JuicerWS();
-	let wsErr = '';
+	let wsErr: string = '';
 
 	let board: JuicerBoard;
 
@@ -28,19 +29,30 @@
 	let opponentDisconnectTimer = 0;
 	let showpOpponentDisconnectTimer = false;
 
+	let gameClockIntervalId: NodeJS.Timeout | undefined;
+	let whiteRemainingTime: number = 300;
+	let blackRemainingTime: number = 300;
+	let fen: string = 'start';
+	let uci: string = '';
+	let san: string = '';
+	let lan: string = '';
+	let ply: number = 0;
+	let legalMoves: string[] = [];
+
 	let lobbyCount = 0;
 	let roomsCount = 0;
 	let seekingCount = 0;
 	let playingCount = 0;
 
-	let roomId = '';
-	let gameId = '';
+	let roomId: string = '';
+	let gameId: string = '';
+	let side = 'w';
 
 	let state: 'idle' | 'seeking' | 'playing' = 'idle';
-	let gameResult = '';
-	let gameStatus = '';
+	let gameResult: string = '';
+	let gameStatus: string = '';
 
-	let drawOffered = false;
+	let drawOffered: boolean = false;
 
 	function onChatMessage(event: CustomEvent<{ text: string }>) {
 		const msg = event.detail.text;
@@ -66,6 +78,27 @@
 		}, 1000);
 	}
 
+	function startPlayerClocks() {
+		gameClockIntervalId = setInterval(() => {
+			if (ply >= 2) {
+				if (ply % 2 === 0) {
+					whiteRemainingTime -= 1;
+				} else {
+					blackRemainingTime -= 1;
+				}
+			}
+		}, 1000);
+	}
+
+	function updatePlayerClocks(whiteTime?: number, blackTime?: number) {
+		if (whiteTime) {
+			whiteRemainingTime = whiteTime;
+		}
+		if (blackTime) {
+			blackRemainingTime = blackTime;
+		}
+	}
+
 	function stopOpponentDisconnectTimer() {
 		showpOpponentDisconnectTimer = false;
 
@@ -80,6 +113,12 @@
 	function onBoardMoveCancel(event: MoveCancelEvent) {}
 
 	function onBoardMoveFinish(event: MoveFinishEvent) {
+		if ((side === WHITE && ply % 2 !== 0) || (side === BLACK && ply % 2 === 0)) {
+			console.log('not your turn');
+			event.preventDefault();
+			return;
+		}
+
 		const uci = event.data.srcCoord + event.data.destCoord;
 		console.log('uci:', uci);
 		ws.send(new Message({ event: { case: 'playMoveUci', value: new PlayMoveUCI({ move: uci }) } }));
@@ -108,28 +147,37 @@
 
 		ws.connect();
 
-		ws.onmessage = (event: MessageEvent) => {
+		ws.onOpen = (event: Event) => {
+			console.debug(`ws open: ${event}`);
+		};
+
+		ws.onClose = (event: CloseEvent) => {
+			console.debug(`ws closed: code:${event.code}, reason: ${event.reason}, wasClean: ${event.wasClean}`);
+		};
+
+		ws.onError = (event: Event) => {
+			console.debug(`ws error: ${event}`);
+		};
+
+		ws.onMessage = (event: MessageEvent) => {
 			try {
 				const msg = Message.fromJsonString(event.data);
+				console.debug(`ws recv: ${msg.event.case} - ${msg.event.value}`);
 
 				switch (msg.event.case) {
 					case 'error':
 						wsErr = msg.event.value.message;
 						break;
 					case 'echo':
-						console.log('echo resp:', msg.event.value);
 						break;
 					case 'chat':
 						const chatMsg = msg.event.value.message;
-						console.log('chat recv:', chatMsg);
 						chatMessages.update(msgs => [...msgs, { own: false, text: chatMsg }]);
 						break;
 					case 'clientConnected':
-						console.log('client joined:', msg.event.value.id);
 						stopOpponentDisconnectTimer();
 						break;
 					case 'clientDisconnected':
-						console.log('client left:', msg.event.value.id);
 						startOpponentDisconnectTimer();
 						break;
 					case 'hubInfo':
@@ -144,7 +192,9 @@
 						state = 'playing';
 						roomId = msg.event.value.roomId;
 						gameId = msg.event.value.gameId;
+						side = msg.event.value.color;
 						drawOffered = false;
+						startPlayerClocks();
 						break;
 					case 'gameFinished':
 						state = 'idle';
@@ -158,6 +208,20 @@
 					case 'offerDraw':
 						drawOffered = true;
 						break;
+					case 'move':
+						const clocks = msg.event.value.clocks;
+						updatePlayerClocks(clocks?.white, clocks?.black);
+						uci = msg.event.value.uci;
+						san = msg.event.value.san;
+						lan = msg.event.value.lan;
+						fen = msg.event.value.fen;
+						ply = msg.event.value.ply;
+						legalMoves = msg.event.value.legalMoves;
+						const src = uci.slice(0, 2) as any;
+						const dest = uci.slice(2, 4) as any;
+						board.movePiece(src, dest);
+						console.log({ w: clocks?.white, b: clocks?.black, uci, san, lan, fen, legalMoves });
+						break;
 					default:
 						console.log('unkown message', msg.event.case, msg.event.value);
 						break;
@@ -170,6 +234,8 @@
 		return () => {
 			ws.close();
 			removeBoardEventListeners();
+			clearInterval(opponentDisconnectIntervalId);
+			clearInterval(gameClockIntervalId);
 		};
 	});
 
@@ -284,7 +350,15 @@
 
 	<div style="display:flex;flex-wrap:wrap;gap:1rem;">
 		<div style="width: {outerSize}; height: {outerSize};">
-			<juicer-board bind:this={board} fen="start" coords="inside" files="start" ranks="start" interactive show-ghost
+			<juicer-board
+				bind:this={board}
+				orientation={side}
+				{fen}
+				coords="inside"
+				files="start"
+				ranks="start"
+				interactive
+				show-ghost
 			></juicer-board>
 		</div>
 
@@ -292,7 +366,10 @@
 	</div>
 {/if}
 
-<div style="width: {outerSize}; height: {outerSize};">
-	<juicer-board bind:this={board} fen="start" coords="inside" files="start" ranks="start" interactive show-ghost
-	></juicer-board>
-</div>
+{#if state === 'playing'}
+	Side: <h1>{side}</h1>
+	white clock:
+	<h3>{whiteRemainingTime.toFixed(0)}</h3>
+	black clock:
+	<h3>{blackRemainingTime.toFixed(0)}</h3>
+{/if}

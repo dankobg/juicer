@@ -39,12 +39,12 @@ type History struct {
 }
 
 type Chess struct {
-	position             *Position
-	repetitions          uint16
-	history              []History
-	historyHashes        []uint64
-	legalMoves           []Move
-	disableAutoThreefold bool
+	Position             *Position
+	Repetitions          uint16
+	History              []History
+	HistoryHashes        []uint64
+	LegalMoves           []Move
+	DisableAutoThreefold bool
 }
 
 func InitPrecalculatedTables() {
@@ -60,8 +60,8 @@ func NewChess(fen string) (*Chess, error) {
 	}
 
 	c := &Chess{
-		position:      p,
-		historyHashes: []uint64{p.hash},
+		Position:      p,
+		HistoryHashes: []uint64{p.Hash},
 	}
 
 	c.calcLegalMoves()
@@ -70,33 +70,33 @@ func NewChess(fen string) (*Chess, error) {
 }
 
 func (c *Chess) calcLegalMoves() {
-	pseudo := c.position.generateAllPseudoLegalMoves()
-	legal := c.position.generateAllLegalMoves(pseudo)
-	c.legalMoves = legal
+	pseudo := c.Position.generateAllPseudoLegalMoves()
+	legal := c.Position.generateAllLegalMoves(pseudo)
+	c.LegalMoves = legal
 }
 
 func (c *Chess) AppendHistoryEntry(m Move, pos Position) {
 	h := History{move: m, pos: pos}
-	c.history = append(c.history, h)
+	c.History = append(c.History, h)
 }
 
 func (c *Chess) AppendHistoryHash(hash uint64) {
-	c.historyHashes = append(c.historyHashes, hash)
+	c.HistoryHashes = append(c.HistoryHashes, hash)
 }
 
 func (c *Chess) MakeMove(m Move) {
-	c.position.MakeMove(m)
+	c.Position.MakeMove(m)
 
-	pos := c.position.Copy()
+	pos := c.Position.Copy()
 
 	c.AppendHistoryEntry(m, *pos)
-	c.AppendHistoryHash(pos.hash)
+	c.AppendHistoryHash(pos.Hash)
 	c.calcRepetitions()
 	c.calcLegalMoves()
 }
 
 func (c *Chess) MakeMoveUCI(uciMove string) error {
-	for _, m := range c.legalMoves {
+	for _, m := range c.LegalMoves {
 		if m.String() == uciMove {
 			c.MakeMove(m)
 
@@ -109,35 +109,35 @@ func (c *Chess) MakeMoveUCI(uciMove string) error {
 
 func (c *Chess) calcRepetitions() {
 	var reps uint16
-	depth := max(0, c.position.ply-uint16(c.position.halfMoveClock))
+	depth := max(0, c.Position.Ply-uint16(c.Position.HalfMoveClock))
 
-	for i := len(c.historyHashes) - 1; i >= int(depth); i -= 2 {
-		if c.historyHashes[i] == c.position.hash {
+	for i := len(c.HistoryHashes) - 1; i >= int(depth); i -= 2 {
+		if c.HistoryHashes[i] == c.Position.Hash {
 			reps++
 		}
 	}
 
-	c.repetitions = reps
+	c.Repetitions = reps
 }
 
 func (c *Chess) IsInsufficientMaterial() bool {
-	return c.position.IsInsufficientMaterial()
+	return c.Position.IsInsufficientMaterial()
 }
 
 func (c *Chess) IsThreefoldRepetition() bool {
-	return !c.disableAutoThreefold && c.repetitions >= 3
+	return !c.DisableAutoThreefold && c.Repetitions >= 3
 }
 
 func (c *Chess) IsFivefoldRepetition() bool {
-	return !c.disableAutoThreefold && c.repetitions >= 5
+	return !c.DisableAutoThreefold && c.Repetitions >= 5
 }
 
 func (c *Chess) IsDrawBy50MoveRule() bool {
-	return c.position.halfMoveClock >= 100
+	return c.Position.HalfMoveClock >= 100
 }
 
 func (c *Chess) IsDrawBy75MoveRule() bool {
-	return c.position.halfMoveClock >= 150
+	return c.Position.HalfMoveClock >= 150
 }
 
 func (c *Chess) IsDraw() bool {
@@ -145,11 +145,11 @@ func (c *Chess) IsDraw() bool {
 }
 
 func (c *Chess) IsCheckmate() bool {
-	return len(c.legalMoves) == 0 && c.position.board.IsInCheck(c.position.turn)
+	return len(c.LegalMoves) == 0 && c.Position.Board.IsInCheck(c.Position.Turn)
 }
 
 func (c *Chess) IsStalemate() bool {
-	return len(c.legalMoves) == 0 && !c.position.board.IsInCheck(c.position.turn)
+	return len(c.LegalMoves) == 0 && !c.Position.Board.IsInCheck(c.Position.Turn)
 }
 
 func (c *Chess) IsTerminated() bool {

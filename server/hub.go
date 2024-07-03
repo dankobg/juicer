@@ -2,10 +2,12 @@ package server
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"sync"
 	"time"
 
+	"github.com/dankobg/juicer/engine"
 	pb "github.com/dankobg/juicer/pb/proto/juicer"
 	"github.com/redis/go-redis/v9"
 )
@@ -41,6 +43,8 @@ type hub struct {
 }
 
 func NewHub(logger *slog.Logger, rdb *redis.Client) *hub {
+	engine.InitPrecalculatedTables()
+
 	return &hub{
 		lobbyClients:       make(map[string]*client),
 		clientsInGame:      make(map[string]gameInfo),
@@ -184,8 +188,12 @@ func (h *hub) handleClientConnected(client *client) {
 				}
 				h.broadcastClient <- &clientMessage{RoomID: r.id, ClientID: c.id, Message: clientConnectedMsg}
 			}
+			pcolor := "w"
+			if r.blackID == client.id {
+				pcolor = "b"
+			}
 			matchFoundMsg := &pb.Message{
-				Event: &pb.Message_MatchFound{MatchFound: &pb.MatchFound{GameId: info.GameID, RoomId: info.RoomID}},
+				Event: &pb.Message_MatchFound{MatchFound: &pb.MatchFound{GameId: info.GameID, RoomId: info.RoomID, Color: pcolor}},
 			}
 			h.broadcastClient <- &clientMessage{RoomID: r.id, ClientID: client.id, Message: matchFoundMsg}
 		}
@@ -434,6 +442,78 @@ func (h *hub) onPlayMoveUCI(msg *clientMessage) {
 		return
 	}
 
+	info, inGame := h.clientsInGame[msg.ClientID]
+	if !inGame {
+		h.log.Error("playmove: not in game", slog.String("client_id", msg.ClientID))
+		return
+	}
+
+	r, ok := h.rooms[info.RoomID]
+	if !ok {
+		h.log.Error("playmove: no room", slog.String("room_id", msg.RoomID))
+		return
+	}
+	var color string
+	gs := r.gameState
+	if msg.ClientID == gs.WhiteID {
+		color = "w"
+	} else if msg.ClientID == gs.BlackID {
+		color = "b"
+	}
+
+	if color == "" {
+		h.log.Error("playmove: no color")
+		return
+	}
+
+	if color != gs.Chess.Position.Turn.String() {
+		h.log.Error("playmove: wrong turn", slog.String("move", playMoveUciMsg.Move), slog.String("current_turn", gs.Chess.Position.Turn.String()))
+		return
+	}
+
+	if err := gs.Chess.MakeMoveUCI(playMoveUciMsg.Move); err != nil {
+		h.log.Error("playmove: invalid move", slog.String("move", playMoveUciMsg.Move))
+	}
+
+	if gs.Chess.Position.Ply == 1 {
+		r.stopFirstMoveTimer(r.whiteID)
+		r.startFirstMoveTimer(r.blackID)
+	}
+	if gs.Chess.Position.Ply == 2 {
+		r.stopFirstMoveTimer(r.blackID)
+	}
+	if gs.Chess.Position.Ply >= 2 {
+		gs.updatePlayerClockAfterMove()
+	}
+
+	legalMoves := make([]string, 0)
+	for _, m := range gs.Chess.LegalMoves {
+		legalMoves = append(legalMoves, fmt.Sprint(m.Src(), m.Dest()))
+	}
+
+	gameStateMessage := &pb.Message{
+		Event: &pb.Message_Move{Move: &pb.Move{
+			Uci:        playMoveUciMsg.Move,
+			Fen:        gs.Chess.Position.Fen(),
+			Ply:        uint32(gs.Chess.Position.Ply),
+			LegalMoves: legalMoves,
+			Clocks: &pb.Clocks{
+				White: gs.RemainingTimeWhite.Seconds(),
+				Black: gs.RemainingTimeWhite.Seconds(),
+			},
+		}},
+	}
+
+	currentPlayerID := msg.ClientID
+	var otherPlayerID string
+	for _, cid := range r.clientIDS {
+		if currentPlayerID == cid {
+			continue
+		}
+		otherPlayerID = cid
+	}
+
+	h.broadcastClient <- &clientMessage{ClientID: otherPlayerID, RoomID: info.RoomID, Message: gameStateMessage}
 }
 
 func (h *hub) broadcastHubInfo() {
@@ -527,10 +607,14 @@ func (h *hub) tryMatchPlayers(ctx context.Context) {
 
 	go room.startGame(ctx)
 
-	matchFoundMsg := &pb.Message{
-		Event: &pb.Message_MatchFound{MatchFound: &pb.MatchFound{GameId: room.gameState.GameID, RoomId: room.id}},
+	matchFoundMsg1 := &pb.Message{
+		Event: &pb.Message_MatchFound{MatchFound: &pb.MatchFound{GameId: room.gameState.GameID, RoomId: room.id, Color: room.players[c1.id].color}},
 	}
-	h.broadcastRoom <- &roomMessage{RoomID: room.id, Message: matchFoundMsg}
+	matchFoundMsg2 := &pb.Message{
+		Event: &pb.Message_MatchFound{MatchFound: &pb.MatchFound{GameId: room.gameState.GameID, RoomId: room.id, Color: room.players[c2.id].color}},
+	}
+	h.broadcastClient <- &clientMessage{ClientID: c1.id, RoomID: room.id, Message: matchFoundMsg1}
+	h.broadcastClient <- &clientMessage{ClientID: c2.id, RoomID: room.id, Message: matchFoundMsg2}
 
 	h.broadcastHubInfo()
 

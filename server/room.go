@@ -140,6 +140,7 @@ func (r *room) handleTimerEvent(event timerEvent) {
 			r.hub.log.Debug("stopping disconnect timer", slog.String("client_id", p.id), slog.String("color", p.color))
 			p.stopDisconnectTimer()
 		}
+
 	case timerKindFirstMove:
 		if event.action == timerActionStart {
 			r.hub.log.Debug("starting first move timer", slog.String("client_id", p.id), slog.String("color", p.color))
@@ -148,12 +149,11 @@ func (r *room) handleTimerEvent(event timerEvent) {
 		if event.action == timerActionStop {
 			r.hub.log.Debug("stopping first move timer", slog.String("client_id", p.id), slog.String("color", p.color))
 			p.stopFirstMoveTimer()
-
-			if p.color == "w" {
-				b := r.players[r.gameState.BlackID]
-				r.hub.log.Debug("waiting for first move", slog.String("client_id", b.id), slog.String("color", b.color))
-				b.startFirstMoveTimer(r.firstMoveTimeout)
-			}
+			// if p.color == "w" {
+			// 	b := r.players[r.gameState.BlackID]
+			// 	r.hub.log.Debug("waiting for first move", slog.String("client_id", b.id), slog.String("color", b.color))
+			// 	b.startFirstMoveTimer(r.firstMoveTimeout)
+			// }
 		}
 	}
 }
@@ -164,7 +164,7 @@ func (r *room) startGame(ctx context.Context) {
 
 	r.hub.log.Debug("room starting game", slog.String("room_id", r.id), slog.String("game_id", r.gameState.GameID), slog.String("white", whitep.id), slog.String("black", blackp.id))
 
-	// r.startFirstMoveTimer(whitep.id)
+	r.startFirstMoveTimer(whitep.id)
 
 	r.wg.Add(1)
 	go func() {

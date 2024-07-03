@@ -23,7 +23,7 @@ func traverse(p *Position, depth int) int64 {
 	for i := 0; i < len(pseudo); i++ {
 		unmakeMove := p.MakeMove(pseudo[i])
 
-		if !p.board.IsInCheck(p.turn.Opposite()) {
+		if !p.Board.IsInCheck(p.Turn.Opposite()) {
 			num += traverse(p, depth-1)
 		}
 
@@ -65,7 +65,7 @@ func Divide(fen string, depth int) {
 	for _, m := range pseudo {
 		unmakeMove := p.MakeMove(m)
 
-		if !p.board.IsInCheck(p.turn.Opposite()) {
+		if !p.Board.IsInCheck(p.Turn.Opposite()) {
 			nodes := traverse(p, depth-1)
 			nodesSearched += nodes
 			fmt.Printf("%v: %v\n", m, nodes)
@@ -102,7 +102,7 @@ func CompareWithStockfishPerft(fen string, depth int, sfBinaryPath *string) {
 	for _, m := range pseudo {
 		unmakeMove := p.MakeMove(m)
 
-		if !p.board.IsInCheck(p.turn.Opposite()) {
+		if !p.Board.IsInCheck(p.Turn.Opposite()) {
 			nodes := traverse(p, depth-1)
 			nodesSearched += nodes
 			mine[m.String()] = nodes

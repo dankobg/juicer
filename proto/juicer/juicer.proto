@@ -21,6 +21,7 @@ message Message {
 		AcceptDraw accept_draw = 13;
 		PlayMoveUCI play_move_uci = 14;
 		Chat chat = 15;
+		Move move = 16;
   }
 }
 
@@ -49,6 +50,7 @@ message HubInfo {
 message MatchFound {
   string game_id = 1;
   string room_id = 2;
+  string color = 3;
 }
 
 message SeekingCount {
@@ -80,4 +82,19 @@ message PlayMoveUCI {
 
 message Chat {
   string message = 1;
+}
+
+message Clocks {
+  double white = 1;
+  double black = 2;
+}
+
+message Move {
+  string uci = 1;
+  string san = 2;
+  string lan = 3;
+  string fen = 4;
+  uint32 ply = 5;  
+  Clocks clocks = 6; 
+  repeated string legal_moves = 7;
 }

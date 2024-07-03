@@ -103,6 +103,12 @@ export class Message extends Message$1<Message> {
      */
     value: Chat;
     case: "chat";
+  } | {
+    /**
+     * @generated from field: pb.Move move = 16;
+     */
+    value: Move;
+    case: "move";
   } | { case: undefined; value?: undefined } = { case: undefined };
 
   constructor(data?: PartialMessage<Message>) {
@@ -128,6 +134,7 @@ export class Message extends Message$1<Message> {
     { no: 13, name: "accept_draw", kind: "message", T: AcceptDraw, oneof: "event" },
     { no: 14, name: "play_move_uci", kind: "message", T: PlayMoveUCI, oneof: "event" },
     { no: 15, name: "chat", kind: "message", T: Chat, oneof: "event" },
+    { no: 16, name: "move", kind: "message", T: Move, oneof: "event" },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): Message {
@@ -358,6 +365,11 @@ export class MatchFound extends Message$1<MatchFound> {
    */
   roomId = "";
 
+  /**
+   * @generated from field: string color = 3;
+   */
+  color = "";
+
   constructor(data?: PartialMessage<MatchFound>) {
     super();
     proto3.util.initPartial(data, this);
@@ -368,6 +380,7 @@ export class MatchFound extends Message$1<MatchFound> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "game_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "room_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "color", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MatchFound {
@@ -711,6 +724,122 @@ export class Chat extends Message$1<Chat> {
 
   static equals(a: Chat | PlainMessage<Chat> | undefined, b: Chat | PlainMessage<Chat> | undefined): boolean {
     return proto3.util.equals(Chat, a, b);
+  }
+}
+
+/**
+ * @generated from message pb.Clocks
+ */
+export class Clocks extends Message$1<Clocks> {
+  /**
+   * @generated from field: double white = 1;
+   */
+  white = 0;
+
+  /**
+   * @generated from field: double black = 2;
+   */
+  black = 0;
+
+  constructor(data?: PartialMessage<Clocks>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "pb.Clocks";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "white", kind: "scalar", T: 1 /* ScalarType.DOUBLE */ },
+    { no: 2, name: "black", kind: "scalar", T: 1 /* ScalarType.DOUBLE */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): Clocks {
+    return new Clocks().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): Clocks {
+    return new Clocks().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): Clocks {
+    return new Clocks().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: Clocks | PlainMessage<Clocks> | undefined, b: Clocks | PlainMessage<Clocks> | undefined): boolean {
+    return proto3.util.equals(Clocks, a, b);
+  }
+}
+
+/**
+ * @generated from message pb.Move
+ */
+export class Move extends Message$1<Move> {
+  /**
+   * @generated from field: string uci = 1;
+   */
+  uci = "";
+
+  /**
+   * @generated from field: string san = 2;
+   */
+  san = "";
+
+  /**
+   * @generated from field: string lan = 3;
+   */
+  lan = "";
+
+  /**
+   * @generated from field: string fen = 4;
+   */
+  fen = "";
+
+  /**
+   * @generated from field: uint32 ply = 5;
+   */
+  ply = 0;
+
+  /**
+   * @generated from field: pb.Clocks clocks = 6;
+   */
+  clocks?: Clocks;
+
+  /**
+   * @generated from field: repeated string legal_moves = 7;
+   */
+  legalMoves: string[] = [];
+
+  constructor(data?: PartialMessage<Move>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "pb.Move";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "uci", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "san", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "lan", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "fen", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 5, name: "ply", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
+    { no: 6, name: "clocks", kind: "message", T: Clocks },
+    { no: 7, name: "legal_moves", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): Move {
+    return new Move().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): Move {
+    return new Move().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): Move {
+    return new Move().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: Move | PlainMessage<Move> | undefined, b: Move | PlainMessage<Move> | undefined): boolean {
+    return proto3.util.equals(Move, a, b);
   }
 }
 

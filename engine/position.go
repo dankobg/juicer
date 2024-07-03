@@ -6,22 +6,22 @@ import (
 )
 
 type Position struct {
-	board          *Board
-	turn           Color
-	enpSquare      Square
-	castleRights   CastleRights
-	halfMoveClock  uint8
-	fullMoveClock  uint16
-	ply            uint16
-	check          bool
-	comments       []string
-	headers        []string
-	capturedPieces []Piece
-	hash           uint64
+	Board          *Board
+	Turn           Color
+	EpSquare       Square
+	CastleRights   CastleRights
+	HalfMoveClock  uint8
+	FullMoveClock  uint16
+	Ply            uint16
+	Check          bool
+	Comments       []string
+	Ceaders        []string
+	CapturedPieces []Piece
+	Hash           uint64
 }
 
 func (p *Position) PrintBoard() string {
-	return p.board.Draw(nil)
+	return p.Board.Draw(nil)
 }
 
 func (p *Position) LoadFromFEN(fen string) error {
@@ -40,14 +40,14 @@ func (p *Position) LoadFromFEN(fen string) error {
 
 	board.calcSideOccupancies()
 
-	p.board = board
-	p.turn = meta.turnColor
-	p.enpSquare = meta.enpSquare
-	p.castleRights = meta.castleRights
-	p.halfMoveClock = meta.halfMoveClock
-	p.fullMoveClock = meta.fullMoveClock
-	p.ply = 2*(p.fullMoveClock-1) + uint16(p.turn)
-	p.check = p.board.IsInCheck(p.turn)
+	p.Board = board
+	p.Turn = meta.turnColor
+	p.EpSquare = meta.enpSquare
+	p.CastleRights = meta.castleRights
+	p.HalfMoveClock = meta.halfMoveClock
+	p.FullMoveClock = meta.fullMoveClock
+	p.Ply = 2*(p.FullMoveClock-1) + uint16(p.Turn)
+	p.Check = p.Board.IsInCheck(p.Turn)
 
 	p.InitHash()
 
@@ -57,99 +57,99 @@ func (p *Position) LoadFromFEN(fen string) error {
 // FenMetaPart returns the fen meta part without the position and it includes the empty string ` ` at start
 // e.g. fen: "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1" -> fenMetaPart: " w KQkq - 0 1"
 func (p *Position) FenMetaPart() string {
-	castleToken := p.castleRights.ToFEN()
+	castleToken := p.CastleRights.ToFEN()
 
 	enpSqToken := fenNoneSymbol
-	if p.enpSquare != SquareNone {
-		enpSqToken = p.enpSquare.Coordinate()
+	if p.EpSquare != SquareNone {
+		enpSqToken = p.EpSquare.Coordinate()
 	}
 
-	fenMetaPart := fmt.Sprintf(" %s %s %s %d %d", p.turn, castleToken, enpSqToken, p.halfMoveClock, p.fullMoveClock)
+	fenMetaPart := fmt.Sprintf(" %s %s %s %d %d", p.Turn, castleToken, enpSqToken, p.HalfMoveClock, p.FullMoveClock)
 	return fenMetaPart
 }
 
 // Fen returns the full fen string
 func (p *Position) Fen() string {
-	return p.board.FenPositionPart() + p.FenMetaPart()
+	return p.Board.FenPositionPart() + p.FenMetaPart()
 }
 
 func (p *Position) whiteHasKingSideCastleRights() bool {
-	return p.castleRights.whiteHasKingSideCastleRights()
+	return p.CastleRights.whiteHasKingSideCastleRights()
 }
 
 func (p *Position) whiteHasQueenSideCastleRights() bool {
-	return p.castleRights.whiteHasQueenSideCastleRights()
+	return p.CastleRights.whiteHasQueenSideCastleRights()
 }
 
 func (p *Position) whiteHasCastleRights() bool {
-	return p.castleRights.whiteHasCastleRights()
+	return p.CastleRights.whiteHasCastleRights()
 }
 
 func (p *Position) blackHasKingSideCastleRights() bool {
-	return p.castleRights.blackHasKingSideCastleRights()
+	return p.CastleRights.blackHasKingSideCastleRights()
 }
 
 func (p *Position) blackHasQueenSideCastleRights() bool {
-	return p.castleRights.blackHasQueenSideCastleRights()
+	return p.CastleRights.blackHasQueenSideCastleRights()
 }
 
 func (p *Position) blackHasCastleRights() bool {
-	return p.castleRights.blackHasCastleRights()
+	return p.CastleRights.blackHasCastleRights()
 }
 
 func (p *Position) hasKingSideCastleRights() bool {
-	if p.turn.IsWhite() {
+	if p.Turn.IsWhite() {
 		return p.whiteHasKingSideCastleRights()
 	}
-	if p.turn.IsBlack() {
+	if p.Turn.IsBlack() {
 		return p.blackHasKingSideCastleRights()
 	}
 	return false
 }
 
 func (p *Position) hasQueenSideCastleRights() bool {
-	if p.turn.IsWhite() {
+	if p.Turn.IsWhite() {
 		return p.whiteHasQueenSideCastleRights()
 	}
-	if p.turn.IsBlack() {
+	if p.Turn.IsBlack() {
 		return p.blackHasQueenSideCastleRights()
 	}
 	return false
 }
 
 func (p *Position) hasCastleRights() bool {
-	if p.turn.IsWhite() {
+	if p.Turn.IsWhite() {
 		return p.whiteHasCastleRights()
 	}
-	if p.turn.IsBlack() {
+	if p.Turn.IsBlack() {
 		return p.blackHasCastleRights()
 	}
 	return false
 }
 
 func (p *Position) SwitchTurn() {
-	p.turn = p.turn.Opposite()
+	p.Turn = p.Turn.Opposite()
 }
 
 // InsufficentMaterial checks if there is insufficient material on the board which leads to a draw
 // theoretically possible checkmates are not counted as a draw because they can be achieved with the help of self mate
 func (p *Position) IsInsufficientMaterial() bool {
-	if p.board.IsOnlyKingLeft() {
+	if p.Board.IsOnlyKingLeft() {
 		return true
 	}
 
-	if p.board.pieceOccupancies[White][Queen] != 0 ||
-		p.board.pieceOccupancies[Black][Queen] != 0 ||
-		p.board.pieceOccupancies[White][Rook] != 0 ||
-		p.board.pieceOccupancies[Black][Rook] != 0 ||
-		p.board.pieceOccupancies[White][Pawn] != 0 ||
-		p.board.pieceOccupancies[Black][Pawn] != 0 ||
-		p.board.sideOccupancies[Both].populationCount() > 4 {
+	if p.Board.pieceOccupancies[White][Queen] != 0 ||
+		p.Board.pieceOccupancies[Black][Queen] != 0 ||
+		p.Board.pieceOccupancies[White][Rook] != 0 ||
+		p.Board.pieceOccupancies[Black][Rook] != 0 ||
+		p.Board.pieceOccupancies[White][Pawn] != 0 ||
+		p.Board.pieceOccupancies[Black][Pawn] != 0 ||
+		p.Board.sideOccupancies[Both].populationCount() > 4 {
 		return false
 	}
 
-	wn, wb := p.board.pieceOccupancies[White][Knight].populationCount(), p.board.pieceOccupancies[White][Bishop].populationCount()
-	bn, bb := p.board.pieceOccupancies[Black][Knight].populationCount(), p.board.pieceOccupancies[Black][Bishop].populationCount()
+	wn, wb := p.Board.pieceOccupancies[White][Knight].populationCount(), p.Board.pieceOccupancies[White][Bishop].populationCount()
+	bn, bb := p.Board.pieceOccupancies[Black][Knight].populationCount(), p.Board.pieceOccupancies[Black][Bishop].populationCount()
 	wm, bm := wn+wb, bn+bb
 
 	// k vs k+b/n (1 minor) is a draw
@@ -164,7 +164,7 @@ func (p *Position) IsInsufficientMaterial() bool {
 
 	// same color bishops is a draw
 	if wb == 1 && bb == 1 {
-		return Square(p.board.pieceOccupancies[White][Bishop].LS1B()).Color() == Square(p.board.pieceOccupancies[Black][Bishop].LS1B()).Color()
+		return Square(p.Board.pieceOccupancies[White][Bishop].LS1B()).Color() == Square(p.Board.pieceOccupancies[Black][Bishop].LS1B()).Color()
 	}
 
 	return false
@@ -174,16 +174,16 @@ func (p *Position) generatePseudoLegalQueenMoves() []Move {
 	var src, dest Square
 	var occupancy, attacks bitboard
 	var quiets, captures bitboard
-	enemies := p.board.sideOccupancies[p.turn.Opposite()]
+	enemies := p.Board.sideOccupancies[p.Turn.Opposite()]
 
-	piece := NewPiece(Queen, p.turn)
-	occupancy = p.board.pieceOccupancies[p.turn][piece.Kind()]
+	piece := NewPiece(Queen, p.Turn)
+	occupancy = p.Board.pieceOccupancies[p.Turn][piece.Kind()]
 
 	moves := make([]Move, 0)
 
 	for occupancy > 0 {
 		src = Square(occupancy.PopLS1B())
-		attacks = getQueenAttacks(src, p.board.sideOccupancies[Both]) & ^p.board.sideOccupancies[p.turn]
+		attacks = getQueenAttacks(src, p.Board.sideOccupancies[Both]) & ^p.Board.sideOccupancies[p.Turn]
 		captures = attacks & enemies
 		quiets = attacks & ^enemies
 
@@ -205,16 +205,16 @@ func (p *Position) generatePseudoLegalRookMoves() []Move {
 	var src, dest Square
 	var occupancy, attacks bitboard
 	var quiets, captures bitboard
-	enemies := p.board.sideOccupancies[p.turn.Opposite()]
+	enemies := p.Board.sideOccupancies[p.Turn.Opposite()]
 
-	piece := NewPiece(Rook, p.turn)
-	occupancy = p.board.pieceOccupancies[p.turn][piece.Kind()]
+	piece := NewPiece(Rook, p.Turn)
+	occupancy = p.Board.pieceOccupancies[p.Turn][piece.Kind()]
 
 	moves := make([]Move, 0)
 
 	for occupancy > 0 {
 		src = Square(occupancy.PopLS1B())
-		attacks = getRookAttacks(src, p.board.sideOccupancies[Both]) & ^p.board.sideOccupancies[p.turn]
+		attacks = getRookAttacks(src, p.Board.sideOccupancies[Both]) & ^p.Board.sideOccupancies[p.Turn]
 		captures = attacks & enemies
 		quiets = attacks & ^enemies
 
@@ -236,16 +236,16 @@ func (p *Position) generatePseudoLegalBishopMoves() []Move {
 	var src, dest Square
 	var occupancy, attacks bitboard
 	var quiets, captures bitboard
-	enemies := p.board.sideOccupancies[p.turn.Opposite()]
+	enemies := p.Board.sideOccupancies[p.Turn.Opposite()]
 
-	piece := NewPiece(Bishop, p.turn)
-	occupancy = p.board.pieceOccupancies[p.turn][piece.Kind()]
+	piece := NewPiece(Bishop, p.Turn)
+	occupancy = p.Board.pieceOccupancies[p.Turn][piece.Kind()]
 
 	moves := make([]Move, 0)
 
 	for occupancy > 0 {
 		src = Square(occupancy.PopLS1B())
-		attacks = getBishopAttacks(src, p.board.sideOccupancies[Both]) & ^p.board.sideOccupancies[p.turn]
+		attacks = getBishopAttacks(src, p.Board.sideOccupancies[Both]) & ^p.Board.sideOccupancies[p.Turn]
 		captures = attacks & enemies
 		quiets = attacks & ^enemies
 
@@ -267,16 +267,16 @@ func (p *Position) generatePseudoLegalKnightMoves() []Move {
 	var src, dest Square
 	var occupancy, attacks bitboard
 	var quiets, captures bitboard
-	enemies := p.board.sideOccupancies[p.turn.Opposite()]
+	enemies := p.Board.sideOccupancies[p.Turn.Opposite()]
 
-	piece := NewPiece(Knight, p.turn)
-	occupancy = p.board.pieceOccupancies[p.turn][piece.Kind()]
+	piece := NewPiece(Knight, p.Turn)
+	occupancy = p.Board.pieceOccupancies[p.Turn][piece.Kind()]
 
 	moves := make([]Move, 0)
 
 	for occupancy > 0 {
 		src = Square(occupancy.PopLS1B())
-		attacks = knightsAttacksMask[src] & ^p.board.sideOccupancies[p.turn]
+		attacks = knightsAttacksMask[src] & ^p.Board.sideOccupancies[p.Turn]
 		captures = attacks & enemies
 		quiets = attacks & ^enemies
 
@@ -298,15 +298,15 @@ func (p *Position) generatePseudoLegalKingMoves() []Move {
 	var src, dest Square
 	var occupancy, attacks bitboard
 	var quiets, captures bitboard
-	enemies := p.board.sideOccupancies[p.turn.Opposite()]
+	enemies := p.Board.sideOccupancies[p.Turn.Opposite()]
 
-	piece := NewPiece(King, p.turn)
-	occupancy = p.board.pieceOccupancies[p.turn][piece.Kind()]
+	piece := NewPiece(King, p.Turn)
+	occupancy = p.Board.pieceOccupancies[p.Turn][piece.Kind()]
 
 	moves := make([]Move, 0)
 
 	src = Square(occupancy.PopLS1B())
-	attacks = kingAttacksMask[src] & ^p.board.sideOccupancies[p.turn]
+	attacks = kingAttacksMask[src] & ^p.Board.sideOccupancies[p.Turn]
 	captures = attacks & enemies
 	quiets = attacks & ^enemies
 
@@ -320,25 +320,25 @@ func (p *Position) generatePseudoLegalKingMoves() []Move {
 		moves = append(moves, newCaptureMove(src, dest, piece))
 	}
 
-	if !p.board.IsInCheck(p.turn) {
-		if p.turn.IsWhite() {
-			attackedSquares := p.board.GetAttackedSquares(p.turn.Opposite(), F1G1|B1D1|C1D1, p.board.sideOccupancies[Both] & ^occupancy)
+	if !p.Board.IsInCheck(p.Turn) {
+		if p.Turn.IsWhite() {
+			attackedSquares := p.Board.GetAttackedSquares(p.Turn.Opposite(), F1G1|B1D1|C1D1, p.Board.sideOccupancies[Both] & ^occupancy)
 
-			if p.whiteHasKingSideCastleRights() && (p.board.sideOccupancies[Both]|attackedSquares)&F1G1 == 0 {
+			if p.whiteHasKingSideCastleRights() && (p.Board.sideOccupancies[Both]|attackedSquares)&F1G1 == 0 {
 				moves = append(moves, newCastleMove(E1, G1, piece))
 			}
-			if p.whiteHasQueenSideCastleRights() && p.board.sideOccupancies[Both]&(B1D1|C1D1) == 0 && attackedSquares&C1D1 == 0 {
+			if p.whiteHasQueenSideCastleRights() && p.Board.sideOccupancies[Both]&(B1D1|C1D1) == 0 && attackedSquares&C1D1 == 0 {
 				moves = append(moves, newCastleMove(E1, C1, piece))
 			}
 		}
 
-		if p.turn.IsBlack() {
-			attackedSquares := p.board.GetAttackedSquares(p.turn.Opposite(), F8G8|B8D8|C8D8, p.board.sideOccupancies[Both] & ^occupancy)
+		if p.Turn.IsBlack() {
+			attackedSquares := p.Board.GetAttackedSquares(p.Turn.Opposite(), F8G8|B8D8|C8D8, p.Board.sideOccupancies[Both] & ^occupancy)
 
-			if p.blackHasKingSideCastleRights() && (p.board.sideOccupancies[Both]|attackedSquares)&F8G8 == 0 {
+			if p.blackHasKingSideCastleRights() && (p.Board.sideOccupancies[Both]|attackedSquares)&F8G8 == 0 {
 				moves = append(moves, newCastleMove(E8, G8, piece))
 			}
-			if p.blackHasQueenSideCastleRights() && p.board.sideOccupancies[Both]&(B8D8|C8D8) == 0 && attackedSquares&C8D8 == 0 {
+			if p.blackHasQueenSideCastleRights() && p.Board.sideOccupancies[Both]&(B8D8|C8D8) == 0 && attackedSquares&C8D8 == 0 {
 				moves = append(moves, newCastleMove(E8, C8, piece))
 			}
 		}
@@ -351,15 +351,15 @@ func (p *Position) generatePseudoLegalPawnMoves() []Move {
 	var src, dest Square
 	var occupancy, attacks bitboard
 
-	piece := NewPiece(Pawn, p.turn)
-	occupancy = p.board.pieceOccupancies[p.turn][piece.Kind()]
+	piece := NewPiece(Pawn, p.Turn)
+	occupancy = p.Board.pieceOccupancies[p.Turn][piece.Kind()]
 
 	moves := make([]Move, 0)
 
-	if p.turn.IsWhite() {
+	if p.Turn.IsWhite() {
 		for occupancy > 0 {
 			src = Square(occupancy.PopLS1B())
-			attacks = pawnAttacksMask[White][src] & p.board.sideOccupancies[Black]
+			attacks = pawnAttacksMask[White][src] & p.Board.sideOccupancies[Black]
 
 			for attacks > 0 {
 				dest = Square(attacks.PopLS1B())
@@ -372,7 +372,7 @@ func (p *Position) generatePseudoLegalPawnMoves() []Move {
 			}
 
 			dest = src + 8
-			if dest <= 63 && p.board.sideOccupancies[Both]&dest.occupancyMask() == 0 && dest.occupancyMask() != 0 {
+			if dest <= 63 && p.Board.sideOccupancies[Both]&dest.occupancyMask() == 0 && dest.occupancyMask() != 0 {
 				if src.Rank() == Rank7 {
 					moves = append(moves, newPossiblePromotionMoves(src, dest, piece)...)
 				} else {
@@ -381,20 +381,20 @@ func (p *Position) generatePseudoLegalPawnMoves() []Move {
 			}
 
 			dest = src + 16
-			if src.Rank() == Rank2 && p.board.sideOccupancies[Both]&(dest.occupancyMask()|Square(src+8).occupancyMask()) == 0 && dest.occupancyMask() != 0 {
+			if src.Rank() == Rank2 && p.Board.sideOccupancies[Both]&(dest.occupancyMask()|Square(src+8).occupancyMask()) == 0 && dest.occupancyMask() != 0 {
 				moves = append(moves, newDoublePawnMove(src, dest, piece))
 			}
 
-			if p.enpSquare != SquareNone && pawnAttacksMask[White][src]&p.enpSquare.occupancyMask() != 0 {
-				moves = append(moves, newEnpCaptureMove(src, p.enpSquare, piece))
+			if p.EpSquare != SquareNone && pawnAttacksMask[White][src]&p.EpSquare.occupancyMask() != 0 {
+				moves = append(moves, newEnpCaptureMove(src, p.EpSquare, piece))
 			}
 		}
 	}
 
-	if p.turn.IsBlack() {
+	if p.Turn.IsBlack() {
 		for occupancy > 0 {
 			src = Square(occupancy.PopLS1B())
-			attacks = pawnAttacksMask[Black][src] & p.board.sideOccupancies[White]
+			attacks = pawnAttacksMask[Black][src] & p.Board.sideOccupancies[White]
 
 			for attacks > 0 {
 				dest = Square(attacks.PopLS1B())
@@ -407,7 +407,7 @@ func (p *Position) generatePseudoLegalPawnMoves() []Move {
 			}
 
 			dest = src - 8
-			if dest >= 0 && p.board.sideOccupancies[Both]&dest.occupancyMask() == 0 && dest.occupancyMask() != 0 {
+			if dest >= 0 && p.Board.sideOccupancies[Both]&dest.occupancyMask() == 0 && dest.occupancyMask() != 0 {
 				if src.Rank() == Rank2 {
 					moves = append(moves, newPossiblePromotionMoves(src, dest, piece)...)
 				} else {
@@ -416,12 +416,12 @@ func (p *Position) generatePseudoLegalPawnMoves() []Move {
 			}
 
 			dest = src - 16
-			if src.Rank() == Rank7 && p.board.sideOccupancies[Both]&(dest.occupancyMask()|Square(src-8).occupancyMask()) == 0 && dest.occupancyMask() != 0 {
+			if src.Rank() == Rank7 && p.Board.sideOccupancies[Both]&(dest.occupancyMask()|Square(src-8).occupancyMask()) == 0 && dest.occupancyMask() != 0 {
 				moves = append(moves, newDoublePawnMove(src, dest, piece))
 			}
 
-			if p.enpSquare != SquareNone && pawnAttacksMask[Black][src]&p.enpSquare.occupancyMask() != 0 {
-				moves = append(moves, newEnpCaptureMove(src, p.enpSquare, piece))
+			if p.EpSquare != SquareNone && pawnAttacksMask[Black][src]&p.EpSquare.occupancyMask() != 0 {
+				moves = append(moves, newEnpCaptureMove(src, p.EpSquare, piece))
 			}
 		}
 	}
@@ -435,7 +435,7 @@ func (p *Position) generateAllLegalMoves(pseudoMoves []Move) []Move {
 	for _, m := range pseudoMoves {
 		unmakeMove := p.MakeMove(m)
 
-		if !p.board.IsInCheck(p.turn.Opposite()) {
+		if !p.Board.IsInCheck(p.Turn.Opposite()) {
 			legalMoves = append(legalMoves, m)
 		}
 
@@ -463,21 +463,21 @@ func (p *Position) generateAllPseudoLegalMoves() []Move {
 }
 
 func (p *Position) Copy() *Position {
-	boardCopy := p.board.Copy()
+	boardCopy := p.Board.Copy()
 
 	positionCopy := Position{
-		board:          &boardCopy,
-		turn:           p.turn,
-		enpSquare:      p.enpSquare,
-		castleRights:   p.castleRights,
-		halfMoveClock:  p.halfMoveClock,
-		fullMoveClock:  p.fullMoveClock,
-		ply:            p.ply,
-		check:          p.check,
-		comments:       slices.Clone(p.comments),
-		headers:        slices.Clone(p.headers),
-		capturedPieces: slices.Clone(p.capturedPieces),
-		hash:           p.hash,
+		Board:          &boardCopy,
+		Turn:           p.Turn,
+		EpSquare:       p.EpSquare,
+		CastleRights:   p.CastleRights,
+		HalfMoveClock:  p.HalfMoveClock,
+		FullMoveClock:  p.FullMoveClock,
+		Ply:            p.Ply,
+		Check:          p.Check,
+		Comments:       slices.Clone(p.Comments),
+		Ceaders:        slices.Clone(p.Ceaders),
+		CapturedPieces: slices.Clone(p.CapturedPieces),
+		Hash:           p.Hash,
 	}
 
 	return &positionCopy
@@ -487,21 +487,21 @@ func (p *Position) Copy() *Position {
 func (p *Position) UnmakeMove() func() {
 	pcopy := p.Copy()
 
-	bcopy := pcopy.board.Copy()
+	bcopy := pcopy.Board.Copy()
 
 	return func() {
-		p.board = &bcopy
-		p.turn = pcopy.turn
-		p.enpSquare = pcopy.enpSquare
-		p.castleRights = pcopy.castleRights
-		p.halfMoveClock = pcopy.halfMoveClock
-		p.fullMoveClock = pcopy.fullMoveClock
-		p.ply = pcopy.ply
-		p.check = pcopy.check
-		p.comments = pcopy.comments
-		p.headers = pcopy.headers
-		p.capturedPieces = pcopy.capturedPieces
-		p.hash = pcopy.hash
+		p.Board = &bcopy
+		p.Turn = pcopy.Turn
+		p.EpSquare = pcopy.EpSquare
+		p.CastleRights = pcopy.CastleRights
+		p.HalfMoveClock = pcopy.HalfMoveClock
+		p.FullMoveClock = pcopy.FullMoveClock
+		p.Ply = pcopy.Ply
+		p.Check = pcopy.Check
+		p.Comments = pcopy.Comments
+		p.Ceaders = pcopy.Ceaders
+		p.CapturedPieces = pcopy.CapturedPieces
+		p.Hash = pcopy.Hash
 	}
 }
 
@@ -509,63 +509,63 @@ func (p *Position) UnmakeMove() func() {
 func (p *Position) MakeMove(m Move) func() {
 	unmakeMove := p.UnmakeMove()
 
-	p.ply++
+	p.Ply++
 
 	if m.IsCapture() || m.Piece().IsPawn() {
-		p.halfMoveClock = 0
+		p.HalfMoveClock = 0
 	} else {
-		p.halfMoveClock++
+		p.HalfMoveClock++
 	}
 
-	if p.enpSquare != SquareNone {
-		p.ZobristEnpSquare(p.enpSquare)
+	if p.EpSquare != SquareNone {
+		p.ZobristEnpSquare(p.EpSquare)
 	}
 
 	if m.IsEnPassant() {
 		p.ZobristEnpCapture(m)
-		p.enpSquare = SquareNone
+		p.EpSquare = SquareNone
 
 		direction := 8
-		if p.turn.IsBlack() {
+		if p.Turn.IsBlack() {
 			direction = -8
 		}
 		p.RemoveCapturedPiece(m.Dest() - Square(direction))
 	} else if m.IsCapture() {
-		p.enpSquare = SquareNone
+		p.EpSquare = SquareNone
 		p.ZobristCapture(m)
 		p.RemoveCapturedPiece(m.Dest())
 	} else if m.IsCastle() {
 		if m.Piece().IsKing() {
-			p.enpSquare = SquareNone
+			p.EpSquare = SquareNone
 			p.ZobristMove(m)
 			p.CompleteCastling(m)
 		}
 	} else if m.IsDoublePawn() {
 		p.ZobristMove(m)
-		p.enpSquare = (m.Dest() + m.Src()) / 2
-		p.ZobristEnpSquare(p.enpSquare)
+		p.EpSquare = (m.Dest() + m.Src()) / 2
+		p.ZobristEnpSquare(p.EpSquare)
 	} else {
-		p.enpSquare = SquareNone
+		p.EpSquare = SquareNone
 		p.ZobristMove(m)
 	}
 
-	piecOcc := p.board.bitboardForPiece(m.Piece())
+	piecOcc := p.Board.bitboardForPiece(m.Piece())
 	piecOcc.clearBit(m.Src())
 	piecOcc.setBit(m.Dest())
 
 	p.Promote(m)
 
-	p.board.calcSideOccupancies()
+	p.Board.calcSideOccupancies()
 
-	if p.turn.IsBlack() {
-		p.fullMoveClock++
+	if p.Turn.IsBlack() {
+		p.FullMoveClock++
 	}
 
 	p.updateCastlingRights(m)
 
 	p.ZobristTurn()
 	p.SwitchTurn()
-	p.check = p.board.IsInCheck(p.turn)
+	p.Check = p.Board.IsInCheck(p.Turn)
 
 	return unmakeMove
 }
@@ -575,47 +575,47 @@ func (p *Position) MakeNullMove() func() {
 		enp Square
 	}
 
-	unmakeNull := unmakeNullMove{enp: p.enpSquare}
+	unmakeNull := unmakeNullMove{enp: p.EpSquare}
 
-	p.enpSquare = SquareNone
-	p.halfMoveClock++
-	p.ply++
-	p.ZobristEnpSquare(p.enpSquare)
+	p.EpSquare = SquareNone
+	p.HalfMoveClock++
+	p.Ply++
+	p.ZobristEnpSquare(p.EpSquare)
 	p.ZobristTurn()
 	p.SwitchTurn()
 
 	return func() {
-		p.halfMoveClock--
-		p.ply--
-		p.enpSquare = unmakeNull.enp
+		p.HalfMoveClock--
+		p.Ply--
+		p.EpSquare = unmakeNull.enp
 		p.ZobristTurn()
 		p.SwitchTurn()
 	}
 }
 
 func (p *Position) RemoveCapturedPiece(sq Square) {
-	capturedPiece := p.board.pieceAt(sq)
-	p.capturedPieces = append(p.capturedPieces, capturedPiece)
+	capturedPiece := p.Board.pieceAt(sq)
+	p.CapturedPieces = append(p.CapturedPieces, capturedPiece)
 
 	if capturedPiece.IsRook() {
 		if sq == A1 {
-			p.castleRights.disableWhiteQueenSideCastleRight()
+			p.CastleRights.disableWhiteQueenSideCastleRight()
 		}
 		if sq == H1 {
-			p.castleRights.disableWhiteKingSideCastleRight()
+			p.CastleRights.disableWhiteKingSideCastleRight()
 		}
 		if sq == A8 {
-			p.castleRights.disableBlackQueenSideCastleRight()
+			p.CastleRights.disableBlackQueenSideCastleRight()
 		}
 		if sq == H8 {
-			p.castleRights.disableBlackKingSideCastleRight()
+			p.CastleRights.disableBlackKingSideCastleRight()
 		}
 	}
 
-	p.board.sideOccupancies[p.turn.Opposite()].clearBit(sq)
+	p.Board.sideOccupancies[p.Turn.Opposite()].clearBit(sq)
 
-	for i := 0; i < len(p.board.pieceOccupancies[p.turn.Opposite()]); i++ {
-		p.board.pieceOccupancies[p.turn.Opposite()][i] &= p.board.sideOccupancies[p.turn.Opposite()]
+	for i := 0; i < len(p.Board.pieceOccupancies[p.Turn.Opposite()]); i++ {
+		p.Board.pieceOccupancies[p.Turn.Opposite()][i] &= p.Board.sideOccupancies[p.Turn.Opposite()]
 	}
 }
 
@@ -636,8 +636,8 @@ func (p *Position) CompleteCastling(m Move) {
 	}
 
 	p.ZobristMove(rookMove)
-	p.board.pieceOccupancies[p.turn][Rook].setBit(rookMove.Dest())
-	p.board.pieceOccupancies[p.turn][Rook].clearBit(rookMove.Src())
+	p.Board.pieceOccupancies[p.Turn][Rook].setBit(rookMove.Dest())
+	p.Board.pieceOccupancies[p.Turn][Rook].clearBit(rookMove.Src())
 }
 
 // Promote promotes (replaces) a pawn on the 8th/1st rank with the promoted piece
@@ -646,19 +646,19 @@ func (p *Position) Promote(m Move) {
 		return
 	}
 
-	p.board.pieceOccupancies[p.turn][Pawn].clearBit(m.Dest())
-	p.board.pieceOccupancies[p.turn][m.Promotion().PieceKind()].setBit(m.Dest())
+	p.Board.pieceOccupancies[p.Turn][Pawn].clearBit(m.Dest())
+	p.Board.pieceOccupancies[p.Turn][m.Promotion().PieceKind()].setBit(m.Dest())
 
 	p.ZobristPromotion(m)
 }
 
 func (p *Position) updateCastlingRights(m Move) {
-	if p.castleRights == 0 {
+	if p.CastleRights == 0 {
 		return
 	}
 
 	if m.Piece().IsKing() {
-		if p.turn.IsWhite() {
+		if p.Turn.IsWhite() {
 			if p.whiteHasKingSideCastleRights() {
 				p.ZobristCastleRights(WhiteKingSideCastle)
 			}
@@ -666,9 +666,9 @@ func (p *Position) updateCastlingRights(m Move) {
 				p.ZobristCastleRights(WhiteQueenSideCastle)
 			}
 
-			p.castleRights.disableWhiteCastleRights()
+			p.CastleRights.disableWhiteCastleRights()
 		}
-		if p.turn.IsBlack() {
+		if p.Turn.IsBlack() {
 			if p.blackHasKingSideCastleRights() {
 				p.ZobristCastleRights(BlackKingSideCastle)
 			}
@@ -676,29 +676,29 @@ func (p *Position) updateCastlingRights(m Move) {
 				p.ZobristCastleRights(BlackQueenSideCastle)
 			}
 
-			p.castleRights.disableBlackCastleRights()
+			p.CastleRights.disableBlackCastleRights()
 		}
 	}
 
 	if m.Piece().IsRook() {
-		if p.turn.IsWhite() {
+		if p.Turn.IsWhite() {
 			if m.Src() == H1 {
-				p.castleRights.disableWhiteKingSideCastleRight()
+				p.CastleRights.disableWhiteKingSideCastleRight()
 				p.ZobristCastleRights(WhiteKingSideCastle)
 			}
 			if m.Src() == A1 {
-				p.castleRights.disableWhiteQueenSideCastleRight()
+				p.CastleRights.disableWhiteQueenSideCastleRight()
 				p.ZobristCastleRights(WhiteQueenSideCastle)
 			}
 		}
 
-		if p.turn.IsBlack() {
+		if p.Turn.IsBlack() {
 			if m.Src() == H8 {
-				p.castleRights.disableBlackKingSideCastleRight()
+				p.CastleRights.disableBlackKingSideCastleRight()
 				p.ZobristCastleRights(BlackKingSideCastle)
 			}
 			if m.Src() == A8 {
-				p.castleRights.disableBlackQueenSideCastleRight()
+				p.CastleRights.disableBlackQueenSideCastleRight()
 				p.ZobristCastleRights(BlackQueenSideCastle)
 			}
 		}
@@ -706,73 +706,73 @@ func (p *Position) updateCastlingRights(m Move) {
 }
 
 func (p *Position) InitHash() {
-	p.hash = defaultZobrist.seed
+	p.Hash = defaultZobrist.seed
 
-	for color, occupancies := range p.board.pieceOccupancies {
+	for color, occupancies := range p.Board.pieceOccupancies {
 		for pk, occ := range occupancies {
 			copy := occ
 
 			for copy > 0 {
 				sq := copy.PopLS1B()
-				p.hash ^= defaultZobrist.occupanciesKeys[color][pk][sq]
+				p.Hash ^= defaultZobrist.occupanciesKeys[color][pk][sq]
 			}
 		}
 	}
 
 	for ct, cr := range defaultZobrist.castleKeys {
-		if p.castleRights&ct != 0 {
-			p.hash ^= cr
+		if p.CastleRights&ct != 0 {
+			p.Hash ^= cr
 		}
 	}
 
-	if p.enpSquare != SquareNone {
-		p.hash ^= defaultZobrist.enpKeys[p.enpSquare]
+	if p.EpSquare != SquareNone {
+		p.Hash ^= defaultZobrist.enpKeys[p.EpSquare]
 	}
 
-	if p.turn.IsBlack() {
-		p.hash ^= defaultZobrist.turnKey
+	if p.Turn.IsBlack() {
+		p.Hash ^= defaultZobrist.turnKey
 	}
 }
 
 func (p *Position) ZobristMove(m Move) {
-	p.hash ^= defaultZobrist.occupanciesKeys[p.turn][m.Piece().Kind()][m.Dest()]
-	p.hash ^= defaultZobrist.occupanciesKeys[p.turn][m.Piece().Kind()][m.Src()]
+	p.Hash ^= defaultZobrist.occupanciesKeys[p.Turn][m.Piece().Kind()][m.Dest()]
+	p.Hash ^= defaultZobrist.occupanciesKeys[p.Turn][m.Piece().Kind()][m.Src()]
 }
 
 func (p *Position) ZobristCapture(m Move) {
-	capturedPiece := p.board.pieceAt(m.Dest())
+	capturedPiece := p.Board.pieceAt(m.Dest())
 
-	p.hash ^= defaultZobrist.occupanciesKeys[p.turn][m.Piece().Kind()][m.Src()]
-	p.hash ^= defaultZobrist.occupanciesKeys[p.turn][m.Piece().Kind()][m.Dest()]
-	p.hash ^= defaultZobrist.occupanciesKeys[p.turn.Opposite()][capturedPiece.Kind()][m.Dest()]
+	p.Hash ^= defaultZobrist.occupanciesKeys[p.Turn][m.Piece().Kind()][m.Src()]
+	p.Hash ^= defaultZobrist.occupanciesKeys[p.Turn][m.Piece().Kind()][m.Dest()]
+	p.Hash ^= defaultZobrist.occupanciesKeys[p.Turn.Opposite()][capturedPiece.Kind()][m.Dest()]
 }
 
 func (p *Position) ZobristEnpCapture(m Move) {
 	direction := 8
-	if p.turn.IsBlack() {
+	if p.Turn.IsBlack() {
 		direction = -8
 	}
 
-	p.hash ^= defaultZobrist.occupanciesKeys[p.turn.Opposite()][Pawn][m.Dest()-Square(direction)]
-	p.hash ^= defaultZobrist.occupanciesKeys[p.turn][Pawn][m.Src()]
-	p.hash ^= defaultZobrist.occupanciesKeys[p.turn][Pawn][m.Dest()]
+	p.Hash ^= defaultZobrist.occupanciesKeys[p.Turn.Opposite()][Pawn][m.Dest()-Square(direction)]
+	p.Hash ^= defaultZobrist.occupanciesKeys[p.Turn][Pawn][m.Src()]
+	p.Hash ^= defaultZobrist.occupanciesKeys[p.Turn][Pawn][m.Dest()]
 }
 
 func (p *Position) ZobristTurn() {
-	p.hash ^= defaultZobrist.turnKey
+	p.Hash ^= defaultZobrist.turnKey
 }
 
 func (p *Position) ZobristCastleRights(cr CastleRights) {
-	p.hash ^= defaultZobrist.castleKeys[cr]
+	p.Hash ^= defaultZobrist.castleKeys[cr]
 }
 
 func (p *Position) ZobristPromotion(m Move) {
-	p.hash ^= defaultZobrist.occupanciesKeys[p.turn][m.Promotion().PieceKind()][m.Dest()]
-	p.hash ^= defaultZobrist.occupanciesKeys[p.turn][Pawn][m.Dest()]
+	p.Hash ^= defaultZobrist.occupanciesKeys[p.Turn][m.Promotion().PieceKind()][m.Dest()]
+	p.Hash ^= defaultZobrist.occupanciesKeys[p.Turn][Pawn][m.Dest()]
 }
 
 func (p *Position) ZobristEnpSquare(sq Square) {
 	if sq != SquareNone {
-		p.hash ^= defaultZobrist.enpKeys[sq]
+		p.Hash ^= defaultZobrist.enpKeys[sq]
 	}
 }

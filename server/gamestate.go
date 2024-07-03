@@ -1,6 +1,7 @@
 package server
 
 import (
+	"fmt"
 	"time"
 
 	juicer "github.com/dankobg/juicer/engine"
@@ -167,4 +168,21 @@ func NewGameState(whiteID, blackID string, gameType gameType, gameMode gameMode)
 	}
 
 	return gs, nil
+}
+
+func (gs *gameState) updatePlayerClockAfterMove() {
+	now := time.Now()
+	elapsed := now.Sub(gs.LastMove)
+
+	if gs.Chess.Position.Turn.IsWhite() {
+		fmt.Println("PREEEEEEEEEEEEEEEEE WHITE", gs.RemainingTimeWhite.Seconds())
+		gs.RemainingTimeBlack -= elapsed
+		fmt.Println("POOOOOOOOOOOOOOOOST WHITE", gs.RemainingTimeWhite.Seconds())
+	} else if gs.Chess.Position.Turn.IsBlack() {
+		fmt.Println("PREEEEEEEEEEEEEEEEE BLACK", gs.RemainingTimeBlack.Seconds())
+		gs.RemainingTimeWhite -= elapsed
+		fmt.Println("POOOOOOOOOOOOOOOOST BLACK", gs.RemainingTimeBlack.Seconds())
+	}
+
+	gs.LastMove = now
 }
