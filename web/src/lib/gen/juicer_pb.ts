@@ -51,61 +51,67 @@ export class Message extends Message$1<Message> {
     case: "matchFound";
   } | {
     /**
-     * @generated from field: pb.SeekingCount seeking_count = 7;
+     * @generated from field: pb.MatchRejoined match_rejoined = 7;
+     */
+    value: MatchRejoined;
+    case: "matchRejoined";
+  } | {
+    /**
+     * @generated from field: pb.SeekingCount seeking_count = 8;
      */
     value: SeekingCount;
     case: "seekingCount";
   } | {
     /**
-     * @generated from field: pb.SeekGame seek_game = 8;
+     * @generated from field: pb.SeekGame seek_game = 9;
      */
     value: SeekGame;
     case: "seekGame";
   } | {
     /**
-     * @generated from field: pb.CancelSeekGame cancel_seek_game = 9;
+     * @generated from field: pb.CancelSeekGame cancel_seek_game = 10;
      */
     value: CancelSeekGame;
     case: "cancelSeekGame";
   } | {
     /**
-     * @generated from field: pb.GameFinished game_finished = 10;
+     * @generated from field: pb.GameFinished game_finished = 11;
      */
     value: GameFinished;
     case: "gameFinished";
   } | {
     /**
-     * @generated from field: pb.AbortGame abort_game = 11;
+     * @generated from field: pb.AbortGame abort_game = 12;
      */
     value: AbortGame;
     case: "abortGame";
   } | {
     /**
-     * @generated from field: pb.OfferDraw offer_draw = 12;
+     * @generated from field: pb.OfferDraw offer_draw = 13;
      */
     value: OfferDraw;
     case: "offerDraw";
   } | {
     /**
-     * @generated from field: pb.AcceptDraw accept_draw = 13;
+     * @generated from field: pb.AcceptDraw accept_draw = 14;
      */
     value: AcceptDraw;
     case: "acceptDraw";
   } | {
     /**
-     * @generated from field: pb.PlayMoveUCI play_move_uci = 14;
+     * @generated from field: pb.PlayMoveUCI play_move_uci = 15;
      */
     value: PlayMoveUCI;
     case: "playMoveUci";
   } | {
     /**
-     * @generated from field: pb.Chat chat = 15;
+     * @generated from field: pb.Chat chat = 16;
      */
     value: Chat;
     case: "chat";
   } | {
     /**
-     * @generated from field: pb.Move move = 16;
+     * @generated from field: pb.Move move = 17;
      */
     value: Move;
     case: "move";
@@ -125,16 +131,17 @@ export class Message extends Message$1<Message> {
     { no: 4, name: "client_disconnected", kind: "message", T: ClientDisconnected, oneof: "event" },
     { no: 5, name: "hub_info", kind: "message", T: HubInfo, oneof: "event" },
     { no: 6, name: "match_found", kind: "message", T: MatchFound, oneof: "event" },
-    { no: 7, name: "seeking_count", kind: "message", T: SeekingCount, oneof: "event" },
-    { no: 8, name: "seek_game", kind: "message", T: SeekGame, oneof: "event" },
-    { no: 9, name: "cancel_seek_game", kind: "message", T: CancelSeekGame, oneof: "event" },
-    { no: 10, name: "game_finished", kind: "message", T: GameFinished, oneof: "event" },
-    { no: 11, name: "abort_game", kind: "message", T: AbortGame, oneof: "event" },
-    { no: 12, name: "offer_draw", kind: "message", T: OfferDraw, oneof: "event" },
-    { no: 13, name: "accept_draw", kind: "message", T: AcceptDraw, oneof: "event" },
-    { no: 14, name: "play_move_uci", kind: "message", T: PlayMoveUCI, oneof: "event" },
-    { no: 15, name: "chat", kind: "message", T: Chat, oneof: "event" },
-    { no: 16, name: "move", kind: "message", T: Move, oneof: "event" },
+    { no: 7, name: "match_rejoined", kind: "message", T: MatchRejoined, oneof: "event" },
+    { no: 8, name: "seeking_count", kind: "message", T: SeekingCount, oneof: "event" },
+    { no: 9, name: "seek_game", kind: "message", T: SeekGame, oneof: "event" },
+    { no: 10, name: "cancel_seek_game", kind: "message", T: CancelSeekGame, oneof: "event" },
+    { no: 11, name: "game_finished", kind: "message", T: GameFinished, oneof: "event" },
+    { no: 12, name: "abort_game", kind: "message", T: AbortGame, oneof: "event" },
+    { no: 13, name: "offer_draw", kind: "message", T: OfferDraw, oneof: "event" },
+    { no: 14, name: "accept_draw", kind: "message", T: AcceptDraw, oneof: "event" },
+    { no: 15, name: "play_move_uci", kind: "message", T: PlayMoveUCI, oneof: "event" },
+    { no: 16, name: "chat", kind: "message", T: Chat, oneof: "event" },
+    { no: 17, name: "move", kind: "message", T: Move, oneof: "event" },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): Message {
@@ -397,6 +404,79 @@ export class MatchFound extends Message$1<MatchFound> {
 
   static equals(a: MatchFound | PlainMessage<MatchFound> | undefined, b: MatchFound | PlainMessage<MatchFound> | undefined): boolean {
     return proto3.util.equals(MatchFound, a, b);
+  }
+}
+
+/**
+ * @generated from message pb.MatchRejoined
+ */
+export class MatchRejoined extends Message$1<MatchRejoined> {
+  /**
+   * @generated from field: string game_id = 1;
+   */
+  gameId = "";
+
+  /**
+   * @generated from field: string room_id = 2;
+   */
+  roomId = "";
+
+  /**
+   * @generated from field: string color = 3;
+   */
+  color = "";
+
+  /**
+   * @generated from field: string fen = 4;
+   */
+  fen = "";
+
+  /**
+   * @generated from field: uint32 ply = 5;
+   */
+  ply = 0;
+
+  /**
+   * @generated from field: pb.Clocks clocks = 6;
+   */
+  clocks?: Clocks;
+
+  /**
+   * @generated from field: repeated string legal_moves = 7;
+   */
+  legalMoves: string[] = [];
+
+  constructor(data?: PartialMessage<MatchRejoined>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "pb.MatchRejoined";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "game_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "room_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "color", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "fen", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 5, name: "ply", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
+    { no: 6, name: "clocks", kind: "message", T: Clocks },
+    { no: 7, name: "legal_moves", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MatchRejoined {
+    return new MatchRejoined().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): MatchRejoined {
+    return new MatchRejoined().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): MatchRejoined {
+    return new MatchRejoined().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: MatchRejoined | PlainMessage<MatchRejoined> | undefined, b: MatchRejoined | PlainMessage<MatchRejoined> | undefined): boolean {
+    return proto3.util.equals(MatchRejoined, a, b);
   }
 }
 

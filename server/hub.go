@@ -176,6 +176,7 @@ func (h *hub) handleClientConnected(client *client) {
 	if inGame {
 		client.roomID = info.RoomID
 		if r, ok := h.rooms[info.RoomID]; ok {
+			r.gameState.updatePlayerClockOnRejoin()
 			r.addClient(client)
 			r.stopDisconnectTimer(client.id)
 
@@ -192,10 +193,23 @@ func (h *hub) handleClientConnected(client *client) {
 			if r.blackID == client.id {
 				pcolor = "b"
 			}
-			matchFoundMsg := &pb.Message{
-				Event: &pb.Message_MatchFound{MatchFound: &pb.MatchFound{GameId: info.GameID, RoomId: info.RoomID, Color: pcolor}},
+
+			fen := r.gameState.Chess.Position.Fen()
+			ply := r.gameState.Chess.Position.Ply
+
+			clocks := &pb.Clocks{
+				White: r.gameState.RemainingTimeWhite.Seconds(),
+				Black: r.gameState.RemainingTimeBlack.Seconds(),
 			}
-			h.broadcastClient <- &clientMessage{RoomID: r.id, ClientID: client.id, Message: matchFoundMsg}
+			legalMoves := make([]string, 0)
+			for _, m := range r.gameState.Chess.LegalMoves {
+				legalMoves = append(legalMoves, fmt.Sprint(m.Src(), m.Dest()))
+			}
+
+			matchRejoinedMsg := &pb.Message{
+				Event: &pb.Message_MatchRejoined{MatchRejoined: &pb.MatchRejoined{GameId: info.GameID, RoomId: info.RoomID, Color: pcolor, Fen: fen, Ply: uint32(ply), Clocks: clocks, LegalMoves: legalMoves}},
+			}
+			h.broadcastClient <- &clientMessage{RoomID: r.id, ClientID: client.id, Message: matchRejoinedMsg}
 		}
 	} else {
 		h.addClientToLobby(client)
@@ -499,7 +513,7 @@ func (h *hub) onPlayMoveUCI(msg *clientMessage) {
 			LegalMoves: legalMoves,
 			Clocks: &pb.Clocks{
 				White: gs.RemainingTimeWhite.Seconds(),
-				Black: gs.RemainingTimeWhite.Seconds(),
+				Black: gs.RemainingTimeBlack.Seconds(),
 			},
 		}},
 	}

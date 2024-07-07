@@ -1,7 +1,6 @@
 package server
 
 import (
-	"fmt"
 	"time"
 
 	juicer "github.com/dankobg/juicer/engine"
@@ -163,6 +162,7 @@ func NewGameState(whiteID, blackID string, gameType gameType, gameMode gameMode)
 		GameMode:           gameMode,
 		MatchState:         matchStateWaitingStart,
 		ResultStatus:       resultStatusUnknown,
+		StartTime:          time.Now(),
 		RemainingTimeWhite: time.Minute * 5,
 		RemainingTimeBlack: time.Minute * 5,
 	}
@@ -172,16 +172,31 @@ func NewGameState(whiteID, blackID string, gameType gameType, gameMode gameMode)
 
 func (gs *gameState) updatePlayerClockAfterMove() {
 	now := time.Now()
-	elapsed := now.Sub(gs.LastMove)
+	var elapsed time.Duration
+	if !gs.LastMove.IsZero() {
+		elapsed = now.Sub(gs.LastMove)
+	}
 
 	if gs.Chess.Position.Turn.IsWhite() {
-		fmt.Println("PREEEEEEEEEEEEEEEEE WHITE", gs.RemainingTimeWhite.Seconds())
 		gs.RemainingTimeBlack -= elapsed
-		fmt.Println("POOOOOOOOOOOOOOOOST WHITE", gs.RemainingTimeWhite.Seconds())
 	} else if gs.Chess.Position.Turn.IsBlack() {
-		fmt.Println("PREEEEEEEEEEEEEEEEE BLACK", gs.RemainingTimeBlack.Seconds())
 		gs.RemainingTimeWhite -= elapsed
-		fmt.Println("POOOOOOOOOOOOOOOOST BLACK", gs.RemainingTimeBlack.Seconds())
+	}
+
+	gs.LastMove = now
+}
+
+func (gs *gameState) updatePlayerClockOnRejoin() {
+	now := time.Now()
+	var elapsed time.Duration
+	if !gs.LastMove.IsZero() {
+		elapsed = now.Sub(gs.LastMove)
+	}
+
+	if gs.Chess.Position.Turn.IsWhite() {
+		gs.RemainingTimeWhite -= elapsed
+	} else if gs.Chess.Position.Turn.IsBlack() {
+		gs.RemainingTimeBlack -= elapsed
 	}
 
 	gs.LastMove = now

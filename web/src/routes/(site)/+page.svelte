@@ -13,10 +13,19 @@
 		OfferDraw,
 		PlayMoveUCI,
 		SeekGame,
+		Error,
+		ClientConnected,
+		ClientDisconnected,
+		HubInfo,
+		SeekingCount,
+		MatchFound,
+		MatchRejoined,
+		GameFinished,
+		Move,
 	} from '$lib/gen/juicer_pb';
 	import { chatMessages } from '$lib/gamechat/messages';
 	import type { JuicerBoard, MoveCancelEvent, MoveStartEvent, MoveFinishEvent } from '@dankop/juicer-board';
-	import { BLACK, WHITE } from 'chess.js';
+	import { BLACK, WHITE } from '$lib/shared/shared';
 
 	let outerSize = '35rem';
 
@@ -78,19 +87,7 @@
 		}, 1000);
 	}
 
-	function startPlayerClocks() {
-		gameClockIntervalId = setInterval(() => {
-			if (ply >= 2) {
-				if (ply % 2 === 0) {
-					whiteRemainingTime -= 1;
-				} else {
-					blackRemainingTime -= 1;
-				}
-			}
-		}, 1000);
-	}
-
-	function updatePlayerClocks(whiteTime?: number, blackTime?: number) {
+	function synchronizeClocks(whiteTime?: number, blackTime?: number) {
 		if (whiteTime) {
 			whiteRemainingTime = whiteTime;
 		}
@@ -113,15 +110,15 @@
 	function onBoardMoveCancel(event: MoveCancelEvent) {}
 
 	function onBoardMoveFinish(event: MoveFinishEvent) {
-		if ((side === WHITE && ply % 2 !== 0) || (side === BLACK && ply % 2 === 0)) {
+		if ((side === WHITE && !isWhiteTurn) || (side === BLACK && isWhiteTurn)) {
 			console.log('not your turn');
 			event.preventDefault();
 			return;
 		}
 
 		const uci = event.data.srcCoord + event.data.destCoord;
-		console.log('uci:', uci);
 		ws.send(new Message({ event: { case: 'playMoveUci', value: new PlayMoveUCI({ move: uci }) } }));
+		ply++;
 	}
 
 	function addBoardEventListeners() {
@@ -140,6 +137,81 @@
 		}
 	}
 
+	function handleErr(errMsg: Error) {
+		wsErr = errMsg.message;
+	}
+
+	function handleEcho(echoMsg: Echo) {}
+
+	function handleChat(chatMsg: Chat) {
+		chatMessages.update(msgs => [...msgs, { own: false, text: chatMsg.message }]);
+	}
+
+	function handleClientConnected(clientConnectedMsg: ClientConnected) {
+		stopOpponentDisconnectTimer();
+	}
+	function handleClientDisconnected(clientDisconnectedMsg: ClientDisconnected) {
+		startOpponentDisconnectTimer();
+	}
+
+	function handleHubInfo(hubInfoMsg: HubInfo) {
+		lobbyCount = hubInfoMsg.lobby;
+		roomsCount = hubInfoMsg.rooms;
+		playingCount = hubInfoMsg.playing;
+	}
+
+	function handleSeekingCount(seekingCountMsg: SeekingCount) {
+		seekingCount = seekingCountMsg.count;
+	}
+
+	function handleMatchFound(matchFoundMsg: MatchFound) {
+		state = 'playing';
+		roomId = matchFoundMsg.roomId;
+		gameId = matchFoundMsg.gameId;
+		side = matchFoundMsg.color;
+		drawOffered = false;
+	}
+
+	function handleMatchRejoined(matchRejoinedMsg: MatchRejoined) {
+		state = 'playing';
+		const clocks = matchRejoinedMsg.clocks;
+		synchronizeClocks(clocks?.white, clocks?.black);
+		roomId = matchRejoinedMsg.roomId;
+		gameId = matchRejoinedMsg.gameId;
+		side = matchRejoinedMsg.color;
+		drawOffered = false;
+		fen = matchRejoinedMsg.fen;
+		ply = matchRejoinedMsg.ply;
+		legalMoves = matchRejoinedMsg.legalMoves;
+	}
+
+	function handleGameFinished(gameFinishedMsg: GameFinished) {
+		state = 'idle';
+		roomId = '';
+		gameId = '';
+		gameResult = gameFinishedMsg.result;
+		gameStatus = gameFinishedMsg.status;
+		drawOffered = false;
+		showpOpponentDisconnectTimer = false;
+	}
+
+	function handleOfferDraw(offerDrawMsg: OfferDraw) {
+		drawOffered = true;
+	}
+
+	function handleMove(moveMsg: Move) {
+		const clocks = moveMsg.clocks;
+		synchronizeClocks(clocks?.white, clocks?.black);
+		uci = moveMsg.uci;
+		san = moveMsg.san;
+		lan = moveMsg.lan;
+		ply = moveMsg.ply;
+		legalMoves = moveMsg.legalMoves;
+		const src = uci.slice(0, 2) as any;
+		const dest = uci.slice(2, 4) as any;
+		board.movePiece(src, dest);
+	}
+
 	onMount(() => {
 		if (board) {
 			addBoardEventListeners();
@@ -148,82 +220,61 @@
 		ws.connect();
 
 		ws.onOpen = (event: Event) => {
-			console.debug(`ws open: ${event}`);
+			console.debug('ws open:', event);
 		};
 
 		ws.onClose = (event: CloseEvent) => {
-			console.debug(`ws closed: code:${event.code}, reason: ${event.reason}, wasClean: ${event.wasClean}`);
+			console.debug(`ws closed: code: ${event.code}, reason: ${event.reason}, wasClean: ${event.wasClean}`);
 		};
 
 		ws.onError = (event: Event) => {
-			console.debug(`ws error: ${event}`);
+			console.debug('ws error:', event);
 		};
 
 		ws.onMessage = (event: MessageEvent) => {
 			try {
 				const msg = Message.fromJsonString(event.data);
-				console.debug(`ws recv: ${msg.event.case} - ${msg.event.value}`);
+				console.debug('ws recv:', msg.event.case, '-', msg.event.value);
 
 				switch (msg.event.case) {
 					case 'error':
-						wsErr = msg.event.value.message;
+						handleErr(msg.event.value);
 						break;
 					case 'echo':
+						handleEcho(msg.event.value);
 						break;
 					case 'chat':
-						const chatMsg = msg.event.value.message;
-						chatMessages.update(msgs => [...msgs, { own: false, text: chatMsg }]);
+						handleChat(msg.event.value);
 						break;
 					case 'clientConnected':
-						stopOpponentDisconnectTimer();
+						handleClientConnected(msg.event.value);
 						break;
 					case 'clientDisconnected':
-						startOpponentDisconnectTimer();
+						handleClientDisconnected(msg.event.value);
 						break;
 					case 'hubInfo':
-						lobbyCount = msg.event.value.lobby;
-						roomsCount = msg.event.value.rooms;
-						playingCount = msg.event.value.playing;
+						handleHubInfo(msg.event.value);
 						break;
 					case 'seekingCount':
-						seekingCount = msg.event.value.count;
+						handleSeekingCount(msg.event.value);
 						break;
 					case 'matchFound':
-						state = 'playing';
-						roomId = msg.event.value.roomId;
-						gameId = msg.event.value.gameId;
-						side = msg.event.value.color;
-						drawOffered = false;
-						startPlayerClocks();
+						handleMatchFound(msg.event.value);
+						break;
+					case 'matchRejoined':
+						handleMatchRejoined(msg.event.value);
 						break;
 					case 'gameFinished':
-						state = 'idle';
-						roomId = '';
-						gameId = '';
-						gameResult = msg.event.value.result;
-						gameStatus = msg.event.value.status;
-						drawOffered = false;
-						showpOpponentDisconnectTimer = false;
+						handleGameFinished(msg.event.value);
 						break;
 					case 'offerDraw':
-						drawOffered = true;
+						handleOfferDraw(msg.event.value);
 						break;
 					case 'move':
-						const clocks = msg.event.value.clocks;
-						updatePlayerClocks(clocks?.white, clocks?.black);
-						uci = msg.event.value.uci;
-						san = msg.event.value.san;
-						lan = msg.event.value.lan;
-						fen = msg.event.value.fen;
-						ply = msg.event.value.ply;
-						legalMoves = msg.event.value.legalMoves;
-						const src = uci.slice(0, 2) as any;
-						const dest = uci.slice(2, 4) as any;
-						board.movePiece(src, dest);
-						console.log({ w: clocks?.white, b: clocks?.black, uci, san, lan, fen, legalMoves });
+						handleMove(msg.event.value);
 						break;
 					default:
-						console.log('unkown message', msg.event.case, msg.event.value);
+						console.log('unknown message', msg.event.case, msg.event.value);
 						break;
 				}
 			} catch (error) {
@@ -240,6 +291,20 @@
 	});
 
 	$: board && addBoardEventListeners();
+
+	$: isWhiteTurn = ply % 2 === 0;
+
+	$: if (ply >= 2 && !gameClockIntervalId) {
+		console.log(' i am called ');
+
+		gameClockIntervalId = setInterval(() => {
+			if (isWhiteTurn) {
+				whiteRemainingTime -= 1;
+			} else {
+				blackRemainingTime -= 1;
+			}
+		}, 1000);
+	}
 </script>
 
 {#if wsErr}
@@ -367,9 +432,16 @@
 {/if}
 
 {#if state === 'playing'}
-	Side: <h1>{side}</h1>
-	white clock:
-	<h3>{whiteRemainingTime.toFixed(0)}</h3>
-	black clock:
-	<h3>{blackRemainingTime.toFixed(0)}</h3>
+	<div>
+		Side: <strong>{side}</strong>
+	</div>
+	<div>
+		Current turn: <strong>{isWhiteTurn ? 'w' : 'b'}</strong>
+	</div>
+	<div>
+		white clock:<strong>{whiteRemainingTime.toFixed(0)}</strong>
+	</div>
+	<div>
+		black clock: <strong>{blackRemainingTime.toFixed(0)}</strong>
+	</div>
 {/if}

@@ -12,16 +12,17 @@ message Message {
 		ClientDisconnected client_disconnected = 4;
 		HubInfo hub_info = 5;
 		MatchFound match_found = 6;
-		SeekingCount seeking_count = 7;
-		SeekGame seek_game = 8;
-		CancelSeekGame cancel_seek_game = 9;
-		GameFinished game_finished= 10;
-		AbortGame abort_game = 11;
-		OfferDraw offer_draw = 12;
-		AcceptDraw accept_draw = 13;
-		PlayMoveUCI play_move_uci = 14;
-		Chat chat = 15;
-		Move move = 16;
+		MatchRejoined match_rejoined = 7;
+		SeekingCount seeking_count = 8;
+		SeekGame seek_game = 9;
+		CancelSeekGame cancel_seek_game = 10;
+		GameFinished game_finished= 11;
+		AbortGame abort_game = 12;
+		OfferDraw offer_draw = 13;
+		AcceptDraw accept_draw = 14;
+		PlayMoveUCI play_move_uci = 15;
+		Chat chat = 16;
+		Move move = 17;
   }
 }
 
@@ -51,6 +52,16 @@ message MatchFound {
   string game_id = 1;
   string room_id = 2;
   string color = 3;
+}
+
+message MatchRejoined {
+  string game_id = 1;
+  string room_id = 2;
+  string color = 3;
+  string fen = 4;
+  uint32 ply = 5;  
+  Clocks clocks = 6; 
+  repeated string legal_moves = 7;
 }
 
 message SeekingCount {
