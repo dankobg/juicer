@@ -52,6 +52,10 @@ message MatchFound {
   string game_id = 1;
   string room_id = 2;
   string color = 3;
+  string fen = 4;
+  uint32 ply = 5;  
+  Clocks clocks = 6; 
+  repeated string legal_moves = 7;
 }
 
 message MatchRejoined {

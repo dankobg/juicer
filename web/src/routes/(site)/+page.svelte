@@ -26,6 +26,7 @@
 	import { chatMessages } from '$lib/gamechat/messages';
 	import type { JuicerBoard, MoveCancelEvent, MoveStartEvent, MoveFinishEvent } from '@dankop/juicer-board';
 	import { BLACK, WHITE } from '$lib/shared/shared';
+	import { goto } from '$app/navigation';
 
 	let outerSize = '35rem';
 
@@ -36,11 +37,11 @@
 
 	let opponentDisconnectIntervalId: NodeJS.Timeout | undefined;
 	let opponentDisconnectTimer = 0;
-	let showpOpponentDisconnectTimer = false;
+	let showOpponentDisconnectTimer = false;
 
 	let gameClockIntervalId: NodeJS.Timeout | undefined;
-	let whiteRemainingTime: number = 300;
-	let blackRemainingTime: number = 300;
+	let whiteRemainingTime: number = 0;
+	let blackRemainingTime: number = 0;
 	let fen: string = 'start';
 	let uci: string = '';
 	let san: string = '';
@@ -63,6 +64,17 @@
 
 	let drawOffered: boolean = false;
 
+	const CASTLE_MOVES_PAIR = new Map<string, string>([
+		['e1g1', 'h1f1'],
+		['e1c1', 'a1d1'],
+		['e8g8', 'h8f8'],
+		['e8c8', 'a8d8'],
+	]);
+
+	function getRookCastleMove(uci: string): string | undefined {
+		return CASTLE_MOVES_PAIR.get(uci);
+	}
+
 	function onChatMessage(event: CustomEvent<{ text: string }>) {
 		const msg = event.detail.text;
 		if (!msg) {
@@ -74,7 +86,7 @@
 	function startOpponentDisconnectTimer() {
 		stopOpponentDisconnectTimer();
 
-		showpOpponentDisconnectTimer = true;
+		showOpponentDisconnectTimer = true;
 		opponentDisconnectTimer = 10;
 
 		opponentDisconnectIntervalId = setInterval(() => {
@@ -97,7 +109,7 @@
 	}
 
 	function stopOpponentDisconnectTimer() {
-		showpOpponentDisconnectTimer = false;
+		showOpponentDisconnectTimer = false;
 
 		if (opponentDisconnectIntervalId) {
 			clearTimeout(opponentDisconnectIntervalId);
@@ -111,12 +123,26 @@
 
 	function onBoardMoveFinish(event: MoveFinishEvent) {
 		if ((side === WHITE && !isWhiteTurn) || (side === BLACK && isWhiteTurn)) {
-			console.log('not your turn');
+			console.debug('not your turn');
 			event.preventDefault();
 			return;
 		}
 
 		const uci = event.data.srcCoord + event.data.destCoord;
+
+		if (!legalMoves.includes(uci)) {
+			console.debug('invalid move attempt:', uci, legalMoves);
+			event.preventDefault();
+			return;
+		}
+
+		const rookMove = getRookCastleMove(uci);
+		if (rookMove) {
+			const src = rookMove.slice(0, 2) as any;
+			const dest = rookMove.slice(2, 4) as any;
+			board.movePiece(src, dest, true);
+		}
+
 		ws.send(new Message({ event: { case: 'playMoveUci', value: new PlayMoveUCI({ move: uci }) } }));
 		ply++;
 	}
@@ -166,10 +192,16 @@
 
 	function handleMatchFound(matchFoundMsg: MatchFound) {
 		state = 'playing';
+		const clocks = matchFoundMsg.clocks;
+		synchronizeClocks(clocks?.white, clocks?.black);
 		roomId = matchFoundMsg.roomId;
 		gameId = matchFoundMsg.gameId;
 		side = matchFoundMsg.color;
 		drawOffered = false;
+		fen = matchFoundMsg.fen;
+		ply = matchFoundMsg.ply;
+		legalMoves = matchFoundMsg.legalMoves;
+		// goto(`/game/${gameId}`);
 	}
 
 	function handleMatchRejoined(matchRejoinedMsg: MatchRejoined) {
@@ -192,7 +224,7 @@
 		gameResult = gameFinishedMsg.result;
 		gameStatus = gameFinishedMsg.status;
 		drawOffered = false;
-		showpOpponentDisconnectTimer = false;
+		showOpponentDisconnectTimer = false;
 	}
 
 	function handleOfferDraw(offerDrawMsg: OfferDraw) {
@@ -210,6 +242,24 @@
 		const src = uci.slice(0, 2) as any;
 		const dest = uci.slice(2, 4) as any;
 		board.movePiece(src, dest);
+
+		const rookMove = getRookCastleMove(uci);
+		if (rookMove) {
+			const src = rookMove.slice(0, 2) as any;
+			const dest = rookMove.slice(2, 4) as any;
+			board.movePiece(src, dest, true);
+		}
+	}
+
+	function cleanupGame() {
+		state = 'idle';
+		gameResult = '';
+		gameStatus = '';
+		drawOffered = false;
+		roomId = '';
+		gameId = '';
+		clearInterval(opponentDisconnectIntervalId);
+		clearInterval(gameClockIntervalId);
 	}
 
 	onMount(() => {
@@ -274,7 +324,7 @@
 						handleMove(msg.event.value);
 						break;
 					default:
-						console.log('unknown message', msg.event.case, msg.event.value);
+						console.error('unknown message', msg.event.case, msg.event.value);
 						break;
 				}
 			} catch (error) {
@@ -295,8 +345,6 @@
 	$: isWhiteTurn = ply % 2 === 0;
 
 	$: if (ply >= 2 && !gameClockIntervalId) {
-		console.log(' i am called ');
-
 		gameClockIntervalId = setInterval(() => {
 			if (isWhiteTurn) {
 				whiteRemainingTime -= 1;
@@ -331,8 +379,8 @@
 	<p>Room ID: <strong>{roomId}</strong></p>
 {/if}
 
-{#if showpOpponentDisconnectTimer}
-	<p>Opponent time to rejoin the game: {opponentDisconnectTimer}</p>
+{#if showOpponentDisconnectTimer}
+	<p>Opponent time to rejoin the game: {opponentDisconnectTimer.toFixed(2)}</p>
 {/if}
 
 {#if state === 'idle'}
@@ -383,10 +431,7 @@
 		class="bg-orange-500 text-white py-2 px-4 rounded mb-2"
 		on:click={() => {
 			ws.send(new Message({ event: { case: 'abortGame', value: new AbortGame() } }));
-			state = 'idle';
-			gameResult = '';
-			gameStatus = '';
-			drawOffered = false;
+			cleanupGame();
 		}}
 	>
 		Abort game</button
@@ -406,7 +451,7 @@
 			class="bg-green-500 text-white py-2 px-4 rounded mb-2"
 			on:click={() => {
 				ws.send(new Message({ event: { case: 'acceptDraw', value: new AcceptDraw() } }));
-				drawOffered = false;
+				cleanupGame();
 			}}
 		>
 			Accept draw</button
@@ -439,9 +484,12 @@
 		Current turn: <strong>{isWhiteTurn ? 'w' : 'b'}</strong>
 	</div>
 	<div>
-		white clock:<strong>{whiteRemainingTime.toFixed(0)}</strong>
+		white clock:<strong>{whiteRemainingTime.toFixed(2)}</strong>
 	</div>
 	<div>
-		black clock: <strong>{blackRemainingTime.toFixed(0)}</strong>
+		black clock: <strong>{blackRemainingTime.toFixed(2)}</strong>
+	</div>
+	<div>
+		Legal moves: {legalMoves}
 	</div>
 {/if}

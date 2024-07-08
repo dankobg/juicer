@@ -203,7 +203,7 @@ func (h *hub) handleClientConnected(client *client) {
 			}
 			legalMoves := make([]string, 0)
 			for _, m := range r.gameState.Chess.LegalMoves {
-				legalMoves = append(legalMoves, fmt.Sprint(m.Src(), m.Dest()))
+				legalMoves = append(legalMoves, fmt.Sprint(m.String()))
 			}
 
 			matchRejoinedMsg := &pb.Message{
@@ -502,7 +502,7 @@ func (h *hub) onPlayMoveUCI(msg *clientMessage) {
 
 	legalMoves := make([]string, 0)
 	for _, m := range gs.Chess.LegalMoves {
-		legalMoves = append(legalMoves, fmt.Sprint(m.Src(), m.Dest()))
+		legalMoves = append(legalMoves, fmt.Sprint(m.String()))
 	}
 
 	gameStateMessage := &pb.Message{
@@ -621,11 +621,23 @@ func (h *hub) tryMatchPlayers(ctx context.Context) {
 
 	go room.startGame(ctx)
 
+	fen := room.gameState.Chess.Position.Fen()
+	ply := room.gameState.Chess.Position.Ply
+
+	clocks := &pb.Clocks{
+		White: room.gameState.RemainingTimeWhite.Seconds(),
+		Black: room.gameState.RemainingTimeBlack.Seconds(),
+	}
+	legalMoves := make([]string, 0)
+	for _, m := range room.gameState.Chess.LegalMoves {
+		legalMoves = append(legalMoves, fmt.Sprint(m.String()))
+	}
+
 	matchFoundMsg1 := &pb.Message{
-		Event: &pb.Message_MatchFound{MatchFound: &pb.MatchFound{GameId: room.gameState.GameID, RoomId: room.id, Color: room.players[c1.id].color}},
+		Event: &pb.Message_MatchFound{MatchFound: &pb.MatchFound{GameId: room.gameState.GameID, RoomId: room.id, Color: room.players[c1.id].color, Fen: fen, Ply: uint32(ply), Clocks: clocks, LegalMoves: legalMoves}},
 	}
 	matchFoundMsg2 := &pb.Message{
-		Event: &pb.Message_MatchFound{MatchFound: &pb.MatchFound{GameId: room.gameState.GameID, RoomId: room.id, Color: room.players[c2.id].color}},
+		Event: &pb.Message_MatchFound{MatchFound: &pb.MatchFound{GameId: room.gameState.GameID, RoomId: room.id, Color: room.players[c2.id].color, Fen: fen, Ply: uint32(ply), Clocks: clocks, LegalMoves: legalMoves}},
 	}
 	h.broadcastClient <- &clientMessage{ClientID: c1.id, RoomID: room.id, Message: matchFoundMsg1}
 	h.broadcastClient <- &clientMessage{ClientID: c2.id, RoomID: room.id, Message: matchFoundMsg2}
