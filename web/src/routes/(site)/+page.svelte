@@ -25,7 +25,7 @@
 	} from '$lib/gen/juicer_pb';
 	import { chatMessages } from '$lib/gamechat/messages';
 	import type { JuicerBoard, MoveCancelEvent, MoveStartEvent, MoveFinishEvent } from '@dankop/juicer-board';
-	import { BLACK, WHITE } from '$lib/shared/shared';
+	import { BLACK, WHITE, type Color } from '$lib/shared/shared';
 	import { goto } from '$app/navigation';
 
 	let outerSize = '35rem';
@@ -56,13 +56,17 @@
 
 	let roomId: string = '';
 	let gameId: string = '';
-	let side = 'w';
+	let side: Color = 'w';
 
 	let state: 'idle' | 'seeking' | 'playing' = 'idle';
 	let gameResult: string = '';
 	let gameStatus: string = '';
 
 	let drawOffered: boolean = false;
+
+	let promotionPopoverElm: HTMLDivElement;
+	let promotionPieceSymbol = '';
+	let promotionSrcDest = '';
 
 	const CASTLE_MOVES_PAIR = new Map<string, string>([
 		['e1g1', 'h1f1'],
@@ -71,8 +75,34 @@
 		['e8c8', 'a8d8'],
 	]);
 
+	const promos = ['q', 'r', 'n', 'b'];
+
 	function getRookCastleMove(uci: string): string | undefined {
 		return CASTLE_MOVES_PAIR.get(uci);
+	}
+
+	// move is src-dest
+	function isPromotionMove(move: string, legalMoves: string[]): boolean {
+		if (move.length !== 4) {
+			return false;
+		}
+		return legalMoves.some(m => m.length === 5 && m.startsWith(move) && promos.includes(m[4]));
+	}
+
+	function isPromotionUciMove(uci: string): boolean {
+		return uci.length === 5 && promos.includes(uci[4]);
+	}
+
+	function promotePiece(promotionPieceSymbol: string) {
+		const src = promotionSrcDest.slice(0, 2) as any;
+		const dest = promotionSrcDest.slice(2, 4) as any;
+		board.removePiece(src, true);
+		board.setPiece(dest, promotionPieceSymbol as any, true);
+	}
+
+	function sendMove(uci: string) {
+		ws.send(new Message({ event: { case: 'playMoveUci', value: new PlayMoveUCI({ move: uci }) } }));
+		ply++;
 	}
 
 	function onChatMessage(event: CustomEvent<{ text: string }>) {
@@ -128,22 +158,40 @@
 			return;
 		}
 
-		const uci = event.data.srcCoord + event.data.destCoord;
+		const move = event.data.srcCoord + event.data.destCoord;
 
-		if (!legalMoves.includes(uci)) {
-			console.debug('invalid move attempt:', uci, legalMoves);
+		const isPromo = isPromotionMove(move, legalMoves);
+		if (isPromo) {
+			promotionSrcDest = move;
+			const dest = move.slice(2, 4);
+			const promoSquareElm = board.shadowRoot?.querySelector(`juicer-square[coord='${dest}']`) ?? null;
+			if (!promoSquareElm) {
+				console.log('no promotion square element');
+				return;
+			}
+			const rect = promoSquareElm.getBoundingClientRect();
+			promotionPopoverElm.style.left = `${rect.left}px`;
+			promotionPopoverElm.style.top = `${rect.top}px`;
+			promotionPopoverElm.showPopover();
+			promotionPopoverElm.classList.remove('hidden');
 			event.preventDefault();
 			return;
 		}
 
-		const rookMove = getRookCastleMove(uci);
+		if (!legalMoves.includes(move)) {
+			console.debug('invalid move attempt:', move, legalMoves);
+			event.preventDefault();
+			return;
+		}
+
+		const rookMove = getRookCastleMove(move);
 		if (rookMove) {
 			const src = rookMove.slice(0, 2) as any;
 			const dest = rookMove.slice(2, 4) as any;
 			board.movePiece(src, dest, true);
 		}
 
-		ws.send(new Message({ event: { case: 'playMoveUci', value: new PlayMoveUCI({ move: uci }) } }));
+		ws.send(new Message({ event: { case: 'playMoveUci', value: new PlayMoveUCI({ move: move }) } }));
 		ply++;
 	}
 
@@ -196,7 +244,7 @@
 		synchronizeClocks(clocks?.white, clocks?.black);
 		roomId = matchFoundMsg.roomId;
 		gameId = matchFoundMsg.gameId;
-		side = matchFoundMsg.color;
+		side = matchFoundMsg.color as Color;
 		drawOffered = false;
 		fen = matchFoundMsg.fen;
 		ply = matchFoundMsg.ply;
@@ -210,7 +258,7 @@
 		synchronizeClocks(clocks?.white, clocks?.black);
 		roomId = matchRejoinedMsg.roomId;
 		gameId = matchRejoinedMsg.gameId;
-		side = matchRejoinedMsg.color;
+		side = matchRejoinedMsg.color as Color;
 		drawOffered = false;
 		fen = matchRejoinedMsg.fen;
 		ply = matchRejoinedMsg.ply;
@@ -241,6 +289,15 @@
 		legalMoves = moveMsg.legalMoves;
 		const src = uci.slice(0, 2) as any;
 		const dest = uci.slice(2, 4) as any;
+
+		const isPromo = isPromotionUciMove(uci);
+		if (isPromo) {
+			promotionSrcDest = uci.slice(0, 4);
+			promotionPieceSymbol = side === 'w' ? uci[4] : uci[4].toUpperCase();
+			promotePiece(promotionPieceSymbol);
+			return;
+		}
+
 		board.movePiece(src, dest);
 
 		const rookMove = getRookCastleMove(uci);
@@ -260,6 +317,14 @@
 		gameId = '';
 		clearInterval(opponentDisconnectIntervalId);
 		clearInterval(gameClockIntervalId);
+	}
+
+	function handlePromotionPiecePick(symbol: string) {
+		promotionPieceSymbol = side === 'w' ? symbol.toUpperCase() : symbol;
+		promotionPopoverElm.hidePopover();
+		promotionPopoverElm.classList.add('hidden');
+		promotePiece(promotionPieceSymbol);
+		sendMove(promotionSrcDest + promotionPieceSymbol.toLowerCase());
 	}
 
 	onMount(() => {
@@ -458,6 +523,15 @@
 		>
 	{/if}
 
+	{#if state === 'playing'}
+		<p>promotionPieceSymbol: {promotionPieceSymbol}</p>
+		<p>Side: <strong>{side}</strong></p>
+		<p>Current turn: <strong>{isWhiteTurn ? 'w' : 'b'}</strong></p>
+		<p>white clock:<strong>{whiteRemainingTime.toFixed(2)}</strong></p>
+		<p>black clock: <strong>{blackRemainingTime.toFixed(2)}</strong></p>
+		<p>Legal moves: {legalMoves}</p>
+	{/if}
+
 	<div style="display:flex;flex-wrap:wrap;gap:1rem;">
 		<div style="width: {outerSize}; height: {outerSize};">
 			<juicer-board
@@ -476,20 +550,35 @@
 	</div>
 {/if}
 
-{#if state === 'playing'}
-	<div>
-		Side: <strong>{side}</strong>
-	</div>
-	<div>
-		Current turn: <strong>{isWhiteTurn ? 'w' : 'b'}</strong>
-	</div>
-	<div>
-		white clock:<strong>{whiteRemainingTime.toFixed(2)}</strong>
-	</div>
-	<div>
-		black clock: <strong>{blackRemainingTime.toFixed(2)}</strong>
-	</div>
-	<div>
-		Legal moves: {legalMoves}
-	</div>
-{/if}
+<div
+	bind:this={promotionPopoverElm}
+	id="promotion"
+	popover="manual"
+	style="left:280px;right:324px;"
+	class="absolute w-[70px] flex flex-col flex-wrap m-0 p-0 bg-orange-100 hidden"
+>
+	<button
+		class="h-[70px] bg:blue-300 hover:bg-orange-300"
+		popovertarget="promotion"
+		popovertargetaction="hide"
+		on:click={() => handlePromotionPiecePick('q')}>Q</button
+	>
+	<button
+		class="h-[70px] bg:blue-300 hover:bg-orange-300"
+		popovertarget="promotion"
+		popovertargetaction="hide"
+		on:click={() => handlePromotionPiecePick('r')}>R</button
+	>
+	<button
+		class="h-[70px] bg:blue-300 hover:bg-orange-300"
+		popovertarget="promotion"
+		popovertargetaction="hide"
+		on:click={() => handlePromotionPiecePick('n')}>N</button
+	>
+	<button
+		class="h-[70px] bg:blue-300 hover:bg-orange-300"
+		popovertarget="promotion"
+		popovertargetaction="hide"
+		on:click={() => handlePromotionPiecePick('b')}>B</button
+	>
+</div>
