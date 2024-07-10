@@ -16,8 +16,8 @@ func TestZobristSeed(t *testing.T) {
 		t.Fatalf("failed to load pos2: %v", err)
 	}
 
-	if p1.hash != p2.hash {
-		t.Fatalf("zobrist seeds are not equal: (%v, %v)", p1.hash, p2.hash)
+	if p1.Hash != p2.Hash {
+		t.Fatalf("zobrist seeds are not equal: (%v, %v)", p1.Hash, p2.Hash)
 	}
 }
 
@@ -43,8 +43,8 @@ func TestZobristTransposition(t *testing.T) {
 	p2.MakeMove(newDoublePawnMove(E2, E4, WhitePawn))
 	p2.MakeMove(newQuietMove(B8, C6, BlackKnight))
 
-	if p1.hash != p2.hash {
-		t.Fatalf("zobrist transposition hashes are not equal: (%v, %v)", p1.hash, p2.hash)
+	if p1.Hash != p2.Hash {
+		t.Fatalf("zobrist transposition hashes are not equal: (%v, %v)", p1.Hash, p2.Hash)
 	}
 }
 
@@ -70,8 +70,8 @@ func TestZobristEnpTranspositionDiff(t *testing.T) {
 	p2.MakeMove(newDoublePawnMove(E2, E4, WhitePawn))
 	p2.MakeMove(newDoublePawnMove(E7, E5, BlackPawn))
 
-	if p1.hash == p2.hash {
-		t.Fatalf("zobrist transposition hashes are equal: (%v, %v)", p1.hash, p2.hash)
+	if p1.Hash == p2.Hash {
+		t.Fatalf("zobrist transposition hashes are equal: (%v, %v)", p1.Hash, p2.Hash)
 	}
 }
 
@@ -95,7 +95,7 @@ func TestZobristTurnDiff(t *testing.T) {
 	p2.MakeMove(newQuietMove(E2, E1, WhiteKing))
 	p2.MakeMove(newQuietMove(E7, E8, BlackKing))
 
-	if p1.hash == p2.hash {
-		t.Fatalf("zobrist transposition hashes are equal: (%v, %v)", p1.hash, p2.hash)
+	if p1.Hash == p2.Hash {
+		t.Fatalf("zobrist transposition hashes are equal: (%v, %v)", p1.Hash, p2.Hash)
 	}
 }

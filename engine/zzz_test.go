@@ -31,6 +31,6 @@ func TestJuicer(t *testing.T) {
 	c.MakeMoveUCI("d1e2")
 	c.MakeMoveUCI("d8c8")
 
-	fmt.Println(c.position.turn)
-	fmt.Println(c.position.PrintBoard())
+	fmt.Println(c.Position.Turn)
+	fmt.Println(c.Position.PrintBoard())
 }
