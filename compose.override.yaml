@@ -23,16 +23,16 @@ services:
     develop:
       watch:
         - action: sync
-          path: ./web
+          path: ./web2
           target: /app
           ignore:
-            - "./web/node_modules/"
+            - "./web2/node_modules/"
         - action: rebuild
-          path: ./web/package.json
+          path: ./web2/package.json
         - action: rebuild
-          path: ./web/vite.config.ts
+          path: ./web2/vite.config.ts
         - action: rebuild
-          path: ./web/svelte.config.js
+          path: ./web2/svelte.config.js
     healthcheck:
       <<: *dev-healthcheck
       test:
@@ -85,6 +85,7 @@ services:
           ignore:
             - "k8s/"
             - "web/"
+            - "web2/"
             - ".vscode/"
             - ".github/"
         - action: rebuild
