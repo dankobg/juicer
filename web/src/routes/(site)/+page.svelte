@@ -166,7 +166,7 @@
 			const dest = move.slice(2, 4);
 			const promoSquareElm = board.shadowRoot?.querySelector(`juicer-square[coord='${dest}']`) ?? null;
 			if (!promoSquareElm) {
-				console.log('no promotion square element');
+				console.debug('no promotion square element');
 				return;
 			}
 			const rect = promoSquareElm.getBoundingClientRect();

@@ -38,7 +38,7 @@ services:
       - intranet
   # ----------------------------------------------------------------------------
   kratos:
-    image: oryd/kratos:v1.1.0
+    image: oryd/kratos:v1.2.0
     restart: unless-stopped
     command:
       ["serve", "--watch-courier", "--config", "/etc/config/kratos/kratos.yaml"]
@@ -53,7 +53,7 @@ services:
         condition: service_completed_successfully
   # ----------------------------------------------------------------------------
   kratos-migrate:
-    image: oryd/kratos:v1.1.0
+    image: oryd/kratos:v1.2.0
     restart: on-failure
     volumes:
       - ./ory/kratos:/etc/config/kratos

@@ -8,12 +8,76 @@
 	import Users from 'lucide-svelte/icons/users';
 	import Logout from 'lucide-svelte/icons/log-out';
 	import ChevronDown from 'lucide-svelte/icons/chevron-down';
-	import { Badge } from '$lib/components/ui/badge/index.js';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
 	import * as Sheet from '$lib/components/ui/sheet/index.js';
 	import * as Avatar from '$lib/components/ui/avatar';
 	import * as Collapsible from '$lib/components/ui/collapsible';
+	import * as Popover from '$lib/components/ui/popover';
+	import Check from 'lucide-svelte/icons/check';
+	import * as Breadcrumb from '$lib/components/ui/breadcrumb/index.js';
+	import * as Drawer from '$lib/components/ui/drawer/index.js';
+	import { mediaQuery } from 'svelte-legos';
+	import { page } from '$app/stores';
+
+	const sidebarItems = [
+		{ href: '/dashboard', label: 'Dashboard', icon: House },
+		{ href: '/dashboard/identities', label: 'Identities', icon: Users },
+		{ href: '/dashboard/schemas', label: 'Schemas', icon: ShoppingCart },
+		{ href: '/dashboard/sessions', label: 'Sessions', icon: Package },
+		{
+			label: 'Nested',
+			pattern: '/dashboard/nested',
+			items: [
+				{ href: '/dashboard/nested/first', label: 'First', icon: LineChart },
+				{ href: '/dashboard/nested/second', label: 'Second', icon: LineChart },
+				{ href: '/dashboard/nested/third', label: 'Third', icon: LineChart }
+			]
+		}
+	];
+
+	const notifications = [
+		{
+			title: 'Your call has been confirmed.',
+			description: '1 hour ago'
+		},
+		{
+			title: 'You have a new message!',
+			description: '1 hour ago'
+		},
+		{
+			title: 'Your subscription is expiring soon!',
+			description: '2 hours ago'
+		}
+	];
+
+	const ITEMS_TO_DISPLAY = 5;
+	const isDesktop = mediaQuery('(min-width: 768px)');
+	let open = false;
+	let crumbs: Array<{ label: string; href: string }> = [];
+
+	$: {
+		const tokens = $page.url.pathname.split('/').filter(t => t !== '');
+
+		let tokenPath = '';
+		crumbs = tokens.map((t, i) => {
+			tokenPath += '/' + t;
+			t = t.charAt(0).toUpperCase() + t.slice(1);
+
+			let xxx = t;
+
+			if (i === tokens.length - 1 && $page.data.label) {
+				xxx = $page.data.label;
+			}
+
+			return {
+				label: xxx,
+				href: tokenPath
+			};
+		});
+
+		crumbs.unshift({ label: 'Home', href: '/' });
+	}
 </script>
 
 <div class="grid min-h-screen w-full md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr]">
@@ -24,81 +88,48 @@
 					<img src="/images/logo.svg" alt="logo" class="h-8 w-8 object-cover" />
 					<span class="">Juicer</span>
 				</a>
-				<Button variant="outline" size="icon" class="ml-auto h-8 w-8">
-					<Bell class="h-4 w-4" />
-					<span class="sr-only">Toggle notifications</span>
-				</Button>
 			</div>
 			<div class="flex-1">
 				<nav class="grid items-start px-2 text-sm font-medium lg:px-4">
-					<a
-						href="##"
-						class="text-muted-foreground hover:text-primary flex items-center gap-3 rounded-lg px-3 py-2 transition-all"
-					>
-						<House class="h-4 w-4" />
-						Dashboard
-					</a>
-					<a
-						href="##"
-						class="text-muted-foreground hover:text-primary flex items-center gap-3 rounded-lg px-3 py-2 transition-all"
-					>
-						<ShoppingCart class="h-4 w-4" />
-						Orders
-						<Badge class="ml-auto flex h-6 w-6 shrink-0 items-center justify-center rounded-full">6</Badge>
-					</a>
-					<a
-						href="##"
-						class="bg-muted text-primary hover:text-primary flex items-center gap-3 rounded-lg px-3 py-2 transition-all"
-					>
-						<Package class="h-4 w-4" />
-						Products
-					</a>
-					<a
-						href="##"
-						class="text-muted-foreground hover:text-primary flex items-center gap-3 rounded-lg px-3 py-2 transition-all"
-					>
-						<Users class="h-4 w-4" />
-						Customers
-					</a>
-					<a
-						href="##"
-						class="text-muted-foreground hover:text-primary flex items-center gap-3 rounded-lg px-3 py-2 transition-all"
-					>
-						<LineChart class="h-4 w-4" />
-						Analytics
-					</a>
-
-					<Collapsible.Root class="w-full">
-						<Collapsible.Trigger class="w-full">
-							<span
-								class="text-muted-foreground hover:text-primary flex w-full items-center gap-3 rounded-lg px-3 py-2 transition-all"
-							>
-								<LineChart class="h-4 w-4" />
-								Nested
-								<ChevronDown class="ml-auto h-4 w-4" />
-							</span>
-						</Collapsible.Trigger>
-						<Collapsible.Content>
+					{#each sidebarItems as item}
+						{#if item.items}
+							<Collapsible.Root class="w-full">
+								<Collapsible.Trigger class="w-full">
+									<span
+										class="text-muted-foreground hover:text-primary flex w-full items-center gap-3 rounded-lg px-3 py-2 transition-all"
+										class:text-primary={$page.url.pathname.startsWith(item.pattern)}
+										class:bg-muted={$page.url.pathname.startsWith(item.pattern)}
+									>
+										<LineChart class="h-4 w-4" />
+										{item.label}
+										<ChevronDown class="ml-auto h-4 w-4" />
+									</span>
+								</Collapsible.Trigger>
+								<Collapsible.Content>
+									{#each item.items as nested}
+										<a
+											href={nested.href}
+											class="text-muted-foreground hover:text-primary ml-8 flex items-center gap-3 rounded-lg px-3 py-2 transition-all"
+											class:text-primary={$page.url.pathname === nested.href}
+											class:bg-muted={$page.url.pathname === nested.href}
+										>
+											{nested.label}
+										</a>
+									{/each}
+								</Collapsible.Content>
+							</Collapsible.Root>
+						{:else}
 							<a
-								href="##"
-								class="bg-muted text-primary hover:text-primary ml-8 flex items-center gap-3 rounded-lg px-3 py-2 transition-all"
+								href={item.href}
+								class="text-muted-foreground hover:text-primary flex items-center gap-3 rounded-lg px-3 py-2 transition-all"
+								class:text-primary={$page.url.pathname === item.href}
+								class:bg-muted={$page.url.pathname === item.href}
 							>
-								First
+								<svelte:component this={item.icon} class="h-4 w-4" />
+								{item.label}
 							</a>
-							<a
-								href="##"
-								class="text-muted-foreground hover:text-primary ml-8 flex items-center gap-3 rounded-lg px-3 py-2 transition-all"
-							>
-								Second
-							</a>
-							<a
-								href="##"
-								class="text-muted-foreground hover:text-primary ml-8 flex items-center gap-3 rounded-lg px-3 py-2 transition-all"
-							>
-								Third
-							</a>
-						</Collapsible.Content>
-					</Collapsible.Root>
+						{/if}
+					{/each}
 				</nav>
 			</div>
 			<div class="mt-auto p-4">
@@ -127,74 +158,40 @@
 							<img src="/images/logo.svg" alt="logo" class="h-8 w-8 object-cover" />
 							<span class="sr-only">Juicer</span>
 						</a>
-						<a
-							href="##"
-							class="text-muted-foreground hover:text-foreground mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2"
-						>
-							<House class="h-5 w-5" />
-							Dashboard
-						</a>
-						<a
-							href="##"
-							class="bg-muted text-foreground hover:text-foreground mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2"
-						>
-							<ShoppingCart class="h-5 w-5" />
-							Orders
-							<Badge class="ml-auto flex h-6 w-6 shrink-0 items-center justify-center rounded-full">6</Badge>
-						</a>
-						<a
-							href="##"
-							class="text-muted-foreground hover:text-foreground mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2"
-						>
-							<Package class="h-5 w-5" />
-							Products
-						</a>
-						<a
-							href="##"
-							class="text-muted-foreground hover:text-foreground mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2"
-						>
-							<Users class="h-5 w-5" />
-							Customers
-						</a>
-						<a
-							href="##"
-							class="text-muted-foreground hover:text-foreground mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2"
-						>
-							<LineChart class="h-5 w-5" />
-							Analytics
-						</a>
 
-						<Collapsible.Root class="w-full">
-							<Collapsible.Trigger class="w-full">
-								<span
+						{#each sidebarItems as item}
+							{#if item.items}
+								<Collapsible.Root class="w-full">
+									<Collapsible.Trigger class="w-full">
+										<span
+											class="text-muted-foreground hover:text-foreground mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2"
+										>
+											<LineChart class="h-4 w-4" />
+											{item.label}
+											<ChevronDown class="ml-auto h-4 w-4" />
+										</span>
+									</Collapsible.Trigger>
+									<Collapsible.Content>
+										{#each item.items as nested}
+											<a
+												href={nested.href}
+												class="text-muted-foreground hover:text-foreground mx-[-0.65rem] ml-8 flex items-center gap-4 rounded-xl px-3 py-2"
+											>
+												{nested.label}
+											</a>
+										{/each}
+									</Collapsible.Content>
+								</Collapsible.Root>
+							{:else}
+								<a
+									href={item.href}
 									class="text-muted-foreground hover:text-foreground mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2"
 								>
-									<LineChart class="h-4 w-4" />
-									Nested
-									<ChevronDown class="ml-auto h-4 w-4" />
-								</span>
-							</Collapsible.Trigger>
-							<Collapsible.Content>
-								<a
-									href="##"
-									class="text-muted-foreground hover:text-foreground mx-[-0.65rem] ml-8 flex items-center gap-4 rounded-xl px-3 py-2"
-								>
-									First
+									<svelte:component this={item.icon} class="h-4 w-4" />
+									{item.label}
 								</a>
-								<a
-									href="##"
-									class="text-muted-foreground hover:text-foreground mx-[-0.65rem] ml-8 flex items-center gap-4 rounded-xl px-3 py-2"
-								>
-									Second
-								</a>
-								<a
-									href="##"
-									class="text-muted-foreground hover:text-foreground mx-[-0.65rem] ml-8 flex items-center gap-4 rounded-xl px-3 py-2"
-								>
-									Third
-								</a>
-							</Collapsible.Content>
-						</Collapsible.Root>
+							{/if}
+						{/each}
 					</nav>
 					<div class="mt-auto">
 						<a
@@ -208,6 +205,44 @@
 				</Sheet.Content>
 			</Sheet.Root>
 			<div class="w-full flex-1"></div>
+
+			<Popover.Root>
+				<Popover.Trigger>
+					<Button variant="outline" size="icon" class="ml-auto h-8 w-8">
+						<Bell class="h-4 w-4" />
+						<span class="sr-only">Toggle notifications</span>
+					</Button>
+				</Popover.Trigger>
+				<Popover.Content>
+					<div class="grid gap-4">
+						<div class="space-y-2">
+							<h4 class="font-bold leading-none">Notifications</h4>
+							<p class="text-muted-foreground text-sm">You have 3 unread messages</p>
+						</div>
+						<div class="grid gap-2">
+							<div>
+								{#each notifications as notification, idx (idx)}
+									<div class="mb-4 grid grid-cols-[25px_1fr] items-start pb-4 last:mb-0 last:pb-0">
+										<span class="flex h-2 w-2 translate-y-1 rounded-full bg-sky-500" />
+										<div class="space-y-1">
+											<p class="text-sm font-medium leading-none">
+												{notification.title}
+											</p>
+											<p class="text-muted-foreground text-sm">
+												{notification.description}
+											</p>
+										</div>
+									</div>
+								{/each}
+							</div>
+						</div>
+						<Button class="w-full">
+							<Check class="mr-2 h-4 w-4" /> Mark all as read
+						</Button>
+					</div>
+				</Popover.Content>
+			</Popover.Root>
+
 			<DropdownMenu.Root>
 				<DropdownMenu.Trigger asChild let:builder>
 					<Button builders={[builder]} variant="secondary" size="icon" class="rounded-full">
@@ -229,16 +264,72 @@
 			</DropdownMenu.Root>
 		</header>
 		<main class="flex flex-1 flex-col gap-4 p-4 lg:gap-6 lg:p-6">
-			<div class="flex items-center">
-				<h1 class="text-lg font-semibold md:text-2xl">Inventory</h1>
-			</div>
-			<div class="flex flex-1 items-center justify-center rounded-lg border border-dashed shadow-sm">
-				<div class="flex flex-col items-center gap-1 text-center">
-					<h3 class="text-2xl font-bold tracking-tight">You have no products</h3>
-					<p class="text-muted-foreground text-sm">You can start selling as soon as you add a product.</p>
-					<Button class="mt-4">Add Product</Button>
-				</div>
-			</div>
+			<Breadcrumb.Root>
+				<Breadcrumb.List>
+					{#if crumbs.length > ITEMS_TO_DISPLAY}
+						<Breadcrumb.Item>
+							{#if $isDesktop}
+								<DropdownMenu.Root bind:open>
+									<DropdownMenu.Trigger class="flex items-center gap-1" aria-label="Toggle menu">
+										<Breadcrumb.Ellipsis class="h-4 w-4" />
+									</DropdownMenu.Trigger>
+									<DropdownMenu.Content align="start">
+										{#each crumbs.slice(1, -2) as crumb}
+											<DropdownMenu.Item href={crumb.href ? crumb.href : '#'}>
+												{crumb.label}
+											</DropdownMenu.Item>
+										{/each}
+									</DropdownMenu.Content>
+								</DropdownMenu.Root>
+							{:else}
+								<Drawer.Root bind:open>
+									<Drawer.Trigger aria-label="Toggle Menu">
+										<Breadcrumb.Ellipsis class="h-4 w-4" />
+									</Drawer.Trigger>
+									<Drawer.Content>
+										<Drawer.Header class="text-left">
+											<Drawer.Title>Navigate to</Drawer.Title>
+											<Drawer.Description>Select a page to navigate to.</Drawer.Description>
+										</Drawer.Header>
+										<div class="grid gap-1 px-4">
+											{#each crumbs.slice(1, -2) as crumb}
+												<a href={crumb.href ? crumb.href : '#'} class="py-1 text-sm">
+													{crumb.label}
+												</a>
+											{/each}
+										</div>
+										<Drawer.Footer class="pt-4">
+											<Drawer.Close asChild let:builder>
+												<Button variant="outline" builders={[builder]}>Close</Button>
+											</Drawer.Close>
+										</Drawer.Footer>
+									</Drawer.Content>
+								</Drawer.Root>
+							{/if}
+						</Breadcrumb.Item>
+						<Breadcrumb.Separator />
+					{/if}
+
+					{#each crumbs.slice(-ITEMS_TO_DISPLAY + 1) as crumb, idx}
+						<Breadcrumb.Item>
+							{#if crumb.href}
+								<Breadcrumb.Link href={crumb.href} class="max-w-20 truncate md:max-w-none">
+									{crumb.label}
+								</Breadcrumb.Link>
+								{#if idx !== crumbs.length - 1}
+									<Breadcrumb.Separator />
+								{/if}
+							{:else}
+								<Breadcrumb.Page class="max-w-20 truncate md:max-w-none">
+									{crumb.label}
+								</Breadcrumb.Page>
+							{/if}
+						</Breadcrumb.Item>
+					{/each}
+				</Breadcrumb.List>
+			</Breadcrumb.Root>
+
+			<slot />
 		</main>
 	</div>
 </div>

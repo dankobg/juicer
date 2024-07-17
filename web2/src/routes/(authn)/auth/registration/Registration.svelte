@@ -132,8 +132,7 @@
 					if (instanceOfGenericError(error)) {
 						if (error.id === 'session_already_available') {
 							handleFlowErrAction('/', error.message);
-						}
-						if (error.id === 'security_csrf_violation' || error.id === 'security_identity_mismatch') {
+						} else if (error.id === 'security_csrf_violation' || error.id === 'security_identity_mismatch') {
 							handleFlowErrAction(config.routes.registration.path, error.message);
 						}
 					}
@@ -255,71 +254,3 @@
 		</Card.Content>
 	</Card.Root>
 </section>
-
-<!-- <Section name="register">
-	<Register href="/">
-		<svelte:fragment slot="top">
-			<img class="mr-2 h-8 w-8" src="/images/logo.svg" alt="logo" />
-			Juicer
-		</svelte:fragment>
-
-		<div class="space-y-4 p-6 sm:p-8 md:space-y-6">
-			<form method="POST" use:enhance class="flex flex-col space-y-6">
-				{#each data?.flow?.ui?.messages ?? [] as msg}
-					{@const err = msg.type === 'error'}
-					<SimpleAlert kind={msg.type} title={err ? 'Unable to sign up' : ''} text={msg.text} />
-				{/each}
-
-				<h3 class="p-0 text-center text-xl font-medium text-gray-900 dark:text-white">Create new account</h3>
-
-				<InputText form={supForm} name="traits.first_name" label="First name" />
-				<InputText form={supForm} name="traits.last_name" label="Last name" />
-				<InputEmail form={supForm} name="traits.email" label="Your email" />
-				<InputPassword form={supForm} name="password" label="Your password" />
-
-				<Button type="submit" class="w-full1 font-bold">Create new account</Button>
-
-				<div class="text-sm font-medium text-gray-500 dark:text-gray-300">
-					Already have an account? <a
-						href={config.routes.login.path}
-						class="text-primary-600 dark:text-primary-500 font-medium hover:underline">Login here</a
-					>
-				</div>
-
-				<section>
-					<div class="inline-flex w-full items-center justify-center">
-						<hr class="my-8 h-px w-full border-0 bg-gray-200 dark:bg-gray-700" />
-						<span
-							class="absolute left-1/2 -translate-x-1/2 bg-white px-3 font-medium text-gray-900 dark:bg-gray-900 dark:text-white"
-						>
-							or sign up with
-						</span>
-					</div>
-
-					<div class="align-center flex justify-between">
-						{#each providers as provider}
-							<form
-								action={data.flow?.ui.action}
-								method="post"
-								encType="application/x-www-form-urlencoded"
-								data-provider={provider.name}
-							>
-								<input type="hidden" name="csrf_token" bind:value={$form.csrf_token} readonly required />
-								<input type="hidden" name="provider" value={provider.name} readonly required />
-
-								<button id={provider.name} type="submit" class="h-12 w-12">
-									<img
-										class="h-full w-full object-cover"
-										src="/images/providers/{provider.name}.svg"
-										alt="sign up with {provider.label}"
-									/>
-								</button>
-								<Tooltip triggeredBy="#{provider.name}">{provider.label}</Tooltip>
-							</form>
-						{/each}
-					</div>
-				</section>
-			</form>
-		</div>
-	</Register>
-</Section> -->

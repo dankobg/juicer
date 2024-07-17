@@ -1,12 +1,9 @@
 <script lang="ts">
-	import { Button } from '$lib/components/ui/button';
+	import { Button } from '$lib/components/ui/button/index.js';
 </script>
 
-<section>
-	<h1>404</h1>
-	<p class="mb-4 text-3xl font-bold tracking-tight text-gray-900 md:text-4xl dark:text-white">Something's missing.</p>
-	<p class="mb-4 text-lg font-light text-gray-500 dark:text-gray-400">
-		Sorry, we can't find that page. You'll find lots to explore on the home page.
-	</p>
-	<Button href="/">Back to Homepage</Button>
-</section>
+<main class="flex h-screen w-full flex-col items-center justify-center bg-[#1A2238]">
+	<h1 class="text-4xl font-extrabold tracking-widest text-white min-[480px]:text-9xl">404</h1>
+	<div class="absolute rotate-12 rounded bg-[#FF6A3D] px-2 text-sm">Page Not Found</div>
+	<Button href="/">Back to home page</Button>
+</main>

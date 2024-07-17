@@ -39,8 +39,7 @@ export const load: PageLoad = (async ({ url }) => {
 			if (instanceOfGenericError(error)) {
 				if (error.id === 'session_already_available') {
 					handleFlowErrAction('/', error.message);
-				}
-				if (error.id === 'self_service_flow_expired') {
+				} else if (error.id === 'self_service_flow_expired') {
 					handleFlowErrAction(config.routes.registration.path, error.message);
 				}
 			}
@@ -61,8 +60,7 @@ export const load: PageLoad = (async ({ url }) => {
 			if (instanceOfGenericError(error)) {
 				if (error.id === 'session_already_available') {
 					handleFlowErrAction('/', error.message);
-				}
-				if (error.id === 'security_csrf_violation' || error.id === 'security_identity_mismatch') {
+				} else if (error.id === 'security_csrf_violation' || error.id === 'security_identity_mismatch') {
 					handleFlowErrAction(config.routes.registration.path, error.message);
 				}
 			}

@@ -1,5 +1,5 @@
 import type { PageLoad } from './$types';
-import { instanceOfGenericError, type RecoveryFlow } from '@ory/client-fetch';
+import { instanceOfGenericError, type GenericError, type SettingsFlow } from '@ory/client-fetch';
 import { kratos } from '$lib/kratos/client';
 import { extractCSRFToken } from '$lib/kratos/helpers';
 import { browser } from '$app/environment';
@@ -11,7 +11,7 @@ export const load: PageLoad = (async ({ url }) => {
 	const returnToParam = browser && url.searchParams.get('return_to');
 	const flowIdParam = browser && url.searchParams.get('flow');
 
-	let flow: RecoveryFlow | null = null;
+	let flow: SettingsFlow | null = null;
 
 	function handleFlowErrAction(redirectUrl: string, errMsg?: string) {
 		if (errMsg) {
@@ -28,20 +28,23 @@ export const load: PageLoad = (async ({ url }) => {
 
 	if (flowIdParam) {
 		try {
-			const recoveryFlow = await kratos.getRecoveryFlow({
+			const settingsFlow = await kratos.getSettingsFlow({
 				id: flowIdParam
 			});
-			flow = recoveryFlow;
+			flow = settingsFlow;
 		} catch (error: unknown) {
 			if (!error || typeof error !== 'object') {
 				return;
 			}
 
 			if (instanceOfGenericError(error)) {
-				if (error.id === 'session_already_available') {
-					handleFlowErrAction('/', error.message);
-				} else if (error.id === 'self_service_flow_expired') {
-					handleFlowErrAction(config.routes.recovery.path, error.message);
+				if (error.id === 'session_inactive' || error.id === 'session_refresh_required') {
+					handleFlowErrAction(
+						config.routes.login.path + `?return_to=${encodeURIComponent(window.location.href)}`,
+						error.message
+					);
+				} else if (error.id === 'security_csrf_violation' || error.id === 'security_identity_mismatch') {
+					handleFlowErrAction(config.routes.settings.path, error.message);
 				}
 			}
 		}
@@ -49,18 +52,24 @@ export const load: PageLoad = (async ({ url }) => {
 		const returnTo: string | undefined = returnToParam ? returnToParam.toString() : undefined;
 
 		try {
-			const recoveryFlow = await kratos.createBrowserRecoveryFlow({
+			const settingsFlow = await kratos.createBrowserSettingsFlow({
 				returnTo
 			});
-			flow = recoveryFlow;
+			flow = settingsFlow;
 		} catch (error: unknown) {
 			if (!error || typeof error !== 'object') {
 				return;
 			}
 
-
 			if (instanceOfGenericError(error)) {
-				handleFlowErrAction(config.routes.recovery.path, error.message);
+				if (error.id === 'session_inactive') {
+					handleFlowErrAction(
+						config.routes.login.path + `?return_to=${encodeURIComponent(window.location.href)}`,
+						error.message
+					);
+				} else if (error.id === 'security_csrf_violation' || error.id === 'security_identity_mismatch') {
+					handleFlowErrAction(config.routes.settings.path, error.message);
+				}
 			}
 		}
 	}

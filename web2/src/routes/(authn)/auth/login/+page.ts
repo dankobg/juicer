@@ -42,8 +42,7 @@ export const load: PageLoad = (async ({ url }) => {
 			if (instanceOfGenericError(error)) {
 				if (error.id === 'session_already_available') {
 					handleFlowErrAction('/', error.message);
-				}
-				if (error.id === 'self_service_flow_expired') {
+				} else if (error.id === 'self_service_flow_expired') {
 					handleFlowErrAction(config.routes.login.path, error.message);
 				}
 			}
@@ -69,11 +68,8 @@ export const load: PageLoad = (async ({ url }) => {
 			if (instanceOfGenericError(error)) {
 				if (error.id === 'security_csrf_violation') {
 					handleFlowErrAction(config.routes.login.path, error.message);
-				}
-				if (error.id === 'session_aal2_required') {
-					if (browser) {
-						goto('/login?aal=aal2&return_to=' + window.location.href);
-					}
+				} else if (error.id === 'session_aal2_required' && browser) {
+					goto('/login?aal=aal2&return_to=' + window.location.href);
 				}
 			}
 		}

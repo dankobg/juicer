@@ -7,7 +7,6 @@ export const prerender = true;
 export const load: LayoutLoad = async () => {
 	try {
 		const session = await kratos.toSession();
-
 		const svc = createSessionService(session);
 		const logoutFlow = await kratos.createBrowserLogoutFlow();
 

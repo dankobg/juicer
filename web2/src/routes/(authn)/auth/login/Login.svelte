@@ -110,11 +110,9 @@
 					if (instanceOfGenericError(error)) {
 						if (error.id === 'session_already_available') {
 							handleFlowErrAction('/', error.message);
-						}
-						if (error.id === 'security_csrf_violation' || error.id === 'security_identity_mismatch') {
+						} else if (error.id === 'security_csrf_violation' || error.id === 'security_identity_mismatch') {
 							handleFlowErrAction(config.routes.login.path, error.message);
 						}
-						return;
 					}
 				}
 			}

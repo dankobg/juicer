@@ -127,8 +127,7 @@
 					if (instanceOfGenericError(error)) {
 						if (error.id === 'session_already_available') {
 							handleFlowErrAction('/', error.message);
-						}
-						if (error.id === 'security_csrf_violation' || error.id === 'security_identity_mismatch') {
+						} else if (error.id === 'security_csrf_violation' || error.id === 'security_identity_mismatch') {
 							handleFlowErrAction(config.routes.recovery.path, error.message);
 						}
 					}
@@ -195,10 +194,6 @@
 						{/if}
 					</Form.Button>
 				</form>
-			</div>
-			<div class="mt-4 text-center text-sm">
-				Don't have an account yet?
-				<a href={config.routes.registration.path} class="underline">Sign up</a>
 			</div>
 		</Card.Content>
 	</Card.Root>
