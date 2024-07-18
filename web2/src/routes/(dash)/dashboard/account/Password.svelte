@@ -103,12 +103,10 @@
 
 						for (const node of nodes) {
 							const errMsgs: string[] = [];
-							const attrs = node.attributes;
-
-							if (attrs.node_type === 'input') {
+							if (node.attributes.node_type === 'input') {
 								for (const msg of node?.messages ?? []) {
 									errMsgs.push(msg.text);
-									const fieldName = attrs?.name;
+									const fieldName = node.attributes.name;
 									set(fieldErrors, fieldName, errMsgs);
 								}
 							}
@@ -145,9 +143,9 @@
 	const { form, enhance, errors } = supForm;
 </script>
 
-<Card.Root class="mx-auto max-w-sm">
+<Card.Root class="max-w-sm">
 	<Card.Header>
-		<Card.Title class="text-center text-2xl">Change password</Card.Title>
+		<Card.Title>Change password</Card.Title>
 		<Card.Description>Change account password</Card.Description>
 	</Card.Header>
 

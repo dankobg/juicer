@@ -1,4 +1,10 @@
-import type { LoginFlow, RecoveryFlow, RegistrationFlow, SettingsFlow, VerificationFlow } from '@ory/client-fetch';
+import {	
+	type LoginFlow,
+	type RecoveryFlow,
+	type RegistrationFlow,
+	type SettingsFlow,
+	type VerificationFlow
+} from '@ory/client-fetch';
 
 type Provider = {
 	name: string;

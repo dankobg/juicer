@@ -75,17 +75,15 @@
 					});
 
 					if (verificationFlow.state === VerificationFlowState.PassedChallenge) {
-						for (const item of verificationFlow.ui.nodes) {
-							if (item.group === 'code') {
-								const attrs = item.attributes;
-
-								if (attrs.node_type === 'a') {
+						for (const node of verificationFlow.ui.nodes) {
+							if (node.group === 'code') {
+								if (node.attributes.node_type === 'a') {
 									window.sessionStorage.setItem(
 										'juicer_email_verified',
 										'Your E-Mail has been verified! You can now log in'
 									);
 
-									window.location.href = attrs.href;
+									window.location.href = node.attributes.href;
 									return;
 								}
 							}
@@ -104,12 +102,10 @@
 
 						for (const node of nodes) {
 							const errMsgs: string[] = [];
-							const attrs = node.attributes;
-
-							if (attrs.node_type === 'input') {
+							if (node.attributes.node_type === 'input') {
 								for (const msg of node?.messages ?? []) {
 									errMsgs.push(msg.text);
-									const fieldName = attrs?.name;
+									const fieldName = node.attributes.name;
 									set(fieldErrors, fieldName, errMsgs);
 								}
 							}

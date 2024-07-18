@@ -113,12 +113,10 @@
 
 						for (const node of nodes) {
 							const errMsgs: string[] = [];
-							const attrs = node.attributes;
-
-							if (attrs.node_type === 'input') {
+							if (node.attributes.node_type === 'input') {
 								for (const msg of node?.messages ?? []) {
 									errMsgs.push(msg.text);
-									const fieldName = attrs?.name;
+									const fieldName = node.attributes.name;
 									set(fieldErrors, fieldName, errMsgs);
 								}
 							}
@@ -155,9 +153,9 @@
 	const { form, enhance, errors } = supForm;
 </script>
 
-<Card.Root class="mx-auto max-w-sm">
+<Card.Root class="max-w-sm">
 	<Card.Header>
-		<Card.Title class="text-center text-2xl">Account settings</Card.Title>
+		<Card.Title>Account settings</Card.Title>
 		<Card.Description>Change account settings</Card.Description>
 	</Card.Header>
 
@@ -178,6 +176,24 @@
 						<Form.Control let:attrs>
 							<Form.Label>First name</Form.Label>
 							<Input {...attrs} bind:value={$form.traits.first_name} />
+						</Form.Control>
+						<Form.FieldErrors />
+					</Form.Field>
+				</div>
+				<div class="grid gap-2">
+					<Form.Field form={supForm} name="traits.last_name">
+						<Form.Control let:attrs>
+							<Form.Label>Last name</Form.Label>
+							<Input {...attrs} bind:value={$form.traits.last_name} />
+						</Form.Control>
+						<Form.FieldErrors />
+					</Form.Field>
+				</div>
+				<div class="grid gap-2">
+					<Form.Field form={supForm} name="traits.email">
+						<Form.Control let:attrs>
+							<Form.Label>E-Mail</Form.Label>
+							<Input type="email" {...attrs} bind:value={$form.traits.email} />
 						</Form.Control>
 						<Form.FieldErrors />
 					</Form.Field>

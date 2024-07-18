@@ -5,7 +5,7 @@
 		type UpdateLoginFlowWithPasswordMethod,
 		instanceOfErrorBrowserLocationChangeRequired,
 		instanceOfGenericError,
-		instanceOfLoginFlow
+		instanceOfLoginFlow,
 	} from '@ory/client-fetch';
 	import { goto } from '$app/navigation';
 	import { config } from '$lib/kratos/config';
@@ -89,11 +89,10 @@
 						const fieldErrors: ValidationErrors<LoginFormSchema> = {};
 						for (const node of nodes) {
 							const errMsgs: string[] = [];
-							const attrs = node.attributes;
-							if (attrs.node_type === 'input') {
+							if (node.attributes.node_type === 'input') {
 								for (const msg of node?.messages ?? []) {
 									errMsgs.push(msg.text);
-									const fieldName = attrs?.name;
+									const fieldName = node.attributes.name;
 									set(fieldErrors, fieldName, errMsgs);
 								}
 							}
