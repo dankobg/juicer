@@ -106,6 +106,7 @@ selfservice:
         oidc:
           default_browser_return_url: https://juicer-dev.xyz
     registration:
+      enable_legacy_one_step: true
       ui_url: https://juicer-dev.xyz/auth/registration
       lifespan: 10m
       after:

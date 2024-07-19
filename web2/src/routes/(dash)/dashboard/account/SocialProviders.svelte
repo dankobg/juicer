@@ -46,14 +46,16 @@
 			<Card.Description>Link/Unlink auth social providers</Card.Description>
 		</Card.Header>
 		<Card.Content class="grid gap-4">
-			{#each data?.flow?.ui?.messages ?? [] as msg}
-				{@const err = msg.type === 'error'}
-				{@const clr = msg.type === 'error' ? 'red' : msg.type === 'success' ? 'green' : 'blue'}
-				<Alert.Root class="border border-{clr}-600 bg-{clr}-50 text-{clr}-600 dark:bg-{clr}-950">
-					<Alert.Title>{err ? `Unable to ${socialsAction} account` : ''}</Alert.Title>
-					<Alert.Description>{msg.text}</Alert.Description>
-				</Alert.Root>
-			{/each}
+			{#if socialsAction === 'link' || socialsAction === 'unlink'}
+				{#each data?.flow?.ui?.messages ?? [] as msg}
+					{@const err = msg.type === 'error'}
+					{@const clr = msg.type === 'error' ? 'red' : msg.type === 'success' ? 'green' : 'blue'}
+					<Alert.Root class="border border-{clr}-600 bg-{clr}-50 text-{clr}-600 dark:bg-{clr}-950">
+						<Alert.Title>{err ? `Unable to ${socialsAction} account` : ''}</Alert.Title>
+						<Alert.Description>{msg.text}</Alert.Description>
+					</Alert.Root>
+				{/each}
+			{/if}
 
 			{#each providersToLink as provider}
 				{#if provider.attributes.node_type === 'input'}
@@ -63,7 +65,7 @@
 						encType="application/x-www-form-urlencoded"
 						class="w-full space-y-6"
 					>
-						<input type="hidden" name="unlink" value={provider.attributes.value} readonly required />
+						<input type="hidden" name="link" value={provider.attributes.value} readonly required />
 						<input type="hidden" name="csrf_token" bind:value={data.csrf} readonly required />
 
 						<div class="flex w-full justify-start gap-4">
@@ -104,6 +106,7 @@
 							Unlink {provider.attributes.value} account
 							<Switch
 								type="submit"
+								checked
 								on:click={() => {
 									window.sessionStorage.setItem('socialsAction', 'unlink');
 								}}

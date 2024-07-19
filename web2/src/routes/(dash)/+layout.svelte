@@ -19,6 +19,9 @@
 	import * as Drawer from '$lib/components/ui/drawer/index.js';
 	import { mediaQuery } from 'svelte-legos';
 	import { page } from '$app/stores';
+	import type { LayoutData } from '../$types';
+
+	export let data: LayoutData;
 
 	const sidebarItems = [
 		{ href: '/dashboard', label: 'Dashboard', icon: House },
@@ -134,7 +137,7 @@
 			</div>
 			<div class="mt-auto p-4">
 				<a
-					href="##"
+					href={data.logoutUrl}
 					class="text-muted-foreground hover:text-primary flex items-center gap-3 rounded-lg px-3 py-2 transition-all"
 				>
 					<Logout class="h-4 w-4" />
@@ -195,7 +198,7 @@
 					</nav>
 					<div class="mt-auto">
 						<a
-							href="##"
+							href={data.logoutUrl}
 							class="text-muted-foreground hover:text-primary flex items-center gap-3 rounded-lg px-3 py-2 text-lg font-medium transition-all"
 						>
 							<Logout class="h-4 w-4" />
@@ -254,12 +257,11 @@
 					</Button>
 				</DropdownMenu.Trigger>
 				<DropdownMenu.Content align="end">
-					<DropdownMenu.Label>My Account</DropdownMenu.Label>
+					<DropdownMenu.Label>{data.auth.user?.email}</DropdownMenu.Label>
 					<DropdownMenu.Separator />
-					<DropdownMenu.Item>Settings</DropdownMenu.Item>
-					<DropdownMenu.Item>Support</DropdownMenu.Item>
+					<DropdownMenu.Item href="/dashboard/account">Account</DropdownMenu.Item>
 					<DropdownMenu.Separator />
-					<DropdownMenu.Item>Logout</DropdownMenu.Item>
+					<DropdownMenu.Item href={data.logoutUrl}>Logout</DropdownMenu.Item>
 				</DropdownMenu.Content>
 			</DropdownMenu.Root>
 		</header>
