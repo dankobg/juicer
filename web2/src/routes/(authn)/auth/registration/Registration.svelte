@@ -158,12 +158,10 @@
 			<div class="grid gap-4">
 				<form method="POST" use:enhance class="grid gap-4">
 					{#each data?.flow?.ui?.messages ?? [] as msg}
-						{@const err = msg.type === 'error'}
-						{@const clr = msg.type === 'error' ? 'red' : msg.type === 'success' ? 'green' : 'blue'}
-						<Alert.Root class="border border-{clr}-600 bg-{clr}-50 text-{clr}-600 dark:bg-{clr}-950">
-							<Alert.Title>{err ? 'Unable to sign up' : ''}</Alert.Title>
-							<Alert.Description>{msg.text}</Alert.Description>
-						</Alert.Root>
+					<Alert.Root variant="{msg.type}">
+						<Alert.Title>{msg.type === 'error' ? 'Unable to sign up' : ''}</Alert.Title>
+						<Alert.Description>{msg.text}</Alert.Description>
+					</Alert.Root>
 					{/each}
 
 					<div class="grid grid-cols-2 gap-4">
