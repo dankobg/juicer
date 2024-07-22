@@ -4,7 +4,7 @@
 		type UpdateRegistrationFlowWithPasswordMethod,
 		instanceOfRegistrationFlow,
 		instanceOfErrorBrowserLocationChangeRequired,
-		instanceOfGenericError,
+		instanceOfGenericError
 	} from '@ory/client-fetch';
 	import { goto } from '$app/navigation';
 	import { config } from '$lib/kratos/config';
@@ -158,10 +158,10 @@
 			<div class="grid gap-4">
 				<form method="POST" use:enhance class="grid gap-4">
 					{#each data?.flow?.ui?.messages ?? [] as msg}
-					<Alert.Root variant="{msg.type}">
-						<Alert.Title>{msg.type === 'error' ? 'Unable to sign up' : ''}</Alert.Title>
-						<Alert.Description>{msg.text}</Alert.Description>
-					</Alert.Root>
+						<Alert.Root variant={msg.type} variantIcon>
+							<Alert.Title>{msg.type === 'error' ? 'Unable to sign up' : ''}</Alert.Title>
+							<Alert.Description>{msg.text}</Alert.Description>
+						</Alert.Root>
 					{/each}
 
 					<div class="grid grid-cols-2 gap-4">

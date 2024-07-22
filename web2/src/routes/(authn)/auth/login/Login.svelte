@@ -160,14 +160,14 @@
 			<div class="grid gap-4">
 				<form method="POST" use:enhance class="grid gap-4">
 					{#each data?.flow?.ui?.messages ?? [] as msg}						
-						<Alert.Root variant="{msg.type}">
+						<Alert.Root variant="{msg.type}" variantIcon>
 							<Alert.Title>{msg.type === 'error' ? 'Unable to log in' : ''}</Alert.Title>
 							<Alert.Description>{msg.text}</Alert.Description>
 						</Alert.Root>
 					{/each}
 
 					{#if emailVerified}
-						<Alert.Root class="border border-green-600 bg-green-50 text-green-600 dark:bg-green-950">
+						<Alert.Root variant="success" variantIcon>
 							<Alert.Title>Success</Alert.Title>
 							<Alert.Description>{emailVerifiedMsg}</Alert.Description>
 						</Alert.Root>

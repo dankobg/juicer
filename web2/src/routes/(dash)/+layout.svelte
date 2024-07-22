@@ -1,5 +1,5 @@
 <script lang="ts">
-	import LineChart from 'lucide-svelte/icons/line-chart';
+	import BookOpen from 'lucide-svelte/icons/book-open';
 	import Package from 'lucide-svelte/icons/package';
 	import House from 'lucide-svelte/icons/house';
 	import ShoppingCart from 'lucide-svelte/icons/shopping-cart';
@@ -32,9 +32,9 @@
 			label: 'Nested',
 			pattern: '/dashboard/nested',
 			items: [
-				{ href: '/dashboard/nested/first', label: 'First', icon: LineChart },
-				{ href: '/dashboard/nested/second', label: 'Second', icon: LineChart },
-				{ href: '/dashboard/nested/third', label: 'Third', icon: LineChart }
+				{ href: '/dashboard/nested/first', label: 'First', icon: BookOpen },
+				{ href: '/dashboard/nested/second', label: 'Second', icon: BookOpen },
+				{ href: '/dashboard/nested/third', label: 'Third', icon: BookOpen }
 			]
 		}
 	];
@@ -103,7 +103,7 @@
 										class:text-primary={$page.url.pathname.startsWith(item.pattern)}
 										class:bg-muted={$page.url.pathname.startsWith(item.pattern)}
 									>
-										<LineChart class="h-4 w-4" />
+										<BookOpen class="h-4 w-4" />
 										{item.label}
 										<ChevronDown class="ml-auto h-4 w-4" />
 									</span>
@@ -169,7 +169,7 @@
 										<span
 											class="text-muted-foreground hover:text-foreground mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2"
 										>
-											<LineChart class="h-4 w-4" />
+											<BookOpen class="h-4 w-4" />
 											{item.label}
 											<ChevronDown class="ml-auto h-4 w-4" />
 										</span>

@@ -164,7 +164,7 @@
 			<form method="POST" use:enhance class="grid gap-4">
 				{#if currentFlowForm === 'settings'}
 					{#each data?.flow?.ui?.messages ?? [] as msg}
-					<Alert.Root variant="{msg.type}">
+					<Alert.Root variant="{msg.type}" variantIcon>
 						<Alert.Title>{msg.type === 'error' ? 'Unable to change settings' : ''}</Alert.Title>
 						<Alert.Description>{msg.text}</Alert.Description>
 					</Alert.Root>

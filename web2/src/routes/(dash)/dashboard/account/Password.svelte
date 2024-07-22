@@ -154,10 +154,10 @@
 			<form method="POST" use:enhance class="grid gap-4">
 				{#if currentFlowForm === 'password'}
 					{#each data?.flow?.ui?.messages ?? [] as msg}
-					<Alert.Root variant="{msg.type}">
-						<Alert.Title>{msg.type === 'error' ? 'Unable to change password' : ''}</Alert.Title>
-						<Alert.Description>{msg.text}</Alert.Description>
-					</Alert.Root>
+						<Alert.Root variant={msg.type} variantIcon>
+							<Alert.Title>{msg.type === 'error' ? 'Unable to change password' : ''}</Alert.Title>
+							<Alert.Description>{msg.text}</Alert.Description>
+						</Alert.Root>
 					{/each}
 				{/if}
 

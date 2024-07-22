@@ -150,10 +150,10 @@
 			<div class="grid gap-4">
 				<form method="POST" use:enhance class="grid gap-4">
 					{#each data?.flow?.ui?.messages ?? [] as msg}
-					<Alert.Root variant="{msg.type}">
-						<Alert.Title>{msg.type === 'error' ? 'Unable to verify account' : ''}</Alert.Title>
-						<Alert.Description>{msg.text}</Alert.Description>
-					</Alert.Root>
+						<Alert.Root variant={msg.type} variantIcon>
+							<Alert.Title>{msg.type === 'error' ? 'Unable to verify account' : ''}</Alert.Title>
+							<Alert.Description>{msg.text}</Alert.Description>
+						</Alert.Root>
 					{/each}
 
 					<div class="grid gap-2">

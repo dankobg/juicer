@@ -48,7 +48,7 @@
 		<Card.Content class="grid gap-4">
 			{#if socialsAction === 'link' || socialsAction === 'unlink'}
 				{#each data?.flow?.ui?.messages ?? [] as msg}
-					<Alert.Root variant={msg.type}>
+					<Alert.Root variant={msg.type} variantIcon>
 						<Alert.Title>{msg.type === 'error' ? `Unable to ${socialsAction} account` : ''}</Alert.Title>
 						<Alert.Description>{msg.text}</Alert.Description>
 					</Alert.Root>
