@@ -20,6 +20,7 @@
 	import { mediaQuery } from 'svelte-legos';
 	import { page } from '$app/stores';
 	import type { LayoutData } from '../$types';
+	import { getInitials } from '$lib/helpers/initials';
 
 	export let data: LayoutData;
 
@@ -99,7 +100,7 @@
 							<Collapsible.Root class="w-full">
 								<Collapsible.Trigger class="w-full">
 									<span
-										class="text-muted-foreground hover:text-primary flex w-full items-center gap-3 rounded-lg px-3 py-2 transition-all"
+										class="text-muted-foreground hover:text-primary flex w-full items-center gap-3 rounded-lg px-3 py-2 transition-all transition-all"
 										class:text-primary={$page.url.pathname.startsWith(item.pattern)}
 										class:bg-muted={$page.url.pathname.startsWith(item.pattern)}
 									>
@@ -112,7 +113,7 @@
 									{#each item.items as nested}
 										<a
 											href={nested.href}
-											class="text-muted-foreground hover:text-primary ml-8 flex items-center gap-3 rounded-lg px-3 py-2 transition-all"
+											class="text-muted-foreground hover:text-primary ml-8 flex items-center gap-3 rounded-lg px-3 py-2 transition-all transition-all"
 											class:text-primary={$page.url.pathname === nested.href}
 											class:bg-muted={$page.url.pathname === nested.href}
 										>
@@ -124,7 +125,7 @@
 						{:else}
 							<a
 								href={item.href}
-								class="text-muted-foreground hover:text-primary flex items-center gap-3 rounded-lg px-3 py-2 transition-all"
+								class="text-muted-foreground hover:text-primary flex items-center gap-3 rounded-lg px-3 py-2 transition-all transition-all"
 								class:text-primary={$page.url.pathname === item.href}
 								class:bg-muted={$page.url.pathname === item.href}
 							>
@@ -138,7 +139,7 @@
 			<div class="mt-auto p-4">
 				<a
 					href={data.logoutUrl}
-					class="text-muted-foreground hover:text-primary flex items-center gap-3 rounded-lg px-3 py-2 transition-all"
+					class="text-muted-foreground hover:text-primary flex items-center gap-3 rounded-lg px-3 py-2 transition-all transition-all"
 				>
 					<Logout class="h-4 w-4" />
 					Logout
@@ -167,7 +168,7 @@
 								<Collapsible.Root class="w-full">
 									<Collapsible.Trigger class="w-full">
 										<span
-											class="text-muted-foreground hover:text-foreground mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2"
+											class="text-muted-foreground hover:text-primary mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 transition-all"
 										>
 											<BookOpen class="h-4 w-4" />
 											{item.label}
@@ -178,7 +179,8 @@
 										{#each item.items as nested}
 											<a
 												href={nested.href}
-												class="text-muted-foreground hover:text-foreground mx-[-0.65rem] ml-8 flex items-center gap-4 rounded-xl px-3 py-2"
+												class="text-muted-foreground hover:text-primary mx-[-0.65rem] ml-8 flex items-center gap-4 rounded-xl px-3 py-2 transition-all"
+												class:text-primary={$page.url.pathname === nested.href}
 											>
 												{nested.label}
 											</a>
@@ -188,7 +190,8 @@
 							{:else}
 								<a
 									href={item.href}
-									class="text-muted-foreground hover:text-foreground mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2"
+									class="text-muted-foreground hover:text-primary mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 transition-all"
+									class:text-primary={$page.url.pathname === item.href}
 								>
 									<svelte:component this={item.icon} class="h-4 w-4" />
 									{item.label}
@@ -199,7 +202,7 @@
 					<div class="mt-auto">
 						<a
 							href={data.logoutUrl}
-							class="text-muted-foreground hover:text-primary flex items-center gap-3 rounded-lg px-3 py-2 text-lg font-medium transition-all"
+							class="text-muted-foreground hover:text-primary flex items-center gap-3 rounded-lg px-3 py-2 text-lg font-medium transition-all transition-all"
 						>
 							<Logout class="h-4 w-4" />
 							Logout
@@ -250,15 +253,25 @@
 				<DropdownMenu.Trigger asChild let:builder>
 					<Button builders={[builder]} variant="secondary" size="icon" class="rounded-full">
 						<Avatar.Root>
-							<Avatar.Image src="https://github.com/shadcn.png" alt="@shadcn" />
-							<Avatar.Fallback>CN</Avatar.Fallback>
+							<Avatar.Image src={data.auth.user?.avatarUrl} alt="user avatar" />
+							<Avatar.Fallback class="text-md bg-orange-500/80 font-bold">
+								{getInitials(data.auth.user?.fullName || data.auth.user?.email)}
+							</Avatar.Fallback>
 						</Avatar.Root>
 						<span class="sr-only">Toggle user menu</span>
 					</Button>
 				</DropdownMenu.Trigger>
 				<DropdownMenu.Content align="end">
-					<DropdownMenu.Label>{data.auth.user?.email}</DropdownMenu.Label>
-					<DropdownMenu.Separator />
+					{#if data.auth.user?.email}
+						<DropdownMenu.Label>{data.auth.user.email}</DropdownMenu.Label>
+						<DropdownMenu.Separator />
+					{/if}
+
+					{#if data.auth.user?.fullName || data.auth.user?.email}
+						<DropdownMenu.Label>{data.auth.user?.fullName || data.auth.user?.email}</DropdownMenu.Label>
+						<DropdownMenu.Separator />
+					{/if}
+
 					<DropdownMenu.Item href="/dashboard/account">Account</DropdownMenu.Item>
 					<DropdownMenu.Separator />
 					<DropdownMenu.Item href={data.logoutUrl}>Logout</DropdownMenu.Item>

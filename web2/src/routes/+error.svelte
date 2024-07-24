@@ -1,9 +1,16 @@
-<script lang="ts">
-	import { Button } from '$lib/components/ui/button/index.js';
-</script>
+<main class="bg-background grid h-screen place-content-center px-4">
+	<div class="text-center">
+		<h1 class="text-primary-200 text-9xl font-black">404</h1>
 
-<main class="flex h-screen w-full flex-col items-center justify-center bg-[#1A2238]">
-	<h1 class="text-4xl font-extrabold tracking-widest text-white min-[480px]:text-9xl">404</h1>
-	<div class="absolute rotate-12 rounded bg-[#FF6A3D] px-2 text-sm">Page Not Found</div>
-	<Button href="/">Back to home page</Button>
+		<p class="text-primary-900 text-2xl font-bold tracking-tight sm:text-4xl">Uh-oh!</p>
+
+		<p class="text-primary-500 mt-4">We can't find that page.</p>
+
+		<a
+			href="/"
+			class="mt-6 inline-block rounded-full bg-orange-600 px-5 py-3 text-sm font-medium text-white hover:bg-orange-700 focus:outline-none focus:ring"
+		>
+			Go Back Home
+		</a>
+	</div>
 </main>

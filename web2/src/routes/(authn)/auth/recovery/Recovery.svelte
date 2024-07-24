@@ -19,6 +19,7 @@
 	import * as Card from '$lib/components/ui/card';
 	import * as Alert from '$lib/components/ui/alert';
 	import * as Form from '$lib/components/ui/form';
+	import { OTPInput, OTPRoot } from '$lib/components/ui/opt/index';
 
 	export let data: PageData;
 
@@ -167,9 +168,30 @@
 						{#if codeSentToEmail}
 							<Form.Field form={supForm} name="code">
 								<Form.Control let:attrs>
-									<Form.Label>E-Mail</Form.Label>
-									<Input type="Recovery code" {...attrs} bind:value={$form.code} />
+									<Form.Label>Code</Form.Label>
+									<OTPRoot
+										{...attrs}
+										bind:value={$form.code}
+										inputName="code"
+										inputType="numeric"
+										pattern="digits"
+										maxLength={6}
+										autoFocus={true}
+										formatPasteData={d => d.trim()}
+										className="h-9 w-full"
+									>
+										<div class="flex items-center">
+											{#each Array(6) as _, idx (idx)}
+												<OTPInput
+													index={idx}
+													className="relative flex h-9 w-full items-center justify-center border-y border-r border-input text-2xl transition-all first:rounded-l-md first:border-l last:rounded-r-md"
+													focusClassName="z-10 ring-2 ring-ring ring-offset-background"
+												/>
+											{/each}
+										</div>
+									</OTPRoot>
 								</Form.Control>
+								<Form.Description />
 								<Form.FieldErrors />
 							</Form.Field>
 						{:else}

@@ -1,1 +1,1 @@
-LOBBY PAGE
+<h1>LOBBY PAGE</h1>

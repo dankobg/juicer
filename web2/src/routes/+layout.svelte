@@ -11,4 +11,5 @@
 
 <ModeWatcher />
 <Toaster position="top-center" richColors />
+
 <slot />
