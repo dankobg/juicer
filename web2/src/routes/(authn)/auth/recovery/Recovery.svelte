@@ -19,7 +19,7 @@
 	import * as Card from '$lib/components/ui/card';
 	import * as Alert from '$lib/components/ui/alert';
 	import * as Form from '$lib/components/ui/form';
-	import { OTPInput, OTPRoot } from '$lib/components/ui/opt/index';
+	import { OTPInput, OTPRoot } from '$lib/components/ui/otp/index';
 
 	export let data: PageData;
 

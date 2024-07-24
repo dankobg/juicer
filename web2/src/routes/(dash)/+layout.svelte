@@ -84,9 +84,9 @@
 	}
 </script>
 
-<div class="grid min-h-screen w-full md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr]">
-	<div class="bg-muted/40 hidden border-r md:block">
-		<div class="flex h-full max-h-screen flex-col gap-2">
+<div class="mx-auto grid min-h-screen w-full max-w-[1920px] md:grid-cols-[220px_1fr] lg:grid-cols-[250px_1fr]">
+	<div class="bg-muted hidden border-r md:block">
+		<div class="sticky left-0 top-0 flex h-full max-h-screen flex-col gap-2">
 			<div class="flex h-14 items-center border-b px-4 lg:h-[60px] lg:px-6">
 				<a href="/" class="flex items-center gap-2 font-semibold">
 					<img src="/images/logo.svg" alt="logo" class="h-8 w-8 object-cover" />
@@ -148,7 +148,7 @@
 		</div>
 	</div>
 	<div class="flex flex-col">
-		<header class="bg-muted/40 flex h-14 items-center gap-4 border-b px-4 lg:h-[60px] lg:px-6">
+		<header class="bg-muted sticky top-0 flex h-14 items-center gap-4 border-b px-4 lg:h-[60px] lg:px-6">
 			<Sheet.Root>
 				<Sheet.Trigger asChild let:builder>
 					<Button variant="outline" size="icon" class="shrink-0 md:hidden" builders={[builder]}>
@@ -262,11 +262,6 @@
 					</Button>
 				</DropdownMenu.Trigger>
 				<DropdownMenu.Content align="end">
-					{#if data.auth.user?.email}
-						<DropdownMenu.Label>{data.auth.user.email}</DropdownMenu.Label>
-						<DropdownMenu.Separator />
-					{/if}
-
 					{#if data.auth.user?.fullName || data.auth.user?.email}
 						<DropdownMenu.Label>{data.auth.user?.fullName || data.auth.user?.email}</DropdownMenu.Label>
 						<DropdownMenu.Separator />

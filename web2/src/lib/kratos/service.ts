@@ -50,6 +50,9 @@ export function createSessionService(session: Session | null): SessionService {
 			get isEmployee(): boolean {
 				return this.role === 'employee';
 			},
-		},
+			get fullName(): string {
+				return `${this.firstName || ''}${this.lastName ? ` ${this.lastName}` : ''}`.trim();
+			}
+		}
 	};
 }

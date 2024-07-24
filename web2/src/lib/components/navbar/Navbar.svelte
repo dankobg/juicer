@@ -14,7 +14,7 @@
 	export let user: User | undefined;
 </script>
 
-<header class="bg-background sticky top-0 flex h-16 max-w-screen-xl items-center gap-4 px-4 md:mx-auto md:px-6">
+<header class="bg-background sticky top-0 flex h-16 max-w-[1920px] items-center gap-4 px-4 md:mx-auto md:px-6">
 	<nav
 		class="hidden w-full flex-col gap-6 text-lg font-medium md:flex md:flex-row md:items-center md:justify-start md:gap-5 md:text-sm lg:gap-6"
 	>
