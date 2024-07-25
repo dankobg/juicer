@@ -21,6 +21,7 @@
 	import { page } from '$app/stores';
 	import type { LayoutData } from '../$types';
 	import { getInitials } from '$lib/helpers/initials';
+	import DarkmodeDropdown from '$lib/components/darkmode/DarkmodeDropdown.svelte';
 
 	export let data: LayoutData;
 
@@ -214,7 +215,7 @@
 
 			<Popover.Root>
 				<Popover.Trigger>
-					<Button variant="outline" size="icon" class="ml-auto h-8 w-8">
+					<Button variant="outline" size="icon" class="ml-auto ">
 						<Bell class="h-4 w-4" />
 						<span class="sr-only">Toggle notifications</span>
 					</Button>
@@ -248,6 +249,8 @@
 					</div>
 				</Popover.Content>
 			</Popover.Root>
+
+			<DarkmodeDropdown />
 
 			<DropdownMenu.Root>
 				<DropdownMenu.Trigger asChild let:builder>

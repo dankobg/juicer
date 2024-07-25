@@ -9,6 +9,7 @@
 	import { page } from '$app/stores';
 	import { navItems } from './navitems';
 	import type { User } from '$lib/kratos/service';
+	import DarkmodeDropdown from '../darkmode/DarkmodeDropdown.svelte';
 
 	export let logoutUrl: string | undefined;
 	export let user: User | undefined;
@@ -57,6 +58,8 @@
 	</Sheet.Root>
 
 	<div class="ml-auto flex items-center gap-4 md:gap-2 lg:gap-4">
+		<DarkmodeDropdown />
+
 		{#if user}
 			<DropdownMenu.Root>
 				<DropdownMenu.Trigger asChild let:builder>
