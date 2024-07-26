@@ -85,7 +85,7 @@
 	}
 </script>
 
-<div class="mx-auto grid min-h-screen w-full max-w-[1920px] md:grid-cols-[220px_1fr] lg:grid-cols-[250px_1fr]">
+<div class="mx-auto grid min-h-screen w-full max-w-[1920px] md:grid-cols-[220px_1fr] lg:grid-cols-[240px_1fr]">
 	<div class="bg-muted hidden border-r md:block">
 		<div class="sticky left-0 top-0 flex h-full max-h-screen flex-col gap-2">
 			<div class="flex h-14 items-center border-b px-4 lg:h-[60px] lg:px-6">
@@ -149,7 +149,7 @@
 		</div>
 	</div>
 	<div class="flex flex-col">
-		<header class="bg-muted sticky top-0 flex h-14 items-center gap-4 border-b px-4 lg:h-[60px] lg:px-6">
+		<header class="bg-muted sticky top-0 z-10 flex h-14 items-center gap-4 border-b px-4 lg:h-[60px] lg:px-6">
 			<Sheet.Root>
 				<Sheet.Trigger asChild let:builder>
 					<Button variant="outline" size="icon" class="shrink-0 md:hidden" builders={[builder]}>
