@@ -24,19 +24,19 @@
 		.fill(0)
 		.map((_, i) => ({
 			id: crypto.randomUUID(),
-			schema_id: 'customer',
+			schema_id: Math.random() < 0.5 ? 'customer' : 'employee',
 			email: 'test@test.com',
-			last_name: 'Last' + (i + 1),
-			first_name: 'First' + (i + 1),
+			first_name: `First ${i + 1}`,
+			last_name: `Last ${i + 1}`,
 			avatar_url: 'https://lh3.googleusercontent.com/a/ACg8ocLRu3aq_ujewp1GIpwyc6L-8C4jPw6nUCqbP70lHVUV1TcZYko=s96-c',
 			created_at: new Date(),
 			updated_at: new Date(),
 			nid: crypto.randomUUID(),
-			state: Math.random() < 0.3 ? 'disabled' : 'active',
+			state: Math.random() < 0.3 ? 'inactive' : 'active',
 			state_changed_at: new Date(),
 			metadata_public: null,
 			metadata_admin: null,
-			available_aal: 'aal1',
+			available_aal: Math.random() < 0.1 ? 'aal2' : 'aal1',
 			organization_id: null
 		}));
 
@@ -47,7 +47,7 @@
 		sort: addSortBy({ disableMultiSort: true }),
 		page: addPagination({ initialPageSize: perPageSelected.value }),
 		filter: addTableFilter({
-			fn: ({ filterValue, value }) => value.toLowerCase().includes(filterValue)
+			fn: ({ filterValue, value }) => value.toLowerCase().includes(filterValue.toLowerCase())
 		}),
 		select: addSelectedRows(),
 		hide: addHiddenColumns()
@@ -75,55 +75,54 @@
 		table.column({
 			header: 'Schema ID',
 			accessor: 'schema_id',
-			plugins: { sort: { disable: true }, filter: { exclude: true } }
+			plugins: { sort: { disable: false }, filter: { exclude: true } }
 		}),
 		table.column({
 			header: 'First name',
 			accessor: 'first_name',
-			plugins: { sort: { disable: true }, filter: { exclude: true } }
+			plugins: { sort: { disable: false }, filter: { exclude: false } }
 		}),
 		table.column({
 			header: 'Last name',
 			accessor: 'last_name',
-			plugins: { sort: { disable: true }, filter: { exclude: true } }
+			plugins: { sort: { disable: false }, filter: { exclude: false } }
 		}),
 		table.column({
 			header: 'E-Mail',
 			accessor: 'email',
-			plugins: { sort: { disable: true }, filter: { exclude: true } }
+			plugins: { sort: { disable: false }, filter: { exclude: false } }
 		}),
 		table.column({
 			header: 'NID',
 			accessor: 'nid',
-			plugins: { sort: { disable: true }, filter: { exclude: true } }
+			plugins: { sort: { disable: false }, filter: { exclude: true } }
 		}),
 		table.column({
 			header: 'State',
-			accessor: 'state',
-			plugins: { sort: { disable: true }, filter: { exclude: true } }
+			accessor: 'state'
 		}),
 		table.column({
 			header: 'State changed at',
 			accessor: 'state_changed_at',
 			cell: ({ value }) => value?.toLocaleDateString(undefined, { hourCycle: 'h23' }) ?? '',
-			plugins: { sort: { disable: true }, filter: { exclude: true } }
+			plugins: { sort: { disable: false }, filter: { exclude: true } }
 		}),
 		table.column({
 			header: 'Available aal',
 			accessor: 'available_aal',
-			plugins: { sort: { disable: true }, filter: { exclude: true } }
+			plugins: { sort: { disable: false }, filter: { exclude: true } }
 		}),
 		table.column({
 			header: 'Created at',
 			accessor: 'created_at',
 			cell: ({ value }) => value?.toLocaleDateString(undefined, { hourCycle: 'h23' }) ?? '',
-			plugins: { sort: { disable: true }, filter: { exclude: true } }
+			plugins: { sort: { disable: false }, filter: { exclude: true } }
 		}),
 		table.column({
 			header: 'Updated at',
 			accessor: 'updated_at',
 			cell: ({ value }) => value?.toLocaleDateString(undefined, { hourCycle: 'h23' }) ?? '',
-			plugins: { sort: { disable: true }, filter: { exclude: true } }
+			plugins: { sort: { disable: false }, filter: { exclude: true } }
 		}),
 		table.column({
 			header: 'Actions',
@@ -131,7 +130,7 @@
 			cell: item => {
 				return createRender(DataTableActions, { id: item.value });
 			},
-			plugins: { sort: { disable: true } }
+			plugins: { sort: { disable: true }, filter: { exclude: true } }
 		})
 	]);
 
