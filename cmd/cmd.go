@@ -75,7 +75,10 @@ func Run(publicFiles, templateFiles fs.FS) error {
 	}
 
 	kratosClient := kratos.NewClient(cfg.KratosPublicURL, cfg.KratosAdminURL)
-	ketoClient := keto.NewClient()
+	ketoClient, err := keto.NewClient()
+	if err != nil {
+		return err
+	}
 
 	hub := server.NewHub(logger, rdb)
 

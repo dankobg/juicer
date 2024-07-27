@@ -77,7 +77,6 @@ services:
     restart: unless-stopped
     volumes:
       - ./ory/keto:/etc/config/keto
-      - ./ory/keto/relation-tuples:/relation-tuples
     command: ["serve", "-c", "/etc/config/keto/keto.yaml", "all"]
     networks:
       - intranet
@@ -92,7 +91,6 @@ services:
     restart: on-failure
     volumes:
       - ./ory/keto:/etc/config/keto
-      - ./ory/keto/relation-tuples:/relation-tuples
     command: ["migrate", "up", "-c", "/etc/config/keto/keto.yaml", "--yes"]
     networks:
       - intranet

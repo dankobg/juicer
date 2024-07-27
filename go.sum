@@ -61,6 +61,8 @@ github.com/ory/keto/proto v0.13.0-alpha.0 h1:9ZzjDbaBgriHGVC8fUJKD1pDqQ9nHEFOO3b
 github.com/ory/keto/proto v0.13.0-alpha.0/go.mod h1:6RagCXA7X1hhFSVjcy13ruIo8Dq/nj4J0mcN92qL+hY=
 github.com/ory/keto/proto v0.13.0-alpha.0.0.20240718144934-d670d508a618 h1:34JKHUDfDaPI4BBJph9OSMDj9beKZULdgtTqYb0N/Ko=
 github.com/ory/keto/proto v0.13.0-alpha.0.0.20240718144934-d670d508a618/go.mod h1:r060ciW8gaEnMNt6FkGNQKTzpYaeyofKUfn/AgDNUqQ=
+github.com/ory/keto/proto v0.13.0-alpha.0.0.20240724130948-6f5ee2ebdab3 h1:53p9eVK9GIFRrrfyI1WwqBGrzvl5lg0uLyq2ZCH7Vro=
+github.com/ory/keto/proto v0.13.0-alpha.0.0.20240724130948-6f5ee2ebdab3/go.mod h1:r060ciW8gaEnMNt6FkGNQKTzpYaeyofKUfn/AgDNUqQ=
 github.com/pkg/diff v0.0.0-20210226163009-20ebb0f2a09e/go.mod h1:pJLUxLENpZxwdsKMEsNbx1VGcRFpLqf3715MtcvvzbA=
 github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=

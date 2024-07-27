@@ -31,7 +31,7 @@ require (
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
-	github.com/ory/keto/proto v0.13.0-alpha.0.0.20240718144934-d670d508a618 // indirect
+	github.com/ory/keto/proto v0.13.0-alpha.0.0.20240724130948-6f5ee2ebdab3 // indirect
 	github.com/rogpeppe/go-internal v1.10.0 // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	github.com/valyala/fasttemplate v1.2.2 // indirect
