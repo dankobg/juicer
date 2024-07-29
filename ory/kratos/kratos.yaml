@@ -113,33 +113,38 @@ selfservice:
         default_browser_return_url: https://juicer-dev.xyz/auth/login
         password:
           default_browser_return_url: https://juicer-dev.xyz/auth/login
-          # hooks:
-          #   - hook: web_hook
-          #     config:
-          #       method: POST
-          #       # @TODO LATER
-          #       # url: http://juicer-api:1337/api/v1/webhooks/kratos/registration_after_password
-          #       url: https://juicer.co/api/v1/webhooks/kratos/registration_after_password
-          #       body: file:///etc/config/kratos/hooks/registration.after.password.jsonnet
-          #       can_interrupt: false
-          #       response:
-          #         ignore: false
-          #         parse: false
+          hooks:
+            - hook: web_hook
+              config:
+                method: POST
+                url: http://juicer:1337/api/v1/webhooks/kratos/registration_after_password
+                body: file:///etc/config/kratos/hooks/registration.after.password.jsonnet
+                response:
+                  ignore: false
+                  parse: false
+                auth:
+                  type: api_key
+                  config:
+                    in: header
+                    name: Authorization
+                    value: v3Ry_s3Cr3t_tExT
         oidc:
           default_browser_return_url: https://juicer-dev.xyz
           hooks:
-            - hook: session
-            # - hook: web_hook
-            #   config:
-            #     method: POST
-            #     # @TODO LATER
-            #     # url: http://juicer-api:1337/api/v1/webhooks/kratos/registration_after_oidc
-            #     url: https://juicer.co/api/v1/webhooks/kratos/registration_after_oidc
-            #     body: file:///etc/config/kratos/hooks/registration.after.oidc.jsonnet
-            #     can_interrupt: false
-            #     response:
-            #       ignore: false
-            #       parse: false
+            - hook: web_hook
+              config:
+                method: POST
+                url: http://juicer:1337/api/v1/webhooks/kratos/registration_after_oidc
+                body: file:///etc/config/kratos/hooks/registration.after.oidc.jsonnet
+                response:
+                  ignore: false
+                  parse: false
+                auth:
+                  type: api_key
+                  config:
+                    in: header
+                    name: Authorization
+                    value: v3Ry_s3Cr3t_tExT
 
 secrets:
   cookie:

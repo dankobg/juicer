@@ -82,7 +82,7 @@ func Run(publicFiles, templateFiles fs.FS) error {
 
 	hub := server.NewHub(logger, rdb)
 
-	apiHandler := server.NewApiHandler(logger, rdb, kratosClient, ketoClient, smtpClient, hub)
+	apiHandler := server.NewApiHandler(cfg, logger, rdb, kratosClient, ketoClient, smtpClient, hub)
 	apiHandler.Echo.Renderer = tr
 
 	rootCtx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT, syscall.SIGHUP)

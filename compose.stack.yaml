@@ -107,8 +107,7 @@ services:
       - .env
     environment:
       - ENV=production
-    command:
-      ["serve", "--watch-courier", "--config", "/etc/config/kratos/kratos.yaml"]
+    command: "serve --watch-courier --config /etc/config/kratos/kratos.yaml"
     ports:
       - "${KRATOS_PUBLIC_PORT:?Please provide KRATOS_PUBLIC_PORT env var}:4433"
       - "${KRATOS_ADMIN_PORT:?Please provide KRATOS_ADMIN_PORT env var}:4434"

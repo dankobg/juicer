@@ -40,8 +40,7 @@ services:
   kratos:
     image: oryd/kratos:v1.2.0
     restart: unless-stopped
-    command:
-      ["serve", "--watch-courier", "--config", "/etc/config/kratos/kratos.yaml"]
+    command: "serve --watch-courier --config /etc/config/kratos/kratos.yaml"
     volumes:
       - ./ory/kratos:/etc/config/kratos
     networks:
@@ -57,15 +56,7 @@ services:
     restart: on-failure
     volumes:
       - ./ory/kratos:/etc/config/kratos
-    command:
-      [
-        "migrate",
-        "sql",
-        "--read-from-env",
-        "--config",
-        "/etc/config/kratos/kratos.yaml",
-        "--yes",
-      ]
+    command: "migrate sql --read-from-env --config /etc/config/kratos/kratos.yaml --yes"
     networks:
       - intranet
     depends_on:
@@ -77,7 +68,7 @@ services:
     restart: unless-stopped
     volumes:
       - ./ory/keto:/etc/config/keto
-    command: ["serve", "-c", "/etc/config/keto/keto.yaml", "all"]
+    command: "serve -c /etc/config/keto/keto.yaml all"
     networks:
       - intranet
     depends_on:
@@ -91,7 +82,7 @@ services:
     restart: on-failure
     volumes:
       - ./ory/keto:/etc/config/keto
-    command: ["migrate", "up", "-c", "/etc/config/keto/keto.yaml", "--yes"]
+    command: "migrate up -c /etc/config/keto/keto.yaml --yes"
     networks:
       - intranet
     depends_on:

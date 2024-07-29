@@ -2,10 +2,6 @@ version: v0.12.0
 
 dsn: postgres://test:test@pg:5432/test?sslmode=disable&max_conns=20&max_idle_conns=4
 
-# namespaces:
-#   - id: 0
-#     name: default-namespace
-
 namespaces:
   location: file:///etc/config/keto/policies
 

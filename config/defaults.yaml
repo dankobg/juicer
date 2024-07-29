@@ -5,6 +5,8 @@ base_url: https://juicer-dev.xyz
 website_url: https://juicer-dev.xyz
 kratos_public_url: http://kratos:4433
 kratos_admin_url: http://kratos:4434
+kratos_api_key: v3Ry_s3Cr3t_tExT
+keto_api_key: v3Ry_s3Cr3t_tExT
 
 server:
   read_header_timeout: 5s

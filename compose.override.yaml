@@ -144,14 +144,7 @@ services:
       - ENV=development
     env_file:
       - .env
-    command:
-      [
-        "serve",
-        "--watch-courier",
-        "--config",
-        "/etc/config/kratos/kratos.yaml",
-        "--dev",
-      ]
+    command: "serve --watch-courier --config /etc/config/kratos/kratos.yaml --dev"
     ports:
       - "${KRATOS_PUBLIC_PORT:-4433}:4433"
       - "${KRATOS_ADMIN_PORT:-4434}:4434"

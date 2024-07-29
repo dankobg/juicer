@@ -212,11 +212,11 @@ pg-dropall:
 
 # Import kratos identities
 kratos-import-identities:
-	docker exec kratos /bin/sh -c "cd /etc/config/kratos/imports && kratos import identity employees.json customers.json -e http://127.0.0.1:4434"
+	docker compose exec kratos /bin/sh -c "cd /etc/config/kratos/imports && kratos import identity employees.json customers.json -e http://127.0.0.1:4434"
 
 # Create keto relation tuples
 keto-create-tuples:
-	docker exec keto /bin/sh -c "keto relation-tuple create /etc/config/keto/relation-tuples -c /etc/config/keto/keto.yaml"
+	docker compose exec keto /bin/sh -c "keto relation-tuple create /etc/config/keto/relation-tuples -c /etc/config/keto/keto.yaml --format json --insecure-disable-transport-security"
 
 # ----------------------------------------------------------------------------
 

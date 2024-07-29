@@ -1,1 +1,3 @@
-function(ctx) { identity: ctx.identity }
+function(ctx) { 
+  identity: ctx.identity
+}

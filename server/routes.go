@@ -47,4 +47,7 @@ func SetupRoutes(mux *echo.Echo, h *ApiHandler, publicFiles fs.FS) {
 
 	api.GET("/health/alive", h.health)
 	api.GET("/health/ready", h.ready)
+
+	api.POST("/webhooks/kratos/registration_after_password", h.registrationAfterPassword)
+	api.POST("/webhooks/kratos/registration_after_oidc", h.registrationAfterOidc)
 }

@@ -32,6 +32,8 @@ type Juicer struct {
 	WebsiteURL      string `koanf:"website_url"`
 	KratosPublicURL string `koanf:"kratos_public_url"`
 	KratosAdminURL  string `koanf:"kratos_admin_url"`
+	KratosAPIKey    string `koanf:"kratos_api_key"`
+	KetoAPIKey      string `koanf:"kratos_api_key"`
 }
 
 // ServerConfig contains the http server settings

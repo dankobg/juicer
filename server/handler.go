@@ -4,6 +4,7 @@ import (
 	"log/slog"
 	"net/http"
 
+	"github.com/dankobg/juicer/config"
 	"github.com/dankobg/juicer/keto"
 	"github.com/dankobg/juicer/kratos"
 	"github.com/dankobg/juicer/mailer"
@@ -12,6 +13,7 @@ import (
 )
 
 type ApiHandler struct {
+	Cfg    *config.Config
 	Log    *slog.Logger
 	Kratos *kratos.Client
 	Keto   *keto.Client
@@ -21,11 +23,12 @@ type ApiHandler struct {
 	Mailer mailer.Mailer
 }
 
-func NewApiHandler(log *slog.Logger, rdb *redis.Client, kratos *kratos.Client, keto *keto.Client, mailer mailer.Mailer, hub *hub) *ApiHandler {
+func NewApiHandler(cfg *config.Config, log *slog.Logger, rdb *redis.Client, kratos *kratos.Client, keto *keto.Client, mailer mailer.Mailer, hub *hub) *ApiHandler {
 	e := echo.New()
 	e.HideBanner = true
 
 	return &ApiHandler{
+		Cfg:    cfg,
 		Log:    log,
 		Kratos: kratos,
 		Keto:   keto,
