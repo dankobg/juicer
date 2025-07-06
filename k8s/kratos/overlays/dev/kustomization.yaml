@@ -1,0 +1,17 @@
+kind: Kustomization
+apiVersion: kustomize.config.k8s.io/v1beta1
+
+resources:
+  - ../../base
+
+generators:
+  - kratos-dev-gen.yaml
+
+namespace: dev
+
+# namePrefix: dev-
+
+configMapGenerator:
+  - name: kratos-conf
+    envs:
+      - kratos-dev.conf

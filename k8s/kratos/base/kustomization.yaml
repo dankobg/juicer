@@ -1,0 +1,55 @@
+kind: Kustomization
+apiVersion: kustomize.config.k8s.io/v1beta1
+
+resources:
+  - deploy.yaml
+  - sa.yaml
+  - sts.yaml
+  - svc.yaml
+
+configMapGenerator:
+  - name: kratos-config
+    namespace: dev
+    files:
+      - files/kratos.yaml
+  - name: kratos-identity-schemas
+    namespace: dev
+    files:
+      - files/schemas/customer.identity.schema.json
+      - files/schemas/employee.identity.schema.json
+  - name: kratos-oidc-schemas
+    namespace: dev
+    files:
+      - files/oidc/oidc.discord.jsonnet
+      - files/oidc/oidc.facebook.jsonnet
+      - files/oidc/oidc.github.jsonnet
+      - files/oidc/oidc.google.jsonnet
+      - files/oidc/oidc.slack.jsonnet
+      - files/oidc/oidc.spotify.jsonnet
+      - files/oidc/oidc.twitch.jsonnet
+  - name: kratos-hooks
+    namespace: dev
+    files:
+      - files/hooks/registration.after.oidc.jsonnet
+      - files/hooks/registration.after.password.jsonnet
+  - name: kratos-courier-templates
+    namespace: dev
+    files:
+      - files/courier-templates/otp/sms.body.tmpl
+      - recovery.valid.email.body=files/courier-templates/recovery/valid/email.body.tmpl
+      - recovery.valid.email.body.plaintext=files/courier-templates/recovery/valid/email.body.plaintext.tmpl
+      - recovery.valid.email.subject=files/courier-templates/recovery/valid/email.subject.tmpl
+      - recovery.invalid.email.body=files/courier-templates/recovery/invalid/email.body.tmpl
+      - recovery.invalid.email.body.plaintext=files/courier-templates/recovery/invalid/email.body.plaintext.tmpl
+      - recovery.invalid.email.subject=files/courier-templates/recovery/invalid/email.subject.tmpl
+      - verification.valid.email.body=files/courier-templates/verification/valid/email.body.tmpl
+      - verification.valid.email.body.plaintext=files/courier-templates/verification/valid/email.body.plaintext.tmpl
+      - verification.valid.email.subject=files/courier-templates/verification/valid/email.subject.tmpl
+      - verification.invalid.email.body=files/courier-templates/verification/invalid/email.body.tmpl
+      - verification.invalid.email.body.plaintext=files/courier-templates/verification/invalid/email.body.plaintext.tmpl
+      - verification.invalid.email.subject=files/courier-templates/verification/invalid/email.subject.tmpl
+  - name: kratos-imports
+    namespace: dev
+    files:
+      - files/imports/customers.json
+      - files/imports/employees.json

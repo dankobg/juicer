@@ -1,0 +1,220 @@
+syntax = "proto3";
+
+package pb;
+option go_package = "github.com/dankobg/juicer/pb";
+
+import "google/protobuf/duration.proto";
+import "google/protobuf/timestamp.proto";
+
+enum Color {
+  COLOR_UNSPECIFIED = 0;
+  COLOR_WHITE = 1;
+  COLOR_BLACK = 2;
+}
+
+enum Variant {
+  VARIANT_UNSPECIFIED = 0;
+  VARIANT_STANDARD = 1;
+  VARIANT_ATOMIC = 2;
+  VARIANT_CRAZYHOUSE = 3;
+  VARIANT_CHESS960 = 4;
+  VARIANT_KING_OF_THE_HILL = 5;
+  VARIANT_THREE_CHECK = 6;
+  VARIANT_HORDE = 7;
+  VARIANT_RACING_KINGS = 8;
+}
+
+enum GameTimeKind {
+  GAME_TIME_KIND_UNSPECIFIED = 0;
+  GAME_TIME_KIND_REALTIME = 1;
+  GAME_TIME_KIND_CORRESPONDANCE = 2;
+  GAME_TIME_KIND_UNLIMITED = 3;
+}
+
+enum GameTimeCategory {
+  GAME_TIME_CATEGORY_UNSPECIFIED = 0;
+  GAME_TIME_CATEGORY_HYPERBULLET = 1;
+  GAME_TIME_CATEGORY_BULLET = 2;
+  GAME_TIME_CATEGORY_BLITZ = 3;
+  GAME_TIME_CATEGORY_RAPID = 4;
+  GAME_TIME_CATEGORY_CLASSICAL = 5;
+}
+
+message GameTimeControl {
+  google.protobuf.Duration clock = 1;
+  google.protobuf.Duration increment = 2;
+}
+
+enum GameResult {
+  GAME_RESULT_UNSPECIFIED = 0;
+  GAME_RESULT_WHITE_WON = 1;
+  GAME_RESULT_BLACK_WON = 2;
+  GAME_RESULT_DRAW = 3;
+  GAME_RESULT_INTERRUPTED = 4;
+}
+
+enum GameResultStatus {
+  GAME_RESULT_STATUS_UNSPECIFIED = 0;
+	GAME_RESULT_STATUS_CHECKMATE = 1;
+	GAME_RESULT_STATUS_INSUFFICIENT_MATERIAL = 2;
+	GAME_RESULT_STATUS_THREEFOLD_REPETITION = 3;
+	GAME_RESULT_STATUS_FIVEFOLD_REPETITION = 4;
+	GAME_RESULT_STATUS_FIFTY_MOVE_RULE = 5;
+	GAME_RESULT_STATUS_SEVENTYFIVE_MOVE_RULE = 6;
+	GAME_RESULT_STATUS_STALEMATE = 7;
+	GAME_RESULT_STATUS_RESIGNATION = 8;
+	GAME_RESULT_STATUS_DRAW_AGREED = 9;
+	GAME_RESULT_STATUS_FLAGGED = 10;
+	GAME_RESULT_STATUS_ADJUDICATION = 11;
+	GAME_RESULT_STATUS_TIMED_OUT = 12;
+	GAME_RESULT_STATUS_ABORTED = 13;
+	GAME_RESULT_STATUS_INTERRUPTED = 14;
+}
+
+enum GameState {
+  GAME_STATE_UNSPECIFIED = 0;
+  GAME_STATE_IDLE = 1;
+  GAME_STATE_WAITING_START = 2;
+  GAME_STATE_IN_PROGRESS = 3;
+  GAME_STATE_FINISHED = 4;
+  GAME_STATE_INTERRUPTED = 5;
+}
+
+enum GameSideChoice {
+  GAME_SIDE_CHOICE_UNSPECIFIED = 0;
+  GAME_SIDE_CHOICE_RANDOM = 1;
+  GAME_SIDE_CHOICE_WHITE = 2;
+  GAME_SIDE_CHOICE_BLACK = 3;
+}
+
+message Message {
+  oneof event {
+		Problem problem = 1;
+		ClientConnected client_connected = 2;
+		ClientDisconnected client_disconnected = 3;
+    SeekGame seek_game = 4;
+    CancelSeekGame cancel_seek_game = 5;
+    HubInfo hub_info = 6;
+    MatchFound match_found = 7;
+		GameAbort game_abort = 8;
+    GameOfferDraw game_offer_draw = 9;
+    GameResign game_resign = 10;
+    GameDeclineDraw game_decline_draw = 11;
+    GameAcceptDraw game_accept_draw = 12;
+    GameChat game_chat = 13;
+    GameChatReceive game_chat_receive = 14;
+    GameChatRetrieve game_chat_retrieve = 15;
+    PlayMoveUCI play_move_uci = 16;
+    ReceiveMove receive_move = 17;
+    GameFinished game_finished = 18;
+  }
+}
+
+message Clocks {  
+  google.protobuf.Duration white = 1;
+  google.protobuf.Duration black = 2;
+}
+
+message Problem {
+	string message = 1;
+}
+
+message ClientConnected {
+  string id = 1;
+}
+
+message ClientDisconnected {
+  string id = 1;
+}
+
+message SeekGame {
+  GameTimeControl timeControl = 1;
+}
+
+message CancelSeekGame {
+  GameTimeControl timeControl = 1;
+}
+
+message HubInfo {
+  int32 lobby = 1;
+  int32 playing = 2;
+}
+
+message OpponentInfo {
+  string username = 9;
+  string avatar_url = 10;
+  int32 rating = 11;
+}
+
+message HistoryMove {
+  string uci = 1;
+  string san = 2;
+}
+
+message HistoryMoveInfo {
+  string fen = 1;
+  optional google.protobuf.Timestamp played_at = 2;
+  optional HistoryMove move = 3;
+  bool check = 4;
+}
+
+message MatchFound {
+  string game_id = 1;
+  string client_id = 2;
+  GameState game_state = 3;
+  Color color = 4;
+  string fen = 5;
+  uint32 ply = 6;
+  Clocks clocks = 7; 
+  repeated string legal_moves = 8;
+  GameTimeControl time_control = 9;
+  optional OpponentInfo opponent_info = 10;
+  int64 reconnect_timeout_ms = 11;
+  int64 firstMove_timeout_ms = 12;
+  repeated HistoryMoveInfo history_move_infos = 13;
+  google.protobuf.Timestamp start_time = 14;
+}
+
+message GameAbort {}
+
+message GameResign {}
+
+message GameOfferDraw {}
+
+message GameDeclineDraw {}
+
+message GameAcceptDraw {}
+
+message GameChat {
+  string message = 1;
+}
+
+message GameChatReceive {
+  string client_id = 1;
+  string id = 2;
+  string message = 3;
+}
+
+message GameChatRetrieve {
+  repeated GameChatReceive game_chat = 1;
+}
+
+message PlayMoveUCI {
+  string move = 1;
+}
+
+message ReceiveMove {
+  string uci = 1;
+  string lan = 2;
+  string san = 3;
+  string fen = 4;
+  uint32 ply = 5;  
+  Clocks clocks = 6; 
+  repeated string legal_moves = 7;
+}
+
+message GameFinished {
+  GameResult game_result = 1;
+  GameResultStatus game_result_status = 2;
+  GameState game_state = 3;
+}
