@@ -21,7 +21,7 @@ require (
 	github.com/redis/go-redis/v9 v9.5.3
 	github.com/wneessen/go-mail v0.4.2
 	google.golang.org/grpc v1.65.0
-	google.golang.org/protobuf v1.34.2
+	google.golang.org/protobuf v1.36.6
 )
 
 require (
