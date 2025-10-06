@@ -1,6 +1,6 @@
 module github.com/dankobg/juicer
 
-go 1.24
+go 1.24.0
 
 require (
 	github.com/getkin/kin-openapi v0.128.0
@@ -19,7 +19,7 @@ require (
 	github.com/ory/client-go v1.13.2
 	github.com/ory/keto/proto v0.13.0-alpha.0.0.20240724130948-6f5ee2ebdab3
 	github.com/redis/go-redis/v9 v9.5.3
-	github.com/wneessen/go-mail v0.4.2
+	github.com/wneessen/go-mail v0.7.2
 	google.golang.org/grpc v1.65.0
 	google.golang.org/protobuf v1.34.2
 )
@@ -55,9 +55,9 @@ require (
 	golang.org/x/crypto v0.27.0 // indirect
 	golang.org/x/net v0.25.0 // indirect
 	golang.org/x/oauth2 v0.21.0 // indirect
-	golang.org/x/sync v0.8.0 // indirect
+	golang.org/x/sync v0.17.0 // indirect
 	golang.org/x/sys v0.25.0 // indirect
-	golang.org/x/text v0.18.0 // indirect
+	golang.org/x/text v0.29.0 // indirect
 	golang.org/x/time v0.5.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240528184218-531527333157 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
