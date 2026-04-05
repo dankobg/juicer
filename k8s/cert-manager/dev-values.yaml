@@ -1,7 +1,0 @@
-installCRDs: true
-
-livenessProbe:
-  enabled: true
-
-prometheus:
-  enabled: false

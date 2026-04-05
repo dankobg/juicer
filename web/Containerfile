@@ -1,4 +1,4 @@
-# ARG NODE_VERSION=23.1-alpine
+# ARG NODE_VERSION=24.9-alpine
 # FROM node:${NODE_VERSION} AS base
 # ENV NODE_ENV=production
 # USER node
@@ -17,7 +17,7 @@
 # CMD ["npm", "run", "build"]
 
 
-ARG NODE_VERSION=23.1-alpine
+ARG NODE_VERSION=24.9-alpine
 FROM node:${NODE_VERSION} AS dev
 ENV NODE_ENV=development
 WORKDIR /app

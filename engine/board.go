@@ -101,7 +101,7 @@ func (b Board) FenPositionPart() string {
 
 			if piece != PieceNone {
 				if emptySquares > 0 {
-					sb.WriteString(fmt.Sprint(emptySquares))
+					fmt.Fprint(&sb, emptySquares)
 					emptySquares = 0
 				}
 
@@ -112,7 +112,7 @@ func (b Board) FenPositionPart() string {
 		}
 
 		if emptySquares > 0 {
-			sb.WriteString(fmt.Sprint(emptySquares))
+			fmt.Fprint(&sb, emptySquares)
 		}
 
 		if r > 0 {

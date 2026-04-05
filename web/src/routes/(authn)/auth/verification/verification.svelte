@@ -49,9 +49,9 @@
 		code: v.pipe(v.string(), v.length(6, 'Code must have exactly 6 characters'))
 	});
 
-	type VerificationFormSchema = v.InferInput<typeof verificationFormSchema>;
+	type VerificationFormInput = v.InferInput<typeof verificationFormSchema>;
 
-	const initialVerificationForm: VerificationFormSchema = {
+	const initialVerificationForm: VerificationFormInput = {
 		code: '',
 		method: 'code',
 		csrf_token: data.csrf ?? ''
@@ -66,7 +66,7 @@
 		autoFocusOnError: 'detect',
 		stickyNavbar: undefined,
 		resetForm: false,
-		async onUpdated({ form }) {
+		async onUpdate({ form }) {
 			if (!form.valid) {
 				toast.error('Invalid form, please fix errors and try again');
 				return;
@@ -106,7 +106,7 @@
 								if (instanceOfVerificationFlow(err)) {
 									data = { ...data, flow: err, csrf: data.csrf ?? '' };
 									const nodes = err.ui.nodes ?? [];
-									const fieldErrors: ValidationErrors<VerificationFormSchema> = {};
+									const fieldErrors: ValidationErrors<VerificationFormInput> = {};
 									for (const node of nodes) {
 										const errMsgs: string[] = [];
 										if (node.attributes.node_type === 'input') {
@@ -176,7 +176,7 @@
 		<Card.Content>
 			<div class="grid gap-4">
 				<form method="POST" use:enhance class="grid gap-4">
-					{#each data?.flow?.ui?.messages ?? [] as msg}
+					{#each data?.flow?.ui?.messages ?? [] as msg (msg.id)}
 						<Alert.Root variant={msg.type === '11184809' ? 'info' : msg.type} icon>
 							<Alert.Title>{msg.type === 'error' ? 'Unable to verify account' : ''}</Alert.Title>
 							<Alert.Description>{msg.text}</Alert.Description>

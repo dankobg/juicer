@@ -1,14 +1,20 @@
 import type { Session } from '@ory/client-fetch';
 
+export type CustomTraits = {
+	email: string;
+	first_name?: string;
+	last_name?: string;
+	avatar_url?: string;
+};
+
 export interface User {
 	id: string;
 	email?: string;
-	username?: string;
 	firstName?: string;
 	lastName?: string;
 	avatarUrl?: string;
 	role?: string;
-	isEmployee?: boolean;
+	isDeveloper?: boolean;
 	fullName?: string;
 }
 
@@ -35,7 +41,6 @@ export function createSessionService(session: Session | null): SessionService {
 		user: {
 			id: session.identity.id,
 			email: session.identity.traits?.email,
-			username: session.identity.traits?.username,
 			firstName: session.identity.traits?.first_name,
 			lastName: session.identity.traits?.last_name,
 			avatarUrl: session.identity.traits?.avatar_url,
@@ -43,14 +48,14 @@ export function createSessionService(session: Session | null): SessionService {
 				switch (session.identity?.schema_id) {
 					case 'default':
 						return 'default';
-					case 'employee':
-						return 'employee';
+					case 'developer':
+						return 'developer';
 					default:
 						return 'default';
 				}
 			},
-			get isEmployee(): boolean {
-				return this.role === 'employee';
+			get isDeveloper(): boolean {
+				return this.role === 'developer';
 			},
 			get fullName(): string {
 				return `${this.firstName || ''}${this.lastName ? ` ${this.lastName}` : ''}`.trim();

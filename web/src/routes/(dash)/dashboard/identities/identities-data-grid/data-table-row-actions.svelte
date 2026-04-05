@@ -16,7 +16,8 @@
 	import { confirmation } from '$lib/components/confirmation-dialog/confirmation-dialog-state.svelte';
 	import { juicer } from '$lib/juicer/client';
 	import { invalidate } from '$app/navigation';
-	import type { Identity } from '$lib/gen/juicer_openapi';
+	import type { components } from '$lib/gen/juicer_openapi';
+	import type { CustomTraits } from '$lib/kratos/service';
 
 	let { row }: { row: Row<TData> } = $props();
 
@@ -35,11 +36,15 @@
 	}
 
 	async function onConfirmDeleteIdentity() {
-		const identity = row.original as Identity;
+		const identity = row.original as components['schemas']['Identity'];
 		try {
-			await juicer.deleteIdentity({ id: identity.id });
+			await juicer.DELETE('/identities/{id}', {
+				params: {
+					path: { id: identity.id }
+				}
+			});
 			toast.success('identity deleted');
-			invalidate('data:identities');
+			invalidate('data:dashboard-identities');
 		} catch (error) {
 			console.log('err', error);
 			toast.error('identity delete failed');
@@ -58,15 +63,15 @@
 </script>
 
 {#snippet deleteIdentityDescriptionSnippet()}
-	{@const identity = row?.original as Identity}
-	{@const email = identity?.traits?.['email']}
+	{@const identity = row?.original as components['schemas']['Identity']}
+	{@const email = (identity?.traits as CustomTraits)?.['email']}
 	This action cannot be undone. This will delete the identity <strong>{email}</strong> completely.
 {/snippet}
 
 <DropdownMenu.Root>
 	<DropdownMenu.Trigger>
 		{#snippet child({ props })}
-			<Button {...props} variant="ghost" class="data-[state=open]:bg-muted flex h-8 w-8 p-0">
+			<Button {...props} variant="ghost" class="flex h-8 w-8 p-0 data-[state=open]:bg-muted">
 				<IconEllipsis />
 				<span class="sr-only">Open Menu</span>
 			</Button>
@@ -85,10 +90,10 @@
 				View
 			</DropdownMenu.Item>
 		</a>
-		<a href="/dashboard/identities/{row.getValue('id')}/edit">
+		<a href="/dashboard/identities/{row.getValue('id')}/update">
 			<DropdownMenu.Item class="cursor-pointer">
 				<IconPen />
-				Edit
+				Update
 			</DropdownMenu.Item>
 		</a>
 		<a href="/dashboard/identities/{row.getValue('id')}/sessions">

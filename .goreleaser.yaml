@@ -14,7 +14,7 @@ builds:
     env:
       - CGO_ENABLED=0
     binary: juicer
-    main: ./main.go
+    main: main.go serve
     goos:
       - linux
       # - windows

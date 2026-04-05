@@ -1,5 +1,5 @@
 {
-  description = "Juicer dev environment";
+  description = "juicer dev environment";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
@@ -37,20 +37,17 @@
                 # impl
                 # docker
                 # docker-compose
-                # protobuf
+                protobuf
                 protoc-gen-go
-                air
-                # atlas
-                oapi-codegen
-                go-jet
                 # just
                 # nodejs_24
                 # caddy
-                # jdk
               ];
 
               shellHook = ''
-                echo "*** YOU ARE IN JUICER DEV ENVIRONMENT ***"
+                echo "-----------------------------------"
+                echo "You are in juicer DEV environment"
+                echo "-----------------------------------"
               '';
             };
           };

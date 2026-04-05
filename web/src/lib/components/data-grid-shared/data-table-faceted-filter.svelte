@@ -25,9 +25,10 @@
 			// eslint-disable-next-line @typescript-eslint/no-explicit-any
 			icon?: any;
 		}[];
+		onFacetChange?: (selected: boolean, option: { label: string; value: string }) => void;
 	};
 
-	let { column, title, options }: Props<TData, TValue> = $props();
+	let { column, title, options, onFacetChange }: Props<TData, TValue> = $props();
 
 	const facets = $derived(column?.getFacetedUniqueValues());
 	const selectedValues = $derived(new SvelteSet(column?.getFilterValue() as string[]));
@@ -78,11 +79,12 @@
 								}
 								const filterValues = Array.from(selectedValues);
 								column?.setFilterValue(filterValues.length ? filterValues : undefined);
+								onFacetChange?.(isSelected, { label: option.label, value: option.value });
 							}}
 						>
 							<div
 								class={cn(
-									'border-primary mr-2 flex size-4 items-center justify-center rounded-sm border',
+									'mr-2 flex size-4 items-center justify-center rounded-sm border border-primary',
 									isSelected ? 'bg-primary text-primary-foreground' : 'opacity-50 [&_svg]:invisible'
 								)}
 							>
@@ -94,11 +96,11 @@
 							{/if}
 
 							<span>{option.label}</span>
-							{#if facets?.get(option.value)}
+							<!-- {#if facets?.get(option.value)}
 								<span class="ml-auto flex size-4 items-center justify-center font-mono text-xs">
 									{facets.get(option.value)}
 								</span>
-							{/if}
+							{/if} -->
 						</Command.Item>
 					{/each}
 				</Command.Group>

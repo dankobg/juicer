@@ -43,7 +43,7 @@
 		</Card.Header>
 		<Card.Content class="grid gap-4">
 			{#if socialsAction === 'link' || socialsAction === 'unlink'}
-				{#each data?.flow?.ui?.messages ?? [] as msg}
+				{#each data?.flow?.ui?.messages ?? [] as msg (msg.id)}
 					<Alert.Root variant={msg.type === '11184809' ? 'info' : msg.type} icon>
 						<Alert.Title>{msg.type === 'error' ? `Unable to ${socialsAction} account` : ''}</Alert.Title>
 						<Alert.Description>{msg.text}</Alert.Description>
@@ -60,7 +60,7 @@
 						class="w-full space-y-6"
 					>
 						<input type="hidden" name="link" value={provider.attributes.value} readonly required />
-						<input type="hidden" name="csrf_token" bind:value={data.csrf} readonly required />
+						<input type="hidden" name="csrf_token" value={data.csrf} readonly required />
 
 						<div class="flex w-full justify-start gap-4">
 							<img
@@ -89,7 +89,7 @@
 						class="w-full space-y-6"
 					>
 						<input type="hidden" name="unlink" value={provider.attributes.value} readonly required />
-						<input type="hidden" name="csrf_token" bind:value={data.csrf} readonly required />
+						<input type="hidden" name="csrf_token" value={data.csrf} readonly required />
 
 						<div class="flex w-full justify-between gap-4">
 							<img

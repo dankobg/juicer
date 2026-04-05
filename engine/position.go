@@ -65,6 +65,7 @@ func (p *Position) FenMetaPart() string {
 	}
 
 	fenMetaPart := fmt.Sprintf(" %s %s %s %d %d", p.Turn, castleToken, enpSqToken, p.HalfMoveClock, p.FullMoveClock)
+
 	return fenMetaPart
 }
 
@@ -101,9 +102,11 @@ func (p *Position) hasKingSideCastleRights() bool {
 	if p.Turn.IsWhite() {
 		return p.whiteHasKingSideCastleRights()
 	}
+
 	if p.Turn.IsBlack() {
 		return p.blackHasKingSideCastleRights()
 	}
+
 	return false
 }
 
@@ -111,9 +114,11 @@ func (p *Position) hasQueenSideCastleRights() bool {
 	if p.Turn.IsWhite() {
 		return p.whiteHasQueenSideCastleRights()
 	}
+
 	if p.Turn.IsBlack() {
 		return p.blackHasQueenSideCastleRights()
 	}
+
 	return false
 }
 
@@ -121,9 +126,11 @@ func (p *Position) hasCastleRights() bool {
 	if p.Turn.IsWhite() {
 		return p.whiteHasCastleRights()
 	}
+
 	if p.Turn.IsBlack() {
 		return p.blackHasCastleRights()
 	}
+
 	return false
 }
 
@@ -171,9 +178,12 @@ func (p *Position) IsInsufficientMaterial() bool {
 }
 
 func (p *Position) generatePseudoLegalQueenMoves() []Move {
-	var src, dest Square
-	var occupancy, attacks bitboard
-	var quiets, captures bitboard
+	var (
+		src, dest          Square
+		occupancy, attacks bitboard
+		quiets, captures   bitboard
+	)
+
 	enemies := p.Board.sideOccupancies[p.Turn.Opposite()]
 
 	piece := NewPiece(Queen, p.Turn)
@@ -202,9 +212,12 @@ func (p *Position) generatePseudoLegalQueenMoves() []Move {
 }
 
 func (p *Position) generatePseudoLegalRookMoves() []Move {
-	var src, dest Square
-	var occupancy, attacks bitboard
-	var quiets, captures bitboard
+	var (
+		src, dest          Square
+		occupancy, attacks bitboard
+		quiets, captures   bitboard
+	)
+
 	enemies := p.Board.sideOccupancies[p.Turn.Opposite()]
 
 	piece := NewPiece(Rook, p.Turn)
@@ -233,9 +246,12 @@ func (p *Position) generatePseudoLegalRookMoves() []Move {
 }
 
 func (p *Position) generatePseudoLegalBishopMoves() []Move {
-	var src, dest Square
-	var occupancy, attacks bitboard
-	var quiets, captures bitboard
+	var (
+		src, dest          Square
+		occupancy, attacks bitboard
+		quiets, captures   bitboard
+	)
+
 	enemies := p.Board.sideOccupancies[p.Turn.Opposite()]
 
 	piece := NewPiece(Bishop, p.Turn)
@@ -264,9 +280,12 @@ func (p *Position) generatePseudoLegalBishopMoves() []Move {
 }
 
 func (p *Position) generatePseudoLegalKnightMoves() []Move {
-	var src, dest Square
-	var occupancy, attacks bitboard
-	var quiets, captures bitboard
+	var (
+		src, dest          Square
+		occupancy, attacks bitboard
+		quiets, captures   bitboard
+	)
+
 	enemies := p.Board.sideOccupancies[p.Turn.Opposite()]
 
 	piece := NewPiece(Knight, p.Turn)
@@ -295,9 +314,12 @@ func (p *Position) generatePseudoLegalKnightMoves() []Move {
 }
 
 func (p *Position) generatePseudoLegalKingMoves() []Move {
-	var src, dest Square
-	var occupancy, attacks bitboard
-	var quiets, captures bitboard
+	var (
+		src, dest          Square
+		occupancy, attacks bitboard
+		quiets, captures   bitboard
+	)
+
 	enemies := p.Board.sideOccupancies[p.Turn.Opposite()]
 
 	piece := NewPiece(King, p.Turn)
@@ -327,6 +349,7 @@ func (p *Position) generatePseudoLegalKingMoves() []Move {
 			if p.whiteHasKingSideCastleRights() && (p.Board.sideOccupancies[Both]|attackedSquares)&F1G1 == 0 {
 				moves = append(moves, newCastleMove(E1, G1, piece))
 			}
+
 			if p.whiteHasQueenSideCastleRights() && p.Board.sideOccupancies[Both]&(B1D1|C1D1) == 0 && attackedSquares&C1D1 == 0 {
 				moves = append(moves, newCastleMove(E1, C1, piece))
 			}
@@ -338,6 +361,7 @@ func (p *Position) generatePseudoLegalKingMoves() []Move {
 			if p.blackHasKingSideCastleRights() && (p.Board.sideOccupancies[Both]|attackedSquares)&F8G8 == 0 {
 				moves = append(moves, newCastleMove(E8, G8, piece))
 			}
+
 			if p.blackHasQueenSideCastleRights() && p.Board.sideOccupancies[Both]&(B8D8|C8D8) == 0 && attackedSquares&C8D8 == 0 {
 				moves = append(moves, newCastleMove(E8, C8, piece))
 			}
@@ -348,8 +372,10 @@ func (p *Position) generatePseudoLegalKingMoves() []Move {
 }
 
 func (p *Position) generatePseudoLegalPawnMoves() []Move {
-	var src, dest Square
-	var occupancy, attacks bitboard
+	var (
+		src, dest          Square
+		occupancy, attacks bitboard
+	)
 
 	piece := NewPiece(Pawn, p.Turn)
 	occupancy = p.Board.pieceOccupancies[p.Turn][piece.Kind()]
@@ -529,6 +555,7 @@ func (p *Position) MakeMove(m Move) func() {
 		if p.Turn.IsBlack() {
 			direction = -8
 		}
+
 		p.RemoveCapturedPiece(m.Dest() - Square(direction))
 	} else if m.IsCapture() {
 		p.EpSquare = SquareNone
@@ -601,12 +628,15 @@ func (p *Position) RemoveCapturedPiece(sq Square) {
 		if sq == A1 {
 			p.CastleRights.disableWhiteQueenSideCastleRight()
 		}
+
 		if sq == H1 {
 			p.CastleRights.disableWhiteKingSideCastleRight()
 		}
+
 		if sq == A8 {
 			p.CastleRights.disableBlackQueenSideCastleRight()
 		}
+
 		if sq == H8 {
 			p.CastleRights.disableBlackKingSideCastleRight()
 		}
@@ -625,12 +655,15 @@ func (p *Position) CompleteCastling(m Move) {
 	if m.Src() == E1 && m.Dest() == G1 {
 		rookMove = newCastleMove(H1, F1, WhiteRook)
 	}
+
 	if m.Src() == E1 && m.Dest() == C1 {
 		rookMove = newCastleMove(A1, D1, WhiteRook)
 	}
+
 	if m.Src() == E8 && m.Dest() == G8 {
 		rookMove = newCastleMove(H8, F8, WhiteRook)
 	}
+
 	if m.Src() == E8 && m.Dest() == C8 {
 		rookMove = newCastleMove(A8, D8, WhiteRook)
 	}
@@ -662,16 +695,19 @@ func (p *Position) updateCastlingRights(m Move) {
 			if p.whiteHasKingSideCastleRights() {
 				p.ZobristCastleRights(WhiteKingSideCastle)
 			}
+
 			if p.whiteHasQueenSideCastleRights() {
 				p.ZobristCastleRights(WhiteQueenSideCastle)
 			}
 
 			p.CastleRights.disableWhiteCastleRights()
 		}
+
 		if p.Turn.IsBlack() {
 			if p.blackHasKingSideCastleRights() {
 				p.ZobristCastleRights(BlackKingSideCastle)
 			}
+
 			if p.blackHasQueenSideCastleRights() {
 				p.ZobristCastleRights(BlackQueenSideCastle)
 			}
@@ -686,6 +722,7 @@ func (p *Position) updateCastlingRights(m Move) {
 				p.CastleRights.disableWhiteKingSideCastleRight()
 				p.ZobristCastleRights(WhiteKingSideCastle)
 			}
+
 			if m.Src() == A1 {
 				p.CastleRights.disableWhiteQueenSideCastleRight()
 				p.ZobristCastleRights(WhiteQueenSideCastle)
@@ -697,6 +734,7 @@ func (p *Position) updateCastlingRights(m Move) {
 				p.CastleRights.disableBlackKingSideCastleRight()
 				p.ZobristCastleRights(BlackKingSideCastle)
 			}
+
 			if m.Src() == A8 {
 				p.CastleRights.disableBlackQueenSideCastleRight()
 				p.ZobristCastleRights(BlackQueenSideCastle)

@@ -1,0 +1,69 @@
+type_system: github.com/aarondl/opt
+
+psql:
+  driver: github.com/jackc/pgx/v5/stdlib
+  dsn: postgres://test:test@localhost:5432/test?sslmode=disable
+  schemas: [public]
+  uuid_pkg: google
+  # queries: ./queries
+  except:
+    continuity_containers:
+    courier_message_dispatches:
+    courier_messages:
+    goose_db_version:
+    identities:
+    identity_credential_identifiers:
+    identity_credential_types:
+    identity_credentials:
+    identity_login_codes:
+    identity_recovery_addresses:
+    identity_recovery_codes:
+    identity_recovery_tokens:
+    identity_registration_codes:
+    identity_verifiable_addresses:
+    identity_verification_codes:
+    identity_verification_tokens:
+    keto_relation_tuples:
+    keto_uuid_mappings:
+    networks:
+    schema_migration:
+    selfservice_errors:
+    selfservice_login_flows:
+    selfservice_recovery_flows:
+    selfservice_registration_flows:
+    selfservice_settings_flows:
+    selfservice_verification_flows:
+    session_devices:
+    session_token_exchanges:
+    sessions:
+
+plugins_preset: "all"
+plugins:
+  dbinfo:
+    disabled: false
+    pkgname: "dbinfo"
+    destination: "./db/gen/dbinfo"
+  enums:
+    disabled: false
+    pkgname: "enums"
+    destination: "./db/gen/enums"
+  models:
+    disabled: false
+    pkgname: "models"
+    destination: "./db/gen/models"
+  factory:
+    disabled: true
+    pkgname: "factory"
+    destination: "./db/gen/factory"
+  dberrors:
+    disabled: true
+    pkgname: "dberrors"
+    destination: "./db/gen/dberrors"
+  where:
+    disabled: true
+  loaders:
+    disabled: true
+  joins:
+    disabled: true
+  counts:
+    disabled: true

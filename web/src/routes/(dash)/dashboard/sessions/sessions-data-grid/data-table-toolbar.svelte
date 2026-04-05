@@ -10,27 +10,24 @@
 	import DataTableViewOptions from '$lib/components/data-grid-shared/data-table-view-options.svelte';
 	import { aals } from './data';
 	import Checkbox from '$lib/components/ui/checkbox/checkbox.svelte';
-	import {
-		type ListSessionsExpandEnum,
-		ListSessionsExpandEnum as ListSessionsExpandOptions
-	} from '$lib/gen/juicer_openapi';
 	import Label from '$lib/components/ui/label/label.svelte';
 	import { page } from '$app/state';
 	import { goto } from '$app/navigation';
 	import { SvelteURLSearchParams } from 'svelte/reactivity';
 	import { expandSessions } from '../expandSessions.svelte';
 	import Input from '$lib/components/ui/input/input.svelte';
+	import { PathsSessionsGetParametersQueryExpand } from '$lib/gen/juicer_openapi';
 
 	let { table }: { table: Table<TData> } = $props();
 
 	const isFiltered = $derived(table.getState().columnFilters.length > 0);
-	const aalCol = $derived(table.getColumn('authenticatorAssuranceLevel'));
-	const expandOptions = Object.values(ListSessionsExpandOptions);
+	const aalCol = $derived(table.getColumn('authenticator_assurance_level'));
+	const expandOptions = Object.values(PathsSessionsGetParametersQueryExpand);
 
 	const searchParams = new SvelteURLSearchParams(page.url.searchParams);
 
-	function onExpandCheckedChange(val: boolean, opt: ListSessionsExpandEnum) {
-		const all = searchParams.getAll('expand') as ListSessionsExpandEnum[];
+	function onExpandCheckedChange(val: boolean, opt: PathsSessionsGetParametersQueryExpand) {
+		const all = searchParams.getAll('expand') as PathsSessionsGetParametersQueryExpand[];
 		let newUrl = page.url.pathname;
 		if (val) {
 			if (!all.includes(opt)) {
@@ -51,16 +48,16 @@
 	}
 
 	$effect(() => {
-		expandSessions.expanded = searchParams.getAll('expand') as ListSessionsExpandEnum[];
+		expandSessions.expanded = searchParams.getAll('expand') as PathsSessionsGetParametersQueryExpand[];
 	});
 </script>
 
 <div class="flex gap-4">
 	<p>Expand</p>
 	<div class="flex gap-2">
-		{#each expandOptions as opt, i}
+		{#each expandOptions as opt (opt)}
 			{@const checked = expandSessions.expanded.includes(opt)}
-			<div>
+			<div class="flex items-center gap-1">
 				<Checkbox
 					id="expand-{opt}"
 					aria-labelledby="expand-{opt}-label"
@@ -81,8 +78,8 @@
 </div>
 
 <div class="flex items-center justify-between">
-	<div class="flex flex-1 items-center space-x-2">
-		{#if expandSessions.expanded.includes('identity')}
+	<div class="flex flex-1 flex-wrap items-center space-x-2 gap-y-2">
+		{#if expandSessions.expanded.includes(PathsSessionsGetParametersQueryExpand.identity)}
 			<Input
 				placeholder="Filter by email..."
 				value={(table.getColumn('email')?.getFilterValue() as string) ?? ''}
@@ -95,24 +92,13 @@
 				class="h-8 w-[150px] lg:w-[250px]"
 			/>
 			<Input
-				placeholder="Filter by username..."
-				value={(table.getColumn('username')?.getFilterValue() as string) ?? ''}
-				oninput={e => {
-					table.getColumn('username')?.setFilterValue(e.currentTarget.value);
-				}}
-				onchange={e => {
-					table.getColumn('username')?.setFilterValue(e.currentTarget.value);
-				}}
-				class="h-8 w-[150px] lg:w-[250px]"
-			/>
-			<Input
 				placeholder="Filter by full name..."
-				value={(table.getColumn('fullName')?.getFilterValue() as string) ?? ''}
+				value={(table.getColumn('full_name')?.getFilterValue() as string) ?? ''}
 				oninput={e => {
-					table.getColumn('fullName')?.setFilterValue(e.currentTarget.value);
+					table.getColumn('full_name')?.setFilterValue(e.currentTarget.value);
 				}}
 				onchange={e => {
-					table.getColumn('fullName')?.setFilterValue(e.currentTarget.value);
+					table.getColumn('full_name')?.setFilterValue(e.currentTarget.value);
 				}}
 				class="h-8 w-[150px] lg:w-[250px]"
 			/>

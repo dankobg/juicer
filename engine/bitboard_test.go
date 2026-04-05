@@ -7,6 +7,7 @@ import (
 func TestBitboardClear(t *testing.T) {
 	bb := bitboardLightSquares
 	bb.clear()
+
 	if bb != bitboardEmpty {
 		t.Fatalf("faild to clear bitboard")
 	}
@@ -15,6 +16,7 @@ func TestBitboardClear(t *testing.T) {
 func TestBitboardFill(t *testing.T) {
 	bb := bitboardEmpty
 	bb.fill()
+
 	if bb != bitboardFull {
 		t.Fatalf("faild to fill bitboard")
 	}
@@ -23,6 +25,7 @@ func TestBitboardFill(t *testing.T) {
 func TestBitboardSetBit(t *testing.T) {
 	bb := bitboardEmpty
 	bb.setBit(E4)
+
 	if bb != 0x10000000 {
 		t.Fatalf("faild to set bit")
 	}
@@ -31,10 +34,13 @@ func TestBitboardSetBit(t *testing.T) {
 func TestBitboardToggleBit(t *testing.T) {
 	bb := bitboardEmpty
 	bb.toggleBit(E4)
+
 	if bb.getBit(E4) != 1 {
 		t.Fatalf("faild to toggle bit")
 	}
+
 	bb.toggleBit(E4)
+
 	if bb.getBit(E4) != 0 {
 		t.Fatalf("faild to toggle bit")
 	}
@@ -43,6 +49,7 @@ func TestBitboardToggleBit(t *testing.T) {
 func TestBitboardClearBit(t *testing.T) {
 	bb := bitboard(0x10000000)
 	bb.clearBit(E4)
+
 	if bb != bitboardEmpty {
 		t.Fatalf("faild to clear bit")
 	}
@@ -79,6 +86,7 @@ func TestBitboardLS1B(t *testing.T) {
 func TestBitboardPopMS1B(t *testing.T) {
 	bb := bitboard(0x2002012408802004)
 	bb.PopMS1B()
+
 	if bb != bitboard(0x2012408802004) {
 		t.Fatalf("failed PopMS1B")
 	}
@@ -87,6 +95,7 @@ func TestBitboardPopMS1B(t *testing.T) {
 func TestBitboardPopLS1B(t *testing.T) {
 	bb := bitboard(0x2002012408802004)
 	bb.PopLS1B()
+
 	if bb != bitboard(0x2002012408802000) {
 		t.Fatalf("failed PopLS1B")
 	}

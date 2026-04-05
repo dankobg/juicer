@@ -22,7 +22,7 @@
 </div>
 
 <div class="flex items-center justify-between">
-	<div class="flex flex-1 items-center space-x-2">
+	<div class="flex flex-1 flex-wrap items-center space-x-2 gap-y-2">
 		<Input
 			placeholder="Filter by email..."
 			value={(table.getColumn('email')?.getFilterValue() as string) ?? ''}
@@ -31,17 +31,6 @@
 			}}
 			onchange={e => {
 				table.getColumn('email')?.setFilterValue(e.currentTarget.value);
-			}}
-			class="h-8 w-[150px] lg:w-[250px]"
-		/>
-		<Input
-			placeholder="Filter by username..."
-			value={(table.getColumn('username')?.getFilterValue() as string) ?? ''}
-			oninput={e => {
-				table.getColumn('username')?.setFilterValue(e.currentTarget.value);
-			}}
-			onchange={e => {
-				table.getColumn('username')?.setFilterValue(e.currentTarget.value);
 			}}
 			class="h-8 w-[150px] lg:w-[250px]"
 		/>

@@ -24,6 +24,7 @@ func TestFiles(t *testing.T) {
 			if tc.file.String() != tc.label {
 				t.Fatalf("invalid file label: want %s, got %s", tc.label, tc.file)
 			}
+
 			if int(tc.file) != tc.idx {
 				t.Fatalf("invalid file index: want %d, got %d", tc.idx, int(tc.file))
 			}
@@ -51,6 +52,7 @@ func TestRanks(t *testing.T) {
 			if tc.rank.String() != tc.label {
 				t.Fatalf("invalid rank label: want %s, got %s", tc.label, tc.rank)
 			}
+
 			if int(tc.rank) != tc.idx {
 				t.Fatalf("invalid rank index: want %d, got %d", tc.idx, int(tc.rank))
 			}
@@ -83,6 +85,7 @@ func TestNewFile(t *testing.T) {
 			if (err != nil) != tc.wantErr {
 				t.Fatalf("invalid file, error mismatch, wantErr: %v, gotErr: %v", tc.wantErr, err)
 			}
+
 			if !tc.wantErr && file != tc.want {
 				t.Fatalf("invalid file, want %s, got %s", tc.want, file)
 			}
@@ -115,6 +118,7 @@ func TestNewRank(t *testing.T) {
 			if (err != nil) != tc.wantErr {
 				t.Fatalf("invalid rank, error mismatch, wantErr: %v, gotErr: %v", tc.wantErr, err)
 			}
+
 			if !tc.wantErr && rank != tc.want {
 				t.Fatalf("invalid rank, want %s, got %s", tc.want, rank)
 			}
@@ -196,6 +200,7 @@ func TestSquares(t *testing.T) {
 		"Square G8": {sq: G8, label: "g8", idx: 62, color: White, file: FileG, rank: Rank8},
 		"Square H8": {sq: H8, label: "h8", idx: 63, color: Black, file: FileH, rank: Rank8},
 	}
+
 	t.Run("valid SquareNone", func(t *testing.T) {
 		if SquareNone >= A1 && SquareNone <= H8 {
 			t.Fatalf("invalid SquareNone")
@@ -207,15 +212,19 @@ func TestSquares(t *testing.T) {
 			if tc.sq.String() != tc.label {
 				t.Fatalf("invalid square label: want %s, got %s", tc.label, tc.sq)
 			}
+
 			if int(tc.sq) != tc.idx {
 				t.Fatalf("invalid square index: want %d, got %d", tc.idx, int(tc.sq))
 			}
+
 			if tc.file != tc.sq.File() {
 				t.Fatalf("invalid square file: want %d, got %d", tc.file, tc.sq.File())
 			}
+
 			if tc.rank != tc.sq.Rank() {
 				t.Fatalf("invalid square rank: want %d, got %d", tc.rank, tc.sq.Rank())
 			}
+
 			if tc.color != tc.sq.Color() {
 				t.Fatalf("invalid square color: want %d, got %d", tc.color, tc.sq.Color())
 			}
@@ -306,6 +315,7 @@ func TestNewSquare(t *testing.T) {
 			if (err != nil) != tc.wantErr {
 				t.Fatalf("invalid square, error mismatch, wantErr: %v, gotErr: %v", tc.wantErr, err)
 			}
+
 			if !tc.wantErr && sq != tc.want {
 				t.Fatalf("invalid square: want %s, got %s", tc.want, sq)
 			}

@@ -1,10 +1,10 @@
-version: v1.3.1
+version: v26.2.0
 
 dsn: postgres://test:test@pg:5432/test?sslmode=disable&max_conns=20&max_idle_conns=4
 
 serve:
   public:
-    base_url: http://localhost:4433/
+    base_url: https://juicer-dev.xyz/kratos/
     cors:
       enabled: true
       debug: true
@@ -12,7 +12,7 @@ serve:
       options_passthrough: true
       max_age: 0
       allowed_origins:
-        - http://localhost:3974
+        - http://localhost:3000
         - https://juicer-dev.xyz
       allowed_methods:
         - GET
@@ -37,11 +37,11 @@ serve:
     base_url: http://localhost:4434/
 
 selfservice:
-  default_browser_return_url: http://localhost:3974
+  default_browser_return_url: https://juicer-dev.xyz
   allowed_return_urls:
-    - http://localhost:3974
-    - http://localhost:3974/dashboard
-    - http://localhost:3974/auth/login
+    - https://juicer-dev.xyz
+    - https://juicer-dev.xyz/dashboard
+    - https://juicer-dev.xyz/auth/login
   methods:
     password:
       enabled: true
@@ -71,54 +71,55 @@ selfservice:
     oidc:
       enabled: true
       config:
-        base_redirect_uri: http://localhost:4433/
+        base_redirect_uri: https://juicer-dev.xyz/kratos/
 
   flows:
     error:
-      ui_url: http://localhost:3974/error
+      ui_url: https://juicer-dev.xyz/error
     settings:
-      ui_url: http://localhost:3974/dashboard/account
+      ui_url: https://juicer-dev.xyz/dashboard/account
       privileged_session_max_age: 1m
       required_aal: highest_available
     recovery:
       enabled: true
-      ui_url: http://localhost:3974/auth/recovery
+      ui_url: https://juicer-dev.xyz/auth/recovery
       use: code
       after:
-        default_browser_return_url: http://localhost:3974/auth/login
+        default_browser_return_url: https://juicer-dev.xyz/auth/login
         hooks:
           - hook: revoke_active_sessions
     verification:
       enabled: true
-      ui_url: http://localhost:3974/auth/verification
+      ui_url: https://juicer-dev.xyz/auth/verification
       use: code
       after:
-        default_browser_return_url: http://localhost:3974/auth/login
+        default_browser_return_url: https://juicer-dev.xyz/auth/login
     logout:
       after:
-        default_browser_return_url: http://localhost:3974
+        default_browser_return_url: https://juicer-dev.xyz
     login:
-      ui_url: http://localhost:3974/auth/login
+      ui_url: https://juicer-dev.xyz/auth/login
       lifespan: 10m
       after:
         password:
           hooks:
             - hook: require_verified_address
         oidc:
-          default_browser_return_url: http://localhost:3974
+          default_browser_return_url: https://juicer-dev.xyz
     registration:
       enable_legacy_one_step: true
-      ui_url: http://localhost:3974/auth/registration
+      ui_url: https://juicer-dev.xyz/auth/registration
       lifespan: 10m
       after:
-        default_browser_return_url: http://localhost:3974/auth/login
+        default_browser_return_url: https://juicer-dev.xyz/auth/login
         password:
-          default_browser_return_url: http://localhost:3974/auth/login
+          default_browser_return_url: https://juicer-dev.xyz/auth/login
           hooks:
+            - hook: show_verification_ui
             - hook: web_hook
               config:
                 method: POST
-                url: http://host.docker.internal:1337/api/v1/webhooks/kratos/registration_after_password
+                url: http://host.docker.internal:1337/webhooks/kratos/registration_after_password
                 body: file:///etc/config/kratos/hooks/registration.after.password.jsonnet
                 response:
                   ignore: false
@@ -130,12 +131,12 @@ selfservice:
                     name: Authorization
                     value: v3Ry_s3Cr3t_tExT_kr4t0s
         oidc:
-          default_browser_return_url: http://localhost:3974
+          default_browser_return_url: https://juicer-dev.xyz
           hooks:
             - hook: web_hook
               config:
                 method: POST
-                url: http://host.docker.internal:1337/api/v1/webhooks/kratos/registration_after_oidc
+                url: http://host.docker.internal:1337/webhooks/kratos/registration_after_oidc
                 body: file:///etc/config/kratos/hooks/registration.after.oidc.jsonnet
                 response:
                   ignore: false
@@ -156,7 +157,7 @@ session:
     required_aal: aal1
   lifespan: 24h
   cookie:
-    domain: localhost
+    domain: juicer-dev.xyz
     same_site: Lax
     path: /
 
@@ -173,8 +174,8 @@ identity:
   schemas:
     - id: customer
       url: file:///etc/config/kratos/schemas/customer.identity.schema.json
-    - id: employee
-      url: file:///etc/config/kratos/schemas/employee.identity.schema.json
+    - id: developer
+      url: file:///etc/config/kratos/schemas/developer.identity.schema.json
 
 courier:
   message_retries: 5

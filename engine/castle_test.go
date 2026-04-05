@@ -85,6 +85,7 @@ func TestNewCastleRightsFromFen(t *testing.T) {
 			if (err != nil) != tc.wantErr {
 				t.Fatalf("invalid castle rights, error mismatch, wantErr: %v, gotErr: %v", tc.wantErr, err)
 			}
+
 			if !tc.wantErr && cr != tc.want {
 				t.Fatalf("invalid castle rights, want %s, got %s", tc.want, cr)
 			}

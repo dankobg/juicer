@@ -1,16 +1,16 @@
 <script lang="ts">
-	import { IdentityStateEnum } from '$lib/gen/juicer_openapi';
 	import { Badge } from '$lib/components/ui/badge/index';
+	import { IdentityState } from '$lib/gen/juicer_openapi';
 	import { stateIcons } from './data';
 
 	let { value }: { value?: string } = $props();
 
-	let Icon = $derived(stateIcons.get(value as IdentityStateEnum));
+	let Icon = $derived(stateIcons.get(value as IdentityState));
 	let color = $derived.by(() => {
-		switch (value as IdentityStateEnum) {
-			case IdentityStateEnum.Active:
+		switch (value as IdentityState) {
+			case IdentityState.active:
 				return 'text-green-400';
-			case IdentityStateEnum.Inactive:
+			case IdentityState.inactive:
 				return 'text-red-400';
 		}
 	});

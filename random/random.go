@@ -22,10 +22,12 @@ var (
 
 func rndByte(n int) []byte {
 	b := make([]byte, n)
+
 	_, err := cryptorand.Read(b)
 	if err != nil {
 		panic(err)
 	}
+
 	return b
 }
 
@@ -35,11 +37,13 @@ func Alpha(length int) string {
 
 	var bb bytes.Buffer
 	bb.Grow(length)
+
 	l := uint32(len(runes))
 
 	for range length {
 		bb.WriteRune(runes[binary.BigEndian.Uint32(rndByte(4))%l])
 	}
+
 	return bb.String()
 }
 
@@ -49,11 +53,13 @@ func AlphaNumeric(length int) string {
 
 	var bb bytes.Buffer
 	bb.Grow(length)
+
 	l := uint32(len(runes))
 
 	for range length {
 		bb.WriteRune(runes[binary.BigEndian.Uint32(rndByte(4))%l])
 	}
+
 	return bb.String()
 }
 
@@ -63,11 +69,13 @@ func AlphaLowercase(length int) string {
 
 	var bb bytes.Buffer
 	bb.Grow(length)
+
 	l := uint32(len(runes))
 
 	for range length {
 		bb.WriteRune(runes[binary.BigEndian.Uint32(rndByte(4))%l])
 	}
+
 	return bb.String()
 }
 
@@ -77,11 +85,13 @@ func AlphaUppercase(length int) string {
 
 	var bb bytes.Buffer
 	bb.Grow(length)
+
 	l := uint32(len(runes))
 
 	for range length {
 		bb.WriteRune(runes[binary.BigEndian.Uint32(rndByte(4))%l])
 	}
+
 	return bb.String()
 }
 
@@ -91,11 +101,13 @@ func Ascii(length int) string {
 
 	var bb bytes.Buffer
 	bb.Grow(length)
+
 	l := uint32(len(runes))
 
 	for range length {
 		bb.WriteRune(runes[binary.BigEndian.Uint32(rndByte(4))%l])
 	}
+
 	return bb.String()
 }
 
@@ -109,6 +121,7 @@ func Token(length int) string {
 	token := base64.URLEncoding.EncodeToString(b)
 
 	withoutPadding := strings.TrimRight(token, "=")
+
 	return withoutPadding
 }
 

@@ -15,7 +15,9 @@ import { goto } from '$app/navigation';
 import { toast } from 'svelte-sonner';
 import { config } from '$lib/kratos/config';
 
-export const load: PageLoad = (async ({ url }) => {
+export const load: PageLoad = (async ({ depends, url }) => {
+	depends('data:login');
+
 	const returnToParam = browser && url.searchParams.get('return_to');
 	const flowIdParam = browser && url.searchParams.get('flow');
 	const refreshParam = browser && url.searchParams.get('refresh');
@@ -107,7 +109,9 @@ export const load: PageLoad = (async ({ url }) => {
 							} else if (isErrorIdSecurityCsrfViolation(err.error?.id)) {
 								handleFlowErrAction(config.routes.login.path, err.error.message);
 							} else if (isErrorIdSessionAal1Required(err.error?.id)) {
-								goto(`${config.routes.login.path}?aal=aal1&return_to=${window.location.href}`);
+								if (browser) {
+									goto(`${config.routes.login.path}?aal=aal1&return_to=${window.location.href}`);
+								}
 							} else if (isErrorIdSecurityIdentityMismatch(err.error?.id)) {
 								goto('/');
 							} else if (isErrorIdSessionAal2Required(err.error?.id)) {

@@ -34,7 +34,9 @@
 
 	let {
 		data,
+		// eslint-disable-next-line no-useless-assignment
 		capture = $bindable(),
+		// eslint-disable-next-line no-useless-assignment
 		restore = $bindable()
 	}: PageProps & { capture: Snapshot['capture']; restore: Snapshot['restore'] } = $props();
 
@@ -57,15 +59,14 @@
 			first_name: v.string(),
 			last_name: v.string(),
 			email: v.pipe(v.string(), v.minLength(1, 'E-Mail is required'), v.email('E-Mail must be a valid email')),
-			username: v.pipe(v.string(), v.minLength(1, 'Username is required')),
 			avatar_url: v.string()
 		}),
 		transient_payload: v.optional(v.object({}))
 	});
 
-	type RegistrationFormSchema = v.InferInput<typeof registrationFormSchema>;
+	type RegistrationFormInput = v.InferInput<typeof registrationFormSchema>;
 
-	const initialRegistrationForm: RegistrationFormSchema = {
+	const initialRegistrationForm: RegistrationFormInput = {
 		password: '',
 		method: 'password',
 		csrf_token: data.csrf ?? '',
@@ -73,7 +74,6 @@
 			first_name: '',
 			last_name: '',
 			email: '',
-			username: '',
 			avatar_url: ''
 		},
 		transient_payload: {}
@@ -88,7 +88,7 @@
 		autoFocusOnError: 'detect',
 		stickyNavbar: undefined,
 		resetForm: false,
-		async onUpdated({ form }) {
+		async onUpdate({ form }) {
 			if (!form.valid) {
 				toast.error('Invalid form, please fix errors and try again');
 				return;
@@ -106,7 +106,7 @@
 							switch (item.action) {
 								case 'show_verification_ui':
 									if (item?.flow?.id) {
-										goto(item?.flow?.url as string);
+										window.location.href = item?.flow?.url as string;
 									}
 									break;
 							}
@@ -123,7 +123,7 @@
 								if (instanceOfRegistrationFlow(err)) {
 									data = { ...data, flow: err, csrf: data.csrf ?? '' };
 									const nodes = err.ui.nodes ?? [];
-									const fieldErrors: ValidationErrors<RegistrationFormSchema> = {};
+									const fieldErrors: ValidationErrors<RegistrationFormInput> = {};
 									for (const node of nodes) {
 										const errMsgs: string[] = [];
 										if (node.attributes.node_type === 'input') {
@@ -183,7 +183,9 @@
 	});
 
 	const { form, enhance, errors } = supForm;
+	// eslint-disable-next-line no-useless-assignment
 	capture = supForm.capture;
+	// eslint-disable-next-line no-useless-assignment
 	restore = supForm.restore;
 </script>
 
@@ -195,13 +197,13 @@
 	<Card.Root class="mx-auto max-w-md">
 		<Card.Header>
 			<Card.Title class="text-center text-2xl">Register</Card.Title>
-			<Card.Description>Create a new account to play some chess</Card.Description>
+			<Card.Description>Create a new account to expore your fluffy friends</Card.Description>
 		</Card.Header>
 
 		<Card.Content>
 			<div class="grid gap-4">
 				<form method="POST" use:enhance class="grid gap-4">
-					{#each data?.flow?.ui?.messages ?? [] as msg}
+					{#each data?.flow?.ui?.messages ?? [] as msg (msg.id)}
 						<Alert.Root variant={msg.type === '11184809' ? 'info' : msg.type} icon>
 							<Alert.Title>{msg.type === 'error' ? 'Unable to sign up' : ''}</Alert.Title>
 							<Alert.Description>{msg.text}</Alert.Description>
@@ -235,18 +237,6 @@
 						</div>
 					</div>
 					<div class="grid gap-2">
-						<Form.Field form={supForm} name="traits.username">
-							<Form.Control>
-								{#snippet children({ props })}
-									<Form.Label>Username</Form.Label>
-									<Input {...props} bind:value={$form.traits.username} />
-								{/snippet}
-							</Form.Control>
-							<Form.Description />
-							<Form.FieldErrors />
-						</Form.Field>
-					</div>
-					<div class="grid gap-2">
 						<Form.Field form={supForm} name="traits.email">
 							<Form.Control>
 								{#snippet children({ props })}
@@ -277,26 +267,26 @@
 					<div class="inline-flex w-full items-center justify-center">
 						<hr class="my-8 h-px w-full border-0 bg-gray-200 dark:bg-gray-700" />
 						<span
-							class="bg-card dark:bg-card absolute left-1/2 -translate-x-1/2 px-3 font-medium text-gray-900 dark:text-white"
+							class="absolute left-1/2 -translate-x-1/2 bg-card px-3 font-medium text-gray-900 dark:bg-card dark:text-white"
 						>
 							or signup with
 						</span>
 					</div>
 
 					<div class="align-center flex flex-wrap justify-between">
-						{#each providers as provider}
+						{#each providers as provider (provider.name)}
 							<form
 								action={data.flow?.ui.action}
 								method="post"
 								encType="application/x-www-form-urlencoded"
 								data-provider={provider.name}
 							>
-								<input type="hidden" name="csrf_token" bind:value={data.csrf} readonly required />
+								<input type="hidden" name="csrf_token" value={data.csrf} readonly required />
 								<input type="hidden" name="provider" value={provider.name} readonly required />
 
 								<Tooltip.Provider>
 									<Tooltip.Root delayDuration={100}>
-										<Tooltip.Trigger type="submit" class="hover:bg-primary/10 rounded">
+										<Tooltip.Trigger type="submit" class="rounded hover:bg-primary/10">
 											<img
 												class="h-12 w-12 object-cover"
 												src="/images/providers/{provider.name}.svg"

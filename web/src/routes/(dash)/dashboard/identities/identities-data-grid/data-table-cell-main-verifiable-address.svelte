@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { IdentityStateEnum } from '$lib/gen/juicer_openapi';
 	import { Badge } from '$lib/components/ui/badge/index';
 
 	let { address, verified }: { address?: string; verified: boolean } = $props();

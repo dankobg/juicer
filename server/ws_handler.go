@@ -1,21 +1,16 @@
 package server
 
 import (
+	"context"
 	"fmt"
 	"log/slog"
 	"net/http"
 	"time"
 
-	"github.com/dankobg/juicer/core"
+	"github.com/coder/websocket"
+	"github.com/dankobg/juicer/ws"
 	"github.com/google/uuid"
-	"github.com/labstack/echo/v4"
-
 	orykratos "github.com/ory/client-go"
-)
-
-const (
-	wsReadBufferSize  = 1024
-	wsWriteBufferSize = 1024
 )
 
 const juicerClientIDCookieName = "juicer_client_id"
@@ -36,48 +31,85 @@ func newClientIDCookie(clientID string) *http.Cookie {
 	}
 }
 
-func getClientData(c echo.Context) (core.ClientAuthState, *orykratos.Session, string) {
-	sess := GetSession(c.Request().Context())
-	var playerID string
-	authState := core.ClientGuest
+func getClientAuthData(r *http.Request) (string, ws.ClientAuthState, *orykratos.Session) {
+	sess := GetSession(r.Context())
+
+	var userID string
+
+	authState := ws.ClientGuest
 
 	if sess != nil && sess.Active != nil && *sess.Active {
-		playerID = sess.Identity.Id
-		authState = core.ClientAuth
+		userID = sess.Identity.Id
+		authState = ws.ClientAuth
 	} else {
-		cookie, err := c.Cookie(juicerClientIDCookieName)
+		cookie, err := r.Cookie(juicerClientIDCookieName)
 		if err != nil {
-			playerID = uuid.NewString()
+			userID = uuid.NewString()
 		} else {
-			playerID = cookie.Value
+			userID = cookie.Value
 		}
 	}
 
-	return authState, sess, playerID
+	return userID, authState, sess
 }
 
-func setCookieHeader(authState core.ClientAuthState, playerID string) http.Header {
-	respHeader := http.Header{}
-	if authState == core.ClientGuest {
-		respHeader.Set("Set-Cookie", newClientIDCookie(playerID).String())
+func setClientIDCookie(w http.ResponseWriter, authState ws.ClientAuthState, playerID string) {
+	if authState == ws.ClientGuest {
+		w.Header().Set("Set-Cookie", newClientIDCookie(playerID).String())
 	}
-	return respHeader
 }
 
-func (h *ApiHandler) serverWs(c echo.Context) error {
-	authState, _, clientIDStr := getClientData(c)
-	conn, err := h.upgrader.Upgrade(c.Response(), c.Request(), setCookieHeader(authState, clientIDStr))
+func (a *ApiHandler) serverWs(w http.ResponseWriter, r *http.Request) {
+	clientID, authState, _ := getClientAuthData(r)
+
+	setClientIDCookie(w, authState, clientID)
+
+	conn, err := websocket.Accept(w, r, &websocket.AcceptOptions{
+		InsecureSkipVerify: a.Cfg.ENV == "development",
+		OriginPatterns:     a.Cfg.Cors.AllowOrigins,
+		OnPingReceived: func(ctx context.Context, payload []byte) bool {
+			fmt.Println("OnPingReceived")
+			return true
+		},
+		OnPongReceived: func(ctx context.Context, payload []byte) {
+			fmt.Println("OnPongReceived")
+		},
+	})
 	if err != nil {
-		return fmt.Errorf("failed to upgrade connection: %w", err)
+		a.Log.Error("websocket.Accept", slog.String("client_id", clientID), slog.Any("error", err))
+		return
 	}
-	clientID, err := uuid.Parse(clientIDStr)
+
+	defer func() {
+		_ = conn.CloseNow()
+	}()
+
+	userID, err := uuid.Parse(clientID)
 	if err != nil {
-		h.Log.Error("failed to parse client uuid", slog.String("client_id", clientIDStr))
-		return err
+		a.Log.Error("failed to parse client uuid", slog.String("client_id", clientID))
+		return
 	}
-	client := core.NewClient(clientID, h.Hub, conn, authState, h.Log, c.Request().URL.Query())
-	h.Hub.ClientConnected <- client
-	go client.ReadLoop()
-	go client.WriteLoop()
-	return nil
+
+	client := ws.NewClient(userID, a.Hub, conn, authState, a.Log, r.URL.Query())
+
+	initialChannels, err := a.Hub.RequestInitialChannels(r.Context(), client)
+	if err != nil {
+		a.Log.Error("failed to request initial channels", slog.String("client_id", clientID))
+		return
+	}
+
+	channels := make([]ws.Channel, len(initialChannels))
+	for i, channel := range initialChannels {
+		channels[i] = ws.Channel(channel)
+	}
+	client.JoinChannels(channels)
+
+	a.Hub.ClientConnected <- client
+
+	// this reads from ws and publishes those msgs to redis
+	// like seekgame, playmove etc. i want RequestInitialChannels to always hapen before i get here
+	// how to do it the best way?
+	go client.ReadLoop(r.Context())
+
+	client.WriteLoop(r.Context())
 }

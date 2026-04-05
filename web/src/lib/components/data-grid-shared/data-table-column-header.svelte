@@ -32,7 +32,7 @@
 		<DropdownMenu.Root>
 			<DropdownMenu.Trigger>
 				{#snippet child({ props })}
-					<Button {...props} variant="ghost" size="sm" class="data-[state=open]:bg-accent -ml-3 h-8">
+					<Button {...props} variant="ghost" size="sm" class="-ml-3 h-8 data-[state=open]:bg-accent">
 						<span>
 							{title}
 						</span>
@@ -48,16 +48,16 @@
 			</DropdownMenu.Trigger>
 			<DropdownMenu.Content align="start">
 				<DropdownMenu.Item onclick={() => column.toggleSorting(false)}>
-					<IconArrowUp class="text-muted-foreground/70 mr-2 size-3.5" />
+					<IconArrowUp class="mr-2 size-3.5 text-muted-foreground/70" />
 					Asc
 				</DropdownMenu.Item>
 				<DropdownMenu.Item onclick={() => column.toggleSorting(true)}>
-					<IconArrowDown class="text-muted-foreground/70 mr-2 size-3.5" />
+					<IconArrowDown class="mr-2 size-3.5 text-muted-foreground/70" />
 					Desc
 				</DropdownMenu.Item>
 				<DropdownMenu.Separator />
 				<DropdownMenu.Item onclick={() => column.toggleVisibility(false)}>
-					<IconEyeOff class="text-muted-foreground/70 mr-2 size-3.5" />
+					<IconEyeOff class="mr-2 size-3.5 text-muted-foreground/70" />
 					Hide
 				</DropdownMenu.Item>
 			</DropdownMenu.Content>

@@ -34,7 +34,9 @@
 
 	let {
 		data,
+		// eslint-disable-next-line no-useless-assignment
 		capture = $bindable(),
+		// eslint-disable-next-line no-useless-assignment
 		restore = $bindable()
 	}: PageProps & { capture: Snapshot['capture']; restore: Snapshot['restore'] } = $props();
 
@@ -52,14 +54,13 @@
 	export const loginFormSchema = v.object({
 		csrf_token: v.pipe(v.string(), v.minLength(1, 'csrf_token is required')),
 		method: v.literal('password'),
-		// method: v.pipe(v.string(), v.minLength(1, 'method is required')),
 		identifier: v.pipe(v.string(), v.minLength(1, 'Identifier is required')),
 		password: v.pipe(v.string(), v.minLength(8, 'Password must have min. 8 characters'))
 	});
 
-	type LoginFormSchema = v.InferInput<typeof loginFormSchema>;
+	type LoginFormInput = v.InferInput<typeof loginFormSchema>;
 
-	const initialLoginForm: LoginFormSchema = {
+	const initialLoginForm: LoginFormInput = {
 		identifier: '',
 		password: '',
 		method: 'password',
@@ -75,7 +76,7 @@
 		autoFocusOnError: 'detect',
 		stickyNavbar: undefined,
 		resetForm: false,
-		async onUpdated({ form }) {
+		async onUpdate({ form }) {
 			if (!form.valid) {
 				sessionStorage.removeItem('juicer_email_verified');
 				toast.error('Invalid form, please fix errors and try again');
@@ -110,7 +111,7 @@
 								if (instanceOfLoginFlow(err)) {
 									data = { ...data, flow: err, csrf: data.csrf ?? '' };
 									const nodes = err.ui.nodes ?? [];
-									const fieldErrors: ValidationErrors<LoginFormSchema> = {};
+									const fieldErrors: ValidationErrors<LoginFormInput> = {};
 									for (const node of nodes) {
 										const errMsgs: string[] = [];
 										if (node.attributes.node_type === 'input') {
@@ -170,7 +171,9 @@
 	});
 
 	const { form, enhance, errors } = supForm;
+	// eslint-disable-next-line no-useless-assignment
 	capture = supForm.capture;
+	// eslint-disable-next-line no-useless-assignment
 	restore = supForm.restore;
 
 	let emailVerified = $state(false);
@@ -210,7 +213,7 @@
 		<Card.Content>
 			<div class="grid gap-4">
 				<form method="POST" use:enhance class="grid gap-4">
-					{#each data?.flow?.ui?.messages ?? [] as msg}
+					{#each data?.flow?.ui?.messages ?? [] as msg (msg.id)}
 						<Alert.Root variant={msg.type === '11184809' ? 'info' : msg.type} icon>
 							<Alert.Title>{msg.type === 'error' ? 'Unable to log in' : ''}</Alert.Title>
 							<Alert.Description>{msg.text}</Alert.Description>
@@ -228,11 +231,11 @@
 						<Form.Field form={supForm} name="identifier">
 							<Form.Control>
 								{#snippet children({ props })}
-									<Form.Label>Identifier</Form.Label>
-									<Input {...props} bind:value={$form.identifier} />
+									<Form.Label>E-Mail</Form.Label>
+									<Input {...props} type="email" bind:value={$form.identifier} />
 								{/snippet}
 							</Form.Control>
-							<Form.Description>Use your email or username</Form.Description>
+							<Form.Description />
 							<Form.FieldErrors />
 						</Form.Field>
 					</div>
@@ -260,26 +263,26 @@
 					<div class="inline-flex w-full items-center justify-center">
 						<hr class="my-8 h-px w-full border-0 bg-gray-200 dark:bg-gray-700" />
 						<span
-							class="bg-card dark:bg-card absolute left-1/2 -translate-x-1/2 px-3 font-medium text-gray-900 dark:text-white"
+							class="absolute left-1/2 -translate-x-1/2 bg-card px-3 font-medium text-gray-900 dark:bg-card dark:text-white"
 						>
 							or login with
 						</span>
 					</div>
 
 					<div class="align-center flex flex-wrap justify-between">
-						{#each providers as provider}
+						{#each providers as provider (provider.name)}
 							<form
 								action={data.flow?.ui.action}
 								method="post"
 								encType="application/x-www-form-urlencoded"
 								data-provider={provider.name}
 							>
-								<input type="hidden" name="csrf_token" bind:value={data.csrf} readonly required />
+								<input type="hidden" name="csrf_token" value={data.csrf} readonly required />
 								<input type="hidden" name="provider" value={provider.name} readonly required />
 
 								<Tooltip.Provider>
 									<Tooltip.Root delayDuration={100}>
-										<Tooltip.Trigger type="submit" class="hover:bg-primary/10 rounded">
+										<Tooltip.Trigger type="submit" class="rounded hover:bg-primary/10">
 											<img
 												class="h-12 w-12 object-cover"
 												src="/images/providers/{provider.name}.svg"

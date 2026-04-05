@@ -32,18 +32,23 @@ func TestMoves(t *testing.T) {
 			if tc.m.String() != tc.label {
 				t.Fatalf("invalid move label: want %s, got %s", tc.label, tc.m.String())
 			}
+
 			if tc.m.Src() != tc.src {
 				t.Fatalf("invalid move src square: want %s, got %s", tc.src, tc.m.Src())
 			}
+
 			if tc.m.Dest() != tc.dest {
 				t.Fatalf("invalid move dest square: want %s, got %s", tc.dest, tc.m.Dest())
 			}
+
 			if tc.m.Piece() != tc.piece {
 				t.Fatalf("invalid move piece: want %s, got %s", tc.piece, tc.m.Piece())
 			}
+
 			if tc.m.Promotion() != tc.promo {
 				t.Fatalf("invalid move promotion: want %v, got %v", tc.promo, tc.m.Promotion())
 			}
+
 			if (tc.m.IsCapture() != tc.isCapture) || (tc.m.IsDoublePawn() != tc.isDouble) || (tc.m.IsEnPassant() != tc.isEnp) || (tc.m.IsCastle() != tc.isCastle) {
 				t.Fatalf("invalid move flags (cap, dbl, enp, castle): want (%v %v %v %v), got (%v %v %v %v)", tc.isCapture, tc.isDouble, tc.isEnp, tc.isCastle, tc.m.IsCapture(), tc.m.IsDoublePawn(), tc.m.IsEnPassant(), tc.m.IsCastle())
 			}
@@ -62,18 +67,23 @@ func TestMoves(t *testing.T) {
 				if pm.String() != promoLabels[i] {
 					t.Fatalf("invalid move label: want %s, got %s", promoLabels[i], pm.String())
 				}
+
 				if pm.Src() != src {
 					t.Fatalf("invalid move src square: want %s, got %s", src, pm.Src())
 				}
+
 				if pm.Dest() != dest {
 					t.Fatalf("invalid move dest square: want %s, got %s", dest, pm.Dest())
 				}
+
 				if pm.Piece() != piece {
 					t.Fatalf("invalid move piece: want %s, got %s", piece, pm.Piece())
 				}
+
 				if pm.Promotion() != promoPieces[i] {
 					t.Fatalf("invalid move promotion: want %v, got %v", promoPieces[i], pm.Promotion())
 				}
+
 				if pm.IsCapture() || pm.IsDoublePawn() || pm.IsEnPassant() || pm.IsCastle() {
 					t.Fatalf("invalid move flags (cap, dbl, enp, castle): want (%v %v %v %v), got (%v %v %v %v)", false, false, false, false, pm.IsCapture(), pm.IsDoublePawn(), pm.IsEnPassant(), pm.IsCastle())
 				}
@@ -90,18 +100,23 @@ func TestMoves(t *testing.T) {
 				if pm.String() != promoCapturesLabels[i] {
 					t.Fatalf("invalid move label: want %s, got %s", promoCapturesLabels[i], pm.String())
 				}
+
 				if pm.Src() != src {
 					t.Fatalf("invalid move src square: want %s, got %s", src, pm.Src())
 				}
+
 				if pm.Dest() != dest {
 					t.Fatalf("invalid move dest square: want %s, got %s", dest, pm.Dest())
 				}
+
 				if pm.Piece() != piece {
 					t.Fatalf("invalid move piece: want %s, got %s", piece, pm.Piece())
 				}
+
 				if pm.Promotion() != promoPieces[i] {
 					t.Fatalf("invalid move promotion: want %v, got %v", promoPieces[i], pm.Promotion())
 				}
+
 				if !pm.IsCapture() || pm.IsDoublePawn() || pm.IsEnPassant() || pm.IsCastle() {
 					t.Fatalf("invalid move flags (cap, dbl, enp, castle): want (%v %v %v %v), got (%v %v %v %v)", true, false, false, false, pm.IsCapture(), pm.IsDoublePawn(), pm.IsEnPassant(), pm.IsCastle())
 				}
@@ -205,16 +220,19 @@ func TestMoveNotations(t *testing.T) {
 			if tc.m.ToUCI() != tc.uci {
 				t.Fatalf("invalid move uci: want %s, got %s", tc.uci, tc.m.ToUCI())
 			}
+
 			lanGot := tc.m.ToLAN(nil, tc.isCheck, tc.isCheckmate)
 			if lanGot != tc.lan {
 				t.Fatalf("invalid move lan: want %s, got %s", tc.lan, lanGot)
 			}
+
 			legals := make([]Move, 0)
 			if len(tc.legalMoves) == 0 {
 				legals = append(legals, tc.m)
 			} else {
 				legals = tc.legalMoves
 			}
+
 			sanGot := tc.m.ToSAN(nil, tc.isCheck, tc.isCheckmate, legals)
 			if sanGot != tc.san {
 				t.Fatalf("invalid move san: want %s, got %s", tc.san, sanGot)

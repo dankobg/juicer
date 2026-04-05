@@ -1,20 +1,29 @@
-import type { GetSessionExpandEnum, GetSessionRequest } from '$lib/gen/juicer_openapi';
 import { juicer } from '$lib/juicer/client';
 import type { PageLoad } from './$types';
+import { PathsSessionsIdGetParametersQueryExpand, type operations } from '$lib/gen/juicer_openapi';
 
-export const load: PageLoad = async ({ params, url }) => {
+export const load: PageLoad = async ({ fetch, params, url, depends }) => {
+	depends(`data:dashboard-sessions-${params.session_id}`);
+
 	try {
-		const req: GetSessionRequest = {
-			id: params.session_id,
-			expand: ['identity', 'devices']
+		const getSessionParams: operations['getSession']['parameters'] = {
+			path: { id: params.session_id },
+			query: {
+				expand: [PathsSessionsIdGetParametersQueryExpand.identity, PathsSessionsIdGetParametersQueryExpand.devices]
+			}
 		};
-		const expand = url.searchParams.getAll('expand');
+		const expand = url.searchParams.getAll('expand') as PathsSessionsIdGetParametersQueryExpand[];
 		if (expand.length > 0) {
-			req.expand = expand as GetSessionExpandEnum[];
+			getSessionParams.query!.expand = expand;
 		}
-		const session = await juicer.getSession(req);
+		const sessionResult = await juicer.GET('/sessions/{id}', {
+			fetch,
+			params: {
+				path: { id: params.session_id }
+			}
+		});
 		return {
-			session
+			sessionResult
 		};
 	} catch (error) {
 		console.log('err', error);

@@ -20,16 +20,15 @@ services:
   #       condition: service_healthy
   # ----------------------------------------------------------------------------
   pg:
-    image: postgres:16-alpine
+    image: postgres:18.3-alpine
     restart: unless-stopped
     volumes:
-      - pg-data:/var/lib/postgresql/data
-      - ./db/seeds:/seeds
+      - pg-data:/var/lib/postgresql
     networks:
       - intranet
   # ----------------------------------------------------------------------------
   redis:
-    image: redis:7.2.5-alpine
+    image: redis:8.6.2-alpine
     restart: on-failure
     # command: redis-server --include /usr/local/etc/redis/redis.conf # UNCOMMENT IF USING CUSTOM REDIS CONF
     volumes:
@@ -39,7 +38,7 @@ services:
       - intranet
   # ----------------------------------------------------------------------------
   kratos:
-    image: oryd/kratos:v1.3.1
+    image: oryd/kratos:v26.2.0
     restart: unless-stopped
     command: "serve --watch-courier --config /etc/config/kratos/kratos.yaml"
     volumes:
@@ -53,7 +52,7 @@ services:
         condition: service_completed_successfully
   # ----------------------------------------------------------------------------
   kratos-migrate:
-    image: oryd/kratos:v1.3.1
+    image: oryd/kratos:v26.2.0
     restart: on-failure
     volumes:
       - ./ory/kratos:/etc/config/kratos
@@ -65,7 +64,7 @@ services:
         condition: service_healthy
   # ----------------------------------------------------------------------------
   keto:
-    image: oryd/keto:v0.14.0
+    image: oryd/keto:v26.2.0
     restart: unless-stopped
     volumes:
       - ./ory/keto:/etc/config/keto
@@ -79,7 +78,7 @@ services:
         condition: service_completed_successfully
   # ----------------------------------------------------------------------------
   keto-migrate:
-    image: oryd/keto:v0.14.0
+    image: oryd/keto:v26.2.0
     restart: on-failure
     volumes:
       - ./ory/keto:/etc/config/keto
@@ -90,17 +89,13 @@ services:
       pg:
         condition: service_healthy
   # ----------------------------------------------------------------------------
-  # atlas:
-  #   image: arigaio/atlas
+  # rustfs:
+  #   image: rustfs/rustfs:latest
   #   restart: on-failure
   #   volumes:
-  #     - ./db/migrations:/migrations
-  #     - ./db/schema.sql:/schema.sql
+  #     - rustfs-data:/data
   #   networks:
   #     - intranet
-  #   depends_on:
-  #     pg:
-  #       condition: service_healthy
   # ----------------------------------------------------------------------------
 
 volumes:

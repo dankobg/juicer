@@ -75,6 +75,7 @@ func initAllAttackMasksTables() {
 			initAttackMasksForNonSlidingPieces()
 			initBishopAndRookPopCounts()
 			initAttackMasksForSlidingPieces()
+
 			initializedAttackTables = true
 		})
 	}
@@ -392,6 +393,7 @@ func generateRandomMagicNumberCandidate() bitboard {
 // findMagicNumbers finds the magic numbers with a brute force approach for a square
 func findMagicNumbers(sq Square, isBishop bool) bitboard {
 	var occ, attacks, usedAttacks [4096]bitboard
+
 	attack := generateRookRelevantOccupancyBitsMask(sq)
 	bitCount := attack.populationCount()
 
@@ -420,8 +422,11 @@ func findMagicNumbers(sq Square, isBishop bool) bitboard {
 		}
 
 		usedAttacks = [4096]bitboard{}
-		var i int
-		var fail bool
+
+		var (
+			i    int
+			fail bool
+		)
 
 		for i = 0; !fail && i < permutations; i++ {
 			magicIdx := int((occ[i] * magicNum) >> (64 - bitCount))
@@ -445,6 +450,7 @@ func getBishopAttacks(sq Square, occupancy bitboard) bitboard {
 	occupancy &= bishopRelevantOccupancyBitsMask[sq]
 	occupancy *= bishopMagics[sq]
 	occupancy >>= 64 - BishopRelevantOccupancyBitsPopulationCount[sq]
+
 	return bishopAttacksMask[sq][occupancy]
 }
 
@@ -453,6 +459,7 @@ func getRookAttacks(sq Square, occupancy bitboard) bitboard {
 	occupancy &= rookRelevantOccupancyBitsMask[sq]
 	occupancy *= rookMagics[sq]
 	occupancy >>= 64 - RookRelevantOccupancyBitsPopulationCount[sq]
+
 	return rookAttacksMask[sq][occupancy]
 }
 

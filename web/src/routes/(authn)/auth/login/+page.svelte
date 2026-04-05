@@ -2,7 +2,7 @@
 	import type { PageProps, Snapshot } from './$types';
 	import Login from './login.svelte';
 
-	let { data }: PageProps = $props();
+	let { data, params }: PageProps = $props();
 	export const snapshot: Snapshot = { capture: () => {}, restore: () => {} };
 </script>
 
@@ -10,4 +10,4 @@
 	<title>Login</title>
 </svelte:head>
 
-<Login {data} bind:capture={snapshot.capture} bind:restore={snapshot.restore} />
+<Login {data} {params} bind:capture={snapshot.capture} bind:restore={snapshot.restore} />

@@ -1,10 +1,11 @@
 syntax = "proto3";
 
 package pb;
-option go_package = "github.com/dankobg/juicer/pb";
 
 import "google/protobuf/duration.proto";
 import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/dankobg/juicer/pb";
 
 enum Color {
   COLOR_UNSPECIFIED = 0;
@@ -27,7 +28,7 @@ enum Variant {
 enum GameTimeKind {
   GAME_TIME_KIND_UNSPECIFIED = 0;
   GAME_TIME_KIND_REALTIME = 1;
-  GAME_TIME_KIND_CORRESPONDANCE = 2;
+  GAME_TIME_KIND_CORRESPONDENCE = 2;
   GAME_TIME_KIND_UNLIMITED = 3;
 }
 
@@ -55,20 +56,20 @@ enum GameResult {
 
 enum GameResultStatus {
   GAME_RESULT_STATUS_UNSPECIFIED = 0;
-	GAME_RESULT_STATUS_CHECKMATE = 1;
-	GAME_RESULT_STATUS_INSUFFICIENT_MATERIAL = 2;
-	GAME_RESULT_STATUS_THREEFOLD_REPETITION = 3;
-	GAME_RESULT_STATUS_FIVEFOLD_REPETITION = 4;
-	GAME_RESULT_STATUS_FIFTY_MOVE_RULE = 5;
-	GAME_RESULT_STATUS_SEVENTYFIVE_MOVE_RULE = 6;
-	GAME_RESULT_STATUS_STALEMATE = 7;
-	GAME_RESULT_STATUS_RESIGNATION = 8;
-	GAME_RESULT_STATUS_DRAW_AGREED = 9;
-	GAME_RESULT_STATUS_FLAGGED = 10;
-	GAME_RESULT_STATUS_ADJUDICATION = 11;
-	GAME_RESULT_STATUS_TIMED_OUT = 12;
-	GAME_RESULT_STATUS_ABORTED = 13;
-	GAME_RESULT_STATUS_INTERRUPTED = 14;
+  GAME_RESULT_STATUS_CHECKMATE = 1;
+  GAME_RESULT_STATUS_INSUFFICIENT_MATERIAL = 2;
+  GAME_RESULT_STATUS_THREEFOLD_REPETITION = 3;
+  GAME_RESULT_STATUS_FIVEFOLD_REPETITION = 4;
+  GAME_RESULT_STATUS_FIFTY_MOVE_RULE = 5;
+  GAME_RESULT_STATUS_SEVENTYFIVE_MOVE_RULE = 6;
+  GAME_RESULT_STATUS_STALEMATE = 7;
+  GAME_RESULT_STATUS_RESIGNATION = 8;
+  GAME_RESULT_STATUS_DRAW_AGREED = 9;
+  GAME_RESULT_STATUS_FLAGGED = 10;
+  GAME_RESULT_STATUS_ADJUDICATION = 11;
+  GAME_RESULT_STATUS_TIMED_OUT = 12;
+  GAME_RESULT_STATUS_ABORTED = 13;
+  GAME_RESULT_STATUS_INTERRUPTED = 14;
 }
 
 enum GameState {
@@ -89,14 +90,14 @@ enum GameSideChoice {
 
 message Message {
   oneof event {
-		Problem problem = 1;
-		ClientConnected client_connected = 2;
-		ClientDisconnected client_disconnected = 3;
+    Problem problem = 1;
+    ClientConnected client_connected = 2;
+    ClientDisconnected client_disconnected = 3;
     SeekGame seek_game = 4;
     CancelSeekGame cancel_seek_game = 5;
     HubInfo hub_info = 6;
     MatchFound match_found = 7;
-		GameAbort game_abort = 8;
+    GameAbort game_abort = 8;
     GameOfferDraw game_offer_draw = 9;
     GameResign game_resign = 10;
     GameDeclineDraw game_decline_draw = 11;
@@ -107,16 +108,34 @@ message Message {
     PlayMoveUCI play_move_uci = 16;
     ReceiveMove receive_move = 17;
     GameFinished game_finished = 18;
+    RequestInitialChannels request_initial_channels = 19;
+    InitialChannelsReply initial_channels = 20;
+
+    Test test = 69;
   }
 }
 
-message Clocks {  
+message Test {
+  string message = 1;
+}
+
+message RequestInitialChannels {
+  string client_id = 1;
+  string conn_id = 2;
+  string path = 3;
+}
+
+message InitialChannelsReply {
+  repeated string initial_channels = 1;
+}
+
+message Clocks {
   google.protobuf.Duration white = 1;
   google.protobuf.Duration black = 2;
 }
 
 message Problem {
-	string message = 1;
+  string message = 1;
 }
 
 message ClientConnected {
@@ -128,11 +147,11 @@ message ClientDisconnected {
 }
 
 message SeekGame {
-  GameTimeControl timeControl = 1;
+  GameTimeControl time_control = 1;
 }
 
 message CancelSeekGame {
-  GameTimeControl timeControl = 1;
+  GameTimeControl time_control = 1;
 }
 
 message HubInfo {
@@ -159,18 +178,18 @@ message HistoryMoveInfo {
 }
 
 message MatchFound {
-  string game_id = 1;
+  int64 game_id = 1;
   string client_id = 2;
   GameState game_state = 3;
   Color color = 4;
   string fen = 5;
   uint32 ply = 6;
-  Clocks clocks = 7; 
+  Clocks clocks = 7;
   repeated string legal_moves = 8;
   GameTimeControl time_control = 9;
   optional OpponentInfo opponent_info = 10;
   int64 reconnect_timeout_ms = 11;
-  int64 firstMove_timeout_ms = 12;
+  int64 first_move_timeout_ms = 12;
   repeated HistoryMoveInfo history_move_infos = 13;
   google.protobuf.Timestamp start_time = 14;
 }
@@ -208,8 +227,8 @@ message ReceiveMove {
   string lan = 2;
   string san = 3;
   string fen = 4;
-  uint32 ply = 5;  
-  Clocks clocks = 6; 
+  uint32 ply = 5;
+  Clocks clocks = 6;
   repeated string legal_moves = 7;
 }
 

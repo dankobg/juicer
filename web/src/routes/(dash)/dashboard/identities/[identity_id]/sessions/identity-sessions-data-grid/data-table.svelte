@@ -23,13 +23,14 @@
 	import { createSvelteTable } from '$lib/components/ui/data-table/data-table.svelte';
 	import FlexRender from '$lib/components/ui/data-table/flex-render.svelte';
 	import * as Table from '$lib/components/ui/table/index';
-	import type { Identity } from '$lib/gen/juicer_openapi';
+	import type { components } from '$lib/gen/juicer_openapi';
 
 	let {
 		columns,
 		data,
 		identity
-	}: { columns: ColumnDef<TData, TValue>[]; data: TData[]; identity: Identity | undefined } = $props();
+	}: { columns: ColumnDef<TData, TValue>[]; data: TData[]; identity: components['schemas']['Identity'] | undefined } =
+		$props();
 
 	let rowSelection = $state<RowSelectionState>({});
 	let columnVisibility = $state<VisibilityState>({});
@@ -104,9 +105,8 @@
 	});
 
 	function getStickyColumnClasses(id: string): string {
-		const base = 'sticky bg-[#fafaf9] hover:bg-[#f7f7f6] dark:bg-[#1a1716] dark:hover:bg-[#211d1d]';
-		if (id === 'actions') return `${base} right-0`;
-		if (id === 'select') return `${base} left-0`;
+		if (id === 'actions') return `sticky right-0`;
+		if (id === 'select') return `sticky left-0`;
 		return '';
 	}
 </script>
@@ -117,7 +117,7 @@
 		<Table.Root>
 			<Table.Header>
 				{#each table.getHeaderGroups() as headerGroup (headerGroup.id)}
-					<Table.Row>
+					<Table.Row class="custom-row">
 						{#each headerGroup.headers as header (header.id)}
 							<Table.Head colspan={header.colSpan} class={getStickyColumnClasses(header.column.id)}>
 								{#if !header.isPlaceholder}
@@ -130,7 +130,7 @@
 			</Table.Header>
 			<Table.Body>
 				{#each table.getRowModel().rows as row (row.id)}
-					<Table.Row data-state={row.getIsSelected() && 'selected'}>
+					<Table.Row data-state={row.getIsSelected() && 'selected'} class="custom-row">
 						{#each row.getVisibleCells() as cell (cell.id)}
 							<Table.Cell class={getStickyColumnClasses(cell.column.id)}>
 								<FlexRender content={cell.column.columnDef.cell} context={cell.getContext()} />

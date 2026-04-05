@@ -239,10 +239,12 @@ func TestGeneratePawnAttacksMask(t *testing.T) {
 	for name, tc := range testCases {
 		t.Run(name, func(t *testing.T) {
 			attacksWhite := generatePawnAttacksMask(tc.sq, White)
+
 			attacksBlack := generatePawnAttacksMask(tc.sq, Black)
 			if attacksWhite != tc.wantWhite {
 				t.Fatalf("invalid white pawn attacks mask: want %s, got %s", tc.wantWhite, attacksWhite)
 			}
+
 			if attacksBlack != tc.wantBlack {
 				t.Fatalf("invalid black pawn attacks mask: want %s, got %s", tc.wantBlack, attacksBlack)
 			}

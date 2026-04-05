@@ -18,6 +18,7 @@ func traverse(p *Position, depth int) int64 {
 	}
 
 	var num int64
+
 	pseudo := p.generateAllPseudoLegalMoves()
 
 	for i := range pseudo {
@@ -40,6 +41,7 @@ func Perft(fen string, depth int) int64 {
 	}
 
 	nodes := traverse(p, depth)
+
 	return nodes
 }
 
@@ -57,6 +59,7 @@ func Divide(fen string, depth int) {
 		if pseudo[i].String()[0] != pseudo[j].String()[0] {
 			return pseudo[i].String()[0] < pseudo[j].String()[0]
 		}
+
 		return pseudo[i].String()[1:] < pseudo[j].String()[1:]
 	})
 
@@ -90,6 +93,7 @@ func CompareWithStockfishPerft(fen string, depth int, sfBinaryPath *string) {
 		if pseudo[i].String()[0] != pseudo[j].String()[0] {
 			return pseudo[i].String()[0] < pseudo[j].String()[0]
 		}
+
 		return pseudo[i].String()[1:] < pseudo[j].String()[1:]
 	})
 
@@ -129,7 +133,10 @@ func CompareWithStockfishPerft(fen string, depth int, sfBinaryPath *string) {
 	if err != nil {
 		panic("out pipe err: " + err.Error())
 	}
-	defer out.Close()
+
+	defer func() {
+		_ = out.Close()
+	}()
 
 	if err := cmd.Start(); err != nil {
 		panic("cmd start err: " + err.Error())
@@ -137,14 +144,14 @@ func CompareWithStockfishPerft(fen string, depth int, sfBinaryPath *string) {
 
 	send := func(command string) {
 		if _, err := in.Write([]byte(command + "\n")); err != nil {
-			in.Close()
+			_ = in.Close()
 		}
 	}
 
 	send("position fen " + fen)
 	send("go perft " + strconv.Itoa(depth))
 
-	in.Close()
+	_ = in.Close()
 
 	scanner := bufio.NewScanner(out)
 
@@ -172,26 +179,28 @@ func CompareWithStockfishPerft(fen string, depth int, sfBinaryPath *string) {
 		if m == "total" {
 			continue
 		}
+
 		if sf[m] != n {
 			diff[m] = n
 		}
 	}
 
-	cmd.Wait()
+	_ = cmd.Wait()
 
 	tw := tabwriter.NewWriter(os.Stdout, 11, 4, 1, ' ', tabwriter.Debug)
 
-	fmt.Fprintf(tw, "+----------------------------------------------+\n")
-	fmt.Fprintf(tw, "| Move\t Stockfish\t Juicer\t Diff\t\n")
-	fmt.Fprintf(tw, "+----------------------------------------------+\n")
+	_, _ = fmt.Fprintf(tw, "+----------------------------------------------+\n")
+	_, _ = fmt.Fprintf(tw, "| Move\t Stockfish\t Juicer\t Diff\t\n")
+	_, _ = fmt.Fprintf(tw, "+----------------------------------------------+\n")
 
 	for k, v := range sf {
 		if k != "total" {
-			fmt.Fprintf(tw, "| %v\t %v\t %v\t %v\t\n", k, v, mine[k], v-mine[k])
+			_, _ = fmt.Fprintf(tw, "| %v\t %v\t %v\t %v\t\n", k, v, mine[k], v-mine[k])
 		}
 	}
-	fmt.Fprintf(tw, "+----------------------------------------------+\n")
-	fmt.Fprintf(tw, "| %v\t %v\t %v\t %v\t\n", "Nodes", sf["total"], mine["total"], sf["total"]-mine["total"])
-	fmt.Fprintf(tw, "+----------------------------------------------+\n")
-	tw.Flush()
+
+	_, _ = fmt.Fprintf(tw, "+----------------------------------------------+\n")
+	_, _ = fmt.Fprintf(tw, "| %v\t %v\t %v\t %v\t\n", "Nodes", sf["total"], mine["total"], sf["total"]-mine["total"])
+	_, _ = fmt.Fprintf(tw, "+----------------------------------------------+\n")
+	_ = tw.Flush()
 }

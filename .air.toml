@@ -1,18 +1,23 @@
+#:schema https://json.schemastore.org/any.json
+
+env_files = []
 root = "."
 testdata_dir = "testdata"
-tmp_dir = "bin"
+tmp_dir = "tmp"
 
 [build]
-  args_bin = []
-  bin = "./bin/juicer"
-  cmd = "go build -o ./bin/juicer main.go"
+  args_bin = ["serve"]
+  bin = "./tmp/juicer"
+  cmd = "CGO_ENABLED=0 go build -o ./tmp/juicer main.go"
   delay = 100
-  exclude_dir = ["assets", "tmp", "bin", "vendor", "testdata", ".github", ".vscode", ".direnv", "certs", "docker", "web", "k8s", "traefik"]
+  entrypoint = ["./tmp/juicer"]
+  exclude_dir = ["assets", "tmp", "vendor", "testdata", ".direnv", ".git", ".github", ".vscode", ".zed", "api/gen", "data/public", "data/templates", "db/migrations", "bruno", "certs", "docker", "web", "k8s", "traefik", "uploads"]
   exclude_file = []
   exclude_regex = ["_test.go"]
   exclude_unchanged = false
   follow_symlink = false
   full_bin = ""
+  ignore_dangerous_root_dir = false
   include_dir = []
   include_ext = ["go", "tpl", "tmpl", "html"]
   include_file = []
@@ -44,6 +49,7 @@ tmp_dir = "bin"
 
 [proxy]
   app_port = 0
+  app_start_timeout = 0
   enabled = false
   proxy_port = 0
 

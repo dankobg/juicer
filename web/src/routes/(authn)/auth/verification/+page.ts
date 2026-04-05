@@ -15,7 +15,9 @@ import { RequiredError } from '@ory/client-fetch';
 import { isErrorIdSecurityCsrfViolation } from '$lib/kratos/helpers';
 import { isErrorIdSecurityIdentityMismatch } from '$lib/kratos/helpers';
 
-export const load: PageLoad = (async ({ url }) => {
+export const load: PageLoad = (async ({ url, depends }) => {
+	depends('data:verification');
+
 	const returnToParam = browser && url.searchParams.get('return_to');
 	const flowIdParam = browser && url.searchParams.get('flow');
 

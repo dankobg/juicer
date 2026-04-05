@@ -50,31 +50,31 @@ export const config = {
 		},
 		csrf_token: {
 			label: '',
-			priority: 100
+			priority: 90
 		},
 		'traits.email': {
 			label: 'Email',
-			priority: 90
+			priority: 80
 		},
 		email: {
 			label: 'Email',
-			priority: 80
+			priority: 70
 		},
 		identifier: {
 			label: 'Email',
-			priority: 80
+			priority: 60
 		},
 		password: {
 			label: 'Password',
-			priority: 80
+			priority: 50
 		},
 		'traits.first_name': {
 			label: 'First name',
-			priority: 95
+			priority: 30
 		},
 		'traits.last_name': {
 			label: 'Last name',
-			priority: 96
+			priority: 20
 		}
 	}
 };

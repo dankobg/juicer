@@ -40,14 +40,14 @@ type mailerOpts struct {
 }
 
 type SmtpClientOption interface {
-	apply(*mailerOpts)
+	apply(mo *mailerOpts)
 }
 
 type SmtpClientOptions []SmtpClientOption
 
-func (o SmtpClientOptions) apply(s *mailerOpts) {
+func (o SmtpClientOptions) apply(mo *mailerOpts) {
 	for _, opt := range o {
-		opt.apply(s)
+		opt.apply(mo)
 	}
 }
 
@@ -223,14 +223,17 @@ func (client *SmtpClient) Send(ctx context.Context, msg *Message) error {
 		client.Log.Error("invalid `from` header: %w", slog.Any("error", err))
 		return err
 	}
+
 	if err := m.To(formatAddresses(msg.To, true)...); err != nil {
 		client.Log.Error("invalid `to` header: %w", slog.Any("error", err))
 		return err
 	}
+
 	if err := m.Cc(formatAddresses(msg.Cc, true)...); err != nil {
 		client.Log.Error("invalid `Cc` header: %w", slog.Any("error", err))
 		return err
 	}
+
 	if err := m.Bcc(formatAddresses(msg.Bcc, true)...); err != nil {
 		client.Log.Error("invalid `Bcc` header: %w", slog.Any("error", err))
 		return err
@@ -239,7 +242,10 @@ func (client *SmtpClient) Send(ctx context.Context, msg *Message) error {
 	m.Subject(msg.Subject)
 	m.SetBodyString(gomail.TypeTextHTML, msg.HTML)
 	m.AddAlternativeString(gomail.TypeTextPlain, msg.Text)
-	m.SetGenHeader(gomail.HeaderReplyTo, msg.ReplyTo)
+
+	if err := m.SetAddrHeader(gomail.HeaderReplyTo, msg.ReplyTo); err != nil {
+		return fmt.Errorf("m.SetAddrHeader: %w", err)
+	}
 
 	for k, v := range msg.Headers {
 		m.SetGenHeader(gomail.Header(k), v)
@@ -258,8 +264,9 @@ func (client *SmtpClient) Send(ctx context.Context, msg *Message) error {
 			},
 		}
 	}
+
 	if len(attachments) > 0 {
-		m.SetAttachements(attachments)
+		m.SetAttachments(attachments)
 	}
 
 	if err := c.DialAndSendWithContext(ctx, m); err != nil {

@@ -19,7 +19,7 @@ func New(config config.RedisConfig) (*redis.Client, error) {
 		DB:       config.DB,
 	})
 
-	if err := rdb.Ping(context.TODO()).Err(); err != nil {
+	if err := rdb.Ping(context.Background()).Err(); err != nil {
 		return nil, fmt.Errorf("failed to ping redis server: %w", err)
 	}
 

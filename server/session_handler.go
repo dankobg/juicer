@@ -2,85 +2,170 @@ package server
 
 import (
 	"context"
-	"fmt"
+	"log/slog"
 	"net/http"
 
 	api "github.com/dankobg/juicer/api/gen"
-	"github.com/dankobg/juicer/db/dto"
+	"github.com/dankobg/juicer/dto"
+	"github.com/dankobg/juicer/shared"
+	rts "github.com/ory/keto/proto/ory/keto/relation_tuples/v1alpha2"
 )
 
-func (h *ApiHandler) ListSessions(ctx context.Context, request api.ListSessionsRequestObject) (api.ListSessionsResponseObject, error) {
-	req := h.Kratos.Admin.IdentityAPI.ListSessions(ctx)
+func (a *ApiHandler) ListSessions(ctx context.Context, request api.ListSessionsRequestObject) (api.ListSessionsResponseObject, error) {
+	sess := GetSession(ctx)
+
+	if checkResp, err := a.Keto.Check.Check(ctx, &rts.CheckRequest{
+		Tuple: &rts.RelationTuple{
+			Namespace: "Sessions",
+			Object:    "sessions",
+			Relation:  "view",
+			Subject:   rts.NewSubjectID(shared.AuthzIdentityID(sess.Identity.Id)),
+		},
+	}); err != nil || !checkResp.GetAllowed() {
+		return api.ListSessions403JSONResponse{UnauthorizedErrorResponseJSONResponse: newUnauthorizedResp("session_permission", "permission denied")}, nil
+	}
+
+	req := a.Kratos.Admin.IdentityAPI.ListSessions(ctx)
 	if request.Params.Active != nil {
 		req = req.Active(*request.Params.Active)
 	}
+
 	if request.Params.PageSize != nil {
 		req = req.PageSize(*request.Params.PageSize)
 	}
-	if request.Params.PageToken != nil {
+
+	if request.Params.PageToken != nil && *request.Params.PageToken != "1" {
 		req = req.PageToken(*request.Params.PageToken)
 	}
+
 	if request.Params.Expand != nil {
 		expands := make([]string, 0, len(*request.Params.Expand))
 		for _, x := range *request.Params.Expand {
 			expands = append(expands, string(x))
 		}
+
 		req = req.Expand(expands)
 	}
-	sessions, _, err := req.Execute()
+
+	sessions, sessionsResp, err := req.Execute()
 	if err != nil {
-		return make(api.ListSessions200JSONResponse, 0), nil
+		return api.ListSessionsdefaultJSONResponse{StatusCode: http.StatusServiceUnavailable, Body: newGenericErr(http.StatusServiceUnavailable, "sessions_list", "failed to list sessions")}, nil
 	}
+
+	defer func() { _ = sessionsResp.Body.Close() }()
+
 	resp := make(api.ListSessions200JSONResponse, 0, len(sessions))
 	for _, session := range sessions {
 		res, err := dto.SessionToResponse(session)
 		if err != nil {
-			fmt.Println(err.Error())
+			a.Log.Error("failed to convert session to response", slog.Any("error", err))
 			return nil, err
 		}
+
 		resp = append(resp, res)
 	}
+
 	return resp, nil
 }
 
-func (h *ApiHandler) DisableSession(ctx context.Context, request api.DisableSessionRequestObject) (api.DisableSessionResponseObject, error) {
-	req := h.Kratos.Admin.IdentityAPI.DisableSession(ctx, request.ID)
-	_, err := req.Execute()
-	if err != nil {
-		return api.DisableSession400JSONResponse{GenericErrorJSONResponse: api.GenericErrorJSONResponse{Code: http.StatusBadRequest, Message: err.Error()}}, nil
-	}
-	return api.DisableSession204Response{}, nil
-}
+func (a *ApiHandler) GetSession(ctx context.Context, request api.GetSessionRequestObject) (api.GetSessionResponseObject, error) {
+	sess := GetSession(ctx)
 
-func (h *ApiHandler) GetSession(ctx context.Context, request api.GetSessionRequestObject) (api.GetSessionResponseObject, error) {
-	req := h.Kratos.Admin.IdentityAPI.GetSession(ctx, request.ID)
+	req := a.Kratos.Admin.IdentityAPI.GetSession(ctx, request.ID)
 	if request.Params.Expand != nil {
 		expands := make([]string, 0, len(*request.Params.Expand))
 		for _, x := range *request.Params.Expand {
 			expands = append(expands, string(x))
 		}
+
 		req = req.Expand(expands)
 	}
-	session, _, err := req.Execute()
+
+	session, sessionResp, err := req.Execute()
 	if err != nil {
-		return api.GetSession400JSONResponse{GenericErrorJSONResponse: api.GenericErrorJSONResponse{Code: http.StatusBadRequest, Message: err.Error()}}, nil
+		return api.GetSessiondefaultJSONResponse{StatusCode: http.StatusServiceUnavailable, Body: newGenericErr(http.StatusServiceUnavailable, "session_get", "failed to get session")}, nil
 	}
+
+	if checkResp, err := a.Keto.Check.Check(ctx, &rts.CheckRequest{
+		Tuple: &rts.RelationTuple{
+			// Namespace: "Session",
+			// Object:    shared.AuthzSessionID(request.ID),
+			Namespace: "Sessions",
+			Object:    "sessions",
+			Relation:  "view",
+			Subject:   rts.NewSubjectID(shared.AuthzIdentityID(sess.Identity.Id)),
+		},
+	}); err != nil || !checkResp.GetAllowed() {
+		return api.GetSession403JSONResponse{UnauthorizedErrorResponseJSONResponse: newUnauthorizedResp("session_permission", "permission denied")}, nil
+	}
+
+	defer func() { _ = sessionResp.Body.Close() }()
+
 	resp, err := dto.SessionToResponse(*session)
 	if err != nil {
 		return nil, err
 	}
+
 	return api.GetSession200JSONResponse(resp), nil
 }
 
-func (h *ApiHandler) ExtendSession(ctx context.Context, request api.ExtendSessionRequestObject) (api.ExtendSessionResponseObject, error) {
-	req := h.Kratos.Admin.IdentityAPI.ExtendSession(ctx, request.ID)
-	session, _, err := req.Execute()
-	if err != nil {
-		return api.ExtendSession400JSONResponse{GenericErrorJSONResponse: api.GenericErrorJSONResponse{Code: http.StatusBadRequest, Message: err.Error()}}, nil
+func (a *ApiHandler) DisableSession(ctx context.Context, request api.DisableSessionRequestObject) (api.DisableSessionResponseObject, error) {
+	sess := GetSession(ctx)
+
+	if checkResp, err := a.Keto.Check.Check(ctx, &rts.CheckRequest{
+		Tuple: &rts.RelationTuple{
+			// Namespace: "Session",
+			// Object:    shared.AuthzSessionID(request.ID),
+			Namespace: "Sessions",
+			Object:    "sessions",
+			Relation:  "manage",
+			Subject:   rts.NewSubjectID(shared.AuthzIdentityID(sess.Identity.Id)),
+		},
+	}); err != nil || !checkResp.GetAllowed() {
+		return api.DisableSession403JSONResponse{UnauthorizedErrorResponseJSONResponse: newUnauthorizedResp("session_permission", "permission denied")}, nil
 	}
+
+	req := a.Kratos.Admin.IdentityAPI.DisableSession(ctx, request.ID)
+
+	disableSessionResp, err := req.Execute()
+	if err != nil {
+		return api.DisableSessiondefaultJSONResponse{StatusCode: http.StatusServiceUnavailable, Body: newGenericErr(http.StatusServiceUnavailable, "session_disable", "failed to disable session")}, nil
+	}
+
+	defer func() { _ = disableSessionResp.Body.Close() }()
+
+	return api.DisableSession204Response{}, nil
+}
+
+func (a *ApiHandler) ExtendSession(ctx context.Context, request api.ExtendSessionRequestObject) (api.ExtendSessionResponseObject, error) {
+	sess := GetSession(ctx)
+
+	if checkResp, err := a.Keto.Check.Check(ctx, &rts.CheckRequest{
+		Tuple: &rts.RelationTuple{
+			// Namespace: "Session",
+			// Object:    shared.AuthzSessionID(request.ID),
+			Namespace: "Sessions",
+			Object:    "sessions",
+			Relation:  "manage",
+			Subject:   rts.NewSubjectID(shared.AuthzIdentityID(sess.Identity.Id)),
+		},
+	}); err != nil || !checkResp.GetAllowed() {
+		return api.ExtendSession403JSONResponse{UnauthorizedErrorResponseJSONResponse: newUnauthorizedResp("session_permission", "permission denied")}, nil
+	}
+
+	req := a.Kratos.Admin.IdentityAPI.ExtendSession(ctx, request.ID)
+
+	session, sessionResp, err := req.Execute()
+	if err != nil {
+		return api.ExtendSessiondefaultJSONResponse{StatusCode: http.StatusServiceUnavailable, Body: newGenericErr(http.StatusServiceUnavailable, "session_extend", "failed to extend session")}, nil
+	}
+
+	defer func() { _ = sessionResp.Body.Close() }()
+
 	resp, err := dto.SessionToResponse(*session)
 	if err != nil {
 		return nil, err
 	}
+
 	return api.ExtendSession200JSONResponse(resp), nil
 }

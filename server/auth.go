@@ -2,10 +2,11 @@ package server
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"strings"
 
-	"github.com/labstack/echo/v4"
+	"github.com/getkin/kin-openapi/openapi3filter"
 	orykratos "github.com/ory/client-go"
 )
 
@@ -23,29 +24,29 @@ const (
 )
 
 type authHeadersResult struct {
-	csrf         *http.Cookie
-	session      *http.Cookie
-	authHeader   string
-	cookieHeader string
+	csrfCookie    *http.Cookie
+	sessionCookie *http.Cookie
+	authHeader    string
+	cookieHeader  string
 }
 
 func ExtractAuthHeadersFromRequest(r *http.Request) *authHeadersResult {
 	result := &authHeadersResult{
-		cookieHeader: r.Header.Get(echo.HeaderCookie),
-		authHeader:   r.Header.Get(echo.HeaderAuthorization),
+		cookieHeader: r.Header.Get("Cookie"),
+		authHeader:   r.Header.Get("Authorization"),
 	}
 
 	for _, c := range r.Cookies() {
 		if c != nil {
 			if ok := strings.HasPrefix(c.Name, oryKratosCsrfCookiePrefix); ok {
-				result.csrf = c
+				result.csrfCookie = c
 			}
 		}
 	}
 
 	sessionCookie, _ := r.Cookie(oryKratosSessionCookieName)
 	if sessionCookie != nil {
-		result.session = sessionCookie
+		result.sessionCookie = sessionCookie
 	}
 
 	return result
@@ -60,44 +61,55 @@ func GetSession(ctx context.Context) *orykratos.Session {
 	if !ok {
 		return nil
 	}
+
 	return sess
 }
 
-func (h *ApiHandler) RequireAuth(next echo.HandlerFunc) echo.HandlerFunc {
-	return func(c echo.Context) error {
-		sess := GetSession(c.Request().Context())
-
-		if sess == nil {
-			return &echo.HTTPError{Code: http.StatusUnauthorized, Message: "session is required"}
+func (a *ApiHandler) RequireAuth(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		sess := GetSession(r.Context())
+		if !sessionExists(sess) {
+			http.Error(w, "session is required", http.StatusUnauthorized)
+			return
 		}
 
-		if sess.Active != nil && !*sess.Active {
-			return &echo.HTTPError{Code: http.StatusUnauthorized, Message: "session is invalid or has expired already"}
+		if !sessionValid(sess) {
+			http.Error(w, "session is invalid or has already expired", http.StatusUnauthorized)
 		}
 
-		return next(c)
-	}
+		next.ServeHTTP(w, r)
+	})
 }
 
-func (h *ApiHandler) RequireAnonymous(next echo.HandlerFunc) echo.HandlerFunc {
-	return func(c echo.Context) error {
-		sess := GetSession(c.Request().Context())
-
-		if sess != nil && sess.Active != nil && *sess.Active {
-			return &echo.HTTPError{Code: http.StatusForbidden, Message: "must have no session"}
+func (a *ApiHandler) RequireAnonymous(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		sess := GetSession(r.Context())
+		if sessionValid(sess) {
+			http.Error(w, "must have no session", http.StatusUnauthorized)
+			return
 		}
 
-		return next(c)
-	}
+		next.ServeHTTP(w, r)
+	})
 }
 
-func (h *ApiHandler) AttachSessionData(next echo.HandlerFunc) echo.HandlerFunc {
-	return func(c echo.Context) error {
-		ctx := c.Request().Context()
-		info := ExtractAuthHeadersFromRequest(c.Request())
+func sessionExists(sess *orykratos.Session) bool {
+	return sess != nil
+}
 
-		var hasAuthHeader bool
-		var hasCookieHeader bool
+func sessionValid(sess *orykratos.Session) bool {
+	return sess != nil && sess.Active != nil && *sess.Active
+}
+
+func (a *ApiHandler) AttachSessionData(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctx := r.Context()
+		info := ExtractAuthHeadersFromRequest(r)
+
+		var (
+			hasAuthHeader   bool
+			hasCookieHeader bool
+		)
 
 		if info.authHeader != "" && strings.HasPrefix(info.authHeader, prefixBearer) {
 			hasAuthHeader = true
@@ -108,24 +120,55 @@ func (h *ApiHandler) AttachSessionData(next echo.HandlerFunc) echo.HandlerFunc {
 		}
 
 		if !hasAuthHeader && !hasCookieHeader {
-			return next(c)
+			next.ServeHTTP(w, r)
+			return
 		}
 
-		req := h.Kratos.Public.FrontendAPI.ToSession(ctx).Cookie(info.session.String())
-		session, _, err := req.Execute()
-		if err != nil {
-			return next(c)
+		var sessionCookie string
+		if info.sessionCookie != nil {
+			sessionCookie = info.sessionCookie.String()
 		}
+
+		sessionToken := strings.TrimPrefix(info.authHeader, "Bearer ")
+
+		toSessionReq := a.Kratos.Public.FrontendAPI.ToSession(ctx).Cookie(sessionCookie).XSessionToken(sessionToken)
+
+		session, sessionResp, err := toSessionReq.Execute()
+		if err != nil {
+			next.ServeHTTP(w, r)
+			return
+		}
+
+		defer func() { _ = sessionResp.Body.Close() }()
 
 		if session != nil && session.Active != nil && !*session.Active {
-			return next(c)
+			next.ServeHTTP(w, r)
+			return
 		}
 
 		if session != nil {
 			ctxWithSession := WithSession(ctx, session)
-			c.SetRequest(c.Request().WithContext(ctxWithSession))
+			req := r.WithContext(ctxWithSession)
+			next.ServeHTTP(w, req)
+
+			return
 		}
 
-		return next(c)
+		next.ServeHTTP(w, r)
+	})
+}
+
+func authFunc(ctx context.Context, in *openapi3filter.AuthenticationInput) error {
+	if in.SecuritySchemeName == "cookieAuth" && in.SecurityScheme != nil && in.SecurityScheme.Name == "ory_kratos_session" {
+		sess := GetSession(ctx)
+		if !sessionExists(sess) {
+			return fmt.Errorf("session is required")
+		}
+
+		if !sessionValid(sess) {
+			return fmt.Errorf("session is invalid or has already expired")
+		}
 	}
+
+	return nil
 }

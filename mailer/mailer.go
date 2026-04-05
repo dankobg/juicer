@@ -3,7 +3,6 @@ package mailer
 import (
 	"context"
 	"io"
-
 	"net/mail"
 )
 

@@ -1,27 +1,46 @@
-import type { ListIdentitySessionsRequest } from '$lib/gen/juicer_openapi';
 import { juicer } from '$lib/juicer/client';
 import type { PageLoad } from './$types';
+import type { operations } from '$lib/gen/juicer_openapi';
+import { browser } from '$app/environment';
+import { goto } from '$app/navigation';
+import { config } from '$lib/kratos/config';
 
-export const load: PageLoad = async ({ url, params, depends }) => {
-	depends(`data:identity-sessions-${params.identity_id}`);
+export const load: PageLoad = async ({ fetch, url, params, depends }) => {
+	depends(`data:dashboard-identities-${params.identity_id}-sessions`);
+
 	try {
-		const req: ListIdentitySessionsRequest = {
-			id: params.identity_id,
-			pageSize: 1_000
+		const listIdentitySessionsParams: operations['listIdentitySessions']['parameters'] = {
+			path: { id: params.identity_id },
+			query: { page_size: 500 }
 		};
 		const active = url.searchParams.get('active');
 		if (active) {
-			req.active = active === 'true' ? true : active === 'false' ? false : false;
+			listIdentitySessionsParams.query!.active = active === 'true' ? true : active === 'false' ? false : false;
 		}
 		const pageToken = url.searchParams.get('page_token');
 		if (pageToken) {
-			req.pageToken = pageToken;
+			listIdentitySessionsParams.query!.page_token = pageToken;
 		}
-		const sessions = await juicer.listIdentitySessions(req);
-		const identity = await juicer.getIdentity({ id: params.identity_id });
+		const sessionsResult = await juicer.GET('/identities/{id}/sessions', {
+			fetch,
+			params: listIdentitySessionsParams
+		});
+		const identityResult = await juicer.GET('/identities/{id}', {
+			fetch,
+			params: {
+				path: { id: params.identity_id }
+			}
+		});
+
+		if (sessionsResult.error?.status_code === 403 || identityResult.error?.status_code === 403) {
+			if (browser) {
+				goto(config.routes.dashboard.path);
+			}
+		}
+
 		return {
-			identity,
-			sessions
+			identityResult,
+			sessionsResult
 		};
 	} catch (error) {
 		console.log('err', error);

@@ -1,4 +1,6 @@
+const backendBaseUrl = import.meta.env['VITE_PUBLIC_BACKEND_BASE'] as string;
 import { clsx, type ClassValue } from 'clsx';
+import type { FormPath } from 'sveltekit-superforms';
 import { twMerge } from 'tailwind-merge';
 
 export function cn(...inputs: ClassValue[]) {
@@ -23,4 +25,42 @@ export function getInitials(name?: string): string {
 	}
 	const last = parts.at(-1)?.charAt(0);
 	return first + last;
+}
+
+export function getChangedFormFields<T extends Record<string, unknown>>(
+	form: T,
+	isTainted: (path?: FormPath<T> | Record<string, unknown> | boolean | undefined) => boolean,
+	pathPrefix = ''
+): Partial<T> {
+	const result: Record<string, unknown> = {};
+
+	for (const key in form) {
+		const value = form[key];
+		const path = [pathPrefix, key].filter(Boolean).join('.');
+
+		if (value instanceof File) {
+			if (isTainted(path as FormPath<T>)) {
+				result[key] = value;
+			}
+			continue;
+		}
+
+		if (value !== null && typeof value === 'object' && !Array.isArray(value)) {
+			const nested = getChangedFormFields(value as T, isTainted, path);
+			if (Object.keys(nested).length > 0) {
+				result[key] = nested;
+			}
+		} else {
+			if (isTainted(path as FormPath<T>)) {
+				result[key] = value;
+			}
+		}
+	}
+
+	return result as Partial<T>;
+}
+
+export function capitalize(s: string) {
+	if (!s) return '';
+	return s[0]?.toUpperCase() + s.slice(1);
 }

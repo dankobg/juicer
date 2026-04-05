@@ -102,11 +102,13 @@ func (c *Chess) MakeMoveUCI(uciMove string) (Move, error) {
 			return m, nil
 		}
 	}
+
 	return 0, fmt.Errorf("invalid move: %v", uciMove)
 }
 
 func (c *Chess) calcRepetitions() {
 	var reps uint16
+
 	depth := max(0, c.Position.Ply-uint16(c.Position.HalfMoveClock))
 
 	for i := len(c.HistoryHashes) - 1; i >= int(depth); i -= 2 {
@@ -158,21 +160,27 @@ func (c *Chess) Status() Status {
 	if c.IsInsufficientMaterial() {
 		return StatusInsufficientMaterial
 	}
+
 	if c.IsThreefoldRepetition() {
 		return StatusThreeFoldRepetition
 	}
+
 	if c.IsFivefoldRepetition() {
 		return StatusFiveFoldRepetition
 	}
+
 	if c.IsDrawBy50MoveRule() {
 		return StatusFiftyMoveRule
 	}
+
 	if c.IsDrawBy75MoveRule() {
 		return StatusSeventyFiveMoveRule
 	}
+
 	if c.IsCheckmate() {
 		return StatusCheckmate
 	}
+
 	if c.IsStalemate() {
 		return StatusStalemate
 	}

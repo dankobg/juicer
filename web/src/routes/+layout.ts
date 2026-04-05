@@ -2,7 +2,9 @@ import { kratos } from '$lib/kratos/client';
 import { createSessionService } from '$lib/kratos/service';
 import type { LayoutLoad } from './$types';
 
+export const ssr = true;
 export const prerender = true;
+export const trailingSlash = 'never';
 
 export const load: LayoutLoad = async () => {
 	try {
@@ -14,8 +16,7 @@ export const load: LayoutLoad = async () => {
 			logoutToken: logoutFlow.logout_token,
 			logoutUrl: logoutFlow.logout_url
 		};
-		// eslint-disable-next-line @typescript-eslint/no-unused-vars
-	} catch (_error: unknown) {
+	} catch (_: unknown) {
 		return {
 			auth: createSessionService(null)
 		};

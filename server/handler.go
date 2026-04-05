@@ -1,66 +1,145 @@
 package server
 
 import (
+	"context"
+	"fmt"
+	"html/template"
 	"log/slog"
 	"net/http"
+	"strings"
 
 	api "github.com/dankobg/juicer/api/gen"
+	"github.com/dankobg/juicer/auth/keto"
+	"github.com/dankobg/juicer/auth/kratos"
 	"github.com/dankobg/juicer/config"
-	"github.com/dankobg/juicer/core"
-	"github.com/dankobg/juicer/keto"
-	"github.com/dankobg/juicer/kratos"
 	"github.com/dankobg/juicer/mailer"
-	"github.com/dankobg/juicer/store"
-	"github.com/gorilla/websocket"
-	"github.com/labstack/echo/v4"
+	"github.com/dankobg/juicer/persistence"
+	"github.com/dankobg/juicer/ws"
 	"github.com/redis/go-redis/v9"
 )
 
-var _ api.StrictServerInterface = (*ApiHandler)(nil)
+// var _ api.StrictServerInterface = (*ApiHandler)(nil)
 
-type ApiHandler struct {
-	Cfg      *config.Config
-	Log      *slog.Logger
-	Kratos   *kratos.Client
-	Keto     *keto.Client
-	Hub      *core.Hub
-	Echo     *echo.Echo
-	Rdb      *redis.Client
-	store    store.Store
-	Mailer   mailer.Mailer
-	upgrader websocket.Upgrader
+type bus struct {
+	subs        map[string]*redis.PubSub
+	subMessages map[string]<-chan *redis.Message
 }
 
-func NewApiHandler(cfg *config.Config, log *slog.Logger, rdb *redis.Client, kratos *kratos.Client, keto *keto.Client, mailer mailer.Mailer, hub *core.Hub, st store.Store) *ApiHandler {
-	e := echo.New()
-	e.HideBanner = true
+type ApiHandler struct {
+	Cfg        *config.Config
+	Log        *slog.Logger
+	Kratos     *kratos.Client
+	Keto       *keto.Client
+	Hub        *ws.Hub
+	Rdb        *redis.Client
+	persistor  persistence.Persistor
+	Mailer     mailer.Mailer
+	openapiTpl *template.Template
+	bus        bus
+}
 
-	upgrader := websocket.Upgrader{
-		ReadBufferSize:  wsReadBufferSize,
-		WriteBufferSize: wsWriteBufferSize,
-		CheckOrigin: func(r *http.Request) bool {
-			if cfg.ENV == "production" {
-				origin := r.Header.Get("Origin")
-				return origin == cfg.Host
-			}
-			return true
+func New(
+	cfg *config.Config,
+	log *slog.Logger,
+	rdb *redis.Client,
+	kratos *kratos.Client,
+	keto *keto.Client,
+	mailer mailer.Mailer,
+	hub *ws.Hub,
+	p persistence.Persistor,
+) *ApiHandler {
+	apiHandler := &ApiHandler{
+		Cfg:       cfg,
+		Log:       log,
+		Kratos:    kratos,
+		Keto:      keto,
+		persistor: p,
+		Mailer:    mailer,
+		Hub:       hub,
+		Rdb:       rdb,
+		bus: bus{
+			subs:        make(map[string]*redis.PubSub),
+			subMessages: make(map[string]<-chan *redis.Message),
 		},
 	}
 
-	return &ApiHandler{
-		Cfg:      cfg,
-		Log:      log,
-		Kratos:   kratos,
-		Keto:     keto,
-		Echo:     e,
-		Hub:      hub,
-		Rdb:      rdb,
-		store:    st,
-		Mailer:   mailer,
-		upgrader: upgrader,
-	}
+	apiHandler.subscribeToPubsub(context.Background())
+
+	return apiHandler
 }
 
-func (h *ApiHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	h.Echo.ServeHTTP(w, r)
+func (a *ApiHandler) SetOpenapiTemplates(tpl *template.Template) {
+	a.openapiTpl = tpl
+}
+
+func newNotFoundErr(code, message string, reason ...string) api.APIError {
+	e := api.APIError{
+		Code:       fmt.Sprintf("ERR_%s", strings.ToUpper(code)),
+		Message:    message,
+		StatusCode: http.StatusNotFound,
+	}
+	if len(reason) > 0 {
+		e.Reason = new(reason[0])
+	}
+
+	return e
+}
+
+func newUnauthenticatedErr(code, message string, reason ...string) api.APIError {
+	e := api.APIError{
+		Code:       fmt.Sprintf("ERR_%s", strings.ToUpper(code)),
+		Message:    message,
+		StatusCode: http.StatusUnauthorized,
+	}
+	if len(reason) > 0 && reason[0] != "" {
+		e.Reason = new(reason[0])
+	}
+
+	return e
+}
+
+func newUnauthorizedErr(code, message string, reason ...string) api.APIError {
+	e := api.APIError{
+		Code:       fmt.Sprintf("ERR_%s", strings.ToUpper(code)),
+		Message:    message,
+		StatusCode: http.StatusForbidden,
+	}
+	if len(reason) > 0 && reason[0] != "" {
+		e.Reason = new(reason[0])
+	}
+
+	return e
+}
+
+func newGenericErr(statusCode int32, code, message string, reason ...string) api.APIError {
+	e := api.APIError{
+		Code:       fmt.Sprintf("ERR_%s", strings.ToUpper(code)),
+		Message:    message,
+		StatusCode: statusCode,
+	}
+	if len(reason) > 0 && reason[0] != "" {
+		e.Reason = new(reason[0])
+	}
+
+	return e
+}
+
+func newNotFoundResp(code, message string, reason ...string) api.NotFoundErrorResponseJSONResponse {
+	e := newNotFoundErr(code, message, reason...)
+	return api.NotFoundErrorResponseJSONResponse(e)
+}
+
+func newUnauthenticatedResp(code, message string, reason ...string) api.UnauthenticatedErrorResponse {
+	e := newUnauthenticatedErr(code, message, reason...)
+	return api.UnauthenticatedErrorResponse(e)
+}
+
+func newUnauthorizedResp(code, message string, reason ...string) api.UnauthorizedErrorResponseJSONResponse {
+	e := newUnauthorizedErr(code, message, reason...)
+	return api.UnauthorizedErrorResponseJSONResponse(e)
+}
+
+func newGenericResp(statusCode int32, code, message string, reason ...string) api.GenericErrorResponseJSONResponse {
+	e := newGenericErr(statusCode, code, message, reason...)
+	return api.GenericErrorResponseJSONResponse(e)
 }

@@ -48,9 +48,11 @@ func TestPieces(t *testing.T) {
 			if tc.piece.FENSymbol() != tc.fen {
 				t.Fatalf("invalid piece fen symbol: want %s, got %s", tc.fen, tc.piece.FENSymbol())
 			}
+
 			if tc.piece.Kind() != tc.kind {
 				t.Fatalf("invalid piece kind: want %s, got %s", tc.kind, tc.piece.Kind())
 			}
+
 			if tc.piece.Color() != tc.color {
 				t.Fatalf("invalid piece color: want %s, got %s", tc.color, tc.piece.Color())
 			}
@@ -90,6 +92,7 @@ func TestNewPieceFromFenSymbol(t *testing.T) {
 			if (err != nil) != tc.wantErr {
 				t.Fatalf("invalid piece, error mismatch, wantErr: %v, gotErr: %v", tc.wantErr, err)
 			}
+
 			if !tc.wantErr && piece != tc.want {
 				t.Fatalf("invalid piece: want %s, got %s", tc.want, piece)
 			}

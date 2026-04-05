@@ -3,115 +3,182 @@ package server
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"net/http"
 
+	"github.com/aarondl/opt/omit"
 	api "github.com/dankobg/juicer/api/gen"
-	"github.com/dankobg/juicer/core"
-	"github.com/dankobg/juicer/db/dto"
-	"github.com/dankobg/juicer/opt"
-	"github.com/dankobg/juicer/ptr"
+	"github.com/dankobg/juicer/auth/keto"
+	"github.com/dankobg/juicer/db/gen/models"
+	"github.com/dankobg/juicer/dto"
+	"github.com/dankobg/juicer/shared"
 	"github.com/google/uuid"
-	"github.com/ory/client-go"
+	orykratos "github.com/ory/client-go"
+	rts "github.com/ory/keto/proto/ory/keto/relation_tuples/v1alpha2"
 )
 
-func (h *ApiHandler) ListIdentities(ctx context.Context, request api.ListIdentitiesRequestObject) (api.ListIdentitiesResponseObject, error) {
-	req := h.Kratos.Admin.IdentityAPI.ListIdentities(ctx)
+func (a *ApiHandler) ListIdentities(ctx context.Context, request api.ListIdentitiesRequestObject) (api.ListIdentitiesResponseObject, error) {
+	sess := GetSession(ctx)
+
+	if checkResp, err := a.Keto.Check.Check(ctx, &rts.CheckRequest{
+		Tuple: &rts.RelationTuple{
+			Namespace: "Identities",
+			Object:    "identities",
+			Relation:  "view",
+			Subject:   rts.NewSubjectID(shared.AuthzIdentityID(sess.Identity.Id)),
+		},
+	}); err != nil || !checkResp.GetAllowed() {
+		return api.ListIdentities403JSONResponse{UnauthorizedErrorResponseJSONResponse: newUnauthorizedResp("identity_permission", "permission denied")}, nil
+	}
+
+	req := a.Kratos.Admin.IdentityAPI.ListIdentities(ctx)
 	if request.Params.PageSize != nil {
 		req = req.PageSize(*request.Params.PageSize)
 	}
-	if request.Params.PageToken != nil {
+
+	if request.Params.PageToken != nil && *request.Params.PageToken != "1" {
 		req = req.PageToken(*request.Params.PageToken)
 	}
+
 	if request.Params.Ids != nil {
 		req = req.Ids(*request.Params.Ids)
 	}
+
 	if request.Params.Consistency != nil {
 		req = req.Consistency(string(*request.Params.Consistency))
 	}
+
 	if request.Params.CredentialsIdentifier != nil {
 		req = req.CredentialsIdentifier(*request.Params.CredentialsIdentifier)
 	}
+
 	if request.Params.IncludeCredential != nil {
 		req = req.IncludeCredential(*request.Params.IncludeCredential)
 	}
+
 	if request.Params.PreviewCredentialsIdentifierSimilar != nil {
 		req = req.PreviewCredentialsIdentifierSimilar(*request.Params.PreviewCredentialsIdentifierSimilar)
 	}
-	identities, _, err := req.Execute()
+
+	identities, identitiesResp, err := req.Execute()
 	if err != nil {
-		return make(api.ListIdentities200JSONResponse, 0), nil
+		return api.ListIdentitiesdefaultJSONResponse{StatusCode: http.StatusServiceUnavailable, Body: newGenericErr(http.StatusServiceUnavailable, "identities_list", "failed to list identities")}, nil
 	}
+
+	defer func() { _ = identitiesResp.Body.Close() }()
+
 	resp := make(api.ListIdentities200JSONResponse, 0, len(identities))
 	for _, identity := range identities {
 		res, err := dto.IdentityToResponse(identity)
 		if err != nil {
 			return nil, err
 		}
+
 		resp = append(resp, res)
 	}
+
 	return resp, nil
 }
 
-func (h *ApiHandler) GetIdentity(ctx context.Context, request api.GetIdentityRequestObject) (api.GetIdentityResponseObject, error) {
-	req := h.Kratos.Admin.IdentityAPI.GetIdentity(ctx, request.ID)
+func (a *ApiHandler) GetIdentity(ctx context.Context, request api.GetIdentityRequestObject) (api.GetIdentityResponseObject, error) {
+	sess := GetSession(ctx)
+
+	req := a.Kratos.Admin.IdentityAPI.GetIdentity(ctx, request.ID)
 	if request.Params.IncludeCredential != nil {
 		includeParams := make([]string, 0, len(*request.Params.IncludeCredential))
 		for _, iparam := range *request.Params.IncludeCredential {
 			includeParams = append(includeParams, string(iparam))
 		}
+
 		req = req.IncludeCredential(includeParams)
 	}
-	identity, _, err := req.Execute()
+
+	identity, identityResp, err := req.Execute()
 	if err != nil {
-		return api.GetIdentity404JSONResponse{NotFoundErrorJSONResponse: api.NotFoundErrorJSONResponse{Code: http.StatusNotFound, Message: "identity not found"}}, nil
+		return api.GetIdentity404JSONResponse{NotFoundErrorResponseJSONResponse: newNotFoundResp("identity_not_found", "identity not found")}, nil
 	}
+
+	if checkResp, err := a.Keto.Check.Check(ctx, &rts.CheckRequest{
+		Tuple: &rts.RelationTuple{
+			Namespace: "Identity",
+			Object:    shared.AuthzIdentityID(request.ID),
+			Relation:  "view",
+			Subject:   rts.NewSubjectID(shared.AuthzIdentityID(sess.Identity.Id)),
+		},
+	}); err != nil || !checkResp.GetAllowed() {
+		return api.GetIdentity403JSONResponse{UnauthorizedErrorResponseJSONResponse: newUnauthorizedResp("identity_permission", "permission denied")}, nil
+	}
+
+	defer func() { _ = identityResp.Body.Close() }()
+
 	resp, err := dto.IdentityToResponse(*identity)
 	if err != nil {
 		return nil, err
 	}
+
 	return api.GetIdentity200JSONResponse(resp), nil
 }
 
-func (h *ApiHandler) CreateIdentity(ctx context.Context, request api.CreateIdentityRequestObject) (api.CreateIdentityResponseObject, error) {
-	req := h.Kratos.Admin.IdentityAPI.CreateIdentity(ctx)
+func (a *ApiHandler) CreateIdentity(ctx context.Context, request api.CreateIdentityRequestObject) (api.CreateIdentityResponseObject, error) {
+	sess := GetSession(ctx)
+
+	if checkResp, err := a.Keto.Check.Check(ctx, &rts.CheckRequest{
+		Tuple: &rts.RelationTuple{
+			Namespace: "Identities",
+			Object:    "identities",
+			Relation:  "manage",
+			Subject:   rts.NewSubjectID(shared.AuthzIdentityID(sess.Identity.Id)),
+		},
+	}); err != nil || !checkResp.GetAllowed() {
+		return api.CreateIdentity403JSONResponse{UnauthorizedErrorResponseJSONResponse: newUnauthorizedResp("identity_permission", "permission denied")}, nil
+	}
+
+	req := a.Kratos.Admin.IdentityAPI.CreateIdentity(ctx)
+
 	if request.Body != nil {
-		var credentials *client.IdentityWithCredentials
+		var credentials *orykratos.IdentityWithCredentials
 		if request.Body.Credentials != nil {
-			credentials = client.NewIdentityWithCredentials()
+			credentials = orykratos.NewIdentityWithCredentials()
 			if request.Body.Credentials.Password != nil {
-				credentials.Password = client.NewIdentityWithCredentialsPassword()
+				credentials.Password = orykratos.NewIdentityWithCredentialsPassword()
 				if request.Body.Credentials.Password.Config != nil {
-					credentials.Password.Config = client.NewIdentityWithCredentialsPasswordConfig()
+					credentials.Password.Config = orykratos.NewIdentityWithCredentialsPasswordConfig()
 				}
+
 				if request.Body.Credentials.Password.Config.Password != nil {
 					credentials.Password.Config.Password = request.Body.Credentials.Password.Config.Password
 				}
+
 				if request.Body.Credentials.Password.Config.HashedPassword != nil {
 					credentials.Password.Config.HashedPassword = request.Body.Credentials.Password.Config.HashedPassword
 				}
 			}
+
 			if request.Body.Credentials.Oidc != nil {
-				credentials.Oidc = client.NewIdentityWithCredentialsOidc()
+				credentials.Oidc = orykratos.NewIdentityWithCredentialsOidc()
 				if request.Body.Credentials.Oidc.Config != nil {
-					credentials.Oidc.Config = client.NewIdentityWithCredentialsOidcConfig()
+					credentials.Oidc.Config = orykratos.NewIdentityWithCredentialsOidcConfig()
 					if request.Body.Credentials.Oidc.Config.Providers != nil {
-						providers := make([]client.IdentityWithCredentialsOidcConfigProvider, 0, len(*request.Body.Credentials.Oidc.Config.Providers))
+						providers := make([]orykratos.IdentityWithCredentialsOidcConfigProvider, 0, len(*request.Body.Credentials.Oidc.Config.Providers))
 						for _, p := range *request.Body.Credentials.Oidc.Config.Providers {
-							providers = append(providers, client.IdentityWithCredentialsOidcConfigProvider{
+							providers = append(providers, orykratos.IdentityWithCredentialsOidcConfigProvider{
 								Provider: p.Provider,
 								Subject:  p.Subject,
 							})
 						}
+
 						credentials.Oidc.Config.Providers = providers
 					}
 				}
 			}
 		}
-		recoveryAddresses := make([]client.RecoveryIdentityAddress, 0)
+
+		recoveryAddresses := make([]orykratos.RecoveryIdentityAddress, 0)
+
 		if request.Body.RecoveryAddresses != nil {
 			for _, recAddr := range *request.Body.RecoveryAddresses {
-				recoveryAddresses = append(recoveryAddresses, client.RecoveryIdentityAddress{
-					Id:        recAddr.ID.String(),
+				recoveryAddresses = append(recoveryAddresses, orykratos.RecoveryIdentityAddress{
+					Id:        new(recAddr.ID.String()),
 					Value:     recAddr.Value,
 					Via:       recAddr.Via,
 					CreatedAt: recAddr.CreatedAt,
@@ -119,26 +186,34 @@ func (h *ApiHandler) CreateIdentity(ctx context.Context, request api.CreateIdent
 				})
 			}
 		}
-		verifiableAddresses := make([]client.VerifiableIdentityAddress, 0)
+
+		verifiableAddresses := make([]orykratos.VerifiableIdentityAddress, 0)
+
 		if request.Body.VerifiableAddresses != nil {
 			for _, verAddr := range *request.Body.VerifiableAddresses {
 				var id *string
 				if verAddr.ID != nil {
-					id = ptr.Of(verAddr.ID.String())
+					id = new(verAddr.ID.String())
 				}
-				verifiableAddresses = append(verifiableAddresses, client.VerifiableIdentityAddress{
-					Id:         id,
-					Status:     verAddr.Status,
-					Value:      verAddr.Value,
-					Verified:   verAddr.Verified,
-					VerifiedAt: verAddr.VerifiedAt,
-					Via:        string(verAddr.Via),
-					CreatedAt:  verAddr.CreatedAt,
-					UpdatedAt:  verAddr.UpdatedAt,
-				})
+
+				verifiableAddress := orykratos.VerifiableIdentityAddress{
+					Id:        id,
+					Status:    verAddr.Status,
+					Value:     verAddr.Value,
+					Verified:  verAddr.Verified,
+					Via:       string(verAddr.Via),
+					CreatedAt: verAddr.CreatedAt,
+					UpdatedAt: verAddr.UpdatedAt,
+				}
+				if verAddr.VerifiedAt.IsSpecified() && !verAddr.VerifiedAt.IsNull() {
+					verifiableAddress.VerifiedAt = new(verAddr.VerifiedAt.MustGet().UTC())
+				}
+
+				verifiableAddresses = append(verifiableAddresses, verifiableAddress)
 			}
 		}
-		req = req.CreateIdentityBody(client.CreateIdentityBody{
+
+		req = req.CreateIdentityBody(orykratos.CreateIdentityBody{
 			Credentials:         credentials,
 			MetadataAdmin:       request.Body.MetadataAdmin,
 			MetadataPublic:      request.Body.MetadataPublic,
@@ -149,77 +224,91 @@ func (h *ApiHandler) CreateIdentity(ctx context.Context, request api.CreateIdent
 			VerifiableAddresses: verifiableAddresses,
 		})
 	}
-	identity, _, err := req.Execute()
+
+	identity, identityResp, err := req.Execute()
 	if err != nil {
 		return nil, err
 	}
+
+	defer func() { _ = identityResp.Body.Close() }()
+
 	resp, err := dto.IdentityToResponse(*identity)
 	if err != nil {
 		return nil, err
 	}
+
 	identityID, err := uuid.Parse(identity.Id)
 	if err != nil {
 		return nil, err
 	}
-	if _, err := h.store.User().Create(ctx, dto.UserChangeset{ID: opt.New(identityID)}); err != nil {
+
+	if _, err := a.persistor.User().CreateUser(ctx, models.UserSetter{ID: omit.From(identityID)}); err != nil {
 		return nil, err
 	}
-	gameTimeCategories, err := h.store.GameTimeCategory().List(ctx)
-	if err != nil {
-		return nil, err
-	}
-	ratingsToInsert := make([]dto.RatingChangeset, 0, len(gameTimeCategories))
-	for _, tc := range gameTimeCategories {
-		ratingsToInsert = append(ratingsToInsert, dto.RatingChangeset{
-			UserID:             opt.New(identityID),
-			GameTimeCategoryID: opt.New(tc.ID),
-			Glicko:             opt.New[int32](1500),
-			Glicko2:            opt.New[int32](1500),
-		})
-	}
-	if _, err := h.store.Rating().BatchCreate(ctx, ratingsToInsert); err != nil {
-		return nil, err
+
+	// @TODO: use outbox pattern
+	if err := createUserRelationTuples(ctx, a.Keto, identity.Id); err != nil {
+		a.Log.Error("failed to insert identity relation-tuple", slog.String("identity_id", sess.Identity.Id), slog.Any("error", err))
+		return api.CreateIdentitydefaultJSONResponse{StatusCode: http.StatusInternalServerError, Body: newGenericErr(http.StatusInternalServerError, "identity_permissions", "failed to create permissions")}, nil
 	}
 
 	return api.CreateIdentity201JSONResponse(resp), nil
 }
 
-func (h *ApiHandler) UpdateIdentity(ctx context.Context, request api.UpdateIdentityRequestObject) (api.UpdateIdentityResponseObject, error) {
-	req := h.Kratos.Admin.IdentityAPI.UpdateIdentity(ctx, request.ID)
+func (a *ApiHandler) UpdateIdentity(ctx context.Context, request api.UpdateIdentityRequestObject) (api.UpdateIdentityResponseObject, error) {
+	sess := GetSession(ctx)
+
+	if checkResp, err := a.Keto.Check.Check(ctx, &rts.CheckRequest{
+		Tuple: &rts.RelationTuple{
+			Namespace: "Identity",
+			Object:    shared.AuthzIdentityID(request.ID),
+			Relation:  "manage",
+			Subject:   rts.NewSubjectID(shared.AuthzIdentityID(sess.Identity.Id)),
+		},
+	}); err != nil || !checkResp.GetAllowed() {
+		return api.UpdateIdentity403JSONResponse{UnauthorizedErrorResponseJSONResponse: newUnauthorizedResp("identity_permission", "permission denied")}, nil
+	}
+
+	req := a.Kratos.Admin.IdentityAPI.UpdateIdentity(ctx, request.ID)
 	if request.Body != nil {
-		var credentials *client.IdentityWithCredentials
+		var credentials *orykratos.IdentityWithCredentials
 		if request.Body.Credentials != nil {
-			credentials = client.NewIdentityWithCredentials()
+			credentials = orykratos.NewIdentityWithCredentials()
 			if request.Body.Credentials.Password != nil {
-				credentials.Password = client.NewIdentityWithCredentialsPassword()
+				credentials.Password = orykratos.NewIdentityWithCredentialsPassword()
 				if request.Body.Credentials.Password.Config != nil {
-					credentials.Password.Config = client.NewIdentityWithCredentialsPasswordConfig()
+					credentials.Password.Config = orykratos.NewIdentityWithCredentialsPasswordConfig()
 				}
+
 				if request.Body.Credentials.Password.Config.Password != nil {
 					credentials.Password.Config.Password = request.Body.Credentials.Password.Config.Password
 				}
+
 				if request.Body.Credentials.Password.Config.HashedPassword != nil {
 					credentials.Password.Config.HashedPassword = request.Body.Credentials.Password.Config.HashedPassword
 				}
 			}
+
 			if request.Body.Credentials.Oidc != nil {
-				credentials.Oidc = client.NewIdentityWithCredentialsOidc()
+				credentials.Oidc = orykratos.NewIdentityWithCredentialsOidc()
 				if request.Body.Credentials.Oidc.Config != nil {
-					credentials.Oidc.Config = client.NewIdentityWithCredentialsOidcConfig()
+					credentials.Oidc.Config = orykratos.NewIdentityWithCredentialsOidcConfig()
 					if request.Body.Credentials.Oidc.Config.Providers != nil {
-						providers := make([]client.IdentityWithCredentialsOidcConfigProvider, 0, len(*request.Body.Credentials.Oidc.Config.Providers))
+						providers := make([]orykratos.IdentityWithCredentialsOidcConfigProvider, 0, len(*request.Body.Credentials.Oidc.Config.Providers))
 						for _, p := range *request.Body.Credentials.Oidc.Config.Providers {
-							providers = append(providers, client.IdentityWithCredentialsOidcConfigProvider{
+							providers = append(providers, orykratos.IdentityWithCredentialsOidcConfigProvider{
 								Provider: p.Provider,
 								Subject:  p.Subject,
 							})
 						}
+
 						credentials.Oidc.Config.Providers = providers
 					}
 				}
 			}
 		}
-		req = req.UpdateIdentityBody(client.UpdateIdentityBody{
+
+		req = req.UpdateIdentityBody(orykratos.UpdateIdentityBody{
 			Credentials:    credentials,
 			MetadataAdmin:  request.Body.MetadataAdmin,
 			MetadataPublic: request.Body.MetadataPublic,
@@ -228,82 +317,156 @@ func (h *ApiHandler) UpdateIdentity(ctx context.Context, request api.UpdateIdent
 			Traits:         request.Body.Traits,
 		})
 	}
-	identity, _, err := req.Execute()
+
+	identity, identityResp, err := req.Execute()
 	if err != nil {
-		return api.UpdateIdentity404JSONResponse{NotFoundErrorJSONResponse: api.NotFoundErrorJSONResponse{Code: http.StatusNotFound, Message: "identity not found"}}, nil
+		return api.UpdateIdentitydefaultJSONResponse{StatusCode: http.StatusServiceUnavailable, Body: newGenericErr(http.StatusServiceUnavailable, "identity_edit", "failed to edit identity")}, nil
 	}
+
+	defer func() { _ = identityResp.Body.Close() }()
+
 	resp, err := dto.IdentityToResponse(*identity)
 	if err != nil {
 		return nil, err
 	}
+
 	return api.UpdateIdentity200JSONResponse(resp), nil
 }
 
-func (h *ApiHandler) DeleteIdentity(ctx context.Context, request api.DeleteIdentityRequestObject) (api.DeleteIdentityResponseObject, error) {
-	req := h.Kratos.Admin.IdentityAPI.DeleteIdentity(ctx, request.ID)
-	_, err := req.Execute()
-	if err != nil {
-		return api.DeleteIdentity404JSONResponse{NotFoundErrorJSONResponse: api.NotFoundErrorJSONResponse{Code: http.StatusNotFound, Message: "identity not found"}}, nil
+func (a *ApiHandler) DeleteIdentity(ctx context.Context, request api.DeleteIdentityRequestObject) (api.DeleteIdentityResponseObject, error) {
+	sess := GetSession(ctx)
+
+	if checkResp, err := a.Keto.Check.Check(ctx, &rts.CheckRequest{
+		Tuple: &rts.RelationTuple{
+			Namespace: "Identity",
+			Object:    shared.AuthzIdentityID(request.ID),
+			Relation:  "manage",
+			Subject:   rts.NewSubjectID(shared.AuthzIdentityID(sess.Identity.Id)),
+		},
+	}); err != nil || !checkResp.GetAllowed() {
+		return api.DeleteIdentity403JSONResponse{UnauthorizedErrorResponseJSONResponse: newUnauthorizedResp("identity_permission", "permission denied")}, nil
 	}
+
+	req := a.Kratos.Admin.IdentityAPI.DeleteIdentity(ctx, request.ID)
+
+	deleteIdentityResp, err := req.Execute()
+	if err != nil {
+		return api.DeleteIdentitydefaultJSONResponse{StatusCode: http.StatusServiceUnavailable, Body: newGenericErr(http.StatusServiceUnavailable, "identity_delete", "failed to delete identity")}, nil
+	}
+
+	defer func() { _ = deleteIdentityResp.Body.Close() }()
+
+	// @TODO: use outbox pattern
+	if err := deleteUserRelationTuples(ctx, a.Keto, request.ID); err != nil {
+		a.Log.Error("failed to delete identity relation-tuple", slog.String("identity_id", sess.Identity.Id), slog.Any("error", err))
+		return api.DeleteIdentitydefaultJSONResponse{StatusCode: http.StatusInternalServerError, Body: newGenericErr(http.StatusInternalServerError, "identity_permissions", "failed to delete permissions")}, nil
+	}
+
 	return api.DeleteIdentity204Response{}, nil
 }
 
-func (h *ApiHandler) PatchIdentity(ctx context.Context, request api.PatchIdentityRequestObject) (api.PatchIdentityResponseObject, error) {
-	req := h.Kratos.Admin.IdentityAPI.PatchIdentity(ctx, request.ID)
+func (a *ApiHandler) PatchIdentity(ctx context.Context, request api.PatchIdentityRequestObject) (api.PatchIdentityResponseObject, error) {
+	sess := GetSession(ctx)
+
+	if checkResp, err := a.Keto.Check.Check(ctx, &rts.CheckRequest{
+		Tuple: &rts.RelationTuple{
+			Namespace: "Identity",
+			Object:    shared.AuthzIdentityID(request.ID),
+			Relation:  "manage",
+			Subject:   rts.NewSubjectID(shared.AuthzIdentityID(sess.Identity.Id)),
+		},
+	}); err != nil || !checkResp.GetAllowed() {
+		return api.PatchIdentity403JSONResponse{UnauthorizedErrorResponseJSONResponse: newUnauthorizedResp("identity_permission", "permission denied")}, nil
+	}
+
+	req := a.Kratos.Admin.IdentityAPI.PatchIdentity(ctx, request.ID)
 	if request.Body != nil {
-		patches := make([]client.JsonPatch, 0, len(*request.Body))
+		patches := make([]orykratos.JsonPatch, 0, len(*request.Body))
 		for _, x := range *request.Body {
-			patches = append(patches, client.JsonPatch{
+			patches = append(patches, orykratos.JsonPatch{
 				From:  x.From,
 				Op:    string(x.Op),
 				Path:  x.Path,
 				Value: x.Value,
 			})
 		}
+
 		req = req.JsonPatch(patches)
 	}
-	identity, _, err := req.Execute()
+
+	identity, identityResp, err := req.Execute()
 	if err != nil {
-		return api.PatchIdentity404JSONResponse{NotFoundErrorJSONResponse: api.NotFoundErrorJSONResponse{Code: http.StatusNotFound, Message: "identity not found"}}, nil
+		return api.PatchIdentitydefaultJSONResponse{StatusCode: http.StatusServiceUnavailable, Body: newGenericErr(http.StatusServiceUnavailable, "identity_patch", "failed to patch identity")}, nil
 	}
+
+	defer func() { _ = identityResp.Body.Close() }()
+
 	resp, err := dto.IdentityToResponse(*identity)
 	if err != nil {
 		return nil, err
 	}
+
+	// @TODO: delete tuples if patch OP == "remove"
+
 	return api.PatchIdentity200JSONResponse(resp), nil
 }
 
-func (h *ApiHandler) BatchPatchIdentities(ctx context.Context, request api.BatchPatchIdentitiesRequestObject) (api.BatchPatchIdentitiesResponseObject, error) {
-	req := h.Kratos.Admin.IdentityAPI.BatchPatchIdentities(ctx)
+func (a *ApiHandler) BatchPatchIdentities(ctx context.Context, request api.BatchPatchIdentitiesRequestObject) (api.BatchPatchIdentitiesResponseObject, error) {
+	sess := GetSession(ctx)
+
+	if checkResp, err := a.Keto.Check.Check(ctx, &rts.CheckRequest{
+		Tuple: &rts.RelationTuple{
+			Namespace: "Identities",
+			Object:    "identities",
+			Relation:  "manage",
+			Subject:   rts.NewSubjectID(shared.AuthzIdentityID(sess.Identity.Id)),
+		},
+	}); err != nil || !checkResp.GetAllowed() {
+		return api.BatchPatchIdentities403JSONResponse{UnauthorizedErrorResponseJSONResponse: newUnauthorizedResp("identity_permission", "permission denied")}, nil
+	}
+
+	req := a.Kratos.Admin.IdentityAPI.BatchPatchIdentities(ctx)
+
 	if request.Body != nil {
-		patch := client.PatchIdentitiesBody{}
+		patch := orykratos.PatchIdentitiesBody{}
 		req = req.PatchIdentitiesBody(patch)
 	}
-	batchPatchIdentities, _, err := req.Execute()
+
+	batchPatchIdentities, batchPatchIdentitiesResp, err := req.Execute()
 	if err != nil {
-		return api.BatchPatchIdentities400JSONResponse{GenericErrorJSONResponse: api.GenericErrorJSONResponse{Code: http.StatusNotFound, Message: "batch patch failed"}}, nil
+		return api.BatchPatchIdentitiesdefaultJSONResponse{StatusCode: http.StatusServiceUnavailable, Body: newGenericErr(http.StatusServiceUnavailable, "identity_batch_patch", "failed to batch patch identity")}, nil
 	}
+
+	defer func() { _ = batchPatchIdentitiesResp.Body.Close() }()
+
 	identitiesPatches := make([]api.IdentityPatchResponse, 0)
+
 	for _, x := range batchPatchIdentities.Identities {
-		var defaultErr any
-		var identityUUID *api.UUID
+		var (
+			defaultErr   any
+			identityUUID *api.UUID
+		)
+
 		if x.Identity != nil {
 			identityUUIDParsed, err := uuid.Parse(*x.Identity)
 			if err != nil {
 				defaultErr = err
 			} else {
-				identityUUID = ptr.Of(identityUUIDParsed)
+				identityUUID = new(identityUUIDParsed)
 			}
 		}
+
 		var patchUUID *api.UUID
+
 		if x.PatchId != nil {
 			patchUUIDParsed, err := uuid.Parse(*x.PatchId)
 			if err != nil {
 				defaultErr = err
 			} else {
-				patchUUID = ptr.Of(patchUUIDParsed)
+				patchUUID = new(patchUUIDParsed)
 			}
 		}
+
 		identitiesPatches = append(identitiesPatches, api.IdentityPatchResponse{
 			Action:   (*api.IdentityPatchResponseAction)(x.Action),
 			Identity: identityUUID,
@@ -311,159 +474,341 @@ func (h *ApiHandler) BatchPatchIdentities(ctx context.Context, request api.Batch
 			Error:    &defaultErr,
 		})
 	}
+
 	resp := api.BatchPatchIdentitiesResponse{
 		Identities: &identitiesPatches,
 	}
+
+	// @TODO: delete tuples if patch OP == "remove"
+
 	return api.BatchPatchIdentities200JSONResponse(resp), nil
 }
 
-func (h *ApiHandler) DeleteIdentityCredentials(ctx context.Context, request api.DeleteIdentityCredentialsRequestObject) (api.DeleteIdentityCredentialsResponseObject, error) {
-	req := h.Kratos.Admin.IdentityAPI.DeleteIdentityCredentials(ctx, request.ID, string(request.Type))
+func (a *ApiHandler) DeleteIdentityCredentials(ctx context.Context, request api.DeleteIdentityCredentialsRequestObject) (api.DeleteIdentityCredentialsResponseObject, error) {
+	sess := GetSession(ctx)
+
+	if checkResp, err := a.Keto.Check.Check(ctx, &rts.CheckRequest{
+		Tuple: &rts.RelationTuple{
+			Namespace: "Identity",
+			Object:    shared.AuthzIdentityID(request.ID),
+			Relation:  "manage",
+			Subject:   rts.NewSubjectID(shared.AuthzIdentityID(sess.Identity.Id)),
+		},
+	}); err != nil || !checkResp.GetAllowed() {
+		return api.DeleteIdentityCredentials403JSONResponse{UnauthorizedErrorResponseJSONResponse: newUnauthorizedResp("identity_permission", "permission denied")}, nil
+	}
+
+	req := a.Kratos.Admin.IdentityAPI.DeleteIdentityCredentials(ctx, request.ID, string(request.Type))
 	if request.Params.Identifier != nil {
 		req = req.Identifier(*request.Params.Identifier)
 	}
-	_, err := req.Execute()
+
+	deleteIdentityCredentialsResp, err := req.Execute()
 	if err != nil {
-		return api.DeleteIdentityCredentials404JSONResponse{NotFoundErrorJSONResponse: api.NotFoundErrorJSONResponse{Code: http.StatusNotFound, Message: "identity not found"}}, nil
+		return api.DeleteIdentityCredentialsdefaultJSONResponse{StatusCode: http.StatusServiceUnavailable, Body: newGenericErr(http.StatusServiceUnavailable, "identity_delete_credentials", "failed to delete identity")}, nil
 	}
+
+	defer func() { _ = deleteIdentityCredentialsResp.Body.Close() }()
+
 	return api.DeleteIdentityCredentials204Response{}, nil
 }
 
-func (h *ApiHandler) DeleteIdentitySessions(ctx context.Context, request api.DeleteIdentitySessionsRequestObject) (api.DeleteIdentitySessionsResponseObject, error) {
-	req := h.Kratos.Admin.IdentityAPI.DeleteIdentitySessions(ctx, request.ID)
-	_, err := req.Execute()
-	if err != nil {
-		return api.DeleteIdentitySessions404JSONResponse{NotFoundErrorJSONResponse: api.NotFoundErrorJSONResponse{Code: http.StatusNotFound, Message: "identity not found"}}, nil
+func (a *ApiHandler) DeleteIdentitySessions(ctx context.Context, request api.DeleteIdentitySessionsRequestObject) (api.DeleteIdentitySessionsResponseObject, error) {
+	sess := GetSession(ctx)
+
+	if checkResp, err := a.Keto.Check.Check(ctx, &rts.CheckRequest{
+		Tuple: &rts.RelationTuple{
+			Namespace: "Identity",
+			Object:    shared.AuthzIdentityID(request.ID),
+			Relation:  "manage",
+			Subject:   rts.NewSubjectID(shared.AuthzIdentityID(sess.Identity.Id)),
+		},
+	}); err != nil || !checkResp.GetAllowed() {
+		return api.DeleteIdentitySessions403JSONResponse{UnauthorizedErrorResponseJSONResponse: newUnauthorizedResp("identity_permission", "permission denied")}, nil
 	}
+
+	req := a.Kratos.Admin.IdentityAPI.DeleteIdentitySessions(ctx, request.ID)
+
+	deleteIdentitySessionsResp, err := req.Execute()
+	if err != nil {
+		return api.DeleteIdentitySessionsdefaultJSONResponse{StatusCode: http.StatusServiceUnavailable, Body: newGenericErr(http.StatusServiceUnavailable, "identity_delete_sessions", "failed to delete identity sessions")}, nil
+	}
+
+	defer func() { _ = deleteIdentitySessionsResp.Body.Close() }()
+
 	return api.DeleteIdentitySessions204Response{}, nil
 }
 
-func (h *ApiHandler) ListIdentitySessions(ctx context.Context, request api.ListIdentitySessionsRequestObject) (api.ListIdentitySessionsResponseObject, error) {
-	req := h.Kratos.Admin.IdentityAPI.ListIdentitySessions(ctx, request.ID)
+func (a *ApiHandler) ListIdentitySessions(ctx context.Context, request api.ListIdentitySessionsRequestObject) (api.ListIdentitySessionsResponseObject, error) {
+	sess := GetSession(ctx)
+
+	if checkResp, err := a.Keto.Check.Check(ctx, &rts.CheckRequest{
+		Tuple: &rts.RelationTuple{
+			Namespace: "Identity",
+			Object:    shared.AuthzIdentityID(request.ID),
+			Relation:  "view",
+			Subject:   rts.NewSubjectID(shared.AuthzIdentityID(sess.Identity.Id)),
+		},
+	}); err != nil || !checkResp.GetAllowed() {
+		return api.ListIdentitySessions403JSONResponse{UnauthorizedErrorResponseJSONResponse: newUnauthorizedResp("identity_permission", "permission denied")}, nil
+	}
+
+	req := a.Kratos.Admin.IdentityAPI.ListIdentitySessions(ctx, request.ID)
 	if request.Params.Active != nil {
 		req = req.Active(*request.Params.Active)
 	}
+
 	if request.Params.PageSize != nil {
 		req = req.PageSize(*request.Params.PageSize)
 	}
-	if request.Params.PageToken != nil {
+
+	if request.Params.PageToken != nil && *request.Params.PageToken != "1" {
 		req = req.PageToken(*request.Params.PageToken)
 	}
-	identitySessions, _, err := req.Execute()
+
+	identitySessions, identitySessionsResp, err := req.Execute()
 	if err != nil {
-		return make(api.ListIdentitySessions200JSONResponse, 0), nil
+		return api.ListIdentitySessionsdefaultJSONResponse{StatusCode: http.StatusServiceUnavailable, Body: newGenericErr(http.StatusServiceUnavailable, "identities_list", "failed to list identities")}, nil
 	}
+
+	defer func() { _ = identitySessionsResp.Body.Close() }()
+
 	resp := make(api.ListIdentitySessions200JSONResponse, 0, len(identitySessions))
 	for _, sess := range identitySessions {
 		res, err := dto.SessionToResponse(sess)
 		if err != nil {
 			return nil, err
 		}
+
 		resp = append(resp, res)
 	}
+
 	return resp, nil
 }
 
-func (h *ApiHandler) ListIdentitySchemas(ctx context.Context, request api.ListIdentitySchemasRequestObject) (api.ListIdentitySchemasResponseObject, error) {
-	req := h.Kratos.Admin.IdentityAPI.ListIdentitySchemas(ctx)
-	if request.Params.PageSize != nil {
-		req = req.PageSize(*request.Params.PageSize)
-	}
-	if request.Params.PageToken != nil {
-		req = req.PageToken(*request.Params.PageToken)
-	}
-	schemaContainers, _, err := req.Execute()
-	if err != nil {
-		return make(api.ListIdentitySchemas200JSONResponse, 0), nil
-	}
-	resp := make(api.ListIdentitySchemas200JSONResponse, 0, len(schemaContainers))
-	for _, sc := range schemaContainers {
-		res, err := dto.SchemaContainerToResponse(sc)
-		if err != nil {
-			return nil, err
-		}
-		resp = append(resp, res)
-	}
-	return resp, nil
-}
+func (a *ApiHandler) CreateRecoveryCodeForIdentity(ctx context.Context, request api.CreateRecoveryCodeForIdentityRequestObject) (api.CreateRecoveryCodeForIdentityResponseObject, error) {
+	sess := GetSession(ctx)
 
-func (h *ApiHandler) GetIdentitySchema(ctx context.Context, request api.GetIdentitySchemaRequestObject) (api.GetIdentitySchemaResponseObject, error) {
-	req := h.Kratos.Admin.IdentityAPI.GetIdentitySchema(ctx, request.ID)
-	identitySchema, _, err := req.Execute()
-	if err != nil {
-		return api.GetIdentitySchema404JSONResponse{NotFoundErrorJSONResponse: api.NotFoundErrorJSONResponse{Code: http.StatusNotFound, Message: "schema not found"}}, nil
+	if checkResp, err := a.Keto.Check.Check(ctx, &rts.CheckRequest{
+		Tuple: &rts.RelationTuple{
+			Namespace: "Identity",
+			Object:    shared.AuthzIdentityID(request.Body.IdentityID.String()),
+			Relation:  "manage",
+			Subject:   rts.NewSubjectID(shared.AuthzIdentityID(sess.Identity.Id)),
+		},
+	}); err != nil || !checkResp.GetAllowed() {
+		return api.CreateRecoveryCodeForIdentity403JSONResponse{UnauthorizedErrorResponseJSONResponse: newUnauthorizedResp("identity_permission", "permission denied")}, nil
 	}
-	return api.GetIdentitySchema200JSONResponse(identitySchema), nil
-}
 
-func (h *ApiHandler) CreateRecoveryCodeForIdentity(ctx context.Context, request api.CreateRecoveryCodeForIdentityRequestObject) (api.CreateRecoveryCodeForIdentityResponseObject, error) {
-	req := h.Kratos.Admin.IdentityAPI.CreateRecoveryCodeForIdentity(ctx)
+	req := a.Kratos.Admin.IdentityAPI.CreateRecoveryCodeForIdentity(ctx)
 	if request.Body != nil {
-		req = req.CreateRecoveryCodeForIdentityBody(client.CreateRecoveryCodeForIdentityBody{
+		req = req.CreateRecoveryCodeForIdentityBody(orykratos.CreateRecoveryCodeForIdentityBody{
 			IdentityId: request.Body.IdentityID.String(),
 			ExpiresIn:  request.Body.ExpiresIn,
 			FlowType:   request.Body.FlowType,
 		})
 	}
-	recoveryCodeForIdentity, _, err := req.Execute()
+
+	recoveryCodeForIdentity, recoveryCodeForIdentityResp, err := req.Execute()
 	if err != nil {
-		return api.CreateRecoveryCodeForIdentity400JSONResponse{GenericErrorJSONResponse: api.GenericErrorJSONResponse{Code: http.StatusBadRequest, Message: "failed to create code"}}, nil
+		return api.CreateRecoveryCodeForIdentitydefaultJSONResponse{StatusCode: http.StatusServiceUnavailable, Body: newGenericErr(http.StatusServiceUnavailable, "identity_create_recovery_code", "failed to create recovery code for identity")}, nil
 	}
+
+	defer func() { _ = recoveryCodeForIdentityResp.Body.Close() }()
+
 	resp, err := dto.RecoveryCodeForIdentityToResponse(*recoveryCodeForIdentity)
 	if err != nil {
 		return nil, err
 	}
+
 	return api.CreateRecoveryCodeForIdentity201JSONResponse(resp), nil
 }
 
-func (h *ApiHandler) CreateRecoveryLinkForIdentity(ctx context.Context, request api.CreateRecoveryLinkForIdentityRequestObject) (api.CreateRecoveryLinkForIdentityResponseObject, error) {
-	req := h.Kratos.Admin.IdentityAPI.CreateRecoveryLinkForIdentity(ctx)
+func (a *ApiHandler) CreateRecoveryLinkForIdentity(ctx context.Context, request api.CreateRecoveryLinkForIdentityRequestObject) (api.CreateRecoveryLinkForIdentityResponseObject, error) {
+	sess := GetSession(ctx)
+
+	if checkResp, err := a.Keto.Check.Check(ctx, &rts.CheckRequest{
+		Tuple: &rts.RelationTuple{
+			Namespace: "Identity",
+			Object:    shared.AuthzIdentityID(request.Body.IdentityID.String()),
+			Relation:  "manage",
+			Subject:   rts.NewSubjectID(shared.AuthzIdentityID(sess.Identity.Id)),
+		},
+	}); err != nil || !checkResp.GetAllowed() {
+		return api.CreateRecoveryLinkForIdentity403JSONResponse{UnauthorizedErrorResponseJSONResponse: newUnauthorizedResp("identity_permission", "permission denied")}, nil
+	}
+
+	req := a.Kratos.Admin.IdentityAPI.CreateRecoveryLinkForIdentity(ctx)
 	if request.Body != nil {
-		req = req.CreateRecoveryLinkForIdentityBody(client.CreateRecoveryLinkForIdentityBody{
+		req = req.CreateRecoveryLinkForIdentityBody(orykratos.CreateRecoveryLinkForIdentityBody{
 			IdentityId: request.Body.IdentityID.String(),
 			ExpiresIn:  request.Body.ExpiresIn,
 		})
 	}
-	recoveryLinkForIdentity, _, err := req.Execute()
+
+	recoveryLinkForIdentity, recoveryLinkForIdentityResp, err := req.Execute()
 	if err != nil {
-		return api.CreateRecoveryLinkForIdentity400JSONResponse{GenericErrorJSONResponse: api.GenericErrorJSONResponse{Code: http.StatusBadRequest, Message: "failed to create link"}}, nil
+		return api.CreateRecoveryLinkForIdentitydefaultJSONResponse{StatusCode: http.StatusServiceUnavailable, Body: newGenericErr(http.StatusServiceUnavailable, "identity_create_recovery_link", "failed to create recovery link for identity")}, nil
 	}
+
+	defer func() { _ = recoveryLinkForIdentityResp.Body.Close() }()
+
 	resp, err := dto.RecoveryLinkForIdentityToResponse(*recoveryLinkForIdentity)
 	if err != nil {
 		return nil, err
 	}
+
 	return api.CreateRecoveryLinkForIdentity200JSONResponse(resp), nil
 }
 
-func (h *ApiHandler) FetchUserInfo(ctx context.Context, userID uuid.UUID) (core.UserInfo, error) {
+func createUserRelationTuples(ctx context.Context, c *keto.Client, identityID string) error {
+	if _, err := c.Write.TransactRelationTuples(ctx, &rts.TransactRelationTuplesRequest{
+		RelationTupleDeltas: []*rts.RelationTupleDelta{
+			{
+				Action: rts.RelationTupleDelta_ACTION_INSERT,
+				RelationTuple: &rts.RelationTuple{
+					Namespace: "Group",
+					Object:    "customer",
+					Relation:  "members",
+					Subject:   rts.NewSubjectID(shared.AuthzIdentityID(identityID)),
+				},
+			},
+			{
+				Action: rts.RelationTupleDelta_ACTION_INSERT,
+				RelationTuple: &rts.RelationTuple{
+					Namespace: "Identity",
+					Object:    shared.AuthzIdentityID(identityID),
+					Relation:  "owners",
+					Subject:   rts.NewSubjectID(shared.AuthzIdentityID(identityID)),
+				},
+			},
+			{
+				Action: rts.RelationTupleDelta_ACTION_INSERT,
+				RelationTuple: &rts.RelationTuple{
+					Namespace: "Identity",
+					Object:    shared.AuthzIdentityID(identityID),
+					Relation:  "parents",
+					Subject:   rts.NewSubjectSet("Identities", "identities", ""),
+				},
+			},
+		},
+	}); err != nil {
+		return fmt.Errorf("failed to insert identity relation tuples: %w", err)
+	}
+
+	return nil
+}
+
+func deleteUserRelationTuples(ctx context.Context, c *keto.Client, identityID string) error {
+	ownersResp, err := c.Read.ListRelationTuples(ctx, &rts.ListRelationTuplesRequest{
+		RelationQuery: &rts.RelationQuery{
+			Namespace: new("Identity"),
+			Object:    new(shared.AuthzIdentityID(identityID)),
+			Relation:  new("owners"),
+		},
+	})
+	if err != nil {
+		return fmt.Errorf("failed to list identity relation tuples: %w", err)
+	}
+
+	tuplesToDelete := []*rts.RelationTupleDelta{
+		{
+			Action: rts.RelationTupleDelta_ACTION_DELETE,
+			RelationTuple: &rts.RelationTuple{
+				Namespace: "Group",
+				Object:    "customer",
+				Relation:  "members",
+				Subject:   rts.NewSubjectID(shared.AuthzIdentityID(identityID)),
+			},
+		},
+		{
+			Action: rts.RelationTupleDelta_ACTION_DELETE,
+			RelationTuple: &rts.RelationTuple{
+				Namespace: "Group",
+				Object:    "developer",
+				Relation:  "members",
+				Subject:   rts.NewSubjectID(shared.AuthzIdentityID(identityID)),
+			},
+		},
+		{
+			Action: rts.RelationTupleDelta_ACTION_DELETE,
+			RelationTuple: &rts.RelationTuple{
+				Namespace: "Identity",
+				Object:    shared.AuthzIdentityID(identityID),
+				Relation:  "parents",
+				Subject:   rts.NewSubjectSet("Identities", "identities", ""),
+			},
+		},
+	}
+
+	for _, tuple := range ownersResp.RelationTuples {
+		subject := tuple.GetSubject()
+		if subject == nil {
+			continue
+		}
+
+		tuplesToDelete = append(tuplesToDelete, &rts.RelationTupleDelta{
+			Action: rts.RelationTupleDelta_ACTION_DELETE,
+			RelationTuple: &rts.RelationTuple{
+				Namespace: "Identity",
+				Object:    shared.AuthzIdentityID(identityID),
+				Relation:  "owners",
+				Subject:   rts.NewSubjectID(subject.GetId()),
+			},
+		})
+	}
+
+	if _, err := c.Write.TransactRelationTuples(ctx, &rts.TransactRelationTuplesRequest{
+		RelationTupleDeltas: tuplesToDelete,
+	}); err != nil {
+		return fmt.Errorf("failed to delete identity relation tuples: %w", err)
+	}
+
+	return nil
+}
+
+type UserInfo struct {
+	Username  string `json:"username"`
+	FirstName string `json:"first_name"`
+	LastName  string `json:"last_name"`
+	AvatarURL string `json:"avatar_url"`
+}
+
+func (a *ApiHandler) FetchUserInfo(ctx context.Context, userID uuid.UUID) (UserInfo, error) {
 	// user, err := h.store.User().Get(ctx, userID)
 	// if err != nil {
-	// 	return core.UserInfo{}, fmt.Errorf("failed to fetch user info: %w", err)
+	// 	return UserInfo{}, fmt.Errorf("failed to fetch user info: %w", err)
 	// }
-	identityResp, err := h.GetIdentity(ctx, api.GetIdentityRequestObject{ID: userID.String()})
+	identityResp, err := a.GetIdentity(ctx, api.GetIdentityRequestObject{ID: userID.String()})
 	if err != nil {
-		return core.UserInfo{}, fmt.Errorf("failed to fetch user info: %w", err)
+		return UserInfo{}, fmt.Errorf("failed to fetch user info: %w", err)
 	}
+
 	identity, ok := identityResp.(api.GetIdentity200JSONResponse)
 	if !ok {
-		return core.UserInfo{}, fmt.Errorf("failed to fetch user info")
+		return UserInfo{}, fmt.Errorf("failed to fetch user info")
 	}
+
 	traits, ok := identity.Traits.(map[string]any)
 	if !ok {
-		return core.UserInfo{}, fmt.Errorf("failed to parse user traits")
+		return UserInfo{}, fmt.Errorf("failed to parse user traits")
 	}
+
 	username, ok1 := traits["username"].(string)
 	firstName, ok2 := traits["first_name"].(string)
 	lastName, ok3 := traits["first_name"].(string)
+
 	avatarURL, ok4 := traits["avatar_url"].(string)
-	if !(ok1 && ok2 && ok3 && ok4) {
-		return core.UserInfo{}, fmt.Errorf("failed to parse user traits values")
+	if !ok1 || !ok2 || !ok3 || !ok4 {
+		return UserInfo{}, fmt.Errorf("failed to parse user traits values")
 	}
-	resp := core.UserInfo{
+
+	resp := UserInfo{
 		Username:  username,
 		FirstName: firstName,
 		LastName:  lastName,
 		AvatarURL: avatarURL,
 	}
+
 	return resp, nil
 }

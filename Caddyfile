@@ -1,3 +1,39 @@
+:80 {
+        handle /health-check-caddy {
+                respond "OK" 200
+        }
+}
+
 juicer-dev.xyz {
-    reverse_proxy /auth* kratos:4433
+        tls internal
+
+        # auth (ory kratos)
+        handle_path /kratos/* {
+                reverse_proxy kratos:4433
+        }
+
+        # backend (go)
+        @backend path /api/* /ws* /webhooks/* /public/* /uploads/* /spec* /docs/*
+        handle @backend {
+                reverse_proxy host.docker.internal:1337
+        }
+
+        # web frontend (sveltekit)
+        handle {
+                reverse_proxy {env.VITE_PUBLIC_VITE_NETWORK}:3000
+        }
+}
+
+mail.juicer-dev.xyz {
+        tls internal
+
+        # test mailserver (mailpit)
+        reverse_proxy host.docker.internal:8025
+}
+
+s3.juicer-dev.xyz {
+        tls internal
+
+        # s3 ui (rustfs)
+        reverse_proxy rustfs:9001
 }

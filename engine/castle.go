@@ -32,12 +32,15 @@ func (cr CastleRights) ToFEN() string {
 	if cr.whiteHasKingSideCastleRights() {
 		sb.WriteString(wkCastleFen)
 	}
+
 	if cr.whiteHasQueenSideCastleRights() {
 		sb.WriteString(wqCastleFen)
 	}
+
 	if cr.blackHasKingSideCastleRights() {
 		sb.WriteString(bkCastleFen)
 	}
+
 	if cr.blackHasQueenSideCastleRights() {
 		sb.WriteString(bqCastleFen)
 	}
@@ -108,12 +111,15 @@ func NewCastleRightsFromFen(fenCastle string) (CastleRights, error) {
 		if strings.Contains(fenCastle, wkCastleFen) {
 			cr |= WhiteKingSideCastle
 		}
+
 		if strings.Contains(fenCastle, wqCastleFen) {
 			cr |= WhiteQueenSideCastle
 		}
+
 		if strings.Contains(fenCastle, bkCastleFen) {
 			cr |= BlackKingSideCastle
 		}
+
 		if strings.Contains(fenCastle, bqCastleFen) {
 			cr |= BlackQueenSideCastle
 		}

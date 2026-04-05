@@ -7,7 +7,6 @@
 	import type { Table } from '@tanstack/table-core';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import { Input } from '$lib/components/ui/input/index';
-	import DataTableFacetedFilter from '$lib/components/data-grid-shared/data-table-faceted-filter.svelte';
 	import DataTableViewOptions from '$lib/components/data-grid-shared/data-table-view-options.svelte';
 
 	let { table }: { table: Table<TData> } = $props();
@@ -16,7 +15,7 @@
 </script>
 
 <div class="flex items-center justify-between">
-	<div class="flex flex-1 items-center space-x-2">
+	<div class="flex flex-1 flex-wrap items-center space-x-2 gap-y-2">
 		<Input
 			placeholder="Filter by id..."
 			value={(table.getColumn('id')?.getFilterValue() as string) ?? ''}

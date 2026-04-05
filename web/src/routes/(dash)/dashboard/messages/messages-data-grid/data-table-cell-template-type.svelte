@@ -1,6 +1,6 @@
 <script lang="ts">
-	import { CourierMessageTemplateType } from '$lib/gen/juicer_openapi';
 	import { Badge } from '$lib/components/ui/badge/index';
+	import { CourierMessageTemplateType } from '$lib/gen/juicer_openapi';
 	import { templateTypeIcons } from './data';
 
 	let { value }: { value?: string } = $props();
@@ -8,19 +8,19 @@
 	let Icon = templateTypeIcons.get(value as CourierMessageTemplateType);
 	let color = $derived.by(() => {
 		switch (value as CourierMessageTemplateType) {
-			case CourierMessageTemplateType.RecoveryValid:
-			case CourierMessageTemplateType.RecoveryCodeValid:
-			case CourierMessageTemplateType.VerificationValid:
-			case CourierMessageTemplateType.VerificationCodeValid:
-			case CourierMessageTemplateType.LoginCodeValid:
-			case CourierMessageTemplateType.RegistrationCodeValid:
+			case CourierMessageTemplateType.recovery_valid:
+			case CourierMessageTemplateType.recovery_code_valid:
+			case CourierMessageTemplateType.verification_valid:
+			case CourierMessageTemplateType.verification_code_valid:
+			case CourierMessageTemplateType.login_code_valid:
+			case CourierMessageTemplateType.registration_code_valid:
 				return 'text-green-400';
-			case CourierMessageTemplateType.VerificationCodeInvalid:
-			case CourierMessageTemplateType.VerificationInvalid:
-			case CourierMessageTemplateType.RecoveryCodeInvalid:
-			case CourierMessageTemplateType.RecoveryInvalid:
+			case CourierMessageTemplateType.verification_code_invalid:
+			case CourierMessageTemplateType.verification_invalid:
+			case CourierMessageTemplateType.recovery_code_invalid:
+			case CourierMessageTemplateType.recovery_invalid:
 				return 'text-red-400';
-			case CourierMessageTemplateType.Stub:
+			case CourierMessageTemplateType.stub:
 				return 'text-purple-400';
 			default:
 				return '';

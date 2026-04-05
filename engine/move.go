@@ -121,12 +121,15 @@ func newMove(src, dest Square, piece Piece, promotion Promotion, capture, double
 	if capture {
 		m |= 1 << captureShift
 	}
+
 	if doublePawn {
 		m |= 1 << doublePawnShift
 	}
+
 	if enPassant {
 		m |= 1 << enPassantShift
 	}
+
 	if castle {
 		m |= 1 << castleShift
 	}
@@ -220,21 +223,26 @@ func (m Move) ToLAN(p *Position, isCheck, isCheckmate bool) string {
 	if m.Piece().Kind() != Pawn {
 		piece = strings.ToUpper(m.Piece().Kind().String())
 	}
+
 	separator := "-"
 	if m.IsCapture() {
 		separator = "x"
 	}
+
 	var promo string
 	if m.Promotion().IsPromotion() {
 		promo = fmt.Sprintf("=%s", strings.ToUpper(m.Promotion().PieceKind().String()))
 	}
+
 	var checkOrCheckmate string
 	if isCheck {
 		checkOrCheckmate = "+"
 	}
+
 	if isCheckmate {
 		checkOrCheckmate = "#"
 	}
+
 	return fmt.Sprintf("%s%s%s%s%s%s", piece, m.Src().String(), separator, m.Dest().String(), promo, checkOrCheckmate)
 }
 
@@ -247,43 +255,56 @@ func (m Move) ToSAN(p *Position, isCheck, isCheckmate bool, legalMoves []Move) s
 			if isCheckmate {
 				return "O-O#"
 			}
+
 			if isCheck {
 				return "O-O+"
 			}
+
 			return "O-O"
 		}
+
 		if m.IsQueenSideCastle() {
 			if isCheckmate {
 				return "O-O-O#"
 			}
+
 			if isCheck {
 				return "O-O-O+"
 			}
+
 			return "O-O-O"
 		}
 	}
+
 	var piece string
 	if m.Piece().Kind() != Pawn {
 		piece = strings.ToUpper(m.Piece().Kind().String())
 	}
+
 	var disambiguation string
+
 	if m.Piece().Kind() != Pawn {
 		ambiguous := make([]Move, 0)
+
 		for _, lm := range legalMoves {
 			if lm != m && lm.Dest() == m.Dest() && lm.Piece() == m.Piece() {
 				ambiguous = append(ambiguous, lm)
 			}
 		}
+
 		if len(ambiguous) > 0 {
 			var ambigFile, ambigRank bool
+
 			for _, amb := range ambiguous {
 				if amb.Src().File() == m.Src().File() {
 					ambigFile = true
 				}
+
 				if amb.Src().Rank() == m.Src().Rank() {
 					ambigRank = true
 				}
 			}
+
 			if ambigFile && ambigRank {
 				disambiguation = m.Src().String()
 			} else if ambigFile {
@@ -297,20 +318,25 @@ func (m Move) ToSAN(p *Position, isCheck, isCheckmate bool, legalMoves []Move) s
 			disambiguation = m.Src().File().String()
 		}
 	}
+
 	var capture string
 	if m.IsCapture() {
 		capture = "x"
 	}
+
 	var promo string
 	if m.Promotion().IsPromotion() {
 		promo = fmt.Sprintf("=%s", strings.ToUpper(m.Promotion().PieceKind().String()))
 	}
+
 	var checkOrCheckmate string
 	if isCheck {
 		checkOrCheckmate = "+"
 	}
+
 	if isCheckmate {
 		checkOrCheckmate = "#"
 	}
+
 	return fmt.Sprintf("%s%s%s%s%s%s", piece, disambiguation, capture, m.Dest().String(), promo, checkOrCheckmate)
 }

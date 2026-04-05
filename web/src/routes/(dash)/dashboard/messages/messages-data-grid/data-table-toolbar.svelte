@@ -16,11 +16,11 @@
 	const isFiltered = $derived(table.getState().columnFilters.length > 0);
 	const statusCol = $derived(table.getColumn('status'));
 	const typeCol = $derived(table.getColumn('type'));
-	const templateTypeCol = $derived(table.getColumn('templateType'));
+	const templateTypeCol = $derived(table.getColumn('template_type'));
 </script>
 
 <div class="flex items-center justify-between">
-	<div class="flex flex-1 items-center space-x-2">
+	<div class="flex flex-1 flex-wrap items-center space-x-2 gap-y-2">
 		<Input
 			placeholder="Filter by recipient..."
 			value={(table.getColumn('recipient')?.getFilterValue() as string) ?? ''}

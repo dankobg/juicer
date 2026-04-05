@@ -2,7 +2,7 @@
 	type T = unknown;
 </script>
 
-<script lang="ts" generics="T">
+<script lang="ts" generics="T = unknown">
 	import * as AlertDialog from '$lib/components/ui/alert-dialog/index';
 	import { buttonVariants } from '../ui/button';
 	import { confirmation } from '$lib/components/confirmation-dialog/confirmation-dialog-state.svelte';

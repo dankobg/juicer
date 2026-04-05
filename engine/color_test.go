@@ -17,9 +17,11 @@ func TestColor(t *testing.T) {
 			if tc.color.String() != tc.fen {
 				t.Fatalf("invalid color: want %s, got %s", tc.fen, tc.color)
 			}
+
 			if tc.color.Opposite() != tc.opposite {
 				t.Fatalf("invalid opposite color: want %d, got %d", tc.opposite, tc.color.Opposite())
 			}
+
 			if (tc.isWhite != tc.color.IsWhite()) || (tc.isBlack != tc.color.IsBlack()) {
 				t.Fatalf("invalid variant: want %v, %v, got %v, %v", tc.isWhite, tc.isBlack, tc.color.IsWhite(), tc.color.IsBlack())
 			}
@@ -48,6 +50,7 @@ func TestNewColorFromFenStr(t *testing.T) {
 			if (err != nil) != tc.wantErr {
 				t.Fatalf("invalid color, error mismatch, wantErr: %v, gotErr: %v", tc.wantErr, err)
 			}
+
 			if !tc.wantErr && color != tc.want {
 				t.Fatalf("invalid color: want %s, got %s", tc.want, color)
 			}

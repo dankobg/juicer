@@ -1,6 +1,7 @@
 openapi: 3.0.2
 servers:
-  - url: "http://localhost:1337/api/v1"
+  - url: "/api/v1"
+    description: Juicer development server
 info:
   version: 1.0.0
   title: Juicer schema
@@ -10,11 +11,11 @@ tags:
 paths:
   /health/alive:
     get:
-      tags:
-        - juicer
+      operationId: getHealthAlive
       summary: Check if server is healthy
       description: Checks if the server is healthy
-      operationId: getHealthAlive
+      tags:
+        - juicer
       responses:
         "200":
           description: Successful operation
@@ -23,14 +24,14 @@ paths:
               schema:
                 $ref: "#/components/schemas/Healthy"
         default:
-          $ref: "#/components/responses/UnexpectedError"
+          $ref: "#/components/responses/UnexpectedErrorResponse"
   /health/ready:
     get:
-      tags:
-        - juicer
+      operationId: getHealthReady
       summary: Check if server is ready
       description: Checks if the server is ready
-      operationId: getHealthReady
+      tags:
+        - juicer
       responses:
         "200":
           description: Successful operation
@@ -39,68 +40,243 @@ paths:
               schema:
                 $ref: "#/components/schemas/Ready"
         default:
-          $ref: "#/components/responses/UnexpectedError"
-  /juicer/game-variants:
+          $ref: "#/components/responses/UnexpectedErrorResponse"
+  /game-variants:
     get:
-      tags:
-        - juicer
-      summary: Return game variants
-      description: Return game variants
       operationId: listGameVariants
+      summary: List game variants
+      description: List game variants
+      tags:
+        - juicer
+      parameters:
+        - $ref: "#/components/parameters/PaginationPage"
+        - $ref: "#/components/parameters/PaginationPageSize"
+        - name: id
+          in: query
+          description: Filter game variants by ids
+          required: false
+          schema:
+            type: array
+            items:
+              type: integer
+              format: int64
+        - name: name
+          in: query
+          description: Filter game variants by name (partial match)
+          required: false
+          schema:
+            type: string
+        - name: sort
+          in: query
+          description: Sort by fields (add prefix `-` for descending e.g. -created_at)
+          required: false
+          explode: false
+          schema:
+            type: array
+            items:
+              type: string
       responses:
         "200":
           description: Successful operation
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/GameVariant"
+                type: object
+                required:
+                  - data
+                  - meta
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/GameVariant"
+                  meta:
+                    $ref: "#/components/schemas/PaginationMeta"
+        "401":
+          $ref: "#/components/responses/UnauthenticatedErrorResponse"
+        "403":
+          $ref: "#/components/responses/UnauthorizedErrorResponse"
         default:
-          $ref: "#/components/responses/UnexpectedError"
-  /juicer/game-time-categories:
+          $ref: "#/components/responses/UnexpectedErrorResponse"
+  /game-time-categories:
     get:
-      tags:
-        - juicer
-      summary: Return game time categories
-      description: Return game time categories
       operationId: listGameTimeCategories
+      summary: List game time categories
+      description: List game time categories
+      tags:
+        - juicer
+      parameters:
+        - $ref: "#/components/parameters/PaginationPage"
+        - $ref: "#/components/parameters/PaginationPageSize"
+        - name: id
+          in: query
+          description: Filter game time categories by ids
+          required: false
+          schema:
+            type: array
+            items:
+              type: integer
+              format: int64
+        - name: name
+          in: query
+          description: Filter game time categories by name (partial match)
+          required: false
+          schema:
+            type: string
+        - name: sort
+          in: query
+          description: Sort by fields (add prefix `-` for descending e.g. -created_at)
+          required: false
+          explode: false
+          schema:
+            type: array
+            items:
+              type: string
       responses:
         "200":
           description: Successful operation
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/GameTimeCategory"
+                type: object
+                required:
+                  - data
+                  - meta
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/GameTimeCategory"
+                  meta:
+                    $ref: "#/components/schemas/PaginationMeta"
+        "401":
+          $ref: "#/components/responses/UnauthenticatedErrorResponse"
+        "403":
+          $ref: "#/components/responses/UnauthorizedErrorResponse"
         default:
-          $ref: "#/components/responses/UnexpectedError"
-  /juicer/game-time-kinds:
+          $ref: "#/components/responses/UnexpectedErrorResponse"
+  /game-time-kinds:
     get:
-      tags:
-        - juicer
-      summary: Return game time kinds
-      description: Return game time kinds
       operationId: listGameTimeKinds
+      summary: List game time kinds
+      description: List game time kinds
+      tags:
+        - juicer
+      parameters:
+        - $ref: "#/components/parameters/PaginationPage"
+        - $ref: "#/components/parameters/PaginationPageSize"
+        - name: id
+          in: query
+          description: Filter game time kinds by ids
+          required: false
+          schema:
+            type: array
+            items:
+              type: integer
+              format: int64
+        - name: name
+          in: query
+          description: Filter game time kinds by name (partial match)
+          required: false
+          schema:
+            type: string
+        - name: sort
+          in: query
+          description: Sort by fields (add prefix `-` for descending e.g. -created_at)
+          required: false
+          explode: false
+          schema:
+            type: array
+            items:
+              type: string
       responses:
         "200":
           description: Successful operation
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/GameTimeKind"
+                type: object
+                required:
+                  - data
+                  - meta
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/GameTimeKind"
+                  meta:
+                    $ref: "#/components/schemas/PaginationMeta"
+        "401":
+          $ref: "#/components/responses/UnauthenticatedErrorResponse"
+        "403":
+          $ref: "#/components/responses/UnauthorizedErrorResponse"
         default:
-          $ref: "#/components/responses/UnexpectedError"
-  /juicer/quick-games:
+          $ref: "#/components/responses/UnexpectedErrorResponse"
+  /ratings:
     get:
+      operationId: listRatings
+      summary: List ratings
+      description: List ratings
       tags:
         - juicer
-      summary: Return quick games
-      description: Return quick games
+      parameters:
+        - $ref: "#/components/parameters/PaginationPage"
+        - $ref: "#/components/parameters/PaginationPageSize"
+        - name: id
+          in: query
+          description: Filter ratings by ids
+          required: false
+          schema:
+            type: array
+            items:
+              type: integer
+              format: int64
+        - name: game_time_category_id
+          in: query
+          description: Filter ratings by game time category
+          required: false
+          schema:
+            type: integer
+            format: int64
+        - name: sort
+          in: query
+          description: Sort by fields (add prefix `-` for descending e.g. -created_at)
+          required: false
+          explode: false
+          schema:
+            type: array
+            items:
+              type: string
+      responses:
+        "200":
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                  - meta
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Rating"
+                  meta:
+                    $ref: "#/components/schemas/PaginationMeta"
+        "401":
+          $ref: "#/components/responses/UnauthenticatedErrorResponse"
+        "403":
+          $ref: "#/components/responses/UnauthorizedErrorResponse"
+        default:
+          $ref: "#/components/responses/UnexpectedErrorResponse"
+  /quick-games:
+    get:
       operationId: listQuickGames
+      summary: List quick games
+      description: List quick games
+      tags:
+        - juicer
       responses:
         "200":
           description: Successful operation
@@ -110,14 +286,73 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/QuickGame"
-  "/juicer/game-stats/{user_id}":
+        "401":
+          $ref: "#/components/responses/UnauthenticatedErrorResponse"
+        "403":
+          $ref: "#/components/responses/UnauthorizedErrorResponse"
+        default:
+          $ref: "#/components/responses/UnexpectedErrorResponse"
+  /games:
     get:
+      operationId: listGames
+      summary: List games
+      description: List games
       tags:
         - juicer
-      summary: Return game stats for user
-      description: Return game stats for user
-      operationId: getGameStats
       parameters:
+        - $ref: "#/components/parameters/PaginationPage"
+        - $ref: "#/components/parameters/PaginationPageSize"
+        - name: id
+          in: query
+          description: Filter games by ids
+          required: false
+          schema:
+            type: array
+            items:
+              type: integer
+              format: int64
+        - name: sort
+          in: query
+          description: Sort by fields (add prefix `-` for descending e.g. -created_at)
+          required: false
+          explode: false
+          schema:
+            type: array
+            items:
+              type: string
+      responses:
+        "200":
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                  - meta
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Game"
+                  meta:
+                    $ref: "#/components/schemas/PaginationMeta"
+        "401":
+          $ref: "#/components/responses/UnauthenticatedErrorResponse"
+        "403":
+          $ref: "#/components/responses/UnauthorizedErrorResponse"
+        default:
+          $ref: "#/components/responses/UnexpectedErrorResponse"
+  "/game-stats/{user_id}":
+    get:
+      operationId: getGameStats
+      summary: get user game stats
+      description: Get game stats for a given user
+      tags:
+        - juicer
+      parameters:
+        - $ref: "#/components/parameters/PaginationPage"
+        - $ref: "#/components/parameters/PaginationPageSize"
         - name: user_id
           in: path
           required: true
@@ -125,22 +360,47 @@ paths:
           schema:
             type: string
             format: uuid
+        - name: sort
+          in: query
+          description: Sort by fields (add prefix `-` for descending e.g. -created_at)
+          required: false
+          explode: false
+          schema:
+            type: array
+            items:
+              type: string
       responses:
         "200":
           description: Successful operation
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/GameStats"
-        "404":
-          $ref: "#/components/responses/NotFoundError"
+                type: object
+                required:
+                  - data
+                  - meta
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/GameStats"
+                  meta:
+                    $ref: "#/components/schemas/PaginationMeta"
+        "401":
+          $ref: "#/components/responses/UnauthenticatedErrorResponse"
+        "403":
+          $ref: "#/components/responses/UnauthorizedErrorResponse"
         default:
-          $ref: "#/components/responses/UnexpectedError"
-          description: errorGeneric
+          $ref: "#/components/responses/UnexpectedErrorResponse"
   /schemas:
     get:
-      description: Returns a list of all identity schemas currently in use.
       operationId: listIdentitySchemas
+      summary: Get all Identity Schemas
+      description: Returns a list of all identity schemas currently in use.
+      security:
+        - cookieAuth: []
+      tags:
+        - juicer
       parameters:
         - description: >-
             Page Size
@@ -167,16 +427,21 @@ paths:
               schema:
                 $ref: "#/components/schemas/IdentitySchemas"
           description: List Identity JSON Schemas Response
+        "401":
+          $ref: "#/components/responses/UnauthenticatedErrorResponse"
+        "403":
+          $ref: "#/components/responses/UnauthorizedErrorResponse"
         default:
-          $ref: "#/components/responses/UnexpectedError"
-          description: errorGeneric
-      summary: Get all Identity Schemas
-      tags:
-        - juicer
+          $ref: "#/components/responses/UnexpectedErrorResponse"
   "/schemas/{id}":
     get:
-      description: Return a specific identity schema.
       operationId: getIdentitySchema
+      description: Return a specific identity schema.
+      summary: Get Identity JSON Schema
+      security:
+        - cookieAuth: []
+      tags:
+        - juicer
       parameters:
         - description: ID must be set to the ID of schema you want to get
           in: path
@@ -191,18 +456,23 @@ paths:
               schema:
                 $ref: "#/components/schemas/IdentitySchema"
           description: identitySchema
+        "401":
+          $ref: "#/components/responses/UnauthenticatedErrorResponse"
+        "403":
+          $ref: "#/components/responses/UnauthorizedErrorResponse"
         "404":
-          $ref: "#/components/responses/NotFoundError"
+          $ref: "#/components/responses/NotFoundErrorResponse"
         default:
-          $ref: "#/components/responses/UnexpectedError"
-          description: errorGeneric
-      summary: Get Identity JSON Schema
-      tags:
-        - juicer
+          $ref: "#/components/responses/UnexpectedErrorResponse"
   /courier/messages:
     get:
-      description: Lists all messages by given status and recipient.
       operationId: listCourierMessages
+      description: Lists all messages by given status and recipient.
+      summary: List Messages
+      security:
+        - cookieAuth: []
+      tags:
+        - juicer
       parameters:
         - description: This is the number of items per page to return.
           in: query
@@ -210,7 +480,7 @@ paths:
           schema:
             default: 250
             format: int64
-            maximum: 1000
+            maximum: 500
             minimum: 1
             type: integer
         - description: The next page token.
@@ -242,16 +512,22 @@ paths:
                   $ref: "#/components/schemas/Message"
                 type: array
         "400":
-          $ref: "#/components/responses/GenericError"
+          $ref: "#/components/responses/GenericErrorResponse"
+        "401":
+          $ref: "#/components/responses/UnauthenticatedErrorResponse"
+        "403":
+          $ref: "#/components/responses/UnauthorizedErrorResponse"
         default:
-          $ref: "#/components/responses/UnexpectedError"
-      summary: List Messages
-      tags:
-        - juicer
+          $ref: "#/components/responses/UnexpectedErrorResponse"
   "/courier/messages/{id}":
     get:
-      description: Gets a specific messages by the given ID.
       operationId: getCourierMessage
+      description: Gets a specific messages by the given ID.
+      summary: Get a Message
+      security:
+        - cookieAuth: []
+      tags:
+        - juicer
       parameters:
         - description: MessageID is the ID of the message.
           in: path
@@ -267,21 +543,27 @@ paths:
                 $ref: "#/components/schemas/Message"
           description: message
         "400":
-          $ref: "#/components/responses/GenericError"
+          $ref: "#/components/responses/GenericErrorResponse"
+        "401":
+          $ref: "#/components/responses/UnauthenticatedErrorResponse"
+        "403":
+          $ref: "#/components/responses/UnauthorizedErrorResponse"
         "404":
-          $ref: "#/components/responses/NotFoundError"
+          $ref: "#/components/responses/NotFoundErrorResponse"
         default:
-          $ref: "#/components/responses/UnexpectedError"
-      summary: Get a Message
-      tags:
-        - juicer
+          $ref: "#/components/responses/UnexpectedErrorResponse"
   /identities:
     get:
+      operationId: listIdentities
       description: >-
         Lists all
         [identities](https://www.ory.sh/docs/kratos/concepts/identity-user-model)
         in the system. Note: filters cannot be combined.
-      operationId: listIdentities
+      summary: List Identities
+      security:
+        - cookieAuth: []
+      tags:
+        - juicer
       parameters:
         - description: Page Size
           in: query
@@ -379,13 +661,14 @@ paths:
                   $ref: "#/components/schemas/Identity"
                 type: array
           description: Paginated Identity List Response
+        "401":
+          $ref: "#/components/responses/UnauthenticatedErrorResponse"
+        "403":
+          $ref: "#/components/responses/UnauthorizedErrorResponse"
         default:
-          $ref: "#/components/responses/UnexpectedError"
-          description: errorGeneric
-      summary: List Identities
-      tags:
-        - juicer
+          $ref: "#/components/responses/UnexpectedErrorResponse"
     patch:
+      operationId: batchPatchIdentities
       description: >-
         Creates multiple
 
@@ -397,7 +680,11 @@ paths:
 
         for instance passwords, social sign in configurations or multifactor
         methods.
-      operationId: batchPatchIdentities
+      summary: Create multiple identities
+      security:
+        - cookieAuth: []
+      tags:
+        - juicer
       requestBody:
         content:
           application/json:
@@ -412,16 +699,18 @@ paths:
                 $ref: "#/components/schemas/BatchPatchIdentitiesResponse"
           description: batchPatchIdentitiesResponse
         "400":
-          $ref: "#/components/responses/GenericError"
+          $ref: "#/components/responses/GenericErrorResponse"
+        "401":
+          $ref: "#/components/responses/UnauthenticatedErrorResponse"
+        "403":
+          $ref: "#/components/responses/UnauthorizedErrorResponse"
         "409":
-          $ref: "#/components/responses/GenericError"
+          $ref: "#/components/responses/GenericErrorResponse"
         default:
-          $ref: "#/components/responses/UnexpectedError"
-          description: errorGeneric
-      summary: Create multiple identities
-      tags:
-        - juicer
+          $ref: "#/components/responses/UnexpectedErrorResponse"
     post:
+      operationId: createIdentity
+      summary: Create an Identity
       description: >-
         Create an
         [identity](https://www.ory.sh/docs/kratos/concepts/identity-user-model).
@@ -432,7 +721,10 @@ paths:
 
         for instance passwords, social sign in configurations or multifactor
         methods.
-      operationId: createIdentity
+      security:
+        - cookieAuth: []
+      tags:
+        - juicer
       requestBody:
         content:
           application/json:
@@ -447,17 +739,19 @@ paths:
                 $ref: "#/components/schemas/Identity"
           description: identity
         "400":
-          $ref: "#/components/responses/GenericError"
+          $ref: "#/components/responses/GenericErrorResponse"
+        "401":
+          $ref: "#/components/responses/UnauthenticatedErrorResponse"
+        "403":
+          $ref: "#/components/responses/UnauthorizedErrorResponse"
         "409":
-          $ref: "#/components/responses/GenericError"
+          $ref: "#/components/responses/GenericErrorResponse"
         default:
-          $ref: "#/components/responses/UnexpectedError"
-          description: errorGeneric
-      summary: Create an Identity
-      tags:
-        - juicer
+          $ref: "#/components/responses/UnexpectedErrorResponse"
   "/identities/{id}":
     delete:
+      operationId: deleteIdentity
+      summary: Delete an Identity
       description: >-
         Calling this endpoint irrecoverably and permanently deletes the
         [identity](https://www.ory.sh/docs/kratos/concepts/identity-user-model)
@@ -467,7 +761,10 @@ paths:
         identity was not found, in which case it is
 
         assumed that is has been deleted already.
-      operationId: deleteIdentity
+      security:
+        - cookieAuth: []
+      tags:
+        - juicer
       parameters:
         - description: ID is the identity's ID.
           in: path
@@ -478,15 +775,17 @@ paths:
       responses:
         "204":
           $ref: "#/components/responses/EmptyResponse"
+        "401":
+          $ref: "#/components/responses/UnauthenticatedErrorResponse"
+        "403":
+          $ref: "#/components/responses/UnauthorizedErrorResponse"
         "404":
-          $ref: "#/components/responses/NotFoundError"
+          $ref: "#/components/responses/NotFoundErrorResponse"
         default:
-          $ref: "#/components/responses/UnexpectedError"
-          description: errorGeneric
-      summary: Delete an Identity
-      tags:
-        - juicer
+          $ref: "#/components/responses/UnexpectedErrorResponse"
     get:
+      operationId: getIdentity
+      summary: Get an Identity
       description: >-
         Return an
         [identity](https://www.ory.sh/docs/kratos/concepts/identity-user-model)
@@ -494,7 +793,10 @@ paths:
 
         include credentials (e.g. social sign in connections) in the response by
         using the `include_credential` query parameter.
-      operationId: getIdentity
+      security:
+        - cookieAuth: []
+      tags:
+        - juicer
       parameters:
         - description: ID must be set to the ID of identity you want to get
           in: path
@@ -535,15 +837,17 @@ paths:
               schema:
                 $ref: "#/components/schemas/Identity"
           description: identity
+        "401":
+          $ref: "#/components/responses/UnauthenticatedErrorResponse"
+        "403":
+          $ref: "#/components/responses/UnauthorizedErrorResponse"
         "404":
-          $ref: "#/components/responses/NotFoundError"
+          $ref: "#/components/responses/NotFoundErrorResponse"
         default:
-          $ref: "#/components/responses/UnexpectedError"
-          description: errorGeneric
-      summary: Get an Identity
-      tags:
-        - juicer
+          $ref: "#/components/responses/UnexpectedErrorResponse"
     patch:
+      operationId: patchIdentity
+      summary: Patch an Identity
       description: >-
         Partially updates an
         [identity's](https://www.ory.sh/docs/kratos/concepts/identity-user-model)
@@ -551,7 +855,10 @@ paths:
 
         The fields `id`, `stateChangedAt` and `credentials` can not be updated
         using this method.
-      operationId: patchIdentity
+      security:
+        - cookieAuth: []
+      tags:
+        - juicer
       parameters:
         - description: ID must be set to the ID of identity you want to update
           in: path
@@ -573,18 +880,20 @@ paths:
                 $ref: "#/components/schemas/Identity"
           description: identity
         "400":
-          $ref: "#/components/responses/GenericError"
+          $ref: "#/components/responses/GenericErrorResponse"
+        "401":
+          $ref: "#/components/responses/UnauthenticatedErrorResponse"
+        "403":
+          $ref: "#/components/responses/UnauthorizedErrorResponse"
         "404":
-          $ref: "#/components/responses/NotFoundError"
+          $ref: "#/components/responses/NotFoundErrorResponse"
         "409":
-          $ref: "#/components/responses/GenericError"
+          $ref: "#/components/responses/GenericErrorResponse"
         default:
-          $ref: "#/components/responses/UnexpectedError"
-          description: errorGeneric
-      summary: Patch an Identity
-      tags:
-        - juicer
+          $ref: "#/components/responses/UnexpectedErrorResponse"
     put:
+      operationId: updateIdentity
+      summary: Update an Identity
       description: >-
         This endpoint updates an
         [identity](https://www.ory.sh/docs/kratos/concepts/identity-user-model).
@@ -592,7 +901,10 @@ paths:
 
         payload (except credentials) is expected. It is possible to update the
         identity's credentials as well.
-      operationId: updateIdentity
+      security:
+        - cookieAuth: []
+      tags:
+        - juicer
       parameters:
         - description: ID must be set to the ID of identity you want to update
           in: path
@@ -614,26 +926,31 @@ paths:
                 $ref: "#/components/schemas/Identity"
           description: identity
         "400":
-          $ref: "#/components/responses/GenericError"
+          $ref: "#/components/responses/GenericErrorResponse"
+        "401":
+          $ref: "#/components/responses/UnauthenticatedErrorResponse"
+        "403":
+          $ref: "#/components/responses/UnauthorizedErrorResponse"
         "404":
-          $ref: "#/components/responses/NotFoundError"
+          $ref: "#/components/responses/NotFoundErrorResponse"
         "409":
-          $ref: "#/components/responses/GenericError"
+          $ref: "#/components/responses/GenericErrorResponse"
         default:
-          $ref: "#/components/responses/UnexpectedError"
-          description: errorGeneric
-      summary: Update an Identity
-      tags:
-        - juicer
+          $ref: "#/components/responses/UnexpectedErrorResponse"
   "/identities/{id}/credentials/{type}":
     delete:
+      operationId: deleteIdentityCredentials
+      summary: Delete a credential for a specific identity
       description: >-
         Delete an
         [identity](https://www.ory.sh/docs/kratos/concepts/identity-user-model)
         credential by its type.
 
         You cannot delete password or code auth credentials through this API.
-      operationId: deleteIdentityCredentials
+      security:
+        - cookieAuth: []
+      tags:
+        - juicer
       parameters:
         - description: ID is the identity's ID.
           in: path
@@ -697,20 +1014,25 @@ paths:
       responses:
         "204":
           $ref: "#/components/responses/EmptyResponse"
+        "401":
+          $ref: "#/components/responses/UnauthenticatedErrorResponse"
+        "403":
+          $ref: "#/components/responses/UnauthorizedErrorResponse"
         "404":
-          $ref: "#/components/responses/NotFoundError"
+          $ref: "#/components/responses/NotFoundErrorResponse"
         default:
-          $ref: "#/components/responses/UnexpectedError"
-          description: errorGeneric
-      summary: Delete a credential for a specific identity
-      tags:
-        - juicer
+          $ref: "#/components/responses/UnexpectedErrorResponse"
   "/identities/{id}/sessions":
     delete:
+      operationId: deleteIdentitySessions
+      summary: Delete & Invalidate an Identity's Sessions
       description: >-
         Calling this endpoint irrecoverably and permanently deletes and
         invalidates all sessions that belong to the given Identity.
-      operationId: deleteIdentitySessions
+      security:
+        - cookieAuth: []
+      tags:
+        - juicer
       parameters:
         - description: ID is the identity's ID.
           in: path
@@ -722,20 +1044,23 @@ paths:
         "204":
           $ref: "#/components/responses/EmptyResponse"
         "400":
-          $ref: "#/components/responses/GenericError"
+          $ref: "#/components/responses/GenericErrorResponse"
         "401":
-          $ref: "#/components/responses/UnexpectedError"
+          $ref: "#/components/responses/UnauthenticatedErrorResponse"
+        "403":
+          $ref: "#/components/responses/UnauthorizedErrorResponse"
         "404":
-          $ref: "#/components/responses/NotFoundError"
+          $ref: "#/components/responses/NotFoundErrorResponse"
         default:
-          $ref: "#/components/responses/UnexpectedError"
-          description: errorGeneric
-      summary: Delete & Invalidate an Identity's Sessions
+          $ref: "#/components/responses/UnexpectedErrorResponse"
+    get:
+      operationId: listIdentitySessions
+      summary: List an Identity's Sessions
+      description: This endpoint returns all sessions that belong to the given Identity.
+      security:
+        - cookieAuth: []
       tags:
         - juicer
-    get:
-      description: This endpoint returns all sessions that belong to the given Identity.
-      operationId: listIdentitySessions
       parameters:
         - description: >-
             Page Size
@@ -790,19 +1115,24 @@ paths:
                 type: array
           description: List Identity Sessions Response
         "400":
-          $ref: "#/components/responses/GenericError"
+          $ref: "#/components/responses/GenericErrorResponse"
+        "401":
+          $ref: "#/components/responses/UnauthenticatedErrorResponse"
+        "403":
+          $ref: "#/components/responses/UnauthorizedErrorResponse"
         "404":
-          $ref: "#/components/responses/NotFoundError"
+          $ref: "#/components/responses/NotFoundErrorResponse"
         default:
-          $ref: "#/components/responses/UnexpectedError"
-          description: errorGeneric
-      summary: List an Identity's Sessions
-      tags:
-        - juicer
+          $ref: "#/components/responses/UnexpectedErrorResponse"
   /sessions:
     get:
-      description: Listing all sessions that exist.
       operationId: listSessions
+      summary: List All Sessions
+      description: Listing all sessions that exist.
+      security:
+        - cookieAuth: []
+      tags:
+        - juicer
       parameters:
         - description: >-
             Items per Page
@@ -816,7 +1146,7 @@ paths:
           schema:
             default: 250
             format: int64
-            maximum: 1000
+            maximum: 500
             minimum: 1
             type: integer
         - description: >-
@@ -865,19 +1195,21 @@ paths:
             The response given when listing sessions in an administrative
             context.
         "400":
-          $ref: "#/components/responses/GenericError"
+          $ref: "#/components/responses/GenericErrorResponse"
+        "401":
+          $ref: "#/components/responses/UnauthenticatedErrorResponse"
+        "403":
+          $ref: "#/components/responses/UnauthorizedErrorResponse"
         default:
-          $ref: "#/components/responses/UnexpectedError"
-          description: errorGeneric
-      summary: List All Sessions
-      tags:
-        - juicer
+          $ref: "#/components/responses/UnexpectedErrorResponse"
   "/sessions/{id}":
     delete:
+      operationId: disableSession
       description: >-
         Calling this endpoint deactivates the specified session. Session data is
         not deleted.
-      operationId: disableSession
+      security:
+        - cookieAuth: []
       parameters:
         - description: ID is the session's ID.
           in: path
@@ -889,22 +1221,28 @@ paths:
         "204":
           $ref: "#/components/responses/EmptyResponse"
         "400":
-          $ref: "#/components/responses/GenericError"
+          $ref: "#/components/responses/GenericErrorResponse"
         "401":
-          $ref: "#/components/responses/GenericError"
+          $ref: "#/components/responses/UnauthenticatedErrorResponse"
+        "403":
+          $ref: "#/components/responses/UnauthorizedErrorResponse"
         default:
-          $ref: "#/components/responses/UnexpectedError"
-          description: errorGeneric
+          $ref: "#/components/responses/UnexpectedErrorResponse"
       summary: Deactivate a Session
       tags:
         - juicer
     get:
+      operationId: getSession
+      summary: Get Session
       description: >-
         This endpoint is useful for:
 
         Getting a session object with all specified expandables that exist in an
         administrative context.
-      operationId: getSession
+      security:
+        - cookieAuth: []
+      tags:
+        - juicer
       parameters:
         - description: >-
             ExpandOptions is a query parameter encoded list of all properties
@@ -936,15 +1274,17 @@ paths:
                 $ref: "#/components/schemas/Session"
           description: session
         "400":
-          $ref: "#/components/responses/GenericError"
+          $ref: "#/components/responses/GenericErrorResponse"
+        "401":
+          $ref: "#/components/responses/UnauthenticatedErrorResponse"
+        "403":
+          $ref: "#/components/responses/UnauthorizedErrorResponse"
         default:
-          $ref: "#/components/responses/UnexpectedError"
-          description: errorGeneric
-      summary: Get Session
-      tags:
-        - juicer
+          $ref: "#/components/responses/UnexpectedErrorResponse"
   "/sessions/{id}/extend":
     patch:
+      operationId: extendSession
+      summary: Extend a Session
       description: >-
         Calling this endpoint extends the given session ID. If
         `session.earliest_possible_extend` is set it
@@ -967,7 +1307,10 @@ paths:
 
         Retrieve the session ID from the `/sessions/whoami` endpoint /
         `toSession` SDK method.
-      operationId: extendSession
+      security:
+        - cookieAuth: []
+      tags:
+        - juicer
       parameters:
         - description: ID is the session's ID.
           in: path
@@ -985,23 +1328,28 @@ paths:
         "204":
           $ref: "#/components/responses/EmptyResponse"
         "400":
-          $ref: "#/components/responses/GenericError"
+          $ref: "#/components/responses/GenericErrorResponse"
+        "401":
+          $ref: "#/components/responses/UnauthenticatedErrorResponse"
+        "403":
+          $ref: "#/components/responses/UnauthorizedErrorResponse"
         "404":
-          $ref: "#/components/responses/NotFoundError"
+          $ref: "#/components/responses/NotFoundErrorResponse"
         default:
-          $ref: "#/components/responses/UnexpectedError"
-          description: errorGeneric
-      summary: Extend a Session
-      tags:
-        - juicer
+          $ref: "#/components/responses/UnexpectedErrorResponse"
   /recovery/code:
     post:
+      operationId: createRecoveryCodeForIdentity
+      summary: Create a Recovery Code
       description: >-
         This endpoint creates a recovery code which should be given to the user
         in order for them to recover
 
         (or activate) their account.
-      operationId: createRecoveryCodeForIdentity
+      security:
+        - cookieAuth: []
+      tags:
+        - juicer
       requestBody:
         content:
           application/json:
@@ -1016,23 +1364,28 @@ paths:
                 $ref: "#/components/schemas/RecoveryCodeForIdentity"
           description: recoveryCodeForIdentity
         "400":
-          $ref: "#/components/responses/GenericError"
+          $ref: "#/components/responses/GenericErrorResponse"
+        "401":
+          $ref: "#/components/responses/UnauthenticatedErrorResponse"
+        "403":
+          $ref: "#/components/responses/UnauthorizedErrorResponse"
         "404":
-          $ref: "#/components/responses/NotFoundError"
+          $ref: "#/components/responses/NotFoundErrorResponse"
         default:
-          $ref: "#/components/responses/UnexpectedError"
-          description: errorGeneric
-      summary: Create a Recovery Code
-      tags:
-        - juicer
+          $ref: "#/components/responses/UnexpectedErrorResponse"
   /recovery/link:
     post:
+      operationId: createRecoveryLinkForIdentity
+      summary: Create a Recovery Link
       description: >-
         This endpoint creates a recovery link which should be given to the user
         in order for them to recover
 
         (or activate) their account.
-      operationId: createRecoveryLinkForIdentity
+      security:
+        - cookieAuth: []
+      tags:
+        - juicer
       parameters:
         - in: query
           name: return_to
@@ -1052,15 +1405,15 @@ paths:
                 $ref: "#/components/schemas/RecoveryLinkForIdentity"
           description: recoveryLinkForIdentity
         "400":
-          $ref: "#/components/responses/GenericError"
+          $ref: "#/components/responses/GenericErrorResponse"
+        "401":
+          $ref: "#/components/responses/UnauthenticatedErrorResponse"
+        "403":
+          $ref: "#/components/responses/UnauthorizedErrorResponse"
         "404":
-          $ref: "#/components/responses/NotFoundError"
+          $ref: "#/components/responses/NotFoundErrorResponse"
         default:
-          $ref: "#/components/responses/UnexpectedError"
-          description: errorGeneric
-      summary: Create a Recovery Link
-      tags:
-        - juicer
+          $ref: "#/components/responses/UnexpectedErrorResponse"
   # /credentials:
   #   post:
   #     description: >-
@@ -1103,566 +1456,401 @@ paths:
   #     summary: Issues a Verifiable Credential
   #     tags:
   #       - juicer
-  # /relation-tuples:
-  #   delete:
-  #     description: Use this endpoint to delete relationships
-  #     operationId: deleteRelationships
-  #     parameters:
-  #       - description: Namespace of the Relationship
-  #         in: query
-  #         name: namespace
-  #         schema:
-  #           type: string
-  #       - description: Object of the Relationship
-  #         in: query
-  #         name: object
-  #         schema:
-  #           type: string
-  #       - description: Relation of the Relationship
-  #         in: query
-  #         name: relation
-  #         schema:
-  #           type: string
-  #       - description: SubjectID of the Relationship
-  #         in: query
-  #         name: subject_id
-  #         schema:
-  #           type: string
-  #       - description: Namespace of the Subject Set
-  #         in: query
-  #         name: subject_set.namespace
-  #         schema:
-  #           type: string
-  #       - description: Object of the Subject Set
-  #         in: query
-  #         name: subject_set.object
-  #         schema:
-  #           type: string
-  #       - description: Relation of the Subject Set
-  #         in: query
-  #         name: subject_set.relation
-  #         schema:
-  #           type: string
-  #     responses:
-  #       "204":
-  #         $ref: "#/components/responses/EmptyResponse"
-  #       "400":
-  #         $ref: "#/components/responses/UnexpectedError"
-  #       default:
-  #         $ref: "#/components/responses/UnexpectedError"
-  #         description: errorGeneric
-  #     summary: Delete Relationships
-  #     tags:
-  #       - juicer
-  #   patch:
-  #     description: Use this endpoint to patch one or more relationships.
-  #     operationId: patchRelationships
-  #     requestBody:
-  #       content:
-  #         application/json:
-  #           schema:
-  #             items:
-  #               $ref: "#/components/schemas/RelationshipPatch"
-  #             type: array
-  #       x-originalParamName: Body
-  #     responses:
-  #       "204":
-  #         $ref: "#/components/responses/EmptyResponse"
-  #       "400":
-  #         $ref: "#/components/responses/UnexpectedError"
-  #       "404":
-  #         $ref: "#/components/responses/UnexpectedError"
-  #       default:
-  #         $ref: "#/components/responses/UnexpectedError"
-  #         description: errorGeneric
-  #     summary: Patch Multiple Relationships
-  #     tags:
-  #       - juicer
-  #   put:
-  #     description: Use this endpoint to create a relationship.
-  #     operationId: createRelationship
-  #     requestBody:
-  #       content:
-  #         application/json:
-  #           schema:
-  #             $ref: "#/components/schemas/CreateRelationshipBody"
-  #       x-originalParamName: Body
-  #     responses:
-  #       "201":
-  #         content:
-  #           application/json:
-  #             schema:
-  #               $ref: "#/components/schemas/Relationship"
-  #         description: relationship
-  #       "400":
-  #         $ref: "#/components/responses/UnexpectedError"
-  #       default:
-  #         $ref: "#/components/responses/UnexpectedError"
-  #         description: errorGeneric
-  #     summary: Create a Relationship
-  #     tags:
-  #       - juicer
-  # /namespaces:
-  #   get:
-  #     description: Get all namespaces
-  #     operationId: listRelationshipNamespaces
-  #     responses:
-  #       "200":
-  #         content:
-  #           application/json:
-  #             schema:
-  #               $ref: "#/components/schemas/RelationshipNamespaces"
-  #         description: relationshipNamespaces
-  #       default:
-  #         $ref: "#/components/responses/UnexpectedError"
-  #         description: errorGeneric
-  #     summary: Query namespaces
-  #     tags:
-  #       - juicer
-  # /opl/syntax/check:
-  #   post:
-  #     description: The OPL file is expected in the body of the request.
-  #     operationId: checkOplSyntax
-  #     requestBody:
-  #       content:
-  #         text/plain:
-  #           schema:
-  #             $ref: "#/components/schemas/CheckOplSyntaxBody"
-  #       x-originalParamName: Body
-  #     responses:
-  #       "200":
-  #         content:
-  #           application/json:
-  #             schema:
-  #               $ref: "#/components/schemas/CheckOplSyntaxResult"
-  #         description: checkOplSyntaxResult
-  #       "400":
-  #         $ref: "#/components/responses/UnexpectedError"
-  #       default:
-  #         $ref: "#/components/responses/UnexpectedError"
-  #         description: errorGeneric
-  #     summary: Check the syntax of an OPL file
-  #     tags:
-  #       - juicer
-  # /relation-tuples:
-  #   get:
-  #     description: >-
-  #       Get all relationships that match the query. Only the namespace field is
-  #       required.
-  #     operationId: getRelationships
-  #     parameters:
-  #       - in: query
-  #         name: page_token
-  #         schema:
-  #           type: string
-  #       - in: query
-  #         name: page_size
-  #         schema:
-  #           format: int64
-  #           type: integer
-  #       - description: Namespace of the Relationship
-  #         in: query
-  #         name: namespace
-  #         schema:
-  #           type: string
-  #       - description: Object of the Relationship
-  #         in: query
-  #         name: object
-  #         schema:
-  #           type: string
-  #       - description: Relation of the Relationship
-  #         in: query
-  #         name: relation
-  #         schema:
-  #           type: string
-  #       - description: SubjectID of the Relationship
-  #         in: query
-  #         name: subject_id
-  #         schema:
-  #           type: string
-  #       - description: Namespace of the Subject Set
-  #         in: query
-  #         name: subject_set.namespace
-  #         schema:
-  #           type: string
-  #       - description: Object of the Subject Set
-  #         in: query
-  #         name: subject_set.object
-  #         schema:
-  #           type: string
-  #       - description: Relation of the Subject Set
-  #         in: query
-  #         name: subject_set.relation
-  #         schema:
-  #           type: string
-  #     responses:
-  #       "200":
-  #         content:
-  #           application/json:
-  #             schema:
-  #               $ref: "#/components/schemas/Relationships"
-  #         description: relationships
-  #       "404":
-  #         $ref: "#/components/responses/UnexpectedError"
-  #       default:
-  #         $ref: "#/components/responses/UnexpectedError"
-  #         description: errorGeneric
-  #     summary: Query relationships
-  #     tags:
-  #       - juicer
-  # /relation-tuples/batch/check:
-  #   post:
-  #     description: >-
-  #       To learn how relationship tuples and the check works, head over to [the
-  #       documentation](https://www.ory.sh/docs/keto/concepts/api-overview).
-  #     operationId: batchCheckPermission
-  #     parameters:
-  #       - in: query
-  #         name: max-depth
-  #         schema:
-  #           format: int64
-  #           type: integer
-  #     requestBody:
-  #       content:
-  #         application/json:
-  #           schema:
-  #             $ref: "#/components/schemas/BatchCheckPermissionBody"
-  #       x-originalParamName: Body
-  #     responses:
-  #       "200":
-  #         content:
-  #           application/json:
-  #             schema:
-  #               $ref: "#/components/schemas/BatchCheckPermissionResult"
-  #         description: batchCheckPermissionResult
-  #       "400":
-  #         $ref: "#/components/responses/UnexpectedError"
-  #       default:
-  #         $ref: "#/components/responses/UnexpectedError"
-  #         description: errorGeneric
-  #     summary: Batch check permissions
-  #     tags:
-  #       - juicer
-  # /relation-tuples/check:
-  #   get:
-  #     description: >-
-  #       To learn how relationship tuples and the check works, head over to [the
-  #       documentation](https://www.ory.sh/docs/keto/concepts/api-overview).
-  #     operationId: checkPermissionOrError
-  #     parameters:
-  #       - description: Namespace of the Relationship
-  #         in: query
-  #         name: namespace
-  #         schema:
-  #           type: string
-  #       - description: Object of the Relationship
-  #         in: query
-  #         name: object
-  #         schema:
-  #           type: string
-  #       - description: Relation of the Relationship
-  #         in: query
-  #         name: relation
-  #         schema:
-  #           type: string
-  #       - description: SubjectID of the Relationship
-  #         in: query
-  #         name: subject_id
-  #         schema:
-  #           type: string
-  #       - description: Namespace of the Subject Set
-  #         in: query
-  #         name: subject_set.namespace
-  #         schema:
-  #           type: string
-  #       - description: Object of the Subject Set
-  #         in: query
-  #         name: subject_set.object
-  #         schema:
-  #           type: string
-  #       - description: Relation of the Subject Set
-  #         in: query
-  #         name: subject_set.relation
-  #         schema:
-  #           type: string
-  #       - in: query
-  #         name: max-depth
-  #         schema:
-  #           format: int64
-  #           type: integer
-  #     responses:
-  #       "200":
-  #         content:
-  #           application/json:
-  #             schema:
-  #               $ref: "#/components/schemas/CheckPermissionResult"
-  #         description: checkPermissionResult
-  #       "400":
-  #         $ref: "#/components/responses/UnexpectedError"
-  #       "403":
-  #         content:
-  #           application/json:
-  #             schema:
-  #               $ref: "#/components/schemas/CheckPermissionResult"
-  #         description: checkPermissionResult
-  #       default:
-  #         $ref: "#/components/responses/UnexpectedError"
-  #         description: errorGeneric
-  #     summary: Check a permission
-  #     tags:
-  #       - juicer
-  #   post:
-  #     description: >-
-  #       To learn how relationship tuples and the check works, head over to [the
-  #       documentation](https://www.ory.sh/docs/keto/concepts/api-overview).
-  #     operationId: postCheckPermissionOrError
-  #     parameters:
-  #       - in: query
-  #         name: max-depth
-  #         schema:
-  #           format: int64
-  #           type: integer
-  #     requestBody:
-  #       content:
-  #         application/json:
-  #           schema:
-  #             $ref: "#/components/schemas/PostCheckPermissionOrErrorBody"
-  #       x-originalParamName: Body
-  #     responses:
-  #       "200":
-  #         content:
-  #           application/json:
-  #             schema:
-  #               $ref: "#/components/schemas/CheckPermissionResult"
-  #         description: checkPermissionResult
-  #       "400":
-  #         $ref: "#/components/responses/UnexpectedError"
-  #       "403":
-  #         content:
-  #           application/json:
-  #             schema:
-  #               $ref: "#/components/schemas/CheckPermissionResult"
-  #         description: checkPermissionResult
-  #       default:
-  #         $ref: "#/components/responses/UnexpectedError"
-  #         description: errorGeneric
-  #     summary: Check a permission
-  #     tags:
-  #       - juicer
-  # /relation-tuples/check/openapi:
-  #   get:
-  #     description: >-
-  #       To learn how relationship tuples and the check works, head over to [the
-  #       documentation](https://www.ory.sh/docs/keto/concepts/api-overview).
-  #     operationId: checkPermission
-  #     parameters:
-  #       - description: Namespace of the Relationship
-  #         in: query
-  #         name: namespace
-  #         schema:
-  #           type: string
-  #       - description: Object of the Relationship
-  #         in: query
-  #         name: object
-  #         schema:
-  #           type: string
-  #       - description: Relation of the Relationship
-  #         in: query
-  #         name: relation
-  #         schema:
-  #           type: string
-  #       - description: SubjectID of the Relationship
-  #         in: query
-  #         name: subject_id
-  #         schema:
-  #           type: string
-  #       - description: Namespace of the Subject Set
-  #         in: query
-  #         name: subject_set.namespace
-  #         schema:
-  #           type: string
-  #       - description: Object of the Subject Set
-  #         in: query
-  #         name: subject_set.object
-  #         schema:
-  #           type: string
-  #       - description: Relation of the Subject Set
-  #         in: query
-  #         name: subject_set.relation
-  #         schema:
-  #           type: string
-  #       - in: query
-  #         name: max-depth
-  #         schema:
-  #           format: int64
-  #           type: integer
-  #     responses:
-  #       "200":
-  #         content:
-  #           application/json:
-  #             schema:
-  #               $ref: "#/components/schemas/CheckPermissionResult"
-  #         description: checkPermissionResult
-  #       "400":
-  #         $ref: "#/components/responses/UnexpectedError"
-  #       default:
-  #         $ref: "#/components/responses/UnexpectedError"
-  #         description: errorGeneric
-  #     summary: Check a permission
-  #     tags:
-  #       - juicer
-  #   post:
-  #     description: >-
-  #       To learn how relationship tuples and the check works, head over to [the
-  #       documentation](https://www.ory.sh/docs/keto/concepts/api-overview).
-  #     operationId: postCheckPermission
-  #     parameters:
-  #       - in: query
-  #         name: max-depth
-  #         schema:
-  #           format: int64
-  #           type: integer
-  #     requestBody:
-  #       content:
-  #         application/json:
-  #           schema:
-  #             $ref: "#/components/schemas/PostCheckPermissionBody"
-  #       x-originalParamName: Payload
-  #     responses:
-  #       "200":
-  #         content:
-  #           application/json:
-  #             schema:
-  #               $ref: "#/components/schemas/CheckPermissionResult"
-  #         description: checkPermissionResult
-  #       "400":
-  #         $ref: "#/components/responses/UnexpectedError"
-  #       default:
-  #         $ref: "#/components/responses/UnexpectedError"
-  #         description: errorGeneric
-  #     summary: Check a permission
-  #     tags:
-  #       - juicer
-  # /relation-tuples/expand:
-  #   get:
-  #     description: Use this endpoint to expand a relationship tuple into permissions.
-  #     operationId: expandPermissions
-  #     parameters:
-  #       - description: Namespace of the Subject Set
-  #         in: query
-  #         name: namespace
-  #         required: true
-  #         schema:
-  #           type: string
-  #       - description: Object of the Subject Set
-  #         in: query
-  #         name: object
-  #         required: true
-  #         schema:
-  #           type: string
-  #       - description: Relation of the Subject Set
-  #         in: query
-  #         name: relation
-  #         required: true
-  #         schema:
-  #           type: string
-  #       - in: query
-  #         name: max-depth
-  #         schema:
-  #           format: int64
-  #           type: integer
-  #     responses:
-  #       "200":
-  #         content:
-  #           application/json:
-  #             schema:
-  #               $ref: "#/components/schemas/ExpandedPermissionTree"
-  #         description: expandedPermissionTree
-  #       "400":
-  #         $ref: "#/components/responses/UnexpectedError"
-  #       "404":
-  #         $ref: "#/components/responses/UnexpectedError"
-  #       default:
-  #         $ref: "#/components/responses/UnexpectedError"
-  #         description: errorGeneric
-  #     summary: Expand a Relationship into permissions.
-  #     tags:
-  #       - juicer
 
 components:
+  securitySchemes:
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: ory_kratos_session
+
   responses:
-    UnexpectedError:
+    UnexpectedErrorResponse:
       description: Unexpected error
       content:
         application/json:
           schema:
-            $ref: "#/components/schemas/Error"
-    GenericError:
-      description: Unexpected error
+            $ref: "#/components/schemas/APIError"
+    GenericErrorResponse:
+      description: API error
       content:
         application/json:
           schema:
-            $ref: "#/components/schemas/Error"
-    NotFoundError:
-      description: Unexpected error
+            $ref: "#/components/schemas/APIError"
+    NotFoundErrorResponse:
+      description: Not found
       content:
         application/json:
           schema:
-            $ref: "#/components/schemas/Error"
+            $ref: "#/components/schemas/APIError"
+    UnauthenticatedErrorResponse:
+      description: Not authenticated
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/APIError"
+    UnauthorizedErrorResponse:
+      description: Not authorized
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/APIError"
     EmptyResponse:
       description: >-
-        Empty responses are sent when, for example, resources are deleted. The
-        HTTP status code for empty responses is
+        Empty responses are sent when, for example, resources are deleted.
+        The HTTP status code for empty responses is typically 201 or 204
 
-        typically 201 or 204
+  parameters:
+    PaginationPage:
+      in: query
+      name: page
+      required: false
+      schema:
+        $ref: "#/components/schemas/PaginationPage"
+      description: Page number (1-based)
+    PaginationPageSize:
+      in: query
+      name: page_size
+      required: false
+      schema:
+        $ref: "#/components/schemas/PaginationPageSize"
+      description: Number of items per page
 
   schemas:
-    UUID:
-      type: string
-      format: uuid
-    NullBool:
-      nullable: true
-      type: boolean
-    NullDuration:
-      nullable: true
-      pattern: "^[0-9]+(ns|us|ms|s|m|h)$"
-      type: string
-    NullInt:
-      nullable: true
+    PaginationPage:
       type: integer
-    NullString:
-      nullable: true
-      type: string
-    NullTime:
-      format: date-time
-      nullable: true
-      type: string
-    NullUUID:
-      format: uuid4
-      nullable: true
-      type: string
-    NullInt64:
-      nullable: true
+      minimum: 1
+      default: 1
+      description: Page number (1-based)
+    PaginationPageSize:
       type: integer
-    NullJsonRawMessage:
-      description: >-
-        NullJSONRawMessage represents a json.RawMessage that works well with
-        JSON, SQL, and Swagger and is NULLable-
-      nullable: true
-      type: object
-    Error:
+      minimum: 1
+      maximum: 1000
+      default: 50
+      description: Number of items per page
+    PaginationMeta:
       type: object
       required:
-        - code
-        - message
+        - page
+        - page_size
+        - total
       properties:
-        code:
+        page:
+          $ref: "#/components/schemas/PaginationPage"
+        page_size:
+          $ref: "#/components/schemas/PaginationPageSize"
+        total:
           type: integer
-          format: int32
-          description: Error code
-        message:
+          format: int64
+    PaginationParams:
+      type: object
+      required:
+        - page
+        - page_size
+      properties:
+        page:
+          $ref: "#/components/schemas/PaginationPage"
+        page_size:
+          $ref: "#/components/schemas/PaginationPageSize"
+    User:
+      type: object
+      required:
+        - name
+      properties:
+        name:
           type: string
-          description: Error message
+          description: User name
+        # identity:
+        #   $ref: "#/components/schemas/Identity"
+    Country:
+      type: object
+      required:
+        - id
+        - name
+        - iso_alpha2
+        - iso_alpha3
+        - iso_numeric
+        - created_at
+        - updated_at
+      properties:
+        id:
+          format: int64
+          type: integer
+          description: Country id
+        name:
+          type: string
+          description: Country name
+        iso_alpha2:
+          type: string
+          minLength: 2
+          maxLength: 2
+          description: Country 2 letter iso_code
+        iso_alpha3:
+          type: string
+          minLength: 3
+          maxLength: 3
+          description: Country 3 letter iso_code
+        iso_numeric:
+          type: string
+          minLength: 3
+          maxLength: 3
+          description: Country numeric iso_code
+        created_at:
+          format: date-time
+          type: string
+          description: Created at timestamp
+        updated_at:
+          format: date-time
+          type: string
+          description: Updated at timestamp
+    CreateCountryBody:
+      type: object
+      required:
+        - name
+        - iso_alpha2
+        - iso_alpha3
+        - iso_numeric
+      properties:
+        name:
+          type: string
+          minLength: 1
+          description: Country name
+        iso_alpha2:
+          type: string
+          minLength: 2
+          maxLength: 2
+          description: Country 2 letter iso_code
+        iso_alpha3:
+          type: string
+          minLength: 3
+          maxLength: 3
+          description: Country 3 letter iso_code
+        iso_numeric:
+          type: string
+          minLength: 3
+          maxLength: 3
+          description: Country numeric iso_code
+    UpdateCountryBody:
+      type: object
+      properties:
+        name:
+          type: string
+          description: Country name
+          minLength: 1
+        iso_alpha2:
+          type: string
+          minLength: 2
+          maxLength: 2
+          description: Country 2 letter iso_code
+        iso_alpha3:
+          type: string
+          minLength: 3
+          maxLength: 3
+          description: Country 3 letter iso_code
+        iso_numeric:
+          type: string
+          minLength: 3
+          maxLength: 3
+          description: Country numeric iso_code
+    DeleteCountriesBody:
+      type: object
+      required:
+        - ids
+      properties:
+        ids:
+          type: array
+          items:
+            type: integer
+            format: int64
+          description: Countries ids to delete
+    Latitude:
+      type: number
+      format: double
+      minimum: -90
+      maximum: 90
+      multipleOf: 0.000001
+      description: Latitude
+    Longitude:
+      type: number
+      format: double
+      minimum: -180
+      maximum: 180
+      multipleOf: 0.000001
+      description: Longitude
+    Address:
+      type: object
+      required:
+        - id
+        - street_address
+        - city
+        - country
+        - created_at
+        - updated_at
+      properties:
+        id:
+          format: int64
+          type: integer
+          description: Country id
+        unit_number:
+          type: string
+          description: Unit number
+        street_number:
+          type: string
+          description: Street number
+        street_address:
+          type: string
+          description: Street address
+        city:
+          type: string
+          description: City
+        region:
+          type: string
+          description: Region
+        postal_code:
+          type: string
+          description: Postal code
+        lat:
+          $ref: "#/components/schemas/Latitude"
+        lon:
+          $ref: "#/components/schemas/Longitude"
+        note:
+          type: string
+          description: Some info about address if needed
+        country:
+          $ref: "#/components/schemas/Country"
+        created_at:
+          format: date-time
+          type: string
+          description: Created at timestamp
+        updated_at:
+          format: date-time
+          type: string
+          description: Updated at timestamp
+    CreateAddressBody:
+      type: object
+      required:
+        - street_address
+        - city
+        - country_id
+      properties:
+        unit_number:
+          type: string
+          minLength: 1
+          description: Unit number
+        street_number:
+          type: string
+          minLength: 1
+          description: Street number
+        street_address:
+          type: string
+          description: Street address
+          minLength: 1
+        city:
+          type: string
+          minLength: 1
+          description: City
+        region:
+          type: string
+          minLength: 1
+          description: Region
+        postal_code:
+          type: string
+          minLength: 1
+          description: Postal code
+        note:
+          type: string
+          minLength: 1
+          description: Some info about address if needed
+        country_id:
+          format: int64
+          type: integer
+          description: Country id
+    UpdateAddressBody:
+      type: object
+      nullable: true
+      properties:
+        unit_number:
+          type: string
+          minLength: 1
+          description: Unit number
+          nullable: true
+        street_number:
+          type: string
+          minLength: 1
+          description: Street number
+          nullable: true
+        street_address:
+          type: string
+          description: Street address
+        address_line_1:
+          type: string
+          minLength: 1
+          description: Address line 1
+        address_line_2:
+          type: string
+          minLength: 1
+          description: Address line 2 (more details)
+          nullable: true
+        city:
+          type: string
+          minLength: 1
+          description: City
+        region:
+          type: string
+          minLength: 1
+          description: Region
+          nullable: true
+        postal_code:
+          type: string
+          description: Postal code
+          nullable: true
+        lat:
+          type: number
+          format: double
+          minimum: -90
+          maximum: 90
+          multipleOf: 0.000001
+          description: Latitude
+          nullable: true
+        lon:
+          type: number
+          format: double
+          minimum: -180
+          maximum: 180
+          multipleOf: 0.000001
+          description: Longitude
+          nullable: true
+        note:
+          type: string
+          minLength: 1
+          description: Some info about address if needed
+          nullable: true
+        country:
+          $ref: "#/components/schemas/UpdateCountryBody"
+    Contact:
+      type: object
+      required:
+        - id
+        - phone
+        - email
+        - address
+      properties:
+        phone:
+          type: string
+          description: Phone number
+        email:
+          type: string
+          description: E-Mail
+        address:
+          $ref: "#/components/schemas/Address"
+        created_at:
+          format: date-time
+          type: string
+          description: Created at timestamp
+        updated_at:
+          format: date-time
+          type: string
+          description: Updated at timestamp
     Healthy:
       type: object
       required:
@@ -1683,10 +1871,12 @@ components:
         - id
         - name
         - enabled
+        - created_at
+        - updated_at
       properties:
         id:
-          allOf:
-            - $ref: "#/components/schemas/UUID"
+          format: int64
+          type: integer
           description: Game variant id
         name:
           type: string
@@ -1694,16 +1884,49 @@ components:
         enabled:
           type: boolean
           description: Whether a game variant is supported (enabled)
+        created_at:
+          format: date-time
+          type: string
+          description: Created at timestamp
+        updated_at:
+          format: date-time
+          type: string
+          description: Updated at timestamp
+    GameState:
+      type: object
+      required:
+        - id
+        - name
+        - created_at
+        - updated_at
+      properties:
+        id:
+          format: int64
+          type: integer
+          description: Game state id
+        name:
+          type: string
+          description: Game state name
+        created_at:
+          format: date-time
+          type: string
+          description: Created at timestamp
+        updated_at:
+          format: date-time
+          type: string
+          description: Updated at timestamp
     GameTimeKind:
       type: object
       required:
         - id
         - name
         - enabled
+        - created_at
+        - updated_at
       properties:
         id:
-          allOf:
-            - $ref: "#/components/schemas/UUID"
+          format: int64
+          type: integer
           description: Game time kind id
         name:
           type: string
@@ -1711,15 +1934,25 @@ components:
         enabled:
           type: boolean
           description: Whether a game time kind is supported (enabled)
+        created_at:
+          format: date-time
+          type: string
+          description: Created at timestamp
+        updated_at:
+          format: date-time
+          type: string
+          description: Updated at timestamp
     GameTimeCategory:
       type: object
       required:
         - id
         - name
+        - created_at
+        - updated_at
       properties:
         id:
-          allOf:
-            - $ref: "#/components/schemas/UUID"
+          format: int64
+          type: integer
           description: Game time category id
         name:
           type: string
@@ -1728,6 +1961,216 @@ components:
           type: integer
           format: int32
           description: Game time category upper time limit
+        created_at:
+          format: date-time
+          type: string
+          description: Created at timestamp
+        updated_at:
+          format: date-time
+          type: string
+          description: Updated at timestamp
+    GameResult:
+      type: object
+      required:
+        - id
+        - name
+        - created_at
+        - updated_at
+      properties:
+        id:
+          format: int64
+          type: integer
+          description: Game result id
+        name:
+          type: string
+          description: Game time category name
+        created_at:
+          format: date-time
+          type: string
+          description: Created at timestamp
+        updated_at:
+          format: date-time
+          type: string
+          description: Updated at timestamp
+    GameResultStatus:
+      type: object
+      required:
+        - id
+        - name
+        - created_at
+        - updated_at
+      properties:
+        id:
+          format: int64
+          type: integer
+          description: Game result id
+        name:
+          type: string
+          description: Game time category name
+        created_at:
+          format: date-time
+          type: string
+          description: Created at timestamp
+        updated_at:
+          format: date-time
+          type: string
+          description: Updated at timestamp
+    Rating:
+      type: object
+      required:
+        - id
+        - user_id
+        - game_time_category_id
+        - glicko
+        - glicko2
+        - created_at
+        - updated_at
+      properties:
+        id:
+          format: int64
+          type: integer
+          description: Game result id
+        user_id:
+          format: uuid
+          type: string
+          description: User id
+        game_time_category_id:
+          format: int64
+          type: integer
+          description: Game time category id
+        glicko:
+          format: int64
+          type: integer
+          description: Game time category id
+        glicko2:
+          format: int64
+          type: integer
+          description: Game time category id
+        created_at:
+          format: date-time
+          type: string
+          description: Created at timestamp
+        updated_at:
+          format: date-time
+          type: string
+          description: Updated at timestamp
+    Game:
+      type: object
+      required:
+        - id
+        - variant_id
+        - time_kind_id
+        - time_category_id
+        - is_guest
+        - time_control_clock
+        - time_control_increment
+        - reconnect_timeout
+        - first_move_timeout
+        - white_game_clock
+        - black_game_clock
+        - state_id
+        - start_time
+        - fen
+        - created_at
+        - updated_at
+      properties:
+        id:
+          format: int64
+          type: integer
+          description: Game variant id
+        white_id:
+          type: string
+          format: uuid
+          description: White id
+        black_id:
+          type: string
+          format: uuid
+          description: White id
+        white_guest_id:
+          type: string
+          format: uuid
+          description: White id
+        black_guest_id:
+          type: string
+          format: uuid
+          description: White id
+        variant_id:
+          format: int64
+          type: integer
+          description: Game variant id
+        time_kind_id:
+          format: int64
+          type: integer
+          description: Time kind id
+        time_category_id:
+          format: int64
+          type: integer
+          description: Time kind id
+        is_guest:
+          type: boolean
+          description: Whether is guest user
+        time_control_clock:
+          type: integer
+          format: int64
+          description: Time control clock
+        time_control_increment:
+          type: integer
+          format: int64
+          description: Time control increment
+        reconnect_timeout:
+          type: integer
+          format: int64
+          description: Reconnect timeout
+        first_move_timeout:
+          type: integer
+          format: int64
+          description: First move timeout
+        white_game_clock:
+          type: integer
+          format: int64
+          description: White game clock
+        black_game_clock:
+          type: integer
+          format: int64
+          description: Black game clock
+        result_id:
+          type: integer
+          format: int64
+          description: Result id
+        result_status_id:
+          type: integer
+          format: int64
+          description: Result status id
+        state_id:
+          type: integer
+          format: int64
+          description: State id
+        start_time:
+          format: date-time
+          type: string
+          description: Start time
+        end_time:
+          format: date-time
+          type: string
+          description: End time
+        last_move:
+          format: date-time
+          type: string
+          description: Last move
+        fen:
+          type: string
+          description: fen string
+        pgn:
+          type: string
+          description: game pgn
+        created_at:
+          format: date-time
+          type: string
+          description: Created at timestamp
+        updated_at:
+          format: date-time
+          type: string
+          description: Updated at timestamp
     QuickGame:
       type: object
       required:
@@ -1791,9 +2234,74 @@ components:
         - loss
         - draw
         - interrupted
-    AmountInCent:
-      format: int64
+    UUID:
+      type: string
+      format: uuid
+    NullBool:
+      nullable: true
+      type: boolean
+    NullDuration:
+      nullable: true
+      pattern: "^[0-9]+(ns|us|ms|s|m|h)$"
+      type: string
+    NullInt:
+      nullable: true
       type: integer
+    NullString:
+      nullable: true
+      type: string
+    NullTime:
+      format: date-time
+      nullable: true
+      type: string
+    NullUUID:
+      format: uuid4
+      nullable: true
+      type: string
+    NullInt64:
+      nullable: true
+      type: integer
+    NullJsonRawMessage:
+      description: >-
+        NullJSONRawMessage represents a json.RawMessage that works well with
+        JSON, SQL, and Swagger and is NULLable-
+      nullable: true
+      type: object
+    APIError:
+      type: object
+      required:
+        - code
+        - status_code
+        - message
+      properties:
+        code:
+          type: string
+          description: Error unique code
+        status_code:
+          type: integer
+          format: int32
+          description: HTTP status code
+        message:
+          type: string
+          description: Error message
+        reason:
+          type: string
+          description: Error reason description
+        details:
+          description: Other error details
+    ValidationDetail:
+      type: object
+      required:
+        - in
+        - pointer
+        - reason
+      properties:
+        in:
+          type: string
+        pointer:
+          type: string
+        reason:
+          type: string
     CreateVerifiableCredentialRequestBody:
       properties:
         format:
@@ -1808,11 +2316,6 @@ components:
         CreateVerifiableCredentialRequestBody contains the request body to
         request a verifiable credential.
       type: object
-    CustomHostnameStatus:
-      title: >-
-        CustomHostnameStatus is the enumeration of valid state values in the
-        CustomHostnameSSL.
-      type: string
     DefaultError: {}
     Duration:
       description: |-
@@ -1824,98 +2327,10 @@ components:
     ID:
       format: int64
       type: integer
-    InvoiceDataV1:
-      properties:
-        billing_period:
-          $ref: "#/components/schemas/TimeInterval"
-        currency:
-          description: The currency of the invoice.
-          readOnly: true
-          type: string
-        deleted:
-          description: Deleted is true if the invoice has been soft-deleted.
-          readOnly: true
-          type: boolean
-        items:
-          description: The items that are part of this invoice.
-          items:
-            $ref: "#/components/schemas/LineItemV1"
-          readOnly: true
-          type: array
-        plan:
-          description: >-
-            The plan that this invoice is based on, in the format
-            "Name@version".
-          readOnly: true
-          type: string
-        stripe_invoice_item:
-          type: string
-        stripe_invoice_status:
-          $ref: "#/components/schemas/InvoiceStatus"
-        stripe_link:
-          description: An optional link to the invoice on Stripe.
-          readOnly: true
-          type: string
-        subtitle:
-          description: The subtitle of the invoice.
-          readOnly: true
-          type: string
-        tax:
-          $ref: "#/components/schemas/TaxLineItem"
-        title:
-          description: The title of the invoice.
-          readOnly: true
-          type: string
-        total_in_cent:
-          $ref: "#/components/schemas/AmountInCent"
-      required:
-        - title
-        - currency
-        - total_in_cent
-        - billing_period
-        - items
-      type: object
-    InvoiceStatus:
-      description: >-
-        The status of the invoice, one of `draft`, `open`, `paid`,
-        `uncollectible`, or `void`. [Learn
-        more](https://stripe.com/docs/billing/invoices/workflow#workflow-overview)
-      type: string
     JSONRawMessage:
       title: >-
         JSONRawMessage represents a json.RawMessage that works well with JSON,
         SQL, and Swagger.
-      type: object
-    KetoNamespace:
-      properties:
-        id:
-          format: int64
-          type: integer
-        name:
-          type: string
-      type: object
-    KetoNamespaces:
-      items:
-        $ref: "#/components/schemas/KetoNamespace"
-      type: array
-    LineItemV1:
-      properties:
-        amount_in_cent:
-          $ref: "#/components/schemas/AmountInCent"
-        description:
-          type: string
-        items:
-          description: Each line item can have sub-items to create a hierarchy.
-          items:
-            $ref: "#/components/schemas/LineItemV1"
-          type: array
-        quantity:
-          format: int64
-          type: integer
-        title:
-          type: string
-        unit_price:
-          type: string
       type: object
     RecoveryAddressType:
       title: >-
@@ -1931,13 +2346,6 @@ components:
         StringSliceJSONFormat represents []string{} which is encoded to/from
         JSON for SQL storage.
       type: array
-    TaxLineItem:
-      properties:
-        amount_in_cent:
-          $ref: "#/components/schemas/AmountInCent"
-        title:
-          type: string
-      type: object
     Time:
       format: date-time
       type: string
@@ -1986,25 +2394,6 @@ components:
         - aal3
       title: Authenticator Assurance Level (AAL)
       type: string
-    BatchCheckPermissionBody:
-      description: Batch Check Permission Body
-      properties:
-        tuples:
-          items:
-            $ref: "#/components/schemas/Relationship"
-          type: array
-      type: object
-    BatchCheckPermissionResult:
-      description: Batch Check Permission Result
-      properties:
-        results:
-          description: An array of check results. The order aligns with the input order.
-          items:
-            $ref: "#/components/schemas/CheckPermissionResultWithError"
-          type: array
-      required:
-        - results
-      type: object
     BatchPatchIdentitiesResponse:
       description: Patch identities response
       properties:
@@ -2013,183 +2402,6 @@ components:
           items:
             $ref: "#/components/schemas/IdentityPatchResponse"
           type: array
-      type: object
-    CheckOplSyntaxBody:
-      description: Ory Permission Language Document
-      type: string
-    CheckOplSyntaxResult:
-      properties:
-        errors:
-          description: The list of syntax errors
-          items:
-            $ref: "#/components/schemas/ParseError"
-          type: array
-      title: >-
-        CheckOPLSyntaxResponse represents the response for an OPL syntax check
-        request.
-      type: object
-    CheckPermissionResult:
-      description: The content of the allowed field is mirrored in the HTTP status code.
-      properties:
-        allowed:
-          description: whether the relation tuple is allowed
-          type: boolean
-      required:
-        - allowed
-      title: Check Permission Result
-      type: object
-    CheckPermissionResultWithError:
-      description: Check Permission Result With Error
-      properties:
-        allowed:
-          description: whether the relation tuple is allowed
-          type: boolean
-        error:
-          description: any error generated while checking the relation tuple
-          type: string
-      required:
-        - allowed
-      type: object
-    ContinueWithRecoveryUi:
-      description: "Indicates, that the UI flow could be continued by showing a recovery ui"
-      properties:
-        action:
-          description: |-
-            Action will always be `show_recovery_ui`
-            show_recovery_ui ContinueWithActionShowRecoveryUIString
-          enum:
-            - show_recovery_ui
-          type: string
-        flow:
-          $ref: "#/components/schemas/ContinueWithRecoveryUiFlow"
-      required:
-        - action
-        - flow
-      type: object
-    ContinueWithRecoveryUiFlow:
-      properties:
-        id:
-          description: The ID of the recovery flow
-          format: uuid
-          type: string
-        url:
-          description: >-
-            The URL of the recovery flow
-
-
-            If this value is set, redirect the user's browser to this URL. This
-            value is typically unset for native clients / API flows.
-          type: string
-      required:
-        - id
-      type: object
-    ContinueWithRedirectBrowserTo:
-      description: "Indicates, that the UI flow could be continued by showing a recovery ui"
-      properties:
-        action:
-          description: |-
-            Action will always be `redirect_browser_to`
-            redirect_browser_to ContinueWithActionRedirectBrowserToString
-          enum:
-            - redirect_browser_to
-          type: string
-        redirect_browser_to:
-          description: The URL to redirect the browser to
-          type: string
-      required:
-        - action
-        - redirect_browser_to
-      type: object
-    ContinueWithSetOrySessionToken:
-      description: >-
-        Indicates that a session was issued, and the application should use this
-        token for authenticated requests
-      properties:
-        action:
-          description: |-
-            Action will always be `set_ory_session_token`
-            set_ory_session_token ContinueWithActionSetOrySessionTokenString
-          enum:
-            - set_ory_session_token
-          type: string
-        ory_session_token:
-          description: Token is the token of the session
-          type: string
-      required:
-        - action
-        - ory_session_token
-      type: object
-    ContinueWithSettingsUi:
-      description: "Indicates, that the UI flow could be continued by showing a settings ui"
-      properties:
-        action:
-          description: |-
-            Action will always be `show_settings_ui`
-            show_settings_ui ContinueWithActionShowSettingsUIString
-          enum:
-            - show_settings_ui
-          type: string
-        flow:
-          $ref: "#/components/schemas/ContinueWithSettingsUiFlow"
-      required:
-        - action
-        - flow
-      type: object
-    ContinueWithSettingsUiFlow:
-      properties:
-        id:
-          description: The ID of the settings flow
-          format: uuid
-          type: string
-        url:
-          description: >-
-            The URL of the settings flow
-
-
-            If this value is set, redirect the user's browser to this URL. This
-            value is typically unset for native clients / API flows.
-          type: string
-      required:
-        - id
-      type: object
-    ContinueWithVerificationUi:
-      description: >-
-        Indicates, that the UI flow could be continued by showing a verification
-        ui
-      properties:
-        action:
-          description: |-
-            Action will always be `show_verification_ui`
-            show_verification_ui ContinueWithActionShowVerificationUIString
-          enum:
-            - show_verification_ui
-          type: string
-        flow:
-          $ref: "#/components/schemas/ContinueWithVerificationUiFlow"
-      required:
-        - action
-        - flow
-      type: object
-    ContinueWithVerificationUiFlow:
-      properties:
-        id:
-          description: The ID of the verification flow
-          format: uuid
-          type: string
-        url:
-          description: >-
-            The URL of the verification flow
-
-
-            If this value is set, redirect the user's browser to this URL. This
-            value is typically unset for native clients / API flows.
-          type: string
-        verifiable_address:
-          description: The address that should be verified in this flow
-          type: string
-      required:
-        - id
-        - verifiable_address
       type: object
     CourierMessageStatus:
       description: A Message's Status
@@ -2349,27 +2561,6 @@ components:
       required:
         - identity_id
       type: object
-    CreateRelationshipBody:
-      description: Create Relationship Request Body
-      properties:
-        namespace:
-          description: Namespace to query
-          type: string
-        object:
-          description: Object to query
-          type: string
-        relation:
-          description: Relation to query
-          type: string
-        subject_id:
-          description: |-
-            SubjectID to query
-
-            Either SubjectSet or SubjectID can be provided.
-          type: string
-        subject_set:
-          $ref: "#/components/schemas/SubjectSet"
-      type: object
     DeleteMySessionsCount:
       description: Deleted Session Count
       properties:
@@ -2377,39 +2568,6 @@ components:
           description: The number of sessions that were revoked.
           format: int64
           type: integer
-      type: object
-    ExpandedPermissionTree:
-      properties:
-        children:
-          description: "The children of the node, possibly none."
-          items:
-            $ref: "#/components/schemas/ExpandedPermissionTree"
-          type: array
-        tuple:
-          $ref: "#/components/schemas/Relationship"
-        type:
-          description: |-
-            The type of the node.
-            union TreeNodeUnion
-            exclusion TreeNodeExclusion
-            intersection TreeNodeIntersection
-            leaf TreeNodeLeaf
-            tuple_to_subject_set TreeNodeTupleToSubjectSet
-            computed_subject_set TreeNodeComputedSubjectSet
-            not TreeNodeNot
-            unspecified TreeNodeUnspecified
-          enum:
-            - union
-            - exclusion
-            - intersection
-            - leaf
-            - tuple_to_subject_set
-            - computed_subject_set
-            - not
-            - unspecified
-          type: string
-      required:
-        - type
       type: object
     Identity:
       description: >-
@@ -2539,7 +2697,7 @@ components:
 
             saml CredentialsTypeSAML
 
-            link_recovery CredentialsTypeRecoveryLink 
+            link_recovery CredentialsTypeRecoveryLink
             CredentialsTypeRecoveryLink is a special credential type linked to
             the link strategy (recovery flow).  It is not used within the
             credentials object itself.
@@ -2746,35 +2904,6 @@ components:
       required:
         - subject
         - provider
-      type: object
-    Invoice:
-      properties:
-        id:
-          description: The ID of the invoice.
-          format: uuid
-          readOnly: true
-          type: string
-        invoiced_at:
-          $ref: "#/components/schemas/Time"
-        type:
-          description: |-
-            Type is the type of the invoice.
-            usage InvoiceTypeUsage
-            base InvoiceTypeBase
-          enum:
-            - usage
-            - base
-          readOnly: true
-          type: string
-        updated_at:
-          format: date-time
-          type: string
-        v1:
-          $ref: "#/components/schemas/InvoiceDataV1"
-      required:
-        - id
-        - invoiced_at
-        - type
       type: object
     JsonPatch:
       description: A JSONPatch document as defined by RFC 6902
@@ -3054,54 +3183,6 @@ components:
         - created_at
         - updated_at
       type: object
-    Namespace:
-      properties:
-        name:
-          description: Name of the namespace.
-          type: string
-      type: object
-    PostCheckPermissionBody:
-      description: Check Permission using Post Request Body
-      properties:
-        namespace:
-          description: Namespace to query
-          type: string
-        object:
-          description: Object to query
-          type: string
-        relation:
-          description: Relation to query
-          type: string
-        subject_id:
-          description: |-
-            SubjectID to query
-
-            Either SubjectSet or SubjectID can be provided.
-          type: string
-        subject_set:
-          $ref: "#/components/schemas/SubjectSet"
-      type: object
-    PostCheckPermissionOrErrorBody:
-      description: Post Check Permission Or Error Body
-      properties:
-        namespace:
-          description: Namespace to query
-          type: string
-        object:
-          description: Object to query
-          type: string
-        relation:
-          description: Relation to query
-          type: string
-        subject_id:
-          description: |-
-            SubjectID to query
-
-            Either SubjectSet or SubjectID can be provided.
-          type: string
-        subject_set:
-          $ref: "#/components/schemas/SubjectSet"
-      type: object
     RecoveryCodeForIdentity:
       description: Used when an administrator creates a recovery code for an identity.
       properties:
@@ -3199,85 +3280,6 @@ components:
           format: int64
           type: integer
       title: The request payload used to accept a login or consent request.
-      type: object
-    RelationQuery:
-      description: Relation Query
-      properties:
-        namespace:
-          description: Namespace to query
-          type: string
-        object:
-          description: Object to query
-          type: string
-        relation:
-          description: Relation to query
-          type: string
-        subject_id:
-          description: |-
-            SubjectID to query
-
-            Either SubjectSet or SubjectID can be provided.
-          type: string
-        subject_set:
-          $ref: "#/components/schemas/SubjectSet"
-      type: object
-    Relationship:
-      description: Relationship
-      properties:
-        namespace:
-          description: Namespace of the Relation Tuple
-          type: string
-        object:
-          description: Object of the Relation Tuple
-          type: string
-        relation:
-          description: Relation of the Relation Tuple
-          type: string
-        subject_id:
-          description: |-
-            SubjectID of the Relation Tuple
-
-            Either SubjectSet or SubjectID can be provided.
-          type: string
-        subject_set:
-          $ref: "#/components/schemas/SubjectSet"
-      required:
-        - namespace
-        - object
-        - relation
-      type: object
-    RelationshipNamespaces:
-      description: Relationship Namespace List
-      properties:
-        namespaces:
-          items:
-            $ref: "#/components/schemas/Namespace"
-          type: array
-      type: object
-    RelationshipPatch:
-      description: Payload for patching a relationship
-      properties:
-        action:
-          enum:
-            - insert
-            - delete
-          type: string
-        relation_tuple:
-          $ref: "#/components/schemas/Relationship"
-      type: object
-    Relationships:
-      description: Paginated Relationship List
-      properties:
-        next_page_token:
-          description: |-
-            The opaque token to provide in a subsequent request
-            to get the next page. It is the empty string iff this is
-            the last page.
-          type: string
-        relation_tuples:
-          items:
-            $ref: "#/components/schemas/Relationship"
-          type: array
       type: object
     SelfServiceFlowType:
       description: The flow type can either be `api` or `browser`.
@@ -3398,622 +3400,6 @@ components:
       required:
         - id
       type: object
-    SubjectSet:
-      properties:
-        namespace:
-          description: Namespace of the Subject Set
-          type: string
-        object:
-          description: Object of the Subject Set
-          type: string
-        relation:
-          description: Relation of the Subject Set
-          type: string
-      required:
-        - namespace
-        - object
-        - relation
-      type: object
-    UiNode:
-      description: >-
-        Nodes are represented as HTML elements or their native UI equivalents.
-        For example,
-
-        a node can be an `<img>` tag, or an `<input element>` but also `some
-        plain text`.
-      properties:
-        attributes:
-          $ref: "#/components/schemas/UiNodeAttributes"
-        group:
-          description: >-
-            Group specifies which group (e.g. password authenticator) this node
-            belongs to.
-
-            default DefaultGroup
-
-            password PasswordGroup
-
-            oidc OpenIDConnectGroup
-
-            profile ProfileGroup
-
-            link LinkGroup
-
-            code CodeGroup
-
-            totp TOTPGroup
-
-            lookup_secret LookupGroup
-
-            webauthn WebAuthnGroup
-
-            passkey PasskeyGroup
-
-            identifier_first IdentifierFirstGroup
-
-            captcha CaptchaGroup
-
-            saml SAMLGroup
-          enum:
-            - default
-            - password
-            - oidc
-            - profile
-            - link
-            - code
-            - totp
-            - lookup_secret
-            - webauthn
-            - passkey
-            - identifier_first
-            - captcha
-            - saml
-            - oauth2_consent
-          type: string
-        messages:
-          $ref: "#/components/schemas/UiTexts"
-        meta:
-          $ref: "#/components/schemas/UiNodeMeta"
-        type:
-          description: |-
-            The node's type
-            text Text
-            input Input
-            img Image
-            a Anchor
-            script Script
-            div Division
-          enum:
-            - text
-            - input
-            - img
-            - a
-            - script
-            - div
-          type: string
-      required:
-        - type
-        - group
-        - attributes
-        - messages
-        - meta
-      title: Node represents a flow's nodes
-      type: object
-    UiNodeAnchorAttributes:
-      properties:
-        href:
-          description: |-
-            The link's href (destination) URL.
-
-            format: uri
-          type: string
-        id:
-          description: A unique identifier
-          type: string
-        node_type:
-          description: >-
-            NodeType represents this node's types. It is a mirror of `node.type`
-            and
-
-            is primarily used to allow compatibility with OpenAPI 3.0.  In this
-            struct it technically always is "a".
-
-            text Text
-
-            input Input
-
-            img Image
-
-            a Anchor
-
-            script Script
-
-            div Division
-          enum:
-            - text
-            - input
-            - img
-            - a
-            - script
-            - div
-          type: string
-        title:
-          $ref: "#/components/schemas/UiText"
-      required:
-        - href
-        - title
-        - id
-        - node_type
-      title: AnchorAttributes represents the attributes of an anchor node.
-      type: object
-    UiNodeAttributes:
-      discriminator:
-        mapping:
-          a: "#/components/schemas/UiNodeAnchorAttributes"
-          div: "#/components/schemas/UiNodeDivisionAttributes"
-          img: "#/components/schemas/UiNodeImageAttributes"
-          input: "#/components/schemas/UiNodeInputAttributes"
-          script: "#/components/schemas/UiNodeScriptAttributes"
-          text: "#/components/schemas/UiNodeTextAttributes"
-        propertyName: node_type
-      oneOf:
-        - $ref: "#/components/schemas/UiNodeInputAttributes"
-        - $ref: "#/components/schemas/UiNodeTextAttributes"
-        - $ref: "#/components/schemas/UiNodeImageAttributes"
-        - $ref: "#/components/schemas/UiNodeAnchorAttributes"
-        - $ref: "#/components/schemas/UiNodeScriptAttributes"
-        - $ref: "#/components/schemas/UiNodeDivisionAttributes"
-      title: >-
-        Attributes represents a list of attributes (e.g. `href="foo"` for
-        links).
-    UiNodeDivisionAttributes:
-      description: >-
-        Division sections are used for interactive widgets that require a hook
-        in the DOM / view.
-      properties:
-        class:
-          description: The script MIME type
-          type: string
-        data:
-          additionalProperties:
-            type: string
-          description: |-
-            Data is a map of key-value pairs that are passed to the division.
-
-            They may be used for `data-...` attributes.
-          type: object
-        id:
-          description: A unique identifier
-          type: string
-        node_type:
-          description: >-
-            NodeType represents this node's types. It is a mirror of `node.type`
-            and
-
-            is primarily used to allow compatibility with OpenAPI 3.0. In this
-            struct it technically always is "script".
-
-            text Text
-
-            input Input
-
-            img Image
-
-            a Anchor
-
-            script Script
-
-            div Division
-          enum:
-            - text
-            - input
-            - img
-            - a
-            - script
-            - div
-          type: string
-      required:
-        - id
-        - node_type
-      title: DivisionAttributes represent a division section.
-      type: object
-    UiNodeImageAttributes:
-      properties:
-        height:
-          description: Height of the image
-          format: int64
-          type: integer
-        id:
-          description: A unique identifier
-          type: string
-        node_type:
-          description: >-
-            NodeType represents this node's types. It is a mirror of `node.type`
-            and
-
-            is primarily used to allow compatibility with OpenAPI 3.0.  In this
-            struct it technically always is "img".
-
-            text Text
-
-            input Input
-
-            img Image
-
-            a Anchor
-
-            script Script
-
-            div Division
-          enum:
-            - text
-            - input
-            - img
-            - a
-            - script
-            - div
-          type: string
-        src:
-          description: |-
-            The image's source URL.
-
-            format: uri
-          type: string
-        width:
-          description: Width of the image
-          format: int64
-          type: integer
-      required:
-        - src
-        - id
-        - width
-        - height
-        - node_type
-      title: ImageAttributes represents the attributes of an image node.
-      type: object
-    UiNodeInputAttributes:
-      description: InputAttributes represents the attributes of an input node
-      properties:
-        autocomplete:
-          description: |-
-            The autocomplete attribute for the input.
-            email InputAttributeAutocompleteEmail
-            tel InputAttributeAutocompleteTel
-            url InputAttributeAutocompleteUrl
-            current-password InputAttributeAutocompleteCurrentPassword
-            new-password InputAttributeAutocompleteNewPassword
-            one-time-code InputAttributeAutocompleteOneTimeCode
-          enum:
-            - email
-            - tel
-            - url
-            - current-password
-            - new-password
-            - one-time-code
-          type: string
-        disabled:
-          description: Sets the input's disabled field to true or false.
-          type: boolean
-        label:
-          $ref: "#/components/schemas/UiText"
-        maxlength:
-          description: MaxLength may contain the input's maximum length.
-          format: int64
-          type: integer
-        name:
-          description: The input's element name.
-          type: string
-        node_type:
-          description: >-
-            NodeType represents this node's types. It is a mirror of `node.type`
-            and
-
-            is primarily used to allow compatibility with OpenAPI 3.0.  In this
-            struct it technically always is "input".
-
-            text Text
-
-            input Input
-
-            img Image
-
-            a Anchor
-
-            script Script
-
-            div Division
-          enum:
-            - text
-            - input
-            - img
-            - a
-            - script
-            - div
-          type: string
-        onclick:
-          description: >-
-            OnClick may contain javascript which should be executed on click.
-            This is primarily
-
-            used for WebAuthn.
-
-
-            Deprecated: Using OnClick requires the use of eval() which is a
-            security risk. Use OnClickTrigger instead.
-          type: string
-        onclickTrigger:
-          description: >-
-            OnClickTrigger may contain a WebAuthn trigger which should be
-            executed on click.
-
-
-            The trigger maps to a JavaScript function provided by Ory, which
-            triggers actions such as PassKey registration or login.
-
-            oryWebAuthnRegistration WebAuthnTriggersWebAuthnRegistration
-
-            oryWebAuthnLogin WebAuthnTriggersWebAuthnLogin
-
-            oryPasskeyLogin WebAuthnTriggersPasskeyLogin
-
-            oryPasskeyLoginAutocompleteInit
-            WebAuthnTriggersPasskeyLoginAutocompleteInit
-
-            oryPasskeyRegistration WebAuthnTriggersPasskeyRegistration
-
-            oryPasskeySettingsRegistration
-            WebAuthnTriggersPasskeySettingsRegistration
-          enum:
-            - oryWebAuthnRegistration
-            - oryWebAuthnLogin
-            - oryPasskeyLogin
-            - oryPasskeyLoginAutocompleteInit
-            - oryPasskeyRegistration
-            - oryPasskeySettingsRegistration
-          type: string
-        onload:
-          description: >-
-            OnLoad may contain javascript which should be executed on load. This
-            is primarily
-
-            used for WebAuthn.
-
-
-            Deprecated: Using OnLoad requires the use of eval() which is a
-            security risk. Use OnLoadTrigger instead.
-          type: string
-        onloadTrigger:
-          description: >-
-            OnLoadTrigger may contain a WebAuthn trigger which should be
-            executed on load.
-
-
-            The trigger maps to a JavaScript function provided by Ory, which
-            triggers actions such as PassKey registration or login.
-
-            oryWebAuthnRegistration WebAuthnTriggersWebAuthnRegistration
-
-            oryWebAuthnLogin WebAuthnTriggersWebAuthnLogin
-
-            oryPasskeyLogin WebAuthnTriggersPasskeyLogin
-
-            oryPasskeyLoginAutocompleteInit
-            WebAuthnTriggersPasskeyLoginAutocompleteInit
-
-            oryPasskeyRegistration WebAuthnTriggersPasskeyRegistration
-
-            oryPasskeySettingsRegistration
-            WebAuthnTriggersPasskeySettingsRegistration
-          enum:
-            - oryWebAuthnRegistration
-            - oryWebAuthnLogin
-            - oryPasskeyLogin
-            - oryPasskeyLoginAutocompleteInit
-            - oryPasskeyRegistration
-            - oryPasskeySettingsRegistration
-          type: string
-        pattern:
-          description: The input's pattern.
-          type: string
-        required:
-          description: Mark this input field as required.
-          type: boolean
-        type:
-          description: |-
-            The input's element type.
-            text InputAttributeTypeText
-            password InputAttributeTypePassword
-            number InputAttributeTypeNumber
-            checkbox InputAttributeTypeCheckbox
-            hidden InputAttributeTypeHidden
-            email InputAttributeTypeEmail
-            tel InputAttributeTypeTel
-            submit InputAttributeTypeSubmit
-            button InputAttributeTypeButton
-            datetime-local InputAttributeTypeDateTimeLocal
-            date InputAttributeTypeDate
-            url InputAttributeTypeURI
-          enum:
-            - text
-            - password
-            - number
-            - checkbox
-            - hidden
-            - email
-            - tel
-            - submit
-            - button
-            - datetime-local
-            - date
-            - url
-          type: string
-        value:
-          description: The input's value.
-          nullable: true
-      required:
-        - name
-        - type
-        - disabled
-        - node_type
-      type: object
-    UiNodeMeta:
-      description: |-
-        This might include a label and other information that can optionally
-        be used to render UIs.
-      properties:
-        label:
-          $ref: "#/components/schemas/UiText"
-      title: A Node's Meta Information
-      type: object
-    UiNodeScriptAttributes:
-      properties:
-        async:
-          description: The script async type
-          type: boolean
-        crossorigin:
-          description: The script cross origin policy
-          type: string
-        id:
-          description: A unique identifier
-          type: string
-        integrity:
-          description: The script's integrity hash
-          type: string
-        node_type:
-          description: >-
-            NodeType represents this node's types. It is a mirror of `node.type`
-            and
-
-            is primarily used to allow compatibility with OpenAPI 3.0. In this
-            struct it technically always is "script".
-
-            text Text
-
-            input Input
-
-            img Image
-
-            a Anchor
-
-            script Script
-
-            div Division
-          enum:
-            - text
-            - input
-            - img
-            - a
-            - script
-            - div
-          type: string
-        nonce:
-          description: >-
-            Nonce for CSP
-
-
-            A nonce you may want to use to improve your Content Security Policy.
-
-            You do not have to use this value but if you want to improve your
-            CSP
-
-            policies you may use it. You can also choose to use your own nonce
-            value!
-          type: string
-        referrerpolicy:
-          description: The script referrer policy
-          type: string
-        src:
-          description: The script source
-          type: string
-        type:
-          description: The script MIME type
-          type: string
-      required:
-        - src
-        - async
-        - referrerpolicy
-        - crossorigin
-        - integrity
-        - type
-        - id
-        - nonce
-        - node_type
-      title: ScriptAttributes represent script nodes which load javascript.
-      type: object
-    UiNodeTextAttributes:
-      properties:
-        id:
-          description: A unique identifier
-          type: string
-        node_type:
-          description: >-
-            NodeType represents this node's types. It is a mirror of `node.type`
-            and
-
-            is primarily used to allow compatibility with OpenAPI 3.0.  In this
-            struct it technically always is "text".
-
-            text Text
-
-            input Input
-
-            img Image
-
-            a Anchor
-
-            script Script
-
-            div Division
-          enum:
-            - text
-            - input
-            - img
-            - a
-            - script
-            - div
-          type: string
-        text:
-          $ref: "#/components/schemas/UiText"
-      required:
-        - text
-        - id
-        - node_type
-      title: TextAttributes represents the attributes of a text node.
-      type: object
-    UiNodes:
-      items:
-        $ref: "#/components/schemas/UiNode"
-      type: array
-    UiText:
-      properties:
-        context:
-          description: The message's context. Useful when customizing messages.
-          type: object
-        id:
-          $ref: "#/components/schemas/ID"
-        text:
-          description: The message text. Written in american english.
-          type: string
-        type:
-          description: |-
-            The message type.
-            info Info
-            error Error
-            success Success
-          enum:
-            - info
-            - error
-            - success
-          type: string
-      required:
-        - id
-        - text
-        - type
-      type: object
-    UiTexts:
-      items:
-        $ref: "#/components/schemas/UiText"
-      type: array
     UpdateIdentityBody:
       description: Update Identity Body
       properties:
@@ -4060,895 +3446,6 @@ components:
         - schema_id
         - traits
         - state
-      type: object
-    UpdateLoginFlowBody:
-      discriminator:
-        mapping:
-          code: "#/components/schemas/UpdateLoginFlowWithCodeMethod"
-          identifier_first: "#/components/schemas/UpdateLoginFlowWithIdentifierFirstMethod"
-          lookup_secret: "#/components/schemas/UpdateLoginFlowWithLookupSecretMethod"
-          oidc: "#/components/schemas/UpdateLoginFlowWithOidcMethod"
-          passkey: "#/components/schemas/UpdateLoginFlowWithPasskeyMethod"
-          password: "#/components/schemas/UpdateLoginFlowWithPasswordMethod"
-          saml: "#/components/schemas/UpdateLoginFlowWithSamlMethod"
-          totp: "#/components/schemas/UpdateLoginFlowWithTotpMethod"
-          webauthn: "#/components/schemas/UpdateLoginFlowWithWebAuthnMethod"
-        propertyName: method
-      oneOf:
-        - $ref: "#/components/schemas/UpdateLoginFlowWithPasswordMethod"
-        - $ref: "#/components/schemas/UpdateLoginFlowWithOidcMethod"
-        - $ref: "#/components/schemas/UpdateLoginFlowWithSamlMethod"
-        - $ref: "#/components/schemas/UpdateLoginFlowWithTotpMethod"
-        - $ref: "#/components/schemas/UpdateLoginFlowWithWebAuthnMethod"
-        - $ref: "#/components/schemas/UpdateLoginFlowWithLookupSecretMethod"
-        - $ref: "#/components/schemas/UpdateLoginFlowWithCodeMethod"
-        - $ref: "#/components/schemas/UpdateLoginFlowWithPasskeyMethod"
-        - $ref: "#/components/schemas/UpdateLoginFlowWithIdentifierFirstMethod"
-    UpdateLoginFlowWithCodeMethod:
-      description: Update Login flow using the code method
-      properties:
-        address:
-          description: >-
-            Address is the address to send the code to, in case that there are
-            multiple addresses. This field
-
-            is only used in two-factor flows and is ineffective for passwordless
-            flows.
-          type: string
-        code:
-          description: Code is the 6 digits code sent to the user
-          type: string
-        csrf_token:
-          description: CSRFToken is the anti-CSRF token
-          type: string
-        identifier:
-          description: >-
-            Identifier is the code identifier
-
-            The identifier requires that the user has already completed the
-            registration or settings with code flow.
-          type: string
-        method:
-          description: >-
-            Method should be set to "code" when logging in using the code
-            strategy.
-          type: string
-        resend:
-          description: Resend is set when the user wants to resend the code
-          type: string
-        transient_payload:
-          description: Transient data to pass along to any webhooks
-          type: object
-      required:
-        - method
-        - csrf_token
-      type: object
-    UpdateLoginFlowWithIdentifierFirstMethod:
-      description: Update Login Flow with Multi-Step Method
-      properties:
-        csrf_token:
-          description: >-
-            Sending the anti-csrf token is only required for browser login
-            flows.
-          type: string
-        identifier:
-          description: Identifier is the email or username of the user trying to log in.
-          type: string
-        method:
-          description: >-
-            Method should be set to "password" when logging in using the
-            identifier and password strategy.
-          type: string
-        transient_payload:
-          description: Transient data to pass along to any webhooks
-          type: object
-      required:
-        - method
-        - identifier
-      type: object
-    UpdateLoginFlowWithLookupSecretMethod:
-      description: Update Login Flow with Lookup Secret Method
-      properties:
-        csrf_token:
-          description: >-
-            Sending the anti-csrf token is only required for browser login
-            flows.
-          type: string
-        lookup_secret:
-          description: The lookup secret.
-          type: string
-        method:
-          description: >-
-            Method should be set to "lookup_secret" when logging in using the
-            lookup_secret strategy.
-          type: string
-      required:
-        - method
-        - lookup_secret
-      type: object
-    UpdateLoginFlowWithOidcMethod:
-      description: Update Login Flow with OpenID Connect Method
-      properties:
-        csrf_token:
-          description: The CSRF Token
-          type: string
-        id_token:
-          description: >-
-            IDToken is an optional id token provided by an OIDC provider
-
-
-            If submitted, it is verified using the OIDC provider's public key
-            set and the claims are used to populate
-
-            the OIDC credentials of the identity.
-
-            If the OIDC provider does not store additional claims (such as name,
-            etc.) in the IDToken itself, you can use
-
-            the `traits` field to populate the identity's traits. Note, that
-            Apple only includes the users email in the IDToken.
-
-
-            Supported providers are
-
-            Apple
-
-            Google
-          type: string
-        id_token_nonce:
-          description: >-
-            IDTokenNonce is the nonce, used when generating the IDToken.
-
-            If the provider supports nonce validation, the nonce will be
-            validated against this value and required.
-          type: string
-        method:
-          description: |-
-            Method to use
-
-            This field must be set to `oidc` when using the oidc method.
-          type: string
-        provider:
-          description: The provider to register with
-          type: string
-        traits:
-          description: >-
-            The identity traits. This is a placeholder for the registration
-            flow.
-          type: object
-        transient_payload:
-          description: Transient data to pass along to any webhooks
-          type: object
-        upstream_parameters:
-          description: >-
-            UpstreamParameters are the parameters that are passed to the
-            upstream identity provider.
-
-
-            These parameters are optional and depend on what the upstream
-            identity provider supports.
-
-            Supported parameters are:
-
-            `login_hint` (string): The `login_hint` parameter suppresses the
-            account chooser and either pre-fills the email box on the sign-in
-            form, or selects the proper session.
-
-            `hd` (string): The `hd` parameter limits the login/registration
-            process to a Google Organization, e.g. `mycollege.edu`.
-
-            `prompt` (string): The `prompt` specifies whether the Authorization
-            Server prompts the End-User for reauthentication and consent, e.g.
-            `select_account`.
-          type: object
-      required:
-        - provider
-        - method
-      type: object
-    UpdateLoginFlowWithPasskeyMethod:
-      description: Update Login Flow with Passkey Method
-      properties:
-        csrf_token:
-          description: >-
-            Sending the anti-csrf token is only required for browser login
-            flows.
-          type: string
-        method:
-          description: >-
-            Method should be set to "passkey" when logging in using the Passkey
-            strategy.
-          type: string
-        passkey_login:
-          description: |-
-            Login a WebAuthn Security Key
-
-            This must contain the ID of the WebAuthN connection.
-          type: string
-      required:
-        - method
-      type: object
-    UpdateLoginFlowWithPasswordMethod:
-      description: Update Login Flow with Password Method
-      properties:
-        csrf_token:
-          description: >-
-            Sending the anti-csrf token is only required for browser login
-            flows.
-          type: string
-        identifier:
-          description: Identifier is the email or username of the user trying to log in.
-          type: string
-        method:
-          description: >-
-            Method should be set to "password" when logging in using the
-            identifier and password strategy.
-          type: string
-        password:
-          description: The user's password.
-          type: string
-        password_identifier:
-          description: |-
-            Identifier is the email or username of the user trying to log in.
-            This field is deprecated!
-          type: string
-        transient_payload:
-          description: Transient data to pass along to any webhooks
-          type: object
-      required:
-        - method
-        - password
-        - identifier
-      type: object
-    UpdateLoginFlowWithSamlMethod:
-      description: Update login flow using SAML
-      properties:
-        csrf_token:
-          description: The CSRF Token
-          type: string
-        method:
-          description: |-
-            Method to use
-
-            This field must be set to `saml` when using the saml method.
-          type: string
-        provider:
-          description: The provider to register with
-          type: string
-        transient_payload:
-          description: Transient data to pass along to any webhooks
-          type: object
-      required:
-        - provider
-        - method
-      type: object
-    UpdateLoginFlowWithTotpMethod:
-      description: Update Login Flow with TOTP Method
-      properties:
-        csrf_token:
-          description: >-
-            Sending the anti-csrf token is only required for browser login
-            flows.
-          type: string
-        method:
-          description: >-
-            Method should be set to "totp" when logging in using the TOTP
-            strategy.
-          type: string
-        totp_code:
-          description: The TOTP code.
-          type: string
-        transient_payload:
-          description: Transient data to pass along to any webhooks
-          type: object
-      required:
-        - method
-        - totp_code
-      type: object
-    UpdateLoginFlowWithWebAuthnMethod:
-      description: Update Login Flow with WebAuthn Method
-      properties:
-        csrf_token:
-          description: >-
-            Sending the anti-csrf token is only required for browser login
-            flows.
-          type: string
-        identifier:
-          description: Identifier is the email or username of the user trying to log in.
-          type: string
-        method:
-          description: >-
-            Method should be set to "webAuthn" when logging in using the
-            WebAuthn strategy.
-          type: string
-        transient_payload:
-          description: Transient data to pass along to any webhooks
-          type: object
-        webauthn_login:
-          description: |-
-            Login a WebAuthn Security Key
-
-            This must contain the ID of the WebAuthN connection.
-          type: string
-      required:
-        - identifier
-        - method
-      type: object
-    UpdateRegistrationFlowWithCodeMethod:
-      description: Update Registration Flow with Code Method
-      properties:
-        code:
-          description: The OTP Code sent to the user
-          type: string
-        csrf_token:
-          description: The CSRF Token
-          type: string
-        method:
-          description: |-
-            Method to use
-
-            This field must be set to `code` when using the code method.
-          type: string
-        resend:
-          description: Resend restarts the flow with a new code
-          type: string
-        traits:
-          description: The identity's traits
-          type: object
-        transient_payload:
-          description: Transient data to pass along to any webhooks
-          type: object
-      required:
-        - traits
-        - method
-      type: object
-    UpdateRegistrationFlowWithOidcMethod:
-      description: Update Registration Flow with OpenID Connect Method
-      properties:
-        csrf_token:
-          description: The CSRF Token
-          type: string
-        id_token:
-          description: >-
-            IDToken is an optional id token provided by an OIDC provider
-
-
-            If submitted, it is verified using the OIDC provider's public key
-            set and the claims are used to populate
-
-            the OIDC credentials of the identity.
-
-            If the OIDC provider does not store additional claims (such as name,
-            etc.) in the IDToken itself, you can use
-
-            the `traits` field to populate the identity's traits. Note, that
-            Apple only includes the users email in the IDToken.
-
-
-            Supported providers are
-
-            Apple
-
-            Google
-          type: string
-        id_token_nonce:
-          description: >-
-            IDTokenNonce is the nonce, used when generating the IDToken.
-
-            If the provider supports nonce validation, the nonce will be
-            validated against this value and is required.
-          type: string
-        method:
-          description: |-
-            Method to use
-
-            This field must be set to `oidc` when using the oidc method.
-          type: string
-        provider:
-          description: The provider to register with
-          type: string
-        traits:
-          description: The identity traits
-          type: object
-        transient_payload:
-          description: Transient data to pass along to any webhooks
-          type: object
-        upstream_parameters:
-          description: >-
-            UpstreamParameters are the parameters that are passed to the
-            upstream identity provider.
-
-
-            These parameters are optional and depend on what the upstream
-            identity provider supports.
-
-            Supported parameters are:
-
-            `login_hint` (string): The `login_hint` parameter suppresses the
-            account chooser and either pre-fills the email box on the sign-in
-            form, or selects the proper session.
-
-            `hd` (string): The `hd` parameter limits the login/registration
-            process to a Google Organization, e.g. `mycollege.edu`.
-
-            `prompt` (string): The `prompt` specifies whether the Authorization
-            Server prompts the End-User for reauthentication and consent, e.g.
-            `select_account`.
-          type: object
-      required:
-        - provider
-        - method
-      type: object
-    UpdateRegistrationFlowWithPasskeyMethod:
-      description: Update Registration Flow with Passkey Method
-      properties:
-        csrf_token:
-          description: CSRFToken is the anti-CSRF token
-          type: string
-        method:
-          description: >-
-            Method
-
-
-            Should be set to "passkey" when trying to add, update, or remove a
-            Passkey.
-          type: string
-        passkey_register:
-          description: >-
-            Register a WebAuthn Security Key
-
-
-            It is expected that the JSON returned by the WebAuthn registration
-            process
-
-            is included here.
-          type: string
-        traits:
-          description: The identity's traits
-          type: object
-        transient_payload:
-          description: Transient data to pass along to any webhooks
-          type: object
-      required:
-        - traits
-        - method
-      type: object
-    UpdateRegistrationFlowWithPasswordMethod:
-      description: Update Registration Flow with Password Method
-      properties:
-        csrf_token:
-          description: The CSRF Token
-          type: string
-        method:
-          description: |-
-            Method to use
-
-            This field must be set to `password` when using the password method.
-          type: string
-        password:
-          description: Password to sign the user up with
-          type: string
-        traits:
-          description: The identity's traits
-          type: object
-        transient_payload:
-          description: Transient data to pass along to any webhooks
-          type: object
-      required:
-        - password
-        - traits
-        - method
-      type: object
-    UpdateRegistrationFlowWithProfileMethod:
-      description: Update Registration Flow with Profile Method
-      properties:
-        csrf_token:
-          description: |-
-            The Anti-CSRF Token
-
-            This token is only required when performing browser flows.
-          type: string
-        method:
-          description: |-
-            Method
-
-            Should be set to profile when trying to update a profile.
-          type: string
-        screen:
-          description: >-
-            Screen requests navigation to a previous screen.
-
-
-            This must be set to credential-selection to go back to the
-            credential
-
-            selection screen.
-
-            credential-selection RegistrationScreenCredentialSelection
-            nolint:gosec // not a credential
-
-            previous RegistrationScreenPrevious
-          enum:
-            - credential-selection
-            - previous
-          type: string
-        traits:
-          description: |-
-            Traits
-
-            The identity's traits.
-          type: object
-        transient_payload:
-          description: Transient data to pass along to any webhooks
-          type: object
-      required:
-        - traits
-        - method
-      type: object
-    UpdateRegistrationFlowWithSamlMethod:
-      description: Update registration flow using SAML
-      properties:
-        csrf_token:
-          description: The CSRF Token
-          type: string
-        method:
-          description: |-
-            Method to use
-
-            This field must be set to `saml` when using the saml method.
-          type: string
-        provider:
-          description: The provider to register with
-          type: string
-        traits:
-          description: The identity traits
-          type: object
-        transient_payload:
-          description: Transient data to pass along to any webhooks
-          type: object
-      required:
-        - provider
-        - method
-      type: object
-    UpdateRegistrationFlowWithWebAuthnMethod:
-      description: Update Registration Flow with WebAuthn Method
-      properties:
-        csrf_token:
-          description: CSRFToken is the anti-CSRF token
-          type: string
-        method:
-          description: >-
-            Method
-
-
-            Should be set to "webauthn" when trying to add, update, or remove a
-            webAuthn pairing.
-          type: string
-        traits:
-          description: The identity's traits
-          type: object
-        transient_payload:
-          description: Transient data to pass along to any webhooks
-          type: object
-        webauthn_register:
-          description: >-
-            Register a WebAuthn Security Key
-
-
-            It is expected that the JSON returned by the WebAuthn registration
-            process
-
-            is included here.
-          type: string
-        webauthn_register_displayname:
-          description: |-
-            Name of the WebAuthn Security Key to be Added
-
-            A human-readable name for the security key which will be added.
-          type: string
-      required:
-        - traits
-        - method
-      type: object
-    UpdateSettingsFlowWithLookupMethod:
-      description: Update Settings Flow with Lookup Method
-      properties:
-        csrf_token:
-          description: CSRFToken is the anti-CSRF token
-          type: string
-        lookup_secret_confirm:
-          description: If set to true will save the regenerated lookup secrets
-          type: boolean
-        lookup_secret_disable:
-          description: Disables this method if true.
-          type: boolean
-        lookup_secret_regenerate:
-          description: If set to true will regenerate the lookup secrets
-          type: boolean
-        lookup_secret_reveal:
-          description: If set to true will reveal the lookup secrets
-          type: boolean
-        method:
-          description: >-
-            Method
-
-
-            Should be set to "lookup" when trying to add, update, or remove a
-            lookup pairing.
-          type: string
-        transient_payload:
-          description: Transient data to pass along to any webhooks
-          type: object
-      required:
-        - method
-      type: object
-    UpdateSettingsFlowWithOidcMethod:
-      description: Update Settings Flow with OpenID Connect Method
-      properties:
-        flow:
-          description: |-
-            Flow ID is the flow's ID.
-
-            in: query
-          type: string
-        link:
-          description: |-
-            Link this provider
-
-            Either this or `unlink` must be set.
-
-            type: string
-            in: body
-          type: string
-        method:
-          description: |-
-            Method
-
-            Should be set to profile when trying to update a profile.
-          type: string
-        traits:
-          description: |-
-            The identity's traits
-
-            in: body
-          type: object
-        transient_payload:
-          description: Transient data to pass along to any webhooks
-          type: object
-        unlink:
-          description: |-
-            Unlink this provider
-
-            Either this or `link` must be set.
-
-            type: string
-            in: body
-          type: string
-        upstream_parameters:
-          description: >-
-            UpstreamParameters are the parameters that are passed to the
-            upstream identity provider.
-
-
-            These parameters are optional and depend on what the upstream
-            identity provider supports.
-
-            Supported parameters are:
-
-            `login_hint` (string): The `login_hint` parameter suppresses the
-            account chooser and either pre-fills the email box on the sign-in
-            form, or selects the proper session.
-
-            `hd` (string): The `hd` parameter limits the login/registration
-            process to a Google Organization, e.g. `mycollege.edu`.
-
-            `prompt` (string): The `prompt` specifies whether the Authorization
-            Server prompts the End-User for reauthentication and consent, e.g.
-            `select_account`.
-          type: object
-      required:
-        - method
-      type: object
-    UpdateSettingsFlowWithPasskeyMethod:
-      description: Update Settings Flow with Passkey Method
-      properties:
-        csrf_token:
-          description: CSRFToken is the anti-CSRF token
-          type: string
-        method:
-          description: >-
-            Method
-
-
-            Should be set to "passkey" when trying to add, update, or remove a
-            webAuthn pairing.
-          type: string
-        passkey_remove:
-          description: |-
-            Remove a WebAuthn Security Key
-
-            This must contain the ID of the WebAuthN connection.
-          type: string
-        passkey_settings_register:
-          description: >-
-            Register a WebAuthn Security Key
-
-
-            It is expected that the JSON returned by the WebAuthn registration
-            process
-
-            is included here.
-          type: string
-      required:
-        - method
-      type: object
-    UpdateSettingsFlowWithPasswordMethod:
-      description: Update Settings Flow with Password Method
-      properties:
-        csrf_token:
-          description: CSRFToken is the anti-CSRF token
-          type: string
-        method:
-          description: |-
-            Method
-
-            Should be set to password when trying to update a password.
-          type: string
-        password:
-          description: Password is the updated password
-          type: string
-        transient_payload:
-          description: Transient data to pass along to any webhooks
-          type: object
-      required:
-        - password
-        - method
-      type: object
-    UpdateSettingsFlowWithProfileMethod:
-      description: Update Settings Flow with Profile Method
-      properties:
-        csrf_token:
-          description: |-
-            The Anti-CSRF Token
-
-            This token is only required when performing browser flows.
-          type: string
-        method:
-          description: |-
-            Method
-
-            Should be set to profile when trying to update a profile.
-          type: string
-        traits:
-          description: |-
-            Traits
-
-            The identity's traits.
-          type: object
-        transient_payload:
-          description: Transient data to pass along to any webhooks
-          type: object
-      required:
-        - traits
-        - method
-      type: object
-    UpdateSettingsFlowWithSamlMethod:
-      description: Update settings flow using SAML
-      properties:
-        csrf_token:
-          description: The CSRF Token
-          type: string
-        flow:
-          description: |-
-            Flow ID is the flow's ID.
-
-            in: query
-          type: string
-        link:
-          description: |-
-            Link this provider
-
-            Either this or `unlink` must be set.
-
-            type: string
-            in: body
-          type: string
-        method:
-          description: |-
-            Method
-
-            Should be set to saml when trying to update a profile.
-          type: string
-        traits:
-          description: |-
-            The identity's traits
-
-            in: body
-          type: object
-        transient_payload:
-          description: Transient data to pass along to any webhooks
-          type: object
-        unlink:
-          description: |-
-            Unlink this provider
-
-            Either this or `link` must be set.
-
-            type: string
-            in: body
-          type: string
-      required:
-        - method
-      type: object
-    UpdateSettingsFlowWithTotpMethod:
-      description: Update Settings Flow with TOTP Method
-      properties:
-        csrf_token:
-          description: CSRFToken is the anti-CSRF token
-          type: string
-        method:
-          description: >-
-            Method
-
-
-            Should be set to "totp" when trying to add, update, or remove a totp
-            pairing.
-          type: string
-        totp_code:
-          description: ValidationTOTP must contain a valid TOTP based on the
-          type: string
-        totp_unlink:
-          description: |-
-            UnlinkTOTP if true will remove the TOTP pairing,
-            effectively removing the credential. This can be used
-            to set up a new TOTP device.
-          type: boolean
-        transient_payload:
-          description: Transient data to pass along to any webhooks
-          type: object
-      required:
-        - method
-      type: object
-    UpdateSettingsFlowWithWebAuthnMethod:
-      description: Update Settings Flow with WebAuthn Method
-      properties:
-        csrf_token:
-          description: CSRFToken is the anti-CSRF token
-          type: string
-        method:
-          description: >-
-            Method
-
-
-            Should be set to "webauthn" when trying to add, update, or remove a
-            webAuthn pairing.
-          type: string
-        transient_payload:
-          description: Transient data to pass along to any webhooks
-          type: object
-        webauthn_register:
-          description: >-
-            Register a WebAuthn Security Key
-
-
-            It is expected that the JSON returned by the WebAuthn registration
-            process
-
-            is included here.
-          type: string
-        webauthn_register_displayname:
-          description: |-
-            Name of the WebAuthn Security Key to be Added
-
-            A human-readable name for the security key which will be added.
-          type: string
-        webauthn_remove:
-          description: |-
-            Remove a WebAuthn Security Key
-
-            This must contain the ID of the WebAuthN connection.
-          type: string
-      required:
-        - method
       type: object
     VerifiableCredentialPrimingResponse:
       properties:

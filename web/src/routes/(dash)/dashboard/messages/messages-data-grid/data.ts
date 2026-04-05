@@ -14,10 +14,10 @@ import IconAsterisk from '@lucide/svelte/icons/asterisk';
 import { CourierMessageStatus, CourierMessageTemplateType, CourierMessageType } from '$lib/gen/juicer_openapi';
 
 export const statusIcons = new Map([
-	[CourierMessageStatus.Abandoned, IconMailX],
-	[CourierMessageStatus.Processing, IconRefreshCw],
-	[CourierMessageStatus.Queued, IconLayers],
-	[CourierMessageStatus.Sent, IconMailCheck]
+	[CourierMessageStatus.abandoned, IconMailX],
+	[CourierMessageStatus.processing, IconRefreshCw],
+	[CourierMessageStatus.queued, IconLayers],
+	[CourierMessageStatus.sent, IconMailCheck]
 ]);
 export const statuses = Object.values(CourierMessageStatus).map(value => ({
 	label: value,
@@ -26,8 +26,8 @@ export const statuses = Object.values(CourierMessageStatus).map(value => ({
 }));
 
 export const typeIcons = new Map([
-	[CourierMessageType.Email, IconMail],
-	[CourierMessageType.Phone, IconSmartphone]
+	[CourierMessageType.email, IconMail],
+	[CourierMessageType.phone, IconSmartphone]
 ]);
 export const types = Object.values(CourierMessageType).map(value => ({
 	label: value,
@@ -36,17 +36,17 @@ export const types = Object.values(CourierMessageType).map(value => ({
 }));
 
 export const templateTypeIcons = new Map([
-	[CourierMessageTemplateType.RecoveryInvalid, IconShieldX],
-	[CourierMessageTemplateType.RecoveryValid, IconShieldCheck],
-	[CourierMessageTemplateType.RecoveryCodeInvalid, IconShieldMinus],
-	[CourierMessageTemplateType.RecoveryCodeValid, IconShieldPlus],
-	[CourierMessageTemplateType.VerificationInvalid, IconShieldX],
-	[CourierMessageTemplateType.VerificationValid, IconShieldCheck],
-	[CourierMessageTemplateType.VerificationCodeInvalid, IconShieldMinus],
-	[CourierMessageTemplateType.VerificationCodeValid, IconShieldPlus],
-	[CourierMessageTemplateType.Stub, IconAsterisk],
-	[CourierMessageTemplateType.LoginCodeValid, IconShieldQuestion],
-	[CourierMessageTemplateType.RegistrationCodeValid, IconShieldUser]
+	[CourierMessageTemplateType.recovery_invalid, IconShieldX],
+	[CourierMessageTemplateType.recovery_valid, IconShieldCheck],
+	[CourierMessageTemplateType.recovery_code_invalid, IconShieldMinus],
+	[CourierMessageTemplateType.recovery_code_valid, IconShieldPlus],
+	[CourierMessageTemplateType.verification_invalid, IconShieldX],
+	[CourierMessageTemplateType.verification_valid, IconShieldCheck],
+	[CourierMessageTemplateType.verification_code_invalid, IconShieldMinus],
+	[CourierMessageTemplateType.verification_code_valid, IconShieldPlus],
+	[CourierMessageTemplateType.stub, IconAsterisk],
+	[CourierMessageTemplateType.login_code_valid, IconShieldQuestion],
+	[CourierMessageTemplateType.registration_code_valid, IconShieldUser]
 ]);
 export const templateTypes = Object.values(CourierMessageTemplateType).map(value => ({
 	label: value,

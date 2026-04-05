@@ -15,7 +15,7 @@
 </script>
 
 <div class="flex items-center justify-between px-2">
-	<div class="text-muted-foreground flex-1 text-sm">
+	<div class="flex-1 text-sm text-muted-foreground">
 		{table.getFilteredSelectedRowModel().rows.length} of
 		{table.getFilteredRowModel().rows.length} row(s) selected.
 	</div>
@@ -42,7 +42,7 @@
 				</Select.Content>
 			</Select.Root>
 		</div>
-		<div class="flex w-[100px] items-center justify-center text-sm font-medium">
+		<div class="flex w-fit items-center justify-center text-sm font-medium">
 			Page {table.getState().pagination.pageIndex + 1} of
 			{table.getPageCount()}
 		</div>

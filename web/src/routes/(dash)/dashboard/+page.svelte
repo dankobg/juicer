@@ -2,7 +2,7 @@
 	import type { PageProps } from './$types';
 	import Dashboard from './dashboard.svelte';
 
-	let { data }: PageProps = $props();
+	let { data, params }: PageProps = $props();
 </script>
 
-<Dashboard {data} />
+<Dashboard {data} {params} />

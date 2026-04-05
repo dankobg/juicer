@@ -10,24 +10,29 @@
 	import DataTableViewOptions from '$lib/components/data-grid-shared/data-table-view-options.svelte';
 	import { aals } from './data';
 	import { confirmation } from '$lib/components/confirmation-dialog/confirmation-dialog-state.svelte';
-	import type { Identity } from '$lib/gen/juicer_openapi';
 	import { juicer } from '$lib/juicer/client';
 	import { toast } from 'svelte-sonner';
 	import { invalidate } from '$app/navigation';
+	import type { components } from '$lib/gen/juicer_openapi';
+	import type { CustomTraits } from '$lib/kratos/service';
 
-	let { table, identity }: { table: Table<TData>; identity: Identity | undefined } = $props();
+	let { table, identity }: { table: Table<TData>; identity: components['schemas']['Identity'] | undefined } = $props();
 
 	const isFiltered = $derived(table.getState().columnFilters.length > 0);
-	const aalCol = $derived(table.getColumn('authenticatorAssuranceLevel'));
+	const aalCol = $derived(table.getColumn('authenticator_assurance_level'));
 
 	async function onConfirmDeleteIdentitySessions() {
 		if (!identity) {
 			return;
 		}
 		try {
-			await juicer.deleteIdentitySessions({ id: identity.id });
+			await juicer.DELETE('/identities/{id}/sessions', {
+				params: {
+					path: { id: identity.id }
+				}
+			});
 			toast.success('sessions deleted');
-			invalidate(`data:identity-sessions-${identity.id}`);
+			invalidate(`data:dashboard-identities-${identity.id}-sessions`);
 		} catch (error) {
 			console.log('err', error);
 			toast.error('sessions delete failed');
@@ -45,7 +50,9 @@
 </script>
 
 {#snippet deleteIdentitySessionsDescriptionSnippet()}
-	This action cannot be undone. This will delete all sessions for user: <strong>{identity?.traits?.['email']}</strong>
+	This action cannot be undone. This will delete all sessions for user: <strong
+		>{(identity?.traits as CustomTraits)?.['email']}</strong
+	>
 {/snippet}
 
 <div class="flex gap-4">
@@ -55,7 +62,7 @@
 </div>
 
 <div class="flex items-center justify-between">
-	<div class="flex flex-1 items-center space-x-2">
+	<div class="flex flex-1 flex-wrap items-center space-x-2 gap-y-2">
 		{#if aalCol}
 			<DataTableFacetedFilter column={aalCol} title="Aal" options={aals} />
 		{/if}

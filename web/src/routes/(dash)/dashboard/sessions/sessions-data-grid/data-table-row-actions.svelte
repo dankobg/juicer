@@ -15,7 +15,8 @@
 	import { juicer } from '$lib/juicer/client';
 	import { invalidate } from '$app/navigation';
 	import { confirmation } from '$lib/components/confirmation-dialog/confirmation-dialog-state.svelte';
-	import type { Session } from '$lib/gen/juicer_openapi';
+	import type { components } from '$lib/gen/juicer_openapi';
+	import type { CustomTraits } from '$lib/kratos/service';
 
 	let { row }: { row: Row<TData> } = $props();
 
@@ -35,9 +36,17 @@
 
 	async function onConfirmDeactivateSession() {
 		try {
-			await juicer.disableSession({ id: row.getValue('id') });
-			toast.success('session deactivated');
-			invalidate('data:sessions');
+			const deleteSessionResult = await juicer.DELETE('/sessions/{id}', {
+				params: {
+					path: { id: `${row.getValue('id')}` }
+				}
+			});
+			if (deleteSessionResult.error) {
+				toast.error([deleteSessionResult.error.message, deleteSessionResult.error.reason].filter(Boolean).join(', '));
+				return;
+			}
+			toast.success('Session deactivated');
+			invalidate('data:dashboard-sessions');
 		} catch (error) {
 			console.log('err', error);
 			toast.error('session deactivation failed');
@@ -48,9 +57,13 @@
 
 	async function onConfirmExtendSession() {
 		try {
-			await juicer.extendSession({ id: row.getValue('id') });
+			await juicer.PATCH('/sessions/{id}/extend', {
+				params: {
+					path: { id: `${row.getValue('id')}` }
+				}
+			});
 			toast.success('session extended');
-			invalidate('data:sessions');
+			invalidate('data:dashboard-sessions');
 		} catch (error) {
 			console.log('err', error);
 			toast.error('session extend failed');
@@ -75,10 +88,10 @@
 </script>
 
 {#snippet deactivateSessionDescriptionSnippet()}
-	{@const sess = row.original as Session}
+	{@const sess = row.original as components['schemas']['Session']}
 	This action cannot be undone. This will deactive (invalidate) the session
 	{#if sess?.identity}
-		for user: <strong>{sess?.identity?.traits?.['email']}</strong>
+		for user: <strong>{(sess?.identity?.traits as CustomTraits)?.['email']}</strong>
 	{:else}
 		<strong>{sess.id}</strong>
 	{/if}
@@ -86,10 +99,10 @@
 {/snippet}
 
 {#snippet extendSessionDescriptionSnippet()}
-	{@const sess = row.original as Session}
+	{@const sess = row.original as components['schemas']['Session']}
 	This will extend the session
 	{#if sess?.identity}
-		for user: <strong>{sess?.identity?.traits?.['email']}</strong>
+		for user: <strong>{(sess?.identity?.traits as CustomTraits)?.['email']}</strong>
 	{:else}
 		<strong>{sess.id}</strong>
 	{/if}
@@ -99,7 +112,7 @@
 <DropdownMenu.Root>
 	<DropdownMenu.Trigger>
 		{#snippet child({ props })}
-			<Button {...props} variant="ghost" class="data-[state=open]:bg-muted flex h-8 w-8 p-0">
+			<Button {...props} variant="ghost" class="flex h-8 w-8 p-0 data-[state=open]:bg-muted">
 				<IconEllipsis />
 				<span class="sr-only">Open Menu</span>
 			</Button>

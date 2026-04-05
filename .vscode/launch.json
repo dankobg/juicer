@@ -6,7 +6,7 @@
       "name": "Web launch chrome",
       "request": "launch",
       "type": "chrome",
-      "url": "http://localhost:3974",
+      "url": "https://juicer-dev.xyz",
       "webRoot": "${workspaceFolder}/web"
     },
     {
@@ -15,6 +15,7 @@
       "request": "launch",
       "mode": "debug",
       "program": "${workspaceFolder}",
+      "args": ["serve"],
       "showLog": true,
       "trace": "verbose"
     },

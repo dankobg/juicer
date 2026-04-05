@@ -72,6 +72,7 @@ func NewColorFromFenStr(fenColor string) (Color, error) {
 		if fenColor == White.String() {
 			return White, nil
 		}
+
 		if fenColor == Black.String() {
 			return Black, nil
 		}

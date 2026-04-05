@@ -6,12 +6,12 @@ x-logging: &prod-logging
     tag: "{{.ImageName}}|{{.Name}}|{{.ImageFullID}}|{{.FullID}}"
 
 x-healthcheck: &prod-healthcheck
-  interval: 120s
-  timeout: 30s
-  retries: 3
+  interval: 30s
+  timeout: 5s
+  retries: 5
   start_interval: 1s
-  start_period: 20s
-  
+  start_period: 10s
+
 x-deploy: &prod-deploy
   replicas: 1
   update_config:
@@ -152,7 +152,7 @@ services:
       - "${SERVE_WRITE_PORT:?Please provide SERVE_WRITE_PORT env var}:4467"
     logging: *prod-logging
     healthcheck:
-      <<: *dev-healthcheck
+      <<: *prod-healthcheck
       test:
         [
           "CMD",
@@ -216,4 +216,6 @@ services:
   #   depends_on:
   #     pg:
   #       condition: service_healthy
-  # ----------------------------------------------------------------------------  
+  # ----------------------------------------------------------------------------
+
+volumes: {}

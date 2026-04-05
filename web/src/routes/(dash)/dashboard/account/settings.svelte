@@ -52,21 +52,19 @@
 			first_name: v.string(),
 			last_name: v.string(),
 			email: v.pipe(v.string(), v.minLength(1, 'E-Mail is required'), v.email('E-Mail must be a valid email')),
-			username: v.pipe(v.string(), v.minLength(1, 'Username is required')),
 			avatar_url: v.string()
 		})
 	});
 
-	type SettingsFormSchema = v.InferInput<typeof settingsFormSchema>;
+	type SettingsFormInput = v.InferInput<typeof settingsFormSchema>;
 
-	const initialSettingsForm: SettingsFormSchema = {
+	const initialSettingsForm: SettingsFormInput = {
 		method: 'profile',
 		csrf_token: data.csrf ?? '',
 		traits: {
 			first_name: data.flow?.identity.traits['first_name'] ?? '',
 			last_name: data.flow?.identity.traits['last_name'] ?? '',
 			email: data.flow?.identity.traits['email'] ?? '',
-			username: data.flow?.identity.traits['username'] ?? '',
 			avatar_url: data.flow?.identity.traits['avatar_url'] ?? ''
 		}
 	};
@@ -80,7 +78,7 @@
 		autoFocusOnError: 'detect',
 		stickyNavbar: undefined,
 		resetForm: false,
-		async onUpdated({ form }) {
+		async onUpdate({ form }) {
 			if (!form.valid) {
 				toast.error('Invalid form, please fix errors and try again');
 				return;
@@ -122,7 +120,7 @@
 								if (instanceOfSettingsFlow(err)) {
 									data = { ...data, flow: err, csrf: data.csrf ?? '' };
 									const nodes = err.ui.nodes ?? [];
-									const fieldErrors: ValidationErrors<SettingsFormSchema> = {};
+									const fieldErrors: ValidationErrors<SettingsFormInput> = {};
 									for (const node of nodes) {
 										const errMsgs: string[] = [];
 										if (node.attributes.node_type === 'input') {
@@ -142,7 +140,11 @@
 							case 410: {
 								if (isGenericErrorResponse(err)) {
 									if (isErrorIdSessionRefreshRequired(err.error?.id)) {
-										goto(`${config.routes.login.path}?refresh=true&return_to=${window.location.href}`);
+										if ('redirect_browser_to' in err) {
+											window.location.href = err.redirect_browser_to as string;
+										} else {
+											goto(`${config.routes.login.path}?refresh=true&return_to=${window.location.href}`);
+										}
 									} else if (isErrorIdSecurityCsrfViolation(err.error?.id)) {
 										handleFlowErrAction(config.routes.settings.path, err.error.message);
 									} else if (isErrorIdSessionInactive(err.error?.id)) {
@@ -197,7 +199,7 @@
 		<div class="grid gap-4">
 			<form method="POST" use:enhance class="grid gap-4">
 				{#if currentFlowForm === 'settings'}
-					{#each data?.flow?.ui?.messages ?? [] as msg}
+					{#each data?.flow?.ui?.messages ?? [] as msg (msg.id)}
 						<Alert.Root variant={msg.type === '11184809' ? 'info' : msg.type} icon>
 							<Alert.Title>{msg.type === 'error' ? 'Unable to change settings' : ''}</Alert.Title>
 							<Alert.Description>{msg.text}</Alert.Description>
@@ -223,18 +225,6 @@
 							{#snippet children({ props })}
 								<Form.Label>Last name</Form.Label>
 								<Input {...props} bind:value={$form.traits.last_name} />
-							{/snippet}
-						</Form.Control>
-						<Form.Description />
-						<Form.FieldErrors />
-					</Form.Field>
-				</div>
-				<div class="grid gap-2">
-					<Form.Field form={supForm} name="traits.username">
-						<Form.Control>
-							{#snippet children({ props })}
-								<Form.Label>Username</Form.Label>
-								<Input {...props} bind:value={$form.traits.username} />
 							{/snippet}
 						</Form.Control>
 						<Form.Description />

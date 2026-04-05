@@ -16,7 +16,9 @@ import { isErrorIdSecurityCsrfViolation } from '$lib/kratos/helpers';
 import { isErrorIdSessionAal1Required } from '$lib/kratos/helpers';
 import { isErrorIdSecurityIdentityMismatch } from '$lib/kratos/helpers';
 
-export const load: PageLoad = (async ({ url }) => {
+export const load: PageLoad = (async ({ depends, url }) => {
+	depends('data:registration');
+
 	const returnToParam = browser && url.searchParams.get('return_to');
 	const flowIdParam = browser && url.searchParams.get('flow');
 
@@ -100,7 +102,9 @@ export const load: PageLoad = (async ({ url }) => {
 							} else if (isErrorIdSecurityCsrfViolation(err.error?.id)) {
 								handleFlowErrAction(config.routes.registration.path, err.error.message);
 							} else if (isErrorIdSessionAal1Required(err.error?.id)) {
-								goto(`${config.routes.registration.path}?return_to=${window.location.href}`);
+								if (browser) {
+									goto(`${config.routes.registration.path}?return_to=${window.location.href}`);
+								}
 							} else if (isErrorIdSecurityIdentityMismatch(err.error?.id)) {
 								goto('/');
 							}

@@ -4,9 +4,9 @@ import DataTableCheckbox from '$lib/components/data-grid-shared/data-table-check
 import DataTableCellId from '$lib/components/data-grid-shared/data-table-cell-id.svelte';
 import DataTableColumnHeader from '$lib/components/data-grid-shared/data-table-column-header.svelte';
 import DataTableRowActions from './data-table-row-actions.svelte';
-import type { IdentitySchemaContainer } from '$lib/gen/juicer_openapi';
+import type { components } from '$lib/gen/juicer_openapi';
 
-export const columns: ColumnDef<IdentitySchemaContainer>[] = [
+export const columns: ColumnDef<components['schemas']['IdentitySchemaContainer']>[] = [
 	{
 		id: 'select',
 		header: ({ table }) =>
@@ -29,7 +29,7 @@ export const columns: ColumnDef<IdentitySchemaContainer>[] = [
 	{
 		accessorKey: 'id',
 		header: ({ column }) => {
-			return renderComponent(DataTableColumnHeader<IdentitySchemaContainer, unknown>, {
+			return renderComponent(DataTableColumnHeader<components['schemas']['IdentitySchemaContainer'], unknown>, {
 				column,
 				title: 'Id'
 			});
@@ -45,6 +45,6 @@ export const columns: ColumnDef<IdentitySchemaContainer>[] = [
 	},
 	{
 		id: 'actions',
-		cell: ({ row }) => renderComponent(DataTableRowActions<IdentitySchemaContainer>, { row })
+		cell: ({ row }) => renderComponent(DataTableRowActions<components['schemas']['IdentitySchemaContainer']>, { row })
 	}
 ];

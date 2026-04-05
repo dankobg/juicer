@@ -15,7 +15,8 @@
 	import { invalidate } from '$app/navigation';
 	import { juicer } from '$lib/juicer/client';
 	import { confirmation } from '$lib/components/confirmation-dialog/confirmation-dialog-state.svelte';
-	import type { Session } from '$lib/gen/juicer_openapi';
+	import type { components } from '$lib/gen/juicer_openapi';
+	import type { CustomTraits } from '$lib/kratos/service';
 
 	let { row }: { row: Row<TData> } = $props();
 
@@ -34,11 +35,19 @@
 	}
 
 	async function onConfirmDeactivateSession() {
-		const sess = row.original as Session;
+		const sess = row.original as components['schemas']['Session'];
 		try {
-			await juicer.disableSession({ id: sess.id });
-			toast.success('session deactivated');
-			invalidate(`data:identity-sessions-${sess.identity?.id}`);
+			const deleteSessionResult = await juicer.DELETE('/sessions/{id}', {
+				params: {
+					path: { id: sess.id }
+				}
+			});
+			if (deleteSessionResult.error) {
+				toast.error([deleteSessionResult.error.message, deleteSessionResult.error.reason].filter(Boolean).join(', '));
+				return;
+			}
+			toast.success('Session deactivated');
+			invalidate(`data:dashboard-identities-${sess.identity?.id}-sessions`);
 		} catch (error) {
 			console.log('err', error);
 			toast.error('session deactivation failed');
@@ -48,11 +57,15 @@
 	}
 
 	async function onConfirmExtendSession() {
-		const sess = row.original as Session;
+		const sess = row.original as components['schemas']['Session'];
 		try {
-			await juicer.extendSession({ id: sess.id });
+			await juicer.PATCH('/sessions/{id}/extend', {
+				params: {
+					path: { id: sess.id }
+				}
+			});
 			toast.success('session extended');
-			invalidate(`data:identity-sessions-${sess.identity?.id}`);
+			invalidate(`data:dashboard-identities-${sess.identity?.id}-sessions`);
 		} catch (error) {
 			console.log('err', error);
 			toast.error('session extend failed');
@@ -77,8 +90,8 @@
 </script>
 
 {#snippet deactivateSessionDescriptionSnippet()}
-	{@const sess = row?.original as Session}
-	{@const email = sess?.identity?.traits?.['email']}
+	{@const sess = row?.original as components['schemas']['Session']}
+	{@const email = (sess?.identity?.traits as CustomTraits)?.['email']}
 	This action cannot be undone. This will deactive (invalidate) the session
 	{#if email}
 		for user: <strong>{email}</strong>
@@ -89,8 +102,8 @@
 {/snippet}
 
 {#snippet extendSessionDescriptionSnippet()}
-	{@const sess = row?.original as Session}
-	{@const email = sess?.identity?.traits?.['email']}
+	{@const sess = row?.original as components['schemas']['Session']}
+	{@const email = (sess?.identity?.traits as CustomTraits)?.['email']}
 	This will extend the session
 	{#if email}
 		for user: <strong>{email}</strong>
@@ -103,7 +116,7 @@
 <DropdownMenu.Root>
 	<DropdownMenu.Trigger>
 		{#snippet child({ props })}
-			<Button {...props} variant="ghost" class="data-[state=open]:bg-muted flex h-8 w-8 p-0">
+			<Button {...props} variant="ghost" class="flex h-8 w-8 p-0 data-[state=open]:bg-muted">
 				<IconEllipsis />
 				<span class="sr-only">Open Menu</span>
 			</Button>

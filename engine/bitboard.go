@@ -194,6 +194,7 @@ func (bb bitboard) flipHorizontal() bitboard {
 // flipDiagonalA1H8 flips the bitboard diagonally from a1 to h1
 func (bb bitboard) flipDiagonalA1H8() bitboard {
 	var t bitboard
+
 	k1 := bitboard(0x5500550055005500)
 	k2 := bitboard(0x3333000033330000)
 	k4 := bitboard(0x0F0F0F0F00000000)
@@ -211,6 +212,7 @@ func (bb bitboard) flipDiagonalA1H8() bitboard {
 // flipDiagonalA8H1 flips the bitboard diagonally from a8 to h8
 func (bb bitboard) flipDiagonalA8H1() bitboard {
 	var t bitboard
+
 	k1 := bitboard(0xAA00AA00AA00AA00)
 	k2 := bitboard(0xCCCC0000CCCC0000)
 	k4 := bitboard(0xF0F0F0F00F0F0F0F)
@@ -291,7 +293,7 @@ func printBoard(options *DrawOptions, printerFunc func(sq Square) string) string
 			rankIdx, rankLabel = 7-r, 8-r
 		}
 
-		sb.WriteString(fmt.Sprintf(" %d %s", rankLabel, rankStartChar))
+		fmt.Fprintf(&sb, " %d %s", rankLabel, rankStartChar)
 
 		for f := range 8 {
 			fileSpacingChar := ""
@@ -305,7 +307,7 @@ func printBoard(options *DrawOptions, printerFunc func(sq Square) string) string
 			}
 
 			sq := Square(rankIdx*8 + fileIdx)
-			sb.WriteString(fmt.Sprintf(" %s%s", printerFunc(sq), fileSpacingChar))
+			fmt.Fprintf(&sb, " %s%s", printerFunc(sq), fileSpacingChar)
 		}
 
 		rankEndChar := ""
@@ -313,7 +315,7 @@ func printBoard(options *DrawOptions, printerFunc func(sq Square) string) string
 			rankEndChar = "|"
 		}
 
-		sb.WriteString(fmt.Sprintf("%s \n", rankEndChar))
+		fmt.Fprintf(&sb, "%s \n", rankEndChar)
 	}
 
 	if opts.Compact {

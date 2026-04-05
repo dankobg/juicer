@@ -3,7 +3,7 @@ import { toJsonString } from '@bufbuild/protobuf';
 const wsEndpoint = import.meta.env['VITE_PUBLIC_WS_ENDPOINT'] as string;
 
 export class ReconnectingWs {
-	#url = wsEndpoint;
+	baseUrl = wsEndpoint;
 	#ws: WebSocket | null = null;
 	#reconnectAttempts: number = 0;
 	#maxReconnectAttempts: number = 10;
@@ -18,21 +18,14 @@ export class ReconnectingWs {
 	onClose: (event: CloseEvent) => void = () => {};
 	onError: (event: Event) => void = () => {};
 
-	constructor(params?: URLSearchParams) {
-		if (params) {
-			this.#url = `${this.#url}?${params.toString()}`;
-		}
-	}
-
 	connect(params?: URLSearchParams): void {
-		if (params) {
-			this.#url = `${this.#url}?${params.toString()}`;
-		}
+		const url = `${this.baseUrl}${params ? '?' + params.toString() : ''}`;
+
 		if (this.readyState === WebSocket.OPEN) {
 			console.log('websocket is already open');
 			return;
 		}
-		this.#ws = new WebSocket(this.#url);
+		this.#ws = new WebSocket(url);
 		this.#ws.onopen = (event: Event) => {
 			this.#reconnectAttempts = 0;
 			if (this.#timerid) {

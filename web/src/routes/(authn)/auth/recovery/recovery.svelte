@@ -54,9 +54,9 @@
 		code: v.string()
 	});
 
-	type RecoveryFormSchema = v.InferInput<typeof recoveryFormSchema>;
+	type RecoveryFormInput = v.InferInput<typeof recoveryFormSchema>;
 
-	const initialRecoveryForm: RecoveryFormSchema = {
+	const initialRecoveryForm: RecoveryFormInput = {
 		email: '',
 		code: '',
 		method: 'code',
@@ -72,7 +72,7 @@
 		autoFocusOnError: 'detect',
 		stickyNavbar: undefined,
 		resetForm: false,
-		async onUpdated({ form }) {
+		async onUpdate({ form }) {
 			if (!form.valid) {
 				toast.error('Invalid form, please fix errors and try again');
 				return;
@@ -114,7 +114,7 @@
 								if (instanceOfRecoveryFlow(err)) {
 									data = { ...data, flow: err, csrf: data.csrf ?? '' };
 									const nodes = err.ui.nodes ?? [];
-									const fieldErrors: ValidationErrors<RecoveryFormSchema> = {};
+									const fieldErrors: ValidationErrors<RecoveryFormInput> = {};
 									for (const node of nodes) {
 										const errMsgs: string[] = [];
 										if (node.attributes.node_type === 'input') {
@@ -195,7 +195,7 @@
 		<Card.Content>
 			<div class="grid gap-4">
 				<form method="POST" use:enhance class="grid gap-4">
-					{#each data?.flow?.ui?.messages ?? [] as msg}
+					{#each data?.flow?.ui?.messages ?? [] as msg (msg.id)}
 						<Alert.Root variant={msg.type === '11184809' ? 'info' : msg.type} icon>
 							<Alert.Title>{msg.type === 'error' ? 'Unable to recover account' : ''}</Alert.Title>
 							<Alert.Description>{msg.text}</Alert.Description>

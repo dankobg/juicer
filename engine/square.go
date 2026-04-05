@@ -85,6 +85,7 @@ func (sq Square) Color() Color {
 	if ((sq / 8) % 2) == (sq % 2) {
 		return Black
 	}
+
 	return White
 }
 
@@ -188,6 +189,7 @@ func NewFile(file string) (File, error) {
 	}
 
 	f := strings.Index(fileChars, file)
+
 	return File(f), nil
 }
 
@@ -219,6 +221,7 @@ func NewRank(rank string) (Rank, error) {
 	}
 
 	r := strings.Index(rankChars, rank)
+
 	return Rank(r), nil
 }
 

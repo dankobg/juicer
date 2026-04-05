@@ -1,11 +1,28 @@
+import { browser } from '$app/environment';
+import { goto } from '$app/navigation';
 import { juicer } from '$lib/juicer/client';
+import { config } from '$lib/kratos/config';
 import type { PageLoad } from './$types';
 
-export const load: PageLoad = async ({ params }) => {
+export const load: PageLoad = async ({ fetch, params, depends }) => {
+	depends(`data:dashboard-messages-${params.message_id}`);
+
 	try {
-		const message = await juicer.getCourierMessage({ id: params.message_id });
+		const messageResult = await juicer.GET('/courier/messages/{id}', {
+			fetch,
+			params: {
+				path: { id: params.message_id }
+			}
+		});
+
+		if (messageResult.error?.status_code === 403) {
+			if (browser) {
+				goto(config.routes.dashboard.path);
+			}
+		}
+
 		return {
-			message
+			messageResult
 		};
 	} catch (error) {
 		console.log('err', error);

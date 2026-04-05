@@ -80,9 +80,8 @@ func validateFenMetadataParts(fen string, opts validateFenOps) (fenToken, error)
 		n = 1
 	}
 
-	// half move clock must be within the limit
-	if !(halfMoveClock <= ((fullMoveClock-1)*2)+n) {
-		return emptyRet, fmt.Errorf("invalid FEN: half move clock must be whithin the valid limit")
+	if halfMoveClock > ((fullMoveClock-1)*2)+n {
+		return emptyRet, fmt.Errorf("invalid FEN: half move clock must be within the valid limit")
 	}
 
 	// in case of an en-passant square, the half move clock must be equal to 0
@@ -112,16 +111,20 @@ func validateFenMetadataParts(fen string, opts validateFenOps) (fenToken, error)
 	}
 
 	var cr CastleRights
+
 	if castleRightsToken != fenNoneSymbol {
 		if strings.Contains(castleRightsToken, "K") {
 			cr |= WhiteKingSideCastle
 		}
+
 		if strings.Contains(castleRightsToken, "Q") {
 			cr |= WhiteQueenSideCastle
 		}
+
 		if strings.Contains(castleRightsToken, "k") {
 			cr |= BlackKingSideCastle
 		}
+
 		if strings.Contains(castleRightsToken, "q") {
 			cr |= BlackQueenSideCastle
 		}
@@ -148,8 +151,10 @@ func validatePositionPart(ft fenToken, opts validateFenOps) (map[Square]Piece, e
 	squares := make(map[Square]Piece, boardTotalSquares)
 
 	for r := range ranks {
-		var sumSquaresInRank uint8
-		var previousWasNumber bool
+		var (
+			sumSquaresInRank  uint8
+			previousWasNumber bool
+		)
 
 		for f := range len(ranks[r]) {
 			if reIsDigit.MatchString(string(ranks[r][f])) {
@@ -187,12 +192,15 @@ func validatePositionPart(ft fenToken, opts validateFenOps) (map[Square]Piece, e
 	if piecesCount[WhiteKing] == 0 {
 		return nil, fmt.Errorf("invalid FEN: position is missing white king")
 	}
+
 	if piecesCount[BlackKing] == 0 {
 		return nil, fmt.Errorf("invalid FEN: position is missing black king")
 	}
+
 	if c := piecesCount[WhiteKing]; c > 1 {
 		return nil, fmt.Errorf("invalid FEN: position is having too many white kings (%d)", c)
 	}
+
 	if c := piecesCount[BlackKing]; c > 1 {
 		return nil, fmt.Errorf("invalid FEN: position is having too many black kings (%d)", c)
 	}
@@ -202,6 +210,7 @@ func validatePositionPart(ft fenToken, opts validateFenOps) (map[Square]Piece, e
 			return nil, fmt.Errorf("invalid FEN: white pawn is on 8th rank")
 		}
 	}
+
 	for _, char := range ranks[7] {
 		if string(char) == BlackPawn.String() {
 			return nil, fmt.Errorf("invalid FEN: black pawn is on 1st rank")
