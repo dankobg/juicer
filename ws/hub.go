@@ -111,10 +111,10 @@ func (h *Hub) Stop() {
 
 // processClientWebsocketMessage publishes client websocket message to pubsub
 func (h *Hub) processClientWebsocketMessage(client *client, msg []byte) error {
-	topic := fmt.Sprintf("wsc.%s.%d", client.id, client.authState)
+	topic := fmt.Sprintf("wsc.%s.%s.%d", client.id, client.connID, client.authState)
 
 	if err := h.rdb.Publish(context.Background(), topic, msg).Err(); err != nil {
-		h.log.Error("hub publish msg from websocket", slog.String("client_id", client.id.String()), slog.String("topic", topic), slog.Any("error", err))
+		h.log.Error("hub publish msg from websocket", slog.String("client_id", client.id.String()), slog.String("conn_id", client.connID.String()), slog.String("topic", topic), slog.Any("error", err))
 	}
 
 	return nil
@@ -124,6 +124,7 @@ func (h *Hub) onClientConnected(client *client) {
 	h.log.Debug("client connected", slog.String("client_id", client.id.String()), slog.String("auth_state", client.authState.String()))
 
 	h.addClient(client)
+	h.requestChannelsInfo(client)
 
 	clientConnectedMsg := &pb.Message{
 		Event: &pb.Message_ClientConnected{ClientConnected: &pb.ClientConnected{Id: client.id.String()}},
@@ -263,9 +264,35 @@ func (h *Hub) RequestInitialChannels(ctx context.Context, client *client) ([]str
 		return nil, fmt.Errorf("protojson.Unmarshal Message_InitialChannels: %w", err)
 	}
 
-	initialChannels := m.GetInitialChannels().GetInitialChannels()
+	initialChannels := m.GetInitialChannels().GetChannels()
 
 	return initialChannels, nil
+}
+
+func (h *Hub) requestChannelsInfo(client *client) {
+	channels := make([]string, len(client.channels))
+	for i, channel := range client.channels {
+		channels[i] = channel.String()
+	}
+
+	requestChannelsInfoMsg := &pb.Message{
+		Event: &pb.Message_RequestChannelsInfo{
+			RequestChannelsInfo: &pb.RequestChannelsInfo{
+				ClientId: client.id.String(),
+				ConnId:   client.connID.String(),
+				Channels: channels,
+			},
+		},
+	}
+
+	requestChannelsInfoMsgBytes, err := protojson.Marshal(requestChannelsInfoMsg)
+	if err != nil {
+		h.log.Error("protojson marshal Message_RequestChannelsInfo", slog.String("client_id", client.id.String()), slog.Any("error", err))
+	} else {
+		if err := h.rdb.Publish(context.Background(), "ipc", requestChannelsInfoMsgBytes).Err(); err != nil {
+			h.log.Error("hub publish Message_RequestChannelsInfo", slog.String("client_id", client.id.String()), slog.String("topic", "ipc"), slog.Any("error", err))
+		}
+	}
 }
 
 func (h *Hub) PubsubProcess(ctx context.Context) {
@@ -273,15 +300,15 @@ func (h *Hub) PubsubProcess(ctx context.Context) {
 
 	for {
 		select {
-		case msg := <-h.subMessages["lobby."]:
+		case msg := <-h.subMessages["lobby.*"]:
 			h.handlePubsubRecvLobbyMessage(msg)
-		case msg := <-h.subMessages["game."]:
+		case msg := <-h.subMessages["game.*"]:
 			h.handlePubsubRecvGameMessage(msg)
-		case msg := <-h.subMessages["gametv."]:
+		case msg := <-h.subMessages["gametv.*"]:
+			h.handlePubsubRecvGametvMessage(msg)
+		case msg := <-h.subMessages["user.*"]:
 			h.handlePubsubRecvUserMessage(msg)
-		case msg := <-h.subMessages["user."]:
-			h.handlePubsubRecvUserMessage(msg)
-		case msg := <-h.subMessages["conn."]:
+		case msg := <-h.subMessages["conn.*"]:
 			h.handlePubsubRecvConnMessage(msg)
 
 		case <-ctx.Done():

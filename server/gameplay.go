@@ -4,11 +4,19 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"strings"
 
 	pb "github.com/dankobg/juicer/pb/proto/juicer"
+	"github.com/dankobg/juicer/ws"
 	"github.com/redis/go-redis/v9"
 	"google.golang.org/protobuf/encoding/protojson"
 )
+
+type clientAuthInfo struct {
+	clientID  string
+	connID    string
+	authState ws.ClientAuthState
+}
 
 func (a *ApiHandler) Test() error {
 	return nil
@@ -34,8 +42,8 @@ func (a *ApiHandler) PubsubProcess(ctx context.Context) {
 		select {
 		case msg := <-a.bus.subMessages["ipc"]:
 			a.handlePubsubRecvIPCMessage(msg)
-		case msg := <-a.bus.subMessages["wsc."]:
-			a.handlePubsubRecvLobbyMessage(msg)
+		case msg := <-a.bus.subMessages["wsc.*"]:
+			a.handlePubsubRecvWSCMessage(msg)
 
 		case <-ctx.Done():
 			a.Log.Debug("gameserver pubsub ctx done")
@@ -53,27 +61,82 @@ func (a *ApiHandler) handlePubsubRecvIPCMessage(msg *redis.Message) {
 
 	switch m.GetEvent().(type) {
 	case *pb.Message_RequestInitialChannels:
-		requestInitialChannels := m.GetRequestInitialChannels()
+		data := m.GetRequestInitialChannels()
 
 		initialChannelsReplyMsg := &pb.Message{
-			Event: &pb.Message_InitialChannels{InitialChannels: &pb.InitialChannelsReply{
-				InitialChannels: []string{"loby", "game.123", "gametv.456"},
+			Event: &pb.Message_InitialChannels{InitialChannels: &pb.InitialChannels{
+				Channels: []string{"loby", "lobby.chat"},
 			}},
 		}
 
 		initialChannelsReplyMsgBytes, err := protojson.Marshal(initialChannelsReplyMsg)
 		if err != nil {
-			a.Log.Error("protojson marshal Message_InitialChannels", slog.String("client_id", requestInitialChannels.ClientId), slog.Any("error", err))
+			a.Log.Error("protojson marshal Message_InitialChannels", slog.String("client_id", data.ClientId), slog.Any("error", err))
 			return
 		}
-		topic := "reply-initial-channels." + requestInitialChannels.ClientId + "." + requestInitialChannels.ConnId
+		topic := "reply-initial-channels." + data.ClientId + "." + data.ConnId
 		if err := a.Rdb.Publish(context.Background(), topic, initialChannelsReplyMsgBytes).Err(); err != nil {
-			a.Log.Error("hub publish Message_InitialChannels", slog.String("client_id", requestInitialChannels.ClientId), slog.String("topic", "ipc"), slog.Any("error", err))
+			a.Log.Error("hub publish Message_InitialChannels", slog.String("client_id", data.ClientId), slog.String("topic", "ipc"), slog.Any("error", err))
 			return
 		}
+
+	case *pb.Message_RequestChannelsInfo:
+		data := m.GetRequestChannelsInfo()
+		_ = data
 	}
 }
 
-func (a *ApiHandler) handlePubsubRecvLobbyMessage(msg *redis.Message) {
-	fmt.Println("gameserver handlePubsubRecvLobbyMessage", msg)
+func (a *ApiHandler) handlePubsubRecvWSCMessage(msg *redis.Message) {
+	m := &pb.Message{}
+	if err := protojson.Unmarshal([]byte(msg.Payload), m); err != nil {
+		a.Log.Error("protojson.Unmarshal WSC Message")
+		return
+	}
+
+	clientAuthInfo, err := extractWSCTopicParts(msg.Channel)
+	if err != nil {
+		a.Log.Error("extractWSCTopicParts", slog.String("channel", msg.Channel), slog.String("pattern", msg.Pattern), slog.String("payload", msg.Payload), slog.Any("error", err))
+		return
+	}
+
+	switch m.GetEvent().(type) {
+	case *pb.Message_Test:
+		a.handleWSCTestMsg(clientAuthInfo, m.GetTest())
+	}
+}
+
+func (a *ApiHandler) handleWSCTestMsg(authInfo clientAuthInfo, data *pb.Test) {
+	testMsg := &pb.Message{Event: &pb.Message_Test{Test: &pb.Test{Message: strings.ToUpper(data.Message)}}}
+	b, err := protojson.Marshal(testMsg)
+	if err != nil {
+		a.Log.Error("test marshal", slog.String("client_id", authInfo.clientID), slog.Any("error", err))
+		return
+	}
+
+	topic := "user." + authInfo.clientID
+	if err := a.Rdb.Publish(context.Background(), topic, b).Err(); err != nil {
+		a.Log.Error("hub publish Message_InitialChannels", slog.String("client_id", authInfo.clientID), slog.String("topic", "ipc"), slog.Any("error", err))
+		return
+	}
+}
+
+// extractWSCTopicParts extracts the client_id and auth_state
+func extractWSCTopicParts(topic string) (clientAuthInfo, error) {
+	parts := strings.Split(topic, ".")
+	if len(parts) != 4 {
+		return clientAuthInfo{}, fmt.Errorf("invalid parts length, expected 4, got: %d", len(parts))
+	}
+	clientID, connID, authStateStr := parts[1], parts[2], parts[3]
+	if !(authStateStr == "0" || authStateStr == "1") {
+		return clientAuthInfo{}, fmt.Errorf("invalid parts auth_state. must be 0 or 1")
+	}
+	authState := ws.ClientGuest
+	if authStateStr == "1" {
+		authState = ws.ClientAuth
+	}
+	return clientAuthInfo{
+		clientID:  clientID,
+		connID:    connID,
+		authState: authState,
+	}, nil
 }

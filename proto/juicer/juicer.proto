@@ -7,12 +7,14 @@ import "google/protobuf/timestamp.proto";
 
 option go_package = "github.com/dankobg/juicer/pb";
 
+// Color is the player color
 enum Color {
   COLOR_UNSPECIFIED = 0;
   COLOR_WHITE = 1;
   COLOR_BLACK = 2;
 }
 
+// Variant is game variant
 enum Variant {
   VARIANT_UNSPECIFIED = 0;
   VARIANT_STANDARD = 1;
@@ -25,6 +27,7 @@ enum Variant {
   VARIANT_RACING_KINGS = 8;
 }
 
+// GameTimeKind is game time kind
 enum GameTimeKind {
   GAME_TIME_KIND_UNSPECIFIED = 0;
   GAME_TIME_KIND_REALTIME = 1;
@@ -32,6 +35,7 @@ enum GameTimeKind {
   GAME_TIME_KIND_UNLIMITED = 3;
 }
 
+// GameTimeCategory is game time category
 enum GameTimeCategory {
   GAME_TIME_CATEGORY_UNSPECIFIED = 0;
   GAME_TIME_CATEGORY_HYPERBULLET = 1;
@@ -41,11 +45,13 @@ enum GameTimeCategory {
   GAME_TIME_CATEGORY_CLASSICAL = 5;
 }
 
+// GameTimeControl is game time control
 message GameTimeControl {
   google.protobuf.Duration clock = 1;
   google.protobuf.Duration increment = 2;
 }
 
+// GameResult is result of the game
 enum GameResult {
   GAME_RESULT_UNSPECIFIED = 0;
   GAME_RESULT_WHITE_WON = 1;
@@ -54,6 +60,7 @@ enum GameResult {
   GAME_RESULT_INTERRUPTED = 4;
 }
 
+// GameResultStatus specifies the reason of result
 enum GameResultStatus {
   GAME_RESULT_STATUS_UNSPECIFIED = 0;
   GAME_RESULT_STATUS_CHECKMATE = 1;
@@ -72,6 +79,7 @@ enum GameResultStatus {
   GAME_RESULT_STATUS_INTERRUPTED = 14;
 }
 
+// GameState is a game state
 enum GameState {
   GAME_STATE_UNSPECIFIED = 0;
   GAME_STATE_IDLE = 1;
@@ -81,6 +89,7 @@ enum GameState {
   GAME_STATE_INTERRUPTED = 5;
 }
 
+// GameSideChoice is a choice when playing custom game
 enum GameSideChoice {
   GAME_SIDE_CHOICE_UNSPECIFIED = 0;
   GAME_SIDE_CHOICE_RANDOM = 1;
@@ -88,88 +97,112 @@ enum GameSideChoice {
   GAME_SIDE_CHOICE_BLACK = 3;
 }
 
+// Message represents websocket message
 message Message {
   oneof event {
     Problem problem = 1;
     ClientConnected client_connected = 2;
     ClientDisconnected client_disconnected = 3;
-    SeekGame seek_game = 4;
-    CancelSeekGame cancel_seek_game = 5;
-    HubInfo hub_info = 6;
-    MatchFound match_found = 7;
-    GameAbort game_abort = 8;
-    GameOfferDraw game_offer_draw = 9;
-    GameResign game_resign = 10;
-    GameDeclineDraw game_decline_draw = 11;
-    GameAcceptDraw game_accept_draw = 12;
-    GameChat game_chat = 13;
-    GameChatReceive game_chat_receive = 14;
-    GameChatRetrieve game_chat_retrieve = 15;
-    PlayMoveUCI play_move_uci = 16;
-    ReceiveMove receive_move = 17;
-    GameFinished game_finished = 18;
-    RequestInitialChannels request_initial_channels = 19;
-    InitialChannelsReply initial_channels = 20;
+    RequestInitialChannels request_initial_channels = 4;
+    InitialChannels initial_channels = 5;
+    RequestChannelsInfo request_channels_info = 6;
+    // ------------------------------------------------------
+    SeekGame seek_game = 7;
+    CancelSeekGame cancel_seek_game = 8;
+    HubInfo hub_info = 9;
+    MatchFound match_found = 10;
+    GameAbort game_abort = 11;
+    GameResign game_resign = 12;
+    GameOfferDraw game_offer_draw = 13;
+    GameAcceptDraw game_accept_draw = 14;
+    GameDeclineDraw game_decline_draw = 15;
+    GameChat game_chat = 16;
+    GameChatReceive game_chat_receive = 17;
+    GameChatRetrieve game_chat_retrieve = 18;
+    PlayMoveUCI play_move_uci = 19;
+    ReceiveMove receive_move = 20;
+    GameFinished game_finished = 21;
 
     Test test = 69;
   }
 }
 
+// ########################### REMOVE LATER ########################################
 message Test {
   string message = 1;
 }
 
+// Problem is the websocket error
+message Problem {
+  string message = 1;
+}
+
+// ClientConnected signals that client connected
+message ClientConnected {
+  string id = 1;
+}
+
+// ClientDisconnected signals that client disconnected
+message ClientDisconnected {
+  string id = 1;
+}
+
+// RequestInitialChannels requests initial channels that the user belongs to (e.g. ["lobby", "lobby.chat"])
 message RequestInitialChannels {
   string client_id = 1;
   string conn_id = 2;
   string path = 3;
 }
 
-message InitialChannelsReply {
-  repeated string initial_channels = 1;
+// InitialChannels is the user initial channels
+message InitialChannels {
+  repeated string channels = 1;
 }
 
+// RequestChannelsInfo requests backend to send some data for initial channels
+// e.g. users in lobby want to see active games, lobby.chat want loby chat history, if in gametv, they want gamestate and move history etc.
+message RequestChannelsInfo {
+  string client_id = 1;
+  string conn_id = 2;
+  repeated string channels = 3;
+}
+
+// Clocks is white and black game clock
 message Clocks {
   google.protobuf.Duration white = 1;
   google.protobuf.Duration black = 2;
 }
 
-message Problem {
-  string message = 1;
-}
-
-message ClientConnected {
-  string id = 1;
-}
-
-message ClientDisconnected {
-  string id = 1;
-}
-
+// SeekGame is searching for a game
 message SeekGame {
   GameTimeControl time_control = 1;
 }
 
+// CancelSeekGame cancels the game search
 message CancelSeekGame {
   GameTimeControl time_control = 1;
 }
 
+// HubInfo is hub information
 message HubInfo {
   int32 lobby = 1;
   int32 playing = 2;
 }
 
+// OpponentInfo is info about opponent
 message OpponentInfo {
   string username = 9;
   string avatar_url = 10;
   int32 rating = 11;
 }
 
+// HistoryMove is the move played
 message HistoryMove {
   string uci = 1;
   string san = 2;
 }
 
+// HistoryMoveInfo holds info about the move
 message HistoryMoveInfo {
   string fen = 1;
   optional google.protobuf.Timestamp played_at = 2;
@@ -177,6 +210,7 @@ message HistoryMoveInfo {
   bool check = 4;
 }
 
+// MatchFound signals that the game was found
 message MatchFound {
   int64 game_id = 1;
   string client_id = 2;
@@ -194,34 +228,44 @@ message MatchFound {
   google.protobuf.Timestamp start_time = 14;
 }
 
+// GameAbort is game abort request
 message GameAbort {}
 
+// GameResign is game resign request
 message GameResign {}
 
+// GameOfferDraw is draw offer request
 message GameOfferDraw {}
 
+// GameDeclineDraw is draw declined
 message GameDeclineDraw {}
 
+// GameAcceptDraw is accepting the draw offer
 message GameAcceptDraw {}
 
+// GameChat is the game chat
 message GameChat {
   string message = 1;
 }
 
+// GameChatReceive is xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 message GameChatReceive {
   string client_id = 1;
   string id = 2;
   string message = 3;
 }
 
+// GameChatRetrieve is xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 message GameChatRetrieve {
   repeated GameChatReceive game_chat = 1;
 }
 
+// PlayMoveUCI plays a game move
 message PlayMoveUCI {
   string move = 1;
 }
 
+// ReceiveMove receives the game move
 message ReceiveMove {
   string uci = 1;
   string lan = 2;
@@ -232,6 +276,7 @@ message ReceiveMove {
   repeated string legal_moves = 7;
 }
 
+// GameFinished signals the game is over
 message GameFinished {
   GameResult game_result = 1;
   GameResultStatus game_result_status = 2;
