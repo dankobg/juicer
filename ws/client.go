@@ -72,14 +72,6 @@ func (c *client) JoinChannels(channels []Channel) {
 	c.channels = channels
 }
 
-// // Then try to register the realm with the connection path that was
-// // passed in.
-// err = registerRealm(client, path, hub)
-// if err != nil {
-// 	log.Err(err).Msg("register-realm-error")
-// 	client.conn.Close()
-// }
-
 func (c *client) ReadLoop(ctx context.Context) {
 	defer func() {
 		c.hub.ClientDisconnected <- c

@@ -13,16 +13,6 @@ import (
 	"google.golang.org/protobuf/encoding/protojson"
 )
 
-var pubsubTopics = []string{
-	// "ipc",      // internal
-	// "wsc.*",    // websocket conn
-	"lobby.*",  // lobby
-	"game.*",   // game related
-	"gametv.*", // game spectators
-	"user.*",   // specific user
-	"conn.*",   // specific conn
-}
-
 type Hub struct {
 	ClientConnected    chan *client
 	ClientDisconnected chan *client
@@ -31,7 +21,6 @@ type Hub struct {
 	clientChannels     map[*client][]Channel
 	channels           map[Channel]map[*client]struct{}
 	mu                 *sync.Mutex
-	topics             []string
 	subs               map[string]*redis.PubSub
 	subMessages        map[string]<-chan *redis.Message
 	broadcastConn      chan ConnMessage
@@ -50,7 +39,6 @@ func NewHub(persistor persistence.Persistor, rdb *redis.Client, logger *slog.Log
 		clientChannels:     make(map[*client][]Channel),
 		channels:           make(map[Channel]map[*client]struct{}),
 		mu:                 &sync.Mutex{},
-		topics:             pubsubTopics,
 		subs:               make(map[string]*redis.PubSub),
 		subMessages:        make(map[string]<-chan *redis.Message),
 		broadcastConn:      make(chan ConnMessage, 100),
@@ -66,7 +54,15 @@ func NewHub(persistor persistence.Persistor, rdb *redis.Client, logger *slog.Log
 }
 
 func (h *Hub) subscribeToPubsub(ctx context.Context) {
-	for _, topic := range h.topics {
+	topics := []string{
+		"lobby.*",
+		"game.*",
+		"gametv.*",
+		"user.*",
+		"conn.*",
+	}
+
+	for _, topic := range topics {
 		pubsub := h.rdb.PSubscribe(ctx, topic)
 		h.subs[topic] = pubsub
 		h.subMessages[topic] = pubsub.Channel()
