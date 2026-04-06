@@ -23,7 +23,7 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-// Color is player color
+// Color is the player color
 type Color int32
 
 const (
@@ -1251,7 +1251,7 @@ func (x *InitialChannels) GetChannels() []string {
 }
 
 // RequestChannelsInfo requests backend to send some data for initial channels
-// e.g. users in lobby want to see active games, lobby.chat want loby chat history, if in gametv, they want gamestate and move history etc.
+// e.g. users in lobby want to see active games, lobby.chat want lobby chat history, if in gametv, they want gamestate and move history etc.
 type RequestChannelsInfo struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	ClientId      string                 `protobuf:"bytes,1,opt,name=client_id,json=clientId,proto3" json:"client_id,omitempty"`

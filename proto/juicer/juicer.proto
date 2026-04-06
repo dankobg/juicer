@@ -160,7 +160,7 @@ message InitialChannels {
 }
 
 // RequestChannelsInfo requests backend to send some data for initial channels
-// e.g. users in lobby want to see active games, lobby.chat want loby chat history, if in gametv, they want gamestate and move history etc.
+// e.g. users in lobby want to see active games, lobby.chat want lobby chat history, if in gametv, they want gamestate and move history etc.
 message RequestChannelsInfo {
   string client_id = 1;
   string conn_id = 2;

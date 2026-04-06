@@ -7,10 +7,10 @@ type ConnMessage struct {
 	msg    []byte
 }
 
-type ClientMessage struct {
-	clientID uuid.UUID
-	// channel  *Channel
-	msg []byte
+type UserMessage struct {
+	userID  uuid.UUID
+	channel *Channel
+	msg     []byte
 }
 
 type ChannelMessage struct {

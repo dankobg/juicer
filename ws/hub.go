@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"strings"
 	"sync"
 
 	pb "github.com/dankobg/juicer/pb/proto/juicer"
@@ -24,7 +25,7 @@ type Hub struct {
 	subs               map[string]*redis.PubSub
 	subMessages        map[string]<-chan *redis.Message
 	broadcastConn      chan ConnMessage
-	broadcastClient    chan ClientMessage
+	broadcastUser      chan UserMessage
 	broadcastChannel   chan ChannelMessage
 	rdb                *redis.Client
 	log                *slog.Logger
@@ -42,7 +43,7 @@ func NewHub(persistor persistence.Persistor, rdb *redis.Client, logger *slog.Log
 		subs:               make(map[string]*redis.PubSub),
 		subMessages:        make(map[string]<-chan *redis.Message),
 		broadcastConn:      make(chan ConnMessage, 100),
-		broadcastClient:    make(chan ClientMessage, 100),
+		broadcastUser:      make(chan UserMessage, 100),
 		broadcastChannel:   make(chan ChannelMessage, 100),
 		rdb:                rdb,
 		log:                logger,
@@ -55,7 +56,7 @@ func NewHub(persistor persistence.Persistor, rdb *redis.Client, logger *slog.Log
 
 func (h *Hub) subscribeToPubsub(ctx context.Context) {
 	topics := []string{
-		"lobby.*",
+		"lobby*",
 		"game.*",
 		"gametv.*",
 		"user.*",
@@ -87,20 +88,34 @@ func (h *Hub) Run(ctx context.Context) error {
 
 	go h.PubsubProcess(ctx)
 
+loop:
 	for {
 		select {
 		case c := <-h.ClientConnected:
 			h.onClientConnected(c)
 		case c := <-h.ClientDisconnected:
 			h.onClientDisconnected(c)
-		case m := <-h.broadcastConn:
+		case m, ok := <-h.broadcastConn:
+			if !ok {
+				continue
+			}
 			h.onBroadcastConn(m)
-		case m := <-h.broadcastClient:
-			h.onBroadcastClient(m)
-		case m := <-h.broadcastChannel:
+		case m, ok := <-h.broadcastUser:
+			if !ok {
+				continue
+			}
+			h.onBroadcastUser(m)
+		case m, ok := <-h.broadcastChannel:
+			if !ok {
+				continue
+			}
 			h.onBroadcastChannel(m)
+		case <-ctx.Done():
+			break loop
 		}
 	}
+
+	return nil
 }
 
 func (h *Hub) Stop() {
@@ -159,15 +174,59 @@ func (h *Hub) onClientDisconnected(client *client) {
 }
 
 func (h *Hub) onBroadcastConn(connMsg ConnMessage) {
-	fmt.Println("HUB GOT ConnMessage - should forward data there", connMsg)
+	h.log.Info("broadcasting to conn", slog.String("conn_id", connMsg.connID.String()), slog.String("msg", string(connMsg.msg)))
+
+	c, ok := h.clientsByConnID[connMsg.connID]
+	if !ok {
+		h.log.Debug("broadcasting to conn, conn not found", slog.String("conn_id", connMsg.connID.String()))
+		return
+	}
+	select {
+	case c.outMsg <- connMsg.msg:
+	default:
+		h.removeClient(c)
+	}
 }
 
-func (h *Hub) onBroadcastClient(clientMsg ClientMessage) {
-	fmt.Println("HUB GOT ClientMessage - should forward data there", clientMsg)
+func (h *Hub) onBroadcastUser(clientMsg UserMessage) {
+	h.log.Info("broadcasting to client", slog.String("client_id", clientMsg.userID.String()), slog.String("msg", string(clientMsg.msg)))
+
+	for c := range h.clientsByID[clientMsg.userID] {
+		canSend := true
+
+		if clientMsg.channel != nil {
+			canSend = false
+
+			for _, channel := range c.channels {
+				if strings.HasPrefix(clientMsg.channel.String(), channel.String()) {
+					canSend = true
+					break
+				}
+			}
+		}
+
+		if !canSend {
+			continue
+		}
+
+		select {
+		case c.outMsg <- clientMsg.msg:
+		default:
+			h.removeClient(c)
+		}
+	}
 }
 
 func (h *Hub) onBroadcastChannel(channelMsg ChannelMessage) {
-	fmt.Println("HUB GOT ChannelMessage - should forward data there", channelMsg)
+	h.log.Info("broadcasting to channel", slog.String("channel", channelMsg.channel.String()), slog.String("msg", string(channelMsg.msg)))
+
+	for c := range h.channels[channelMsg.channel] {
+		select {
+		case c.outMsg <- channelMsg.msg:
+		default:
+			h.removeClient(c)
+		}
+	}
 }
 
 func (h *Hub) addClient(c *client) {
@@ -300,7 +359,7 @@ func (h *Hub) PubsubProcess(ctx context.Context) {
 
 	for {
 		select {
-		case msg := <-h.subMessages["lobby.*"]:
+		case msg := <-h.subMessages["lobby*"]:
 			h.handlePubsubRecvLobbyMessage(msg)
 		case msg := <-h.subMessages["game.*"]:
 			h.handlePubsubRecvGameMessage(msg)
@@ -320,6 +379,10 @@ func (h *Hub) PubsubProcess(ctx context.Context) {
 
 func (h *Hub) handlePubsubRecvLobbyMessage(m *redis.Message) {
 	fmt.Println("hub handlePubsubRecvLobbyMessage", m)
+
+	// ##################################################################
+	h.broadcastChannel <- ChannelMessage{channel: "lobby", msg: []byte(m.Payload)}
+	// ##################################################################
 }
 
 func (h *Hub) handlePubsubRecvGameMessage(m *redis.Message) {
@@ -332,8 +395,64 @@ func (h *Hub) handlePubsubRecvGametvMessage(m *redis.Message) {
 
 func (h *Hub) handlePubsubRecvUserMessage(m *redis.Message) {
 	fmt.Println("hub handlePubsubRecvUserMessage", m)
+
+	userID, channel, err := extractUserTopicParts(m.Channel)
+	if err != nil {
+		return
+	}
+
+	h.broadcastUser <- UserMessage{userID: userID, channel: (*Channel)(channel), msg: []byte(m.Payload)}
 }
 
 func (h *Hub) handlePubsubRecvConnMessage(m *redis.Message) {
 	fmt.Println("hub handlePubsubRecvConnMessage", m)
+
+	connID, err := extractConnTopicParts(m.Channel)
+	if err != nil {
+		return
+	}
+
+	h.broadcastConn <- ConnMessage{connID: connID, msg: []byte(m.Payload)}
+}
+
+// extractUserTopicParts extracts the user_id and optional channel if it exists
+func extractUserTopicParts(topic string) (uuid.UUID, *string, error) {
+	parts := strings.SplitN(topic, ".", 3)
+	if len(parts) != 2 && len(parts) != 3 {
+		return uuid.Nil, nil, fmt.Errorf("invalid parts length, expected 2 or 3, got: %d", len(parts))
+	}
+
+	clientIDStr := parts[1]
+	if clientIDStr == "" {
+		return uuid.Nil, nil, fmt.Errorf("empty user id")
+	}
+	clientID, err := uuid.Parse(clientIDStr)
+	if err != nil {
+		return uuid.Nil, nil, fmt.Errorf("failed to parse user id")
+	}
+	var channel *string
+
+	if len(parts) == 3 {
+		channel = new(parts[2])
+	}
+
+	return clientID, channel, nil
+}
+
+// extractConnTopicParts extracts the conn_id
+func extractConnTopicParts(topic string) (uuid.UUID, error) {
+	parts := strings.Split(topic, ".")
+	if len(parts) != 2 {
+		return uuid.Nil, fmt.Errorf("invalid parts length, expected 2, got: %d", len(parts))
+	}
+	connIDStr := parts[1]
+	if connIDStr == "" {
+		return uuid.Nil, fmt.Errorf("empty conn id")
+	}
+	connID, err := uuid.Parse(connIDStr)
+	if err != nil {
+		return uuid.Nil, fmt.Errorf("failed to parse conn id")
+	}
+
+	return connID, nil
 }

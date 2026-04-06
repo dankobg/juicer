@@ -18,10 +18,6 @@ type clientAuthInfo struct {
 	authState ws.ClientAuthState
 }
 
-func (a *ApiHandler) Test() error {
-	return nil
-}
-
 func (a *ApiHandler) subscribeToPubsub(ctx context.Context) {
 	topics := []string{
 		"ipc",
@@ -65,7 +61,7 @@ func (a *ApiHandler) handlePubsubRecvIPCMessage(msg *redis.Message) {
 
 		initialChannelsReplyMsg := &pb.Message{
 			Event: &pb.Message_InitialChannels{InitialChannels: &pb.InitialChannels{
-				Channels: []string{"loby", "lobby.chat"},
+				Channels: []string{"lobby", "lobby.chat"},
 			}},
 		}
 
@@ -106,18 +102,13 @@ func (a *ApiHandler) handlePubsubRecvWSCMessage(msg *redis.Message) {
 }
 
 func (a *ApiHandler) handleWSCTestMsg(authInfo clientAuthInfo, data *pb.Test) {
-	testMsg := &pb.Message{Event: &pb.Message_Test{Test: &pb.Test{Message: strings.ToUpper(data.Message)}}}
-	b, err := protojson.Marshal(testMsg)
-	if err != nil {
-		a.Log.Error("test marshal", slog.String("client_id", authInfo.clientID), slog.Any("error", err))
-		return
-	}
+	xxx := &pb.Message{Event: &pb.Message_Test{Test: &pb.Test{Message: strings.ToUpper(data.Message)}}}
+	b, _ := protojson.Marshal(xxx)
 
 	topic := "user." + authInfo.clientID
-	if err := a.Rdb.Publish(context.Background(), topic, b).Err(); err != nil {
-		a.Log.Error("hub publish Message_InitialChannels", slog.String("client_id", authInfo.clientID), slog.String("topic", "ipc"), slog.Any("error", err))
-		return
-	}
+	// topic := "conn." + authInfo.connID
+	// topic := "lobby"
+	a.Rdb.Publish(context.Background(), topic, b)
 }
 
 // extractWSCTopicParts extracts the client_id and auth_state

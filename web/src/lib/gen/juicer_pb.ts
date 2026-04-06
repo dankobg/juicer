@@ -317,7 +317,7 @@ export const InitialChannelsSchema: GenMessage<InitialChannels> = /*@__PURE__*/
 
 /**
  * RequestChannelsInfo requests backend to send some data for initial channels
- * e.g. users in lobby want to see active games, lobby.chat want loby chat history, if in gametv, they want gamestate and move history etc.
+ * e.g. users in lobby want to see active games, lobby.chat want lobby chat history, if in gametv, they want gamestate and move history etc.
  *
  * @generated from message pb.RequestChannelsInfo
  */
@@ -842,7 +842,7 @@ export const GameFinishedSchema: GenMessage<GameFinished> = /*@__PURE__*/
   messageDesc(file_juicer, 27);
 
 /**
- * Color is player color
+ * Color is the player color
  *
  * @generated from enum pb.Color
  */
