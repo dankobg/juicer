@@ -380,9 +380,12 @@ func (h *Hub) PubsubProcess(ctx context.Context) {
 func (h *Hub) handlePubsubRecvLobbyMessage(m *redis.Message) {
 	fmt.Println("hub handlePubsubRecvLobbyMessage", m)
 
-	// ##################################################################
-	h.broadcastChannel <- ChannelMessage{channel: "lobby", msg: []byte(m.Payload)}
-	// ##################################################################
+	channel, err := extractLobbyTopicParts(m.Channel)
+	if err != nil {
+		return
+	}
+
+	h.broadcastChannel <- ChannelMessage{channel: Channel(channel), msg: []byte(m.Payload)}
 }
 
 func (h *Hub) handlePubsubRecvGameMessage(m *redis.Message) {
@@ -455,4 +458,17 @@ func extractConnTopicParts(topic string) (uuid.UUID, error) {
 	}
 
 	return connID, nil
+}
+
+// extractLobbyTopicParts returns the proper lobby channel e.g. "lobby" or "lobby.chat"
+func extractLobbyTopicParts(topic string) (string, error) {
+	if topic == "lobby" {
+		return topic, nil
+	}
+
+	parts := strings.Split(topic, ".")
+	if len(parts) != 2 {
+		return "", fmt.Errorf("invalid parts length, expected 2, got: %d", len(parts))
+	}
+	return topic, nil
 }

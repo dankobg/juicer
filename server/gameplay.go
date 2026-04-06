@@ -105,9 +105,9 @@ func (a *ApiHandler) handleWSCTestMsg(authInfo clientAuthInfo, data *pb.Test) {
 	xxx := &pb.Message{Event: &pb.Message_Test{Test: &pb.Test{Message: strings.ToUpper(data.Message)}}}
 	b, _ := protojson.Marshal(xxx)
 
-	topic := "user." + authInfo.clientID
+	// topic := "user." + authInfo.clientID
 	// topic := "conn." + authInfo.connID
-	// topic := "lobby"
+	topic := "lobby.chat"
 	a.Rdb.Publish(context.Background(), topic, b)
 }
 
