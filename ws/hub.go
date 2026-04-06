@@ -123,9 +123,7 @@ func (h *Hub) processClientWebsocketMessage(client *client, msg []byte) error {
 func (h *Hub) onClientConnected(client *client) {
 	h.log.Debug("client connected", slog.String("client_id", client.id.String()), slog.String("auth_state", client.authState.String()))
 
-	h.assignChannelsToClient(client)
 	h.addClient(client)
-	h.sendInitChannelInfo(client)
 
 	clientConnectedMsg := &pb.Message{
 		Event: &pb.Message_ClientConnected{ClientConnected: &pb.ClientConnected{Id: client.id.String()}},
@@ -181,6 +179,7 @@ func (h *Hub) addClient(c *client) {
 	h.clientsByConnID[c.connID] = c
 	h.clientChannels = make(map[*client][]Channel)
 
+	h.clientChannels[c] = make([]Channel, 0)
 	for _, clientChannel := range c.channels {
 		if h.channels[clientChannel] == nil {
 			h.channels[clientChannel] = make(map[*client]struct{})
@@ -224,12 +223,6 @@ func (h *Hub) removeClient(c *client) {
 
 	h.log.Info("client removed", slog.String("client_id", c.id.String()), slog.String("conn_id", c.connID.String()), slog.String("auth_state", c.authState.String()))
 
-}
-
-func (h *Hub) assignChannelsToClient(client *client) {
-}
-
-func (h *Hub) sendInitChannelInfo(client *client) {
 }
 
 func (h *Hub) RequestInitialChannels(ctx context.Context, client *client) ([]string, error) {
