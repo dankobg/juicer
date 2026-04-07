@@ -70,12 +70,6 @@ func (h *Hub) subscribeToPubsub(ctx context.Context) {
 	}
 }
 
-func (h *Hub) listenForRedisRequests() {
-	for {
-		//
-	}
-}
-
 // Run starts the pubsub and machmaking, as well as broadcast events
 func (h *Hub) Run(ctx context.Context) error {
 	defer func() {
@@ -99,16 +93,19 @@ loop:
 			if !ok {
 				continue
 			}
+
 			h.onBroadcastConn(m)
 		case m, ok := <-h.broadcastUser:
 			if !ok {
 				continue
 			}
+
 			h.onBroadcastUser(m)
 		case m, ok := <-h.broadcastChannel:
 			if !ok {
 				continue
 			}
+
 			h.onBroadcastChannel(m)
 		case <-ctx.Done():
 			break loop
@@ -181,6 +178,7 @@ func (h *Hub) onBroadcastConn(connMsg ConnMessage) {
 		h.log.Debug("broadcasting to conn, conn not found", slog.String("conn_id", connMsg.connID.String()))
 		return
 	}
+
 	select {
 	case c.outMsg <- connMsg.msg:
 	default:
@@ -235,6 +233,7 @@ func (h *Hub) addClient(c *client) {
 	if h.clientsByID[c.id] == nil {
 		h.clientsByID[c.id] = make(map[*client]struct{})
 	}
+
 	h.clientsByID[c.id][c] = struct{}{}
 	h.clientsByConnID[c.connID] = c
 	h.clientChannels = make(map[*client][]Channel)
@@ -282,7 +281,6 @@ func (h *Hub) removeClient(c *client) {
 	h.mu.Unlock()
 
 	h.log.Info("client removed", slog.String("client_id", c.id.String()), slog.String("conn_id", c.connID.String()), slog.String("auth_state", c.authState.String()))
-
 }
 
 func (h *Hub) RequestInitialChannels(ctx context.Context, client *client) ([]string, error) {
@@ -290,6 +288,7 @@ func (h *Hub) RequestInitialChannels(ctx context.Context, client *client) ([]str
 
 	topic := "reply-initial-channels." + client.id.String() + "." + client.connID.String()
 	sub := h.rdb.Subscribe(ctx, topic)
+
 	defer func() {
 		_ = sub.Close()
 	}()
@@ -429,10 +428,12 @@ func extractUserTopicParts(topic string) (uuid.UUID, *string, error) {
 	if clientIDStr == "" {
 		return uuid.Nil, nil, fmt.Errorf("empty user id")
 	}
+
 	clientID, err := uuid.Parse(clientIDStr)
 	if err != nil {
 		return uuid.Nil, nil, fmt.Errorf("failed to parse user id")
 	}
+
 	var channel *string
 
 	if len(parts) == 3 {
@@ -448,10 +449,12 @@ func extractConnTopicParts(topic string) (uuid.UUID, error) {
 	if len(parts) != 2 {
 		return uuid.Nil, fmt.Errorf("invalid parts length, expected 2, got: %d", len(parts))
 	}
+
 	connIDStr := parts[1]
 	if connIDStr == "" {
 		return uuid.Nil, fmt.Errorf("empty conn id")
 	}
+
 	connID, err := uuid.Parse(connIDStr)
 	if err != nil {
 		return uuid.Nil, fmt.Errorf("failed to parse conn id")
@@ -470,5 +473,6 @@ func extractLobbyTopicParts(topic string) (string, error) {
 	if len(parts) != 2 {
 		return "", fmt.Errorf("invalid parts length, expected 2, got: %d", len(parts))
 	}
+
 	return topic, nil
 }

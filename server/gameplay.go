@@ -70,6 +70,7 @@ func (a *ApiHandler) onIPCMsg(m *redis.Message) {
 			a.Log.Error("protojson marshal Message_InitialChannels", slog.String("client_id", data.ClientId), slog.Any("error", err))
 			return
 		}
+
 		topic := "reply-initial-channels." + data.ClientId + "." + data.ConnId
 		if err := a.Rdb.Publish(context.Background(), topic, initialChannelsReplyMsgBytes).Err(); err != nil {
 			a.Log.Error("hub publish Message_InitialChannels", slog.String("client_id", data.ClientId), slog.String("topic", "ipc"), slog.Any("error", err))
@@ -117,14 +118,17 @@ func extractWSCTopicParts(topic string) (clientAuthInfo, error) {
 	if len(parts) != 4 {
 		return clientAuthInfo{}, fmt.Errorf("invalid parts length, expected 4, got: %d", len(parts))
 	}
+
 	clientID, connID, authStateStr := parts[1], parts[2], parts[3]
-	if !(authStateStr == "0" || authStateStr == "1") {
+	if authStateStr != "0" && authStateStr != "1" {
 		return clientAuthInfo{}, fmt.Errorf("invalid parts auth_state. must be 0 or 1")
 	}
+
 	authState := ws.ClientGuest
 	if authStateStr == "1" {
 		authState = ws.ClientAuth
 	}
+
 	return clientAuthInfo{
 		clientID:  clientID,
 		connID:    connID,

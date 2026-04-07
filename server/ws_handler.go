@@ -102,6 +102,7 @@ func (a *ApiHandler) serverWs(w http.ResponseWriter, r *http.Request) {
 	for i, channel := range initialChannels {
 		channels[i] = ws.Channel(channel)
 	}
+
 	client.JoinChannels(channels)
 
 	a.Hub.ClientConnected <- client
