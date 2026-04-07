@@ -360,15 +360,15 @@ func (h *Hub) PubsubProcess(ctx context.Context) {
 	for {
 		select {
 		case msg := <-h.subMessages["lobby*"]:
-			h.handlePubsubRecvLobbyMessage(msg)
-		case msg := <-h.subMessages["game.*"]:
-			h.handlePubsubRecvGameMessage(msg)
-		case msg := <-h.subMessages["gametv.*"]:
-			h.handlePubsubRecvGametvMessage(msg)
+			h.onLobbyMsg(msg)
 		case msg := <-h.subMessages["user.*"]:
-			h.handlePubsubRecvUserMessage(msg)
+			h.onUserMsg(msg)
 		case msg := <-h.subMessages["conn.*"]:
-			h.handlePubsubRecvConnMessage(msg)
+			h.onConnMsg(msg)
+		case msg := <-h.subMessages["game.*"]:
+			h.onGameMsg(msg)
+		case msg := <-h.subMessages["gametv.*"]:
+			h.onGametvMsg(msg)
 
 		case <-ctx.Done():
 			h.log.Debug("hub pubsub ctx done")
@@ -377,8 +377,8 @@ func (h *Hub) PubsubProcess(ctx context.Context) {
 	}
 }
 
-func (h *Hub) handlePubsubRecvLobbyMessage(m *redis.Message) {
-	fmt.Println("hub handlePubsubRecvLobbyMessage", m)
+func (h *Hub) onLobbyMsg(m *redis.Message) {
+	h.log.Debug("hub onLobbyMsg", slog.Any("msg", m))
 
 	channel, err := extractLobbyTopicParts(m.Channel)
 	if err != nil {
@@ -388,16 +388,8 @@ func (h *Hub) handlePubsubRecvLobbyMessage(m *redis.Message) {
 	h.broadcastChannel <- ChannelMessage{channel: Channel(channel), msg: []byte(m.Payload)}
 }
 
-func (h *Hub) handlePubsubRecvGameMessage(m *redis.Message) {
-	fmt.Println("hub handlePubsubRecvGameMessage", m)
-}
-
-func (h *Hub) handlePubsubRecvGametvMessage(m *redis.Message) {
-	fmt.Println("hub handlePubsubRecvGametvMessage", m)
-}
-
-func (h *Hub) handlePubsubRecvUserMessage(m *redis.Message) {
-	fmt.Println("hub handlePubsubRecvUserMessage", m)
+func (h *Hub) onUserMsg(m *redis.Message) {
+	h.log.Debug("hub onUserMsg", slog.Any("msg", m))
 
 	userID, channel, err := extractUserTopicParts(m.Channel)
 	if err != nil {
@@ -407,8 +399,8 @@ func (h *Hub) handlePubsubRecvUserMessage(m *redis.Message) {
 	h.broadcastUser <- UserMessage{userID: userID, channel: (*Channel)(channel), msg: []byte(m.Payload)}
 }
 
-func (h *Hub) handlePubsubRecvConnMessage(m *redis.Message) {
-	fmt.Println("hub handlePubsubRecvConnMessage", m)
+func (h *Hub) onConnMsg(m *redis.Message) {
+	h.log.Debug("hub onConnMsg", slog.Any("msg", m))
 
 	connID, err := extractConnTopicParts(m.Channel)
 	if err != nil {
@@ -416,6 +408,14 @@ func (h *Hub) handlePubsubRecvConnMessage(m *redis.Message) {
 	}
 
 	h.broadcastConn <- ConnMessage{connID: connID, msg: []byte(m.Payload)}
+}
+
+func (h *Hub) onGameMsg(m *redis.Message) {
+	h.log.Debug("hub onGameMsg", slog.Any("msg", m))
+}
+
+func (h *Hub) onGametvMsg(m *redis.Message) {
+	h.log.Debug("hub onGametvMsg", slog.Any("msg", m))
 }
 
 // extractUserTopicParts extracts the user_id and optional channel if it exists

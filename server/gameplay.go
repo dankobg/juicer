@@ -37,9 +37,9 @@ func (a *ApiHandler) PubsubProcess(ctx context.Context) {
 	for {
 		select {
 		case msg := <-a.bus.subMessages["ipc"]:
-			a.handlePubsubRecvIPCMessage(msg)
+			a.onIPCMsg(msg)
 		case msg := <-a.bus.subMessages["wsc.*"]:
-			a.handlePubsubRecvWSCMessage(msg)
+			a.onWSCMsg(msg)
 
 		case <-ctx.Done():
 			a.Log.Debug("gameserver pubsub ctx done")
@@ -48,16 +48,16 @@ func (a *ApiHandler) PubsubProcess(ctx context.Context) {
 	}
 }
 
-func (a *ApiHandler) handlePubsubRecvIPCMessage(msg *redis.Message) {
-	m := &pb.Message{}
-	if err := protojson.Unmarshal([]byte(msg.Payload), m); err != nil {
+func (a *ApiHandler) onIPCMsg(m *redis.Message) {
+	msg := &pb.Message{}
+	if err := protojson.Unmarshal([]byte(m.Payload), msg); err != nil {
 		a.Log.Error("protojson.Unmarshal IPC Message")
 		return
 	}
 
-	switch m.GetEvent().(type) {
+	switch msg.GetEvent().(type) {
 	case *pb.Message_RequestInitialChannels:
-		data := m.GetRequestInitialChannels()
+		data := msg.GetRequestInitialChannels()
 
 		initialChannelsReplyMsg := &pb.Message{
 			Event: &pb.Message_InitialChannels{InitialChannels: &pb.InitialChannels{
@@ -77,27 +77,27 @@ func (a *ApiHandler) handlePubsubRecvIPCMessage(msg *redis.Message) {
 		}
 
 	case *pb.Message_RequestChannelsInfo:
-		data := m.GetRequestChannelsInfo()
+		data := msg.GetRequestChannelsInfo()
 		_ = data
 	}
 }
 
-func (a *ApiHandler) handlePubsubRecvWSCMessage(msg *redis.Message) {
-	m := &pb.Message{}
-	if err := protojson.Unmarshal([]byte(msg.Payload), m); err != nil {
+func (a *ApiHandler) onWSCMsg(m *redis.Message) {
+	msg := &pb.Message{}
+	if err := protojson.Unmarshal([]byte(m.Payload), msg); err != nil {
 		a.Log.Error("protojson.Unmarshal WSC Message")
 		return
 	}
 
-	clientAuthInfo, err := extractWSCTopicParts(msg.Channel)
+	clientAuthInfo, err := extractWSCTopicParts(m.Channel)
 	if err != nil {
-		a.Log.Error("extractWSCTopicParts", slog.String("channel", msg.Channel), slog.String("pattern", msg.Pattern), slog.String("payload", msg.Payload), slog.Any("error", err))
+		a.Log.Error("extractWSCTopicParts", slog.String("channel", m.Channel), slog.String("pattern", m.Pattern), slog.String("payload", m.Payload), slog.Any("error", err))
 		return
 	}
 
-	switch m.GetEvent().(type) {
+	switch msg.GetEvent().(type) {
 	case *pb.Message_Test:
-		a.handleWSCTestMsg(clientAuthInfo, m.GetTest())
+		a.handleWSCTestMsg(clientAuthInfo, msg.GetTest())
 	}
 }
 
@@ -105,9 +105,9 @@ func (a *ApiHandler) handleWSCTestMsg(authInfo clientAuthInfo, data *pb.Test) {
 	xxx := &pb.Message{Event: &pb.Message_Test{Test: &pb.Test{Message: strings.ToUpper(data.Message)}}}
 	b, _ := protojson.Marshal(xxx)
 
-	// topic := "user." + authInfo.clientID
+	topic := "user." + authInfo.clientID
 	// topic := "conn." + authInfo.connID
-	topic := "lobby.chat"
+	// topic := "lobby.chat"
 	a.Rdb.Publish(context.Background(), topic, b)
 }
 
