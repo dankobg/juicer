@@ -123,12 +123,12 @@ message Message {
     ReceiveMove receive_move = 20;
     GameFinished game_finished = 21;
 
-    Test test = 69;
+    Echo echo = 69;
   }
 }
 
-// ########################### REMOVE LATER ########################################
-message Test {
+// Echo is just for testing
+message Echo {
   string message = 1;
 }
 

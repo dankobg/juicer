@@ -40,16 +40,11 @@
 <button
 	class="w-fit rounded-lg bg-yellow-800 p-2"
 	onclick={() => {
-		const msg = create(MessageSchema, {
-			event: {
-				case: 'test',
-				value: { message: 'picketine' }
-			}
-		});
+		const msg = create(MessageSchema, { event: { case: 'echo', value: { message: 'hello bozo' } } });
 		ws.send(msg);
 	}}
 >
-	send ws
+	SEND ECHO
 </button>
 
 <a class="w-fit bg-purple-700" href="/">GOTO HOME</a>

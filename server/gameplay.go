@@ -96,13 +96,13 @@ func (a *ApiHandler) onWSCMsg(m *redis.Message) {
 	}
 
 	switch msg.GetEvent().(type) {
-	case *pb.Message_Test:
-		a.handleWSCTestMsg(clientAuthInfo, msg.GetTest())
+	case *pb.Message_Echo:
+		a.handleWSCEchoMsg(clientAuthInfo, msg.GetEcho())
 	}
 }
 
-func (a *ApiHandler) handleWSCTestMsg(authInfo clientAuthInfo, data *pb.Test) {
-	xxx := &pb.Message{Event: &pb.Message_Test{Test: &pb.Test{Message: strings.ToUpper(data.Message)}}}
+func (a *ApiHandler) handleWSCEchoMsg(authInfo clientAuthInfo, data *pb.Echo) {
+	xxx := &pb.Message{Event: &pb.Message_Echo{Echo: &pb.Echo{Message: strings.ToUpper(data.Message)}}}
 	b, _ := protojson.Marshal(xxx)
 
 	topic := "user." + authInfo.clientID

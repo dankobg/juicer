@@ -586,7 +586,7 @@ type Message struct {
 	//	*Message_PlayMoveUci
 	//	*Message_ReceiveMove
 	//	*Message_GameFinished
-	//	*Message_Test
+	//	*Message_Echo
 	Event         isMessage_Event `protobuf_oneof:"event"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -818,10 +818,10 @@ func (x *Message) GetGameFinished() *GameFinished {
 	return nil
 }
 
-func (x *Message) GetTest() *Test {
+func (x *Message) GetEcho() *Echo {
 	if x != nil {
-		if x, ok := x.Event.(*Message_Test); ok {
-			return x.Test
+		if x, ok := x.Event.(*Message_Echo); ok {
+			return x.Echo
 		}
 	}
 	return nil
@@ -916,8 +916,8 @@ type Message_GameFinished struct {
 	GameFinished *GameFinished `protobuf:"bytes,21,opt,name=game_finished,json=gameFinished,proto3,oneof"`
 }
 
-type Message_Test struct {
-	Test *Test `protobuf:"bytes,69,opt,name=test,proto3,oneof"`
+type Message_Echo struct {
+	Echo *Echo `protobuf:"bytes,69,opt,name=echo,proto3,oneof"`
 }
 
 func (*Message_Problem) isMessage_Event() {}
@@ -962,30 +962,30 @@ func (*Message_ReceiveMove) isMessage_Event() {}
 
 func (*Message_GameFinished) isMessage_Event() {}
 
-func (*Message_Test) isMessage_Event() {}
+func (*Message_Echo) isMessage_Event() {}
 
-// ########################### REMOVE LATER ########################################
-type Test struct {
+// Echo is just for testing
+type Echo struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Message       string                 `protobuf:"bytes,1,opt,name=message,proto3" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *Test) Reset() {
-	*x = Test{}
+func (x *Echo) Reset() {
+	*x = Echo{}
 	mi := &file_proto_juicer_juicer_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *Test) String() string {
+func (x *Echo) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*Test) ProtoMessage() {}
+func (*Echo) ProtoMessage() {}
 
-func (x *Test) ProtoReflect() protoreflect.Message {
+func (x *Echo) ProtoReflect() protoreflect.Message {
 	mi := &file_proto_juicer_juicer_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -997,12 +997,12 @@ func (x *Test) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use Test.ProtoReflect.Descriptor instead.
-func (*Test) Descriptor() ([]byte, []int) {
+// Deprecated: Use Echo.ProtoReflect.Descriptor instead.
+func (*Echo) Descriptor() ([]byte, []int) {
 	return file_proto_juicer_juicer_proto_rawDescGZIP(), []int{2}
 }
 
-func (x *Test) GetMessage() string {
+func (x *Echo) GetMessage() string {
 	if x != nil {
 		return x.Message
 	}
@@ -2410,9 +2410,9 @@ const file_proto_juicer_juicer_proto_rawDesc = "" +
 	"\rplay_move_uci\x18\x13 \x01(\v2\x0f.pb.PlayMoveUCIH\x00R\vplayMoveUci\x124\n" +
 	"\freceive_move\x18\x14 \x01(\v2\x0f.pb.ReceiveMoveH\x00R\vreceiveMove\x127\n" +
 	"\rgame_finished\x18\x15 \x01(\v2\x10.pb.GameFinishedH\x00R\fgameFinished\x12\x1e\n" +
-	"\x04test\x18E \x01(\v2\b.pb.TestH\x00R\x04testB\a\n" +
+	"\x04echo\x18E \x01(\v2\b.pb.EchoH\x00R\x04echoB\a\n" +
 	"\x05event\" \n" +
-	"\x04Test\x12\x18\n" +
+	"\x04Echo\x12\x18\n" +
 	"\amessage\x18\x01 \x01(\tR\amessage\"#\n" +
 	"\aProblem\x12\x18\n" +
 	"\amessage\x18\x01 \x01(\tR\amessage\"!\n" +
@@ -2599,7 +2599,7 @@ var file_proto_juicer_juicer_proto_goTypes = []any{
 	(GameSideChoice)(0),            // 7: pb.GameSideChoice
 	(*GameTimeControl)(nil),        // 8: pb.GameTimeControl
 	(*Message)(nil),                // 9: pb.Message
-	(*Test)(nil),                   // 10: pb.Test
+	(*Echo)(nil),                   // 10: pb.Echo
 	(*Problem)(nil),                // 11: pb.Problem
 	(*ClientConnected)(nil),        // 12: pb.ClientConnected
 	(*ClientDisconnected)(nil),     // 13: pb.ClientDisconnected
@@ -2652,7 +2652,7 @@ var file_proto_juicer_juicer_proto_depIdxs = []int32{
 	33, // 20: pb.Message.play_move_uci:type_name -> pb.PlayMoveUCI
 	34, // 21: pb.Message.receive_move:type_name -> pb.ReceiveMove
 	35, // 22: pb.Message.game_finished:type_name -> pb.GameFinished
-	10, // 23: pb.Message.test:type_name -> pb.Test
+	10, // 23: pb.Message.echo:type_name -> pb.Echo
 	36, // 24: pb.Clocks.white:type_name -> google.protobuf.Duration
 	36, // 25: pb.Clocks.black:type_name -> google.protobuf.Duration
 	8,  // 26: pb.SeekGame.time_control:type_name -> pb.GameTimeControl
@@ -2705,7 +2705,7 @@ func file_proto_juicer_juicer_proto_init() {
 		(*Message_PlayMoveUci)(nil),
 		(*Message_ReceiveMove)(nil),
 		(*Message_GameFinished)(nil),
-		(*Message_Test)(nil),
+		(*Message_Echo)(nil),
 	}
 	file_proto_juicer_juicer_proto_msgTypes[15].OneofWrappers = []any{}
 	file_proto_juicer_juicer_proto_msgTypes[16].OneofWrappers = []any{}
