@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { PageProps } from './$types';
-	import Home from './home.svelte';
+	import Lobby from './lobby/lobby.svelte';
 
 	let { data, params }: PageProps = $props();
 </script>
@@ -9,4 +9,4 @@
 	<title>Juicer home</title>
 </svelte:head>
 
-<Home {data} {params} />
+<Lobby {data} {params} />

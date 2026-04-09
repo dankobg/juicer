@@ -9,6 +9,7 @@ func GameTimeKindToResponse(tk models.GameTimeKind) api.GameTimeKind {
 	return api.GameTimeKind{
 		ID:        tk.ID,
 		Name:      tk.Name,
+		Enabled:   tk.Enabled,
 		CreatedAt: tk.CreatedAt,
 		UpdatedAt: tk.UpdatedAt,
 	}
