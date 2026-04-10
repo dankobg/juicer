@@ -3,6 +3,10 @@
 	import * as Card from '$lib/components/ui/card';
 	import { Button } from '$lib/components/ui/button';
 	import { cn } from '$lib/utils';
+	import { create } from '@bufbuild/protobuf';
+	import { MessageSchema } from '$lib/gen/juicer_pb';
+	import { ws } from '$lib/state/ws-state.svelte';
+	import { gameManager } from '$lib/state/game-manager.svelte';
 
 	let {
 		gameTimeCategories,
@@ -19,9 +23,6 @@
 		Rapid: rapidIcon,
 		Classical: classicalIcon
 	};
-
-	// @TODO: move later to state class
-	let seeking = $state(false);
 
 	function determineGameTimeCategoryFromTimeControl(
 		clockSecs: number,
@@ -68,9 +69,9 @@
 		return category.name[0]?.toUpperCase() + category.name.slice(1);
 	}
 
-	function onSeekPress(quickGame: components['schemas']['QuickGame']) {
+	function onSeekGame(quickGame: components['schemas']['QuickGame']) {
 		const updater = () => {
-			seeking = true;
+			gameManager.seekGame(quickGame.clock_secs, quickGame.increment_secs);
 		};
 
 		if (!document.startViewTransition) {
@@ -81,9 +82,9 @@
 		document.startViewTransition(updater);
 	}
 
-	function onCancelSeekPress() {
+	function onCancelSeekGame() {
 		const updater = () => {
-			seeking = false;
+			gameManager.cancelSeekGame();
 		};
 
 		if (!document.startViewTransition) {
@@ -96,22 +97,22 @@
 </script>
 
 <div class="rounded-xl border border-yellow-400/20">
-	<div class={['quick-game', { seeking }]}>
+	<div class={['quick-game', { seeking: gameManager.uiState === 'seeking' }]}>
 		<div class="[view-transition-name:quick-game-content]">
-			{#if seeking}
+			{#if gameManager.uiState === 'seeking'}
 				<div class="grid gap-4 p-4">
 					<p>Searching for game...</p>
 					<p>Blitz</p>
 					<p>Active players: 69420</p>
 					{@render quickGameIcons?.['Blitz']?.('h-8 w-8')}
-					<button class="rounded-md bg-yellow-600 px-3 py-1 text-black" onclick={onCancelSeekPress}>cancel seek</button>
+					<button class="rounded-md bg-yellow-600 px-3 py-1 text-black" onclick={onCancelSeekGame}>cancel seek</button>
 				</div>
 			{:else}
 				<div class="grid w-full grid-cols-[repeat(auto-fill,minmax(min(10rem,100%),1fr))] gap-4">
 					{#each quickGames as quickGame (`${quickGame.name}-${quickGame.clock_secs}-${quickGame.increment_secs}`)}
 						<button
 							class="flex h-full items-center justify-center gap-1 rounded-lg border-2 border-yellow-400 bg-yellow-600/10 p-2 text-xl tracking-wide text-primary transition duration-100 ease-in-out hover:bg-yellow-600/20 hover:text-yellow-400 active:bg-yellow-600/30"
-							onclick={() => onSeekPress(quickGame)}
+							onclick={() => onSeekGame(quickGame)}
 						>
 							<div class="flex flex-1 flex-col gap-2 text-start">
 								<p>{formatPresetTimeControl(quickGame.clock_secs, quickGame.increment_secs)}</p>
@@ -131,6 +132,8 @@
 		</div>
 	</div>
 </div>
+
+<button class="mt-4 bg-red-800 p-2 text-white" onclick={gameManager.echo}>SEND ECHO</button>
 
 {#snippet blitzIcon(className: string)}
 	<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" class={className}>

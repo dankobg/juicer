@@ -18,6 +18,9 @@
 # For air reload binary
 bin/
 
+# For air reload binary
+tmp/
+
 # Dist by goreleaser
 dist/
 

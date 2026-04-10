@@ -22,8 +22,7 @@ type Hub struct {
 	clientChannels     map[*client][]Channel
 	channels           map[Channel]map[*client]struct{}
 	mu                 *sync.Mutex
-	subs               map[string]*redis.PubSub
-	subMessages        map[string]<-chan *redis.Message
+	bus                *bus
 	broadcastConn      chan ConnMessage
 	broadcastUser      chan UserMessage
 	broadcastChannel   chan ChannelMessage
@@ -32,6 +31,7 @@ type Hub struct {
 }
 
 func NewHub(persistor persistence.Persistor, rdb *redis.Client, logger *slog.Logger) *Hub {
+
 	hub := &Hub{
 		ClientConnected:    make(chan *client),
 		ClientDisconnected: make(chan *client),
@@ -40,8 +40,7 @@ func NewHub(persistor persistence.Persistor, rdb *redis.Client, logger *slog.Log
 		clientChannels:     make(map[*client][]Channel),
 		channels:           make(map[Channel]map[*client]struct{}),
 		mu:                 &sync.Mutex{},
-		subs:               make(map[string]*redis.PubSub),
-		subMessages:        make(map[string]<-chan *redis.Message),
+		bus:                newBus(rdb),
 		broadcastConn:      make(chan ConnMessage, 100),
 		broadcastUser:      make(chan UserMessage, 100),
 		broadcastChannel:   make(chan ChannelMessage, 100),
@@ -49,25 +48,7 @@ func NewHub(persistor persistence.Persistor, rdb *redis.Client, logger *slog.Log
 		log:                logger,
 	}
 
-	hub.subscribeToPubsub(context.Background())
-
 	return hub
-}
-
-func (h *Hub) subscribeToPubsub(ctx context.Context) {
-	topics := []string{
-		"lobby*",
-		"game.*",
-		"gametv.*",
-		"user.*",
-		"conn.*",
-	}
-
-	for _, topic := range topics {
-		pubsub := h.rdb.PSubscribe(ctx, topic)
-		h.subs[topic] = pubsub
-		h.subMessages[topic] = pubsub.Channel()
-	}
 }
 
 // Run starts the pubsub and machmaking, as well as broadcast events
@@ -116,7 +97,7 @@ loop:
 }
 
 func (h *Hub) Stop() {
-	for _, sub := range h.subs {
+	for _, sub := range h.bus.subs {
 		_ = sub.Close()
 	}
 }
@@ -358,15 +339,15 @@ func (h *Hub) PubsubProcess(ctx context.Context) {
 
 	for {
 		select {
-		case msg := <-h.subMessages["lobby*"]:
+		case msg := <-h.bus.subMessages["lobby*"]:
 			h.onLobbyMsg(msg)
-		case msg := <-h.subMessages["user.*"]:
+		case msg := <-h.bus.subMessages["user.*"]:
 			h.onUserMsg(msg)
-		case msg := <-h.subMessages["conn.*"]:
+		case msg := <-h.bus.subMessages["conn.*"]:
 			h.onConnMsg(msg)
-		case msg := <-h.subMessages["game.*"]:
+		case msg := <-h.bus.subMessages["game.*"]:
 			h.onGameMsg(msg)
-		case msg := <-h.subMessages["gametv.*"]:
+		case msg := <-h.bus.subMessages["gametv.*"]:
 			h.onGametvMsg(msg)
 
 		case <-ctx.Done():

@@ -6,6 +6,7 @@
 	import QuickGame from './quick-game.svelte';
 	import CustomGame from './custom-game.svelte';
 	import PlayFriend from './play-friend.svelte';
+	import { gameManager } from '$lib/state/game-manager.svelte';
 
 	let { data }: PageProps = $props();
 
@@ -29,11 +30,12 @@
 		};
 
 		ws.onMessage = (event: MessageEvent) => {
-			console.debug('recv: ', event.data);
+			gameManager.handleWebsocketMessage(event);
 		};
 
 		return () => {
 			ws.close();
+			gameManager.cancelSeekGame();
 		};
 	});
 </script>

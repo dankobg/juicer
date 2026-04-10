@@ -1,7 +1,6 @@
 package server
 
 import (
-	"context"
 	"fmt"
 	"html/template"
 	"log/slog"
@@ -20,11 +19,6 @@ import (
 
 // var _ api.StrictServerInterface = (*ApiHandler)(nil)
 
-type bus struct {
-	subs        map[string]*redis.PubSub
-	subMessages map[string]<-chan *redis.Message
-}
-
 type ApiHandler struct {
 	Cfg        *config.Config
 	Log        *slog.Logger
@@ -35,7 +29,7 @@ type ApiHandler struct {
 	persistor  persistence.Persistor
 	Mailer     mailer.Mailer
 	openapiTpl *template.Template
-	bus        bus
+	bus        *bus
 }
 
 func New(
@@ -57,13 +51,8 @@ func New(
 		Mailer:    mailer,
 		Hub:       hub,
 		Rdb:       rdb,
-		bus: bus{
-			subs:        make(map[string]*redis.PubSub),
-			subMessages: make(map[string]<-chan *redis.Message),
-		},
+		bus:       newBus(rdb),
 	}
-
-	apiHandler.subscribeToPubsub(context.Background())
 
 	return apiHandler
 }
