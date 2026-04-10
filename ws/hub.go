@@ -17,7 +17,7 @@ import (
 type Hub struct {
 	ClientConnected    chan *client
 	ClientDisconnected chan *client
-	clientsByID        map[uuid.UUID]map[*client]struct{}
+	clientsByUserID    map[uuid.UUID]map[*client]struct{}
 	clientsByConnID    map[uuid.UUID]*client
 	clientChannels     map[*client][]Channel
 	channels           map[Channel]map[*client]struct{}
@@ -35,7 +35,7 @@ func NewHub(persistor persistence.Persistor, rdb *redis.Client, logger *slog.Log
 	hub := &Hub{
 		ClientConnected:    make(chan *client),
 		ClientDisconnected: make(chan *client),
-		clientsByID:        make(map[uuid.UUID]map[*client]struct{}),
+		clientsByUserID:    make(map[uuid.UUID]map[*client]struct{}),
 		clientsByConnID:    make(map[uuid.UUID]*client),
 		clientChannels:     make(map[*client][]Channel),
 		channels:           make(map[Channel]map[*client]struct{}),
@@ -168,9 +168,9 @@ func (h *Hub) onBroadcastConn(connMsg ConnMessage) {
 }
 
 func (h *Hub) onBroadcastUser(clientMsg UserMessage) {
-	h.log.Info("broadcasting to client", slog.String("client_id", clientMsg.userID.String()), slog.String("msg", string(clientMsg.msg)))
+	h.log.Info("broadcasting to user", slog.String("client_id", clientMsg.userID.String()), slog.String("msg", string(clientMsg.msg)))
 
-	for c := range h.clientsByID[clientMsg.userID] {
+	for c := range h.clientsByUserID[clientMsg.userID] {
 		canSend := true
 
 		if clientMsg.channel != nil {
@@ -211,11 +211,11 @@ func (h *Hub) onBroadcastChannel(channelMsg ChannelMessage) {
 func (h *Hub) addClient(c *client) {
 	h.mu.Lock()
 
-	if h.clientsByID[c.id] == nil {
-		h.clientsByID[c.id] = make(map[*client]struct{})
+	if h.clientsByUserID[c.id] == nil {
+		h.clientsByUserID[c.id] = make(map[*client]struct{})
 	}
 
-	h.clientsByID[c.id][c] = struct{}{}
+	h.clientsByUserID[c.id][c] = struct{}{}
 	h.clientsByConnID[c.connID] = c
 	h.clientChannels = make(map[*client][]Channel)
 
@@ -250,13 +250,13 @@ func (h *Hub) removeClient(c *client) {
 	delete(h.clientChannels, c)
 	delete(h.clientsByConnID, c.connID)
 
-	if len(h.clientsByID[c.id]) == 1 {
-		delete(h.clientsByID, c.id)
+	if len(h.clientsByUserID[c.id]) == 1 {
+		delete(h.clientsByUserID, c.id)
 
 		// send backend that user has left the site, so it can do things like:
 		// cancel seeks, inform game members that their opponent left etc.
 	} else {
-		delete(h.clientsByID[c.id], c)
+		delete(h.clientsByUserID[c.id], c)
 	}
 
 	h.mu.Unlock()
