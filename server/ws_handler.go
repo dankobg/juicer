@@ -2,7 +2,6 @@ package server
 
 import (
 	"context"
-	"fmt"
 	"log/slog"
 	"net/http"
 	"time"
@@ -13,7 +12,7 @@ import (
 	orykratos "github.com/ory/client-go"
 )
 
-const juicerClientIDCookieName = "juicer_client_id"
+const juicerClientIDCookieName = "juicer_user_id"
 
 func newClientIDCookie(clientID string) *http.Cookie {
 	expires := time.Now().AddDate(10, 0, 0)
@@ -64,19 +63,28 @@ func (a *ApiHandler) serverWs(w http.ResponseWriter, r *http.Request) {
 
 	setClientIDCookie(w, authState, clientID)
 
+	var (
+		onPingReceived func(ctx context.Context, payload []byte) bool
+		onPongReceived func(ctx context.Context, payload []byte)
+	)
+
 	conn, err := websocket.Accept(w, r, &websocket.AcceptOptions{
 		InsecureSkipVerify: a.Cfg.ENV == "development",
 		OriginPatterns:     a.Cfg.Cors.AllowOrigins,
 		OnPingReceived: func(ctx context.Context, payload []byte) bool {
-			fmt.Println("OnPingReceived")
-			return true
+			if onPingReceived != nil {
+				return onPingReceived(ctx, payload)
+			}
+			return false
 		},
 		OnPongReceived: func(ctx context.Context, payload []byte) {
-			fmt.Println("OnPongReceived")
+			if onPongReceived != nil {
+				onPongReceived(ctx, payload)
+			}
 		},
 	})
 	if err != nil {
-		a.Log.Error("websocket.Accept", slog.String("client_id", clientID), slog.Any("error", err))
+		a.Log.Error("websocket.Accept", slog.String("user_id", clientID), slog.Any("error", err))
 		return
 	}
 
@@ -86,15 +94,28 @@ func (a *ApiHandler) serverWs(w http.ResponseWriter, r *http.Request) {
 
 	userID, err := uuid.Parse(clientID)
 	if err != nil {
-		a.Log.Error("failed to parse client uuid", slog.String("client_id", clientID))
+		a.Log.Error("failed to parse client uuid", slog.String("user_id", clientID))
 		return
 	}
 
-	client := ws.NewClient(userID, a.Hub, conn, authState, a.Log, r.URL.Query())
+	client := ws.NewClient(
+		userID,
+		a.Hub,
+		conn,
+		authState,
+		a.Log,
+		r.URL.Query(),
+		func(fn func(ctx context.Context, payload []byte) bool) {
+			onPingReceived = fn
+		},
+		func(fn func(ctx context.Context, payload []byte)) {
+			onPongReceived = fn
+		},
+	)
 
 	initialChannels, err := a.Hub.RequestInitialChannels(r.Context(), client)
 	if err != nil {
-		a.Log.Error("failed to request initial channels", slog.String("client_id", clientID))
+		a.Log.Error("failed to request initial channels", slog.String("user_id", clientID))
 		return
 	}
 
@@ -107,9 +128,6 @@ func (a *ApiHandler) serverWs(w http.ResponseWriter, r *http.Request) {
 
 	a.Hub.ClientConnected <- client
 
-	// this reads from ws and publishes those msgs to redis
-	// like seekgame, playmove etc. i want RequestInitialChannels to always hapen before i get here
-	// how to do it the best way?
 	go client.ReadLoop(r.Context())
 
 	client.WriteLoop(r.Context())

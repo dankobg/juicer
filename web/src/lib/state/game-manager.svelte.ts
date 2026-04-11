@@ -5,6 +5,7 @@ import {
 	type Echo,
 	type GameTimeControl,
 	type HistoryMoveInfo,
+	type Latency,
 	type OpponentInfo
 } from '$lib/gen/juicer_pb';
 import { create, fromJsonString } from '@bufbuild/protobuf';
@@ -137,6 +138,10 @@ class GameManager {
 		console.log('got echo: ', echoMsg.message);
 	}
 
+	onLatencyMsg(latencyMsg: Latency) {
+		console.log('got latency_ms: ', latencyMsg.latencyMs);
+	}
+
 	handleWebsocketMessage(event: MessageEvent) {
 		try {
 			const msg = fromJsonString(MessageSchema, event.data);
@@ -145,6 +150,9 @@ class GameManager {
 			switch (msg.event.case) {
 				case 'echo':
 					this.onEchoMsg(msg.event.value);
+					break;
+				case 'latency':
+					this.onLatencyMsg(msg.event.value);
 					break;
 				// handle other messages here
 				default:

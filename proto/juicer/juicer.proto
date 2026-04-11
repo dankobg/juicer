@@ -101,27 +101,29 @@ enum GameSideChoice {
 message Message {
   oneof event {
     Problem problem = 1;
-    ClientConnected client_connected = 2;
-    ClientDisconnected client_disconnected = 3;
-    RequestInitialChannels request_initial_channels = 4;
-    InitialChannels initial_channels = 5;
-    RequestChannelsInfo request_channels_info = 6;
+    Latency latency = 2;
+    PongReceived pong_received = 3;
+    ClientConnected client_connected = 4;
+    ClientDisconnected client_disconnected = 5;
+    RequestInitialChannels request_initial_channels = 6;
+    InitialChannels initial_channels = 7;
+    RequestChannelsInfo request_channels_info = 8;
     // ------------------------------------------------------
-    SeekGame seek_game = 7;
-    CancelSeekGame cancel_seek_game = 8;
-    HubInfo hub_info = 9;
-    MatchFound match_found = 10;
-    GameAbort game_abort = 11;
-    GameResign game_resign = 12;
-    GameOfferDraw game_offer_draw = 13;
-    GameAcceptDraw game_accept_draw = 14;
-    GameDeclineDraw game_decline_draw = 15;
-    GameChat game_chat = 16;
-    GameChatReceive game_chat_receive = 17;
-    GameChatRetrieve game_chat_retrieve = 18;
-    PlayMoveUCI play_move_uci = 19;
-    ReceiveMove receive_move = 20;
-    GameFinished game_finished = 21;
+    SeekGame seek_game = 9;
+    CancelSeekGame cancel_seek_game = 10;
+    HubInfo hub_info = 11;
+    MatchFound match_found = 12;
+    GameAbort game_abort = 13;
+    GameResign game_resign = 14;
+    GameOfferDraw game_offer_draw = 15;
+    GameAcceptDraw game_accept_draw = 16;
+    GameDeclineDraw game_decline_draw = 17;
+    GameChat game_chat = 18;
+    GameChatReceive game_chat_receive = 19;
+    GameChatRetrieve game_chat_retrieve = 20;
+    PlayMoveUCI play_move_uci = 21;
+    ReceiveMove receive_move = 22;
+    GameFinished game_finished = 23;
 
     Echo echo = 69;
   }
@@ -130,6 +132,17 @@ message Message {
 // Echo is just for testing
 message Echo {
   string message = 1;
+}
+
+// PongReceived is when client sends a pong
+message PongReceived {
+  string user_id = 1;
+  string conn_id = 2;
+}
+
+// Latency is avg latency measured
+message Latency {
+  int32 latency_ms = 1;
 }
 
 // Problem is the websocket error
@@ -149,7 +162,7 @@ message ClientDisconnected {
 
 // RequestInitialChannels requests initial channels that the user belongs to (e.g. ["lobby", "lobby.chat"])
 message RequestInitialChannels {
-  string client_id = 1;
+  string user_id = 1;
   string conn_id = 2;
   string path = 3;
 }
@@ -162,7 +175,7 @@ message InitialChannels {
 // RequestChannelsInfo requests backend to send some data for initial channels
 // e.g. users in lobby want to see active games, lobby.chat want lobby chat history, if in gametv, they want gamestate and move history etc.
 message RequestChannelsInfo {
-  string client_id = 1;
+  string user_id = 1;
   string conn_id = 2;
   repeated string channels = 3;
 }
@@ -213,7 +226,7 @@ message HistoryMoveInfo {
 // MatchFound signals that the game was found
 message MatchFound {
   int64 game_id = 1;
-  string client_id = 2;
+  string user_id = 2;
   GameState game_state = 3;
   Color color = 4;
   string fen = 5;
@@ -250,7 +263,7 @@ message GameChat {
 
 // GameChatReceive is xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 message GameChatReceive {
-  string client_id = 1;
+  string user_id = 1;
   string id = 2;
   string message = 3;
 }

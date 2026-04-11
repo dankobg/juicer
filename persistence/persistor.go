@@ -91,12 +91,17 @@ type RatingPersistor interface {
 }
 
 type PresencePersistor interface {
-	SetActiveGame(ctx context.Context, in models.Game) (models.Game, error)
-	GetActiveGame(ctx context.Context, gameID int64) (models.Game, error)
-	RemoveActiveGame(ctx context.Context, gameID int64) error
-	SetPlayerGameID(ctx context.Context, clientID uuid.UUID, gameID int64) error
-	GetPlayerGameID(ctx context.Context, clientID uuid.UUID) (int64, error)
-	DelPlayerGameID(ctx context.Context, clientID uuid.UUID) error
+	SetPresence(ctx context.Context, userID uuid.UUID, connID uuid.UUID, username string, guest bool, channel string) ([]string, []string, error)
+	ClearPresence(ctx context.Context, userID uuid.UUID, connID uuid.UUID, username string, guest bool) ([]string, []string, []string, error)
+	GetPresence(ctx context.Context, userID uuid.UUID) ([]string, error)
+	RefreshPresence(ctx context.Context, userID uuid.UUID, connID uuid.UUID, username string, guest bool) ([]string, []string, error)
+	CountInChannel(ctx context.Context, channel string) (int64, error)
+	LastSeen(ctx context.Context, userID uuid.UUID) (int64, error)
+	GetChannelsForUser(userID uuid.UUID) ([]string, error)
+	GetInChannel(ctx context.Context, channel string) ([]string, error) // later some struct with user data
+	// UpdateFollower(ctx context.Context, followee, follower *entity.User, following bool) error
+	// UpdateActiveGame(ctx context.Context, activeGameEntry *pb.ActiveGameEntry) ([][][]string, error)
+
 }
 
 type Persistor interface {
