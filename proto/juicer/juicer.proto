@@ -103,27 +103,29 @@ message Message {
     Problem problem = 1;
     Latency latency = 2;
     Heartbeat heartbeat = 3;
-    ClientConnected client_connected = 4;
-    ClientDisconnected client_disconnected = 5;
-    RequestInitialChannels request_initial_channels = 6;
-    InitialChannels initial_channels = 7;
-    RequestChannelsInfo request_channels_info = 8;
+    LeaveTab leave_tab = 4;
+    LeaveSite leave_site = 5;
+    ClientConnected client_connected = 6;
+    ClientDisconnected client_disconnected = 7;
+    RequestInitialChannels request_initial_channels = 8;
+    InitialChannels initial_channels = 9;
+    RequestChannelsInfo request_channels_info = 10;
     // ------------------------------------------------------
-    SeekGame seek_game = 9;
-    CancelSeekGame cancel_seek_game = 10;
-    HubInfo hub_info = 11;
-    MatchFound match_found = 12;
-    GameAbort game_abort = 13;
-    GameResign game_resign = 14;
-    GameOfferDraw game_offer_draw = 15;
-    GameAcceptDraw game_accept_draw = 16;
-    GameDeclineDraw game_decline_draw = 17;
-    GameChat game_chat = 18;
-    GameChatReceive game_chat_receive = 19;
-    GameChatRetrieve game_chat_retrieve = 20;
-    PlayMoveUCI play_move_uci = 21;
-    ReceiveMove receive_move = 22;
-    GameFinished game_finished = 23;
+    SeekGame seek_game = 11;
+    CancelSeekGame cancel_seek_game = 12;
+    HubInfo hub_info = 13;
+    MatchFound match_found = 14;
+    GameAbort game_abort = 15;
+    GameResign game_resign = 16;
+    GameOfferDraw game_offer_draw = 17;
+    GameAcceptDraw game_accept_draw = 18;
+    GameDeclineDraw game_decline_draw = 19;
+    GameChat game_chat = 20;
+    GameChatReceive game_chat_receive = 21;
+    GameChatRetrieve game_chat_retrieve = 22;
+    PlayMoveUCI play_move_uci = 23;
+    ReceiveMove receive_move = 24;
+    GameFinished game_finished = 25;
 
     Echo echo = 69;
   }
@@ -136,6 +138,18 @@ message Echo {
 
 // Heartbeat is when client sends pong to signal heartbeat
 message Heartbeat {
+  string user_id = 1;
+  string conn_id = 2;
+}
+
+// LeaveTab is when user leaves a tab (one conn)
+message LeaveTab {
+  string user_id = 1;
+  string conn_id = 2;
+}
+
+// LeaveSite is when user leaves and has no conns anymore (all tabs closed)
+message LeaveSite {
   string user_id = 1;
   string conn_id = 2;
 }

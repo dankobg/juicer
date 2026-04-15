@@ -250,11 +250,32 @@ func (h *Hub) removeClient(c *client) {
 	delete(h.clientChannels, c)
 	delete(h.clientsByConnID, c.connID)
 
+	leaveTabMsg := &pb.Message{
+		Event: &pb.Message_LeaveTab{LeaveTab: &pb.LeaveTab{UserId: c.userID.String(), ConnId: c.connID.String()}},
+	}
+	leaveTabMsgBytes, err := protojson.Marshal(leaveTabMsg)
+	if err != nil {
+		h.log.Error("protojson marshal Message_LeaveTab", slog.String("user_id", c.userID.String()), slog.Any("error", err))
+	} else {
+		if err := h.bus.rdb.Publish(context.Background(), "ipc", leaveTabMsgBytes).Err(); err != nil {
+			h.log.Error("hub publish Message_LeaveTab", slog.String("user_id", c.userID.String()), slog.String("topic", "ipc"), slog.Any("error", err))
+		}
+	}
+
 	if len(h.clientsByUserID[c.userID]) == 1 {
 		delete(h.clientsByUserID, c.userID)
 
-		// send backend that user has left the site, so it can do things like:
-		// cancel seeks, inform game members that their opponent left etc.
+		leaveSiteMsg := &pb.Message{
+			Event: &pb.Message_LeaveSite{LeaveSite: &pb.LeaveSite{UserId: c.userID.String(), ConnId: c.connID.String()}},
+		}
+		leaveSiteMsgBytes, err := protojson.Marshal(leaveSiteMsg)
+		if err != nil {
+			h.log.Error("protojson marshal Message_LeaveSite", slog.String("user_id", c.userID.String()), slog.Any("error", err))
+		} else {
+			if err := h.bus.rdb.Publish(context.Background(), "ipc", leaveSiteMsgBytes).Err(); err != nil {
+				h.log.Error("hub publish Message_LeaveSite", slog.String("user_id", c.userID.String()), slog.String("topic", "ipc"), slog.Any("error", err))
+			}
+		}
 	} else {
 		delete(h.clientsByUserID[c.userID], c)
 	}

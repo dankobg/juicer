@@ -44,37 +44,56 @@ func (a *ApiHandler) onIPCMsg(m *redis.Message) {
 	}
 
 	switch msg.GetEvent().(type) {
-	case *pb.Message_RequestInitialChannels:
-		data := msg.GetRequestInitialChannels()
-
-		initialChannelsReplyMsg := &pb.Message{
-			Event: &pb.Message_InitialChannels{InitialChannels: &pb.InitialChannels{
-				Channels: []string{"lobby", "lobby.chat"},
-			}},
-		}
-
-		initialChannelsReplyMsgBytes, err := protojson.Marshal(initialChannelsReplyMsg)
-		if err != nil {
-			a.Log.Error("protojson marshal Message_InitialChannels", slog.String("user_id", data.UserId), slog.Any("error", err))
-			return
-		}
-
-		topic := "reply-initial-channels." + data.UserId + "." + data.ConnId
-		if err := a.bus.rdb.Publish(context.Background(), topic, initialChannelsReplyMsgBytes).Err(); err != nil {
-			a.Log.Error("hub publish Message_InitialChannels", slog.String("user_id", data.UserId), slog.String("topic", "ipc"), slog.Any("error", err))
-			return
-		}
-
 	case *pb.Message_Heartbeat:
-		data := msg.GetHeartbeat()
-		_ = data
-		// refresh presence here...
+		a.handleIPCHeartbeatMsg(msg.GetHeartbeat())
+
+	case *pb.Message_LeaveTab:
+		a.handleIPCLeaveTabMsg(msg.GetLeaveTab())
+
+	case *pb.Message_LeaveSite:
+		a.handleIPCLeaveSiteMsg(msg.GetLeaveSite())
+
+	case *pb.Message_RequestInitialChannels:
+		a.handleIPCRequestInitialChannelsMsg(msg.GetRequestInitialChannels())
 
 	case *pb.Message_RequestChannelsInfo:
-		data := msg.GetRequestChannelsInfo()
-		_ = data
-		// send info about channels, for lobby, maybe active games, player count etc. for games, game moves, chat history etc...
+		a.handleIPCRequestChannelsInfoMsg(msg.GetRequestChannelsInfo())
 	}
+}
+
+func (a *ApiHandler) handleIPCHeartbeatMsg(data *pb.Heartbeat) {
+
+}
+
+func (a *ApiHandler) handleIPCLeaveTabMsg(data *pb.LeaveTab) {
+
+}
+
+func (a *ApiHandler) handleIPCLeaveSiteMsg(data *pb.LeaveSite) {
+}
+
+func (a *ApiHandler) handleIPCRequestInitialChannelsMsg(data *pb.RequestInitialChannels) {
+	initialChannelsReplyMsg := &pb.Message{
+		Event: &pb.Message_InitialChannels{InitialChannels: &pb.InitialChannels{
+			Channels: []string{"lobby", "lobby.chat"},
+		}},
+	}
+
+	initialChannelsReplyMsgBytes, err := protojson.Marshal(initialChannelsReplyMsg)
+	if err != nil {
+		a.Log.Error("protojson marshal Message_InitialChannels", slog.String("user_id", data.UserId), slog.Any("error", err))
+		return
+	}
+
+	topic := "reply-initial-channels." + data.UserId + "." + data.ConnId
+	if err := a.bus.rdb.Publish(context.Background(), topic, initialChannelsReplyMsgBytes).Err(); err != nil {
+		a.Log.Error("hub publish Message_InitialChannels", slog.String("user_id", data.UserId), slog.String("topic", "ipc"), slog.Any("error", err))
+		return
+	}
+}
+
+func (a *ApiHandler) handleIPCRequestChannelsInfoMsg(data *pb.RequestChannelsInfo) {
+
 }
 
 func (a *ApiHandler) onWSCMsg(m *redis.Message) {
