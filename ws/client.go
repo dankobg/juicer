@@ -176,13 +176,13 @@ func (c *client) onPongReceived(ctx context.Context, payload []byte) {
 	c.mu.Unlock()
 
 	if c.pongCount%10 == 2 {
-		pongMsg := &pb.Message{Event: &pb.Message_PongReceived{PongReceived: &pb.PongReceived{UserId: c.userID.String(), ConnId: c.connID.String()}}}
-		pongMsgBytes, err := protojson.Marshal(pongMsg)
+		heartbeatMsg := &pb.Message{Event: &pb.Message_Heartbeat{Heartbeat: &pb.Heartbeat{UserId: c.userID.String(), ConnId: c.connID.String()}}}
+		heartbeatMsgBytes, err := protojson.Marshal(heartbeatMsg)
 		if err != nil {
-			c.log.Error("protojson marshal Message_PongReceived", slog.Any("error", err))
+			c.log.Error("protojson marshal Message_Heartbeat", slog.Any("error", err))
 		} else {
-			if err := c.hub.bus.rdb.Publish(context.Background(), "ipc", pongMsgBytes).Err(); err != nil {
-				c.log.Error("client publish Message_PongReceived", slog.String("topic", "ipc"), slog.Any("error", err))
+			if err := c.hub.bus.rdb.Publish(context.Background(), "ipc", heartbeatMsgBytes).Err(); err != nil {
+				c.log.Error("client publish Message_Heartbeat", slog.String("topic", "ipc"), slog.Any("error", err))
 			}
 		}
 	}

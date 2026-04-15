@@ -567,7 +567,7 @@ type Message struct {
 	//
 	//	*Message_Problem
 	//	*Message_Latency
-	//	*Message_PongReceived
+	//	*Message_Heartbeat
 	//	*Message_ClientConnected
 	//	*Message_ClientDisconnected
 	//	*Message_RequestInitialChannels
@@ -649,10 +649,10 @@ func (x *Message) GetLatency() *Latency {
 	return nil
 }
 
-func (x *Message) GetPongReceived() *PongReceived {
+func (x *Message) GetHeartbeat() *Heartbeat {
 	if x != nil {
-		if x, ok := x.Event.(*Message_PongReceived); ok {
-			return x.PongReceived
+		if x, ok := x.Event.(*Message_Heartbeat); ok {
+			return x.Heartbeat
 		}
 	}
 	return nil
@@ -859,8 +859,8 @@ type Message_Latency struct {
 	Latency *Latency `protobuf:"bytes,2,opt,name=latency,proto3,oneof"`
 }
 
-type Message_PongReceived struct {
-	PongReceived *PongReceived `protobuf:"bytes,3,opt,name=pong_received,json=pongReceived,proto3,oneof"`
+type Message_Heartbeat struct {
+	Heartbeat *Heartbeat `protobuf:"bytes,3,opt,name=heartbeat,proto3,oneof"`
 }
 
 type Message_ClientConnected struct {
@@ -952,7 +952,7 @@ func (*Message_Problem) isMessage_Event() {}
 
 func (*Message_Latency) isMessage_Event() {}
 
-func (*Message_PongReceived) isMessage_Event() {}
+func (*Message_Heartbeat) isMessage_Event() {}
 
 func (*Message_ClientConnected) isMessage_Event() {}
 
@@ -1041,8 +1041,8 @@ func (x *Echo) GetMessage() string {
 	return ""
 }
 
-// PongReceived is when client sends a pong
-type PongReceived struct {
+// Heartbeat is when client sends pong to signal heartbeat
+type Heartbeat struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
 	ConnId        string                 `protobuf:"bytes,2,opt,name=conn_id,json=connId,proto3" json:"conn_id,omitempty"`
@@ -1050,20 +1050,20 @@ type PongReceived struct {
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *PongReceived) Reset() {
-	*x = PongReceived{}
+func (x *Heartbeat) Reset() {
+	*x = Heartbeat{}
 	mi := &file_proto_juicer_juicer_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *PongReceived) String() string {
+func (x *Heartbeat) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*PongReceived) ProtoMessage() {}
+func (*Heartbeat) ProtoMessage() {}
 
-func (x *PongReceived) ProtoReflect() protoreflect.Message {
+func (x *Heartbeat) ProtoReflect() protoreflect.Message {
 	mi := &file_proto_juicer_juicer_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -1075,19 +1075,19 @@ func (x *PongReceived) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use PongReceived.ProtoReflect.Descriptor instead.
-func (*PongReceived) Descriptor() ([]byte, []int) {
+// Deprecated: Use Heartbeat.ProtoReflect.Descriptor instead.
+func (*Heartbeat) Descriptor() ([]byte, []int) {
 	return file_proto_juicer_juicer_proto_rawDescGZIP(), []int{3}
 }
 
-func (x *PongReceived) GetUserId() string {
+func (x *Heartbeat) GetUserId() string {
 	if x != nil {
 		return x.UserId
 	}
 	return ""
 }
 
-func (x *PongReceived) GetConnId() string {
+func (x *Heartbeat) GetConnId() string {
 	if x != nil {
 		return x.ConnId
 	}
@@ -2512,12 +2512,12 @@ const file_proto_juicer_juicer_proto_rawDesc = "" +
 	"\x19proto/juicer/juicer.proto\x12\x02pb\x1a\x1egoogle/protobuf/duration.proto\x1a\x1fgoogle/protobuf/timestamp.proto\"{\n" +
 	"\x0fGameTimeControl\x12/\n" +
 	"\x05clock\x18\x01 \x01(\v2\x19.google.protobuf.DurationR\x05clock\x127\n" +
-	"\tincrement\x18\x02 \x01(\v2\x19.google.protobuf.DurationR\tincrement\"\xfc\n" +
+	"\tincrement\x18\x02 \x01(\v2\x19.google.protobuf.DurationR\tincrement\"\xf2\n" +
 	"\n" +
 	"\aMessage\x12'\n" +
 	"\aproblem\x18\x01 \x01(\v2\v.pb.ProblemH\x00R\aproblem\x12'\n" +
-	"\alatency\x18\x02 \x01(\v2\v.pb.LatencyH\x00R\alatency\x127\n" +
-	"\rpong_received\x18\x03 \x01(\v2\x10.pb.PongReceivedH\x00R\fpongReceived\x12@\n" +
+	"\alatency\x18\x02 \x01(\v2\v.pb.LatencyH\x00R\alatency\x12-\n" +
+	"\theartbeat\x18\x03 \x01(\v2\r.pb.HeartbeatH\x00R\theartbeat\x12@\n" +
 	"\x10client_connected\x18\x04 \x01(\v2\x13.pb.ClientConnectedH\x00R\x0fclientConnected\x12I\n" +
 	"\x13client_disconnected\x18\x05 \x01(\v2\x16.pb.ClientDisconnectedH\x00R\x12clientDisconnected\x12V\n" +
 	"\x18request_initial_channels\x18\x06 \x01(\v2\x1a.pb.RequestInitialChannelsH\x00R\x16requestInitialChannels\x12@\n" +
@@ -2545,8 +2545,8 @@ const file_proto_juicer_juicer_proto_rawDesc = "" +
 	"\x04echo\x18E \x01(\v2\b.pb.EchoH\x00R\x04echoB\a\n" +
 	"\x05event\" \n" +
 	"\x04Echo\x12\x18\n" +
-	"\amessage\x18\x01 \x01(\tR\amessage\"@\n" +
-	"\fPongReceived\x12\x17\n" +
+	"\amessage\x18\x01 \x01(\tR\amessage\"=\n" +
+	"\tHeartbeat\x12\x17\n" +
 	"\auser_id\x18\x01 \x01(\tR\x06userId\x12\x17\n" +
 	"\aconn_id\x18\x02 \x01(\tR\x06connId\"(\n" +
 	"\aLatency\x12\x1d\n" +
@@ -2738,7 +2738,7 @@ var file_proto_juicer_juicer_proto_goTypes = []any{
 	(*GameTimeControl)(nil),        // 8: pb.GameTimeControl
 	(*Message)(nil),                // 9: pb.Message
 	(*Echo)(nil),                   // 10: pb.Echo
-	(*PongReceived)(nil),           // 11: pb.PongReceived
+	(*Heartbeat)(nil),              // 11: pb.Heartbeat
 	(*Latency)(nil),                // 12: pb.Latency
 	(*Problem)(nil),                // 13: pb.Problem
 	(*ClientConnected)(nil),        // 14: pb.ClientConnected
@@ -2773,7 +2773,7 @@ var file_proto_juicer_juicer_proto_depIdxs = []int32{
 	38, // 1: pb.GameTimeControl.increment:type_name -> google.protobuf.Duration
 	13, // 2: pb.Message.problem:type_name -> pb.Problem
 	12, // 3: pb.Message.latency:type_name -> pb.Latency
-	11, // 4: pb.Message.pong_received:type_name -> pb.PongReceived
+	11, // 4: pb.Message.heartbeat:type_name -> pb.Heartbeat
 	14, // 5: pb.Message.client_connected:type_name -> pb.ClientConnected
 	15, // 6: pb.Message.client_disconnected:type_name -> pb.ClientDisconnected
 	16, // 7: pb.Message.request_initial_channels:type_name -> pb.RequestInitialChannels
@@ -2828,7 +2828,7 @@ func file_proto_juicer_juicer_proto_init() {
 	file_proto_juicer_juicer_proto_msgTypes[1].OneofWrappers = []any{
 		(*Message_Problem)(nil),
 		(*Message_Latency)(nil),
-		(*Message_PongReceived)(nil),
+		(*Message_Heartbeat)(nil),
 		(*Message_ClientConnected)(nil),
 		(*Message_ClientDisconnected)(nil),
 		(*Message_RequestInitialChannels)(nil),

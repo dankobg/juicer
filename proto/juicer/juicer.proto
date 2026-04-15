@@ -102,7 +102,7 @@ message Message {
   oneof event {
     Problem problem = 1;
     Latency latency = 2;
-    PongReceived pong_received = 3;
+    Heartbeat heartbeat = 3;
     ClientConnected client_connected = 4;
     ClientDisconnected client_disconnected = 5;
     RequestInitialChannels request_initial_channels = 6;
@@ -134,8 +134,8 @@ message Echo {
   string message = 1;
 }
 
-// PongReceived is when client sends a pong
-message PongReceived {
+// Heartbeat is when client sends pong to signal heartbeat
+message Heartbeat {
   string user_id = 1;
   string conn_id = 2;
 }

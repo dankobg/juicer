@@ -65,8 +65,8 @@ func (a *ApiHandler) onIPCMsg(m *redis.Message) {
 			return
 		}
 
-	case *pb.Message_PongReceived:
-		data := msg.GetPongReceived()
+	case *pb.Message_Heartbeat:
+		data := msg.GetHeartbeat()
 		_ = data
 		// refresh presence here...
 
