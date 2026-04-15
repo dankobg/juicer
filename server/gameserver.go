@@ -60,7 +60,7 @@ func (a *ApiHandler) onIPCMsg(m *redis.Message) {
 		}
 
 		topic := "reply-initial-channels." + data.UserId + "." + data.ConnId
-		if err := a.Rdb.Publish(context.Background(), topic, initialChannelsReplyMsgBytes).Err(); err != nil {
+		if err := a.bus.rdb.Publish(context.Background(), topic, initialChannelsReplyMsgBytes).Err(); err != nil {
 			a.Log.Error("hub publish Message_InitialChannels", slog.String("user_id", data.UserId), slog.String("topic", "ipc"), slog.Any("error", err))
 			return
 		}
@@ -68,10 +68,12 @@ func (a *ApiHandler) onIPCMsg(m *redis.Message) {
 	case *pb.Message_PongReceived:
 		data := msg.GetPongReceived()
 		_ = data
+		// refresh presence here...
 
 	case *pb.Message_RequestChannelsInfo:
 		data := msg.GetRequestChannelsInfo()
 		_ = data
+		// send info about channels, for lobby, maybe active games, player count etc. for games, game moves, chat history etc...
 	}
 }
 
@@ -105,7 +107,7 @@ func (a *ApiHandler) handleWSCEchoMsg(authInfo clientAuthInfo, data *pb.Echo) {
 	topic := "user." + authInfo.userID
 	// topic := "conn." + authInfo.connID
 	// topic := "lobby.chat"
-	a.Rdb.Publish(context.Background(), topic, b)
+	a.bus.rdb.Publish(context.Background(), topic, b)
 }
 
 func (a *ApiHandler) handleWSCSeekGameMsg(authInfo clientAuthInfo, data *pb.SeekGame) {
@@ -115,7 +117,7 @@ func (a *ApiHandler) handleWSCSeekGameMsg(authInfo clientAuthInfo, data *pb.Seek
 
 	ctx := context.Background()
 
-	if _, err := a.Rdb.Pipelined(ctx, func(p redis.Pipeliner) error {
+	if _, err := a.bus.rdb.Pipelined(ctx, func(p redis.Pipeliner) error {
 		key := fmt.Sprintf("seek_game.%d.%d-%d", authInfo.authState, data.GetTimeControl().Clock.Seconds, data.GetTimeControl().Increment.Seconds)
 		if err := p.ZAdd(ctx, key, redis.Z{Member: authInfo.userID, Score: float64(time.Now().UnixNano())}).Err(); err != nil {
 			a.Log.Error("SeekGame add to queue", slog.String("user_id", authInfo.userID), slog.String("auth_state", authInfo.authState.String()), slog.Any("error", err))

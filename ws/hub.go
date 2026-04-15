@@ -106,7 +106,7 @@ func (h *Hub) Stop() {
 func (h *Hub) processClientWebsocketMessage(client *client, msg []byte) error {
 	topic := fmt.Sprintf("wsc.%s.%s.%d", client.userID, client.connID, client.authState)
 
-	if err := h.rdb.Publish(context.Background(), topic, msg).Err(); err != nil {
+	if err := h.bus.rdb.Publish(context.Background(), topic, msg).Err(); err != nil {
 		h.log.Error("hub publish msg from websocket", slog.String("user_id", client.userID.String()), slog.String("conn_id", client.connID.String()), slog.String("topic", topic), slog.Any("error", err))
 	}
 
@@ -127,7 +127,7 @@ func (h *Hub) onClientConnected(client *client) {
 	if err != nil {
 		h.log.Error("protojson marshal Message_ClientConnected", slog.String("user_id", client.userID.String()), slog.Any("error", err))
 	} else {
-		if err := h.rdb.Publish(context.Background(), "ipc", clientConnectedMsgBytes).Err(); err != nil {
+		if err := h.bus.rdb.Publish(context.Background(), "ipc", clientConnectedMsgBytes).Err(); err != nil {
 			h.log.Error("hub publish Message_ClientConnected", slog.String("user_id", client.userID.String()), slog.String("topic", "ipc"), slog.Any("error", err))
 		}
 	}
@@ -145,7 +145,7 @@ func (h *Hub) onClientDisconnected(client *client) {
 	if err != nil {
 		h.log.Error("protojson marshal Message_ClientDisconnected", slog.String("user_id", client.userID.String()), slog.Any("error", err))
 	} else {
-		if err := h.rdb.Publish(context.Background(), "ipc", clientDisconnectedMsgBytes).Err(); err != nil {
+		if err := h.bus.rdb.Publish(context.Background(), "ipc", clientDisconnectedMsgBytes).Err(); err != nil {
 			h.log.Error("hub publish Message_ClientDisconnected", slog.String("user_id", client.userID.String()), slog.String("topic", "ipc"), slog.Any("error", err))
 		}
 	}
@@ -286,7 +286,7 @@ func (h *Hub) RequestInitialChannels(ctx context.Context, client *client) ([]str
 	if err != nil {
 		h.log.Error("protojson marshal Message_InitialChannels", slog.String("user_id", client.userID.String()), slog.Any("error", err))
 	} else {
-		if err := h.rdb.Publish(context.Background(), "ipc", requestInitialChannelsMsgBytes).Err(); err != nil {
+		if err := h.bus.rdb.Publish(context.Background(), "ipc", requestInitialChannelsMsgBytes).Err(); err != nil {
 			h.log.Error("hub publish Message_RequestInitialChannels", slog.String("user_id", client.userID.String()), slog.String("topic", "ipc"), slog.Any("error", err))
 		}
 	}
@@ -328,7 +328,7 @@ func (h *Hub) requestChannelsInfo(client *client) {
 	if err != nil {
 		h.log.Error("protojson marshal Message_RequestChannelsInfo", slog.String("user_id", client.userID.String()), slog.Any("error", err))
 	} else {
-		if err := h.rdb.Publish(context.Background(), "ipc", requestChannelsInfoMsgBytes).Err(); err != nil {
+		if err := h.bus.rdb.Publish(context.Background(), "ipc", requestChannelsInfoMsgBytes).Err(); err != nil {
 			h.log.Error("hub publish Message_RequestChannelsInfo", slog.String("user_id", client.userID.String()), slog.String("topic", "ipc"), slog.Any("error", err))
 		}
 	}
