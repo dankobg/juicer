@@ -3,6 +3,7 @@
     "schema_id": "customer",
     "traits": {
       "email": "test@test.com",
+      "username": "test",
       "first_name": "Test First",
       "last_name": "Test Last"
     },
@@ -26,6 +27,7 @@
     "schema_id": "customer",
     "traits": {
       "email": "customer@test.com",
+      "username": "customer",
       "first_name": "Customer First",
       "last_name": "Customer Last"
     },
@@ -49,6 +51,7 @@
     "schema_id": "customer",
     "traits": {
       "email": "bob@test.com",
+      "username": "bob",
       "first_name": "Bob",
       "last_name": "Bobson"
     },
@@ -72,6 +75,7 @@
     "schema_id": "customer",
     "traits": {
       "email": "ana@test.com",
+      "username": "ana",
       "first_name": "Ana",
       "last_name": "Smith"
     },

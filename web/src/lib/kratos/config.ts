@@ -52,6 +52,10 @@ export const config = {
 			label: '',
 			priority: 90
 		},
+		'traits.username': {
+			label: 'Username',
+			priority: 85
+		},
 		'traits.email': {
 			label: 'Email',
 			priority: 80

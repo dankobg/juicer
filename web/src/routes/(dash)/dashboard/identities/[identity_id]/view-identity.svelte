@@ -84,6 +84,10 @@
 			<span class="font-medium">{(data.identityResult?.data.traits as CustomTraits)['email'] ?? ''}</span>
 		</div>
 		<div class="flex flex-col justify-center">
+			<span class="text-muted-foreground">Username</span>
+			<span class="font-medium">{(data.identityResult?.data.traits as CustomTraits)['username'] ?? ''}</span>
+		</div>
+		<div class="flex flex-col justify-center">
 			<span class="text-muted-foreground">First name</span>
 			<span class="font-medium">{(data.identityResult?.data.traits as CustomTraits)['first_name'] ?? ''}</span>
 		</div>

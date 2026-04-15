@@ -231,8 +231,8 @@
 						<Form.Field form={supForm} name="identifier">
 							<Form.Control>
 								{#snippet children({ props })}
-									<Form.Label>E-Mail</Form.Label>
-									<Input {...props} type="email" bind:value={$form.identifier} />
+									<Form.Label>E-Mail or Username</Form.Label>
+									<Input {...props} bind:value={$form.identifier} />
 								{/snippet}
 							</Form.Control>
 							<Form.Description />

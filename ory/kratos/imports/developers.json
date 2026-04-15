@@ -3,6 +3,7 @@
     "schema_id": "developer",
     "traits": {
       "email": "juicer@test.com",
+      "username": "juicer",
       "first_name": "Juicer",
       "last_name": "Juicerson"
     },
@@ -26,6 +27,7 @@
     "schema_id": "developer",
     "traits": {
       "email": "dev@test.com",
+      "username": "dev",
       "first_name": "Dev First",
       "last_name": "Dev Last"
     },
@@ -49,6 +51,7 @@
     "schema_id": "developer",
     "traits": {
       "email": "admin@test.com",
+      "username": "admin",
       "first_name": "Admin First",
       "last_name": "Admin Last"
     },
@@ -72,6 +75,7 @@
     "schema_id": "developer",
     "traits": {
       "email": "danko@test.com",
+      "username": "danko",
       "first_name": "Danko",
       "last_name": "Petrovic"
     },

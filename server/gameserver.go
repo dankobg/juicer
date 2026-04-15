@@ -70,6 +70,7 @@ func (a *ApiHandler) handleIPCLeaveTabMsg(data *pb.LeaveTab) {
 }
 
 func (a *ApiHandler) handleIPCLeaveSiteMsg(data *pb.LeaveSite) {
+
 }
 
 func (a *ApiHandler) handleIPCRequestInitialChannelsMsg(data *pb.RequestInitialChannels) {

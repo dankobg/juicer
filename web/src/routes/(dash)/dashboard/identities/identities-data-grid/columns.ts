@@ -89,6 +89,29 @@ export const columns: ColumnDef<components['schemas']['Identity']>[] = [
 		}
 	},
 	{
+		accessorFn: row => (row.traits as CustomTraits)?.['username'],
+		id: 'username',
+		header: ({ column }) =>
+			renderComponent(DataTableColumnHeader<components['schemas']['Identity'], unknown>, {
+				title: 'Username',
+				column
+			}),
+		cell: ({ row }) => {
+			const usernameSnippet = createRawSnippet<[{ username: string }]>(getUsername => {
+				const { username } = getUsername();
+				return {
+					render: () => `<div>${username}</div>`
+				};
+			});
+			return renderSnippet(usernameSnippet, {
+				username: row.getValue('username') as string
+			});
+		},
+		filterFn: (row, id, value) => {
+			return value.includes(row.getValue(id));
+		}
+	},
+	{
 		accessorFn: row => (row.traits as CustomTraits)?.['first_name'],
 		id: 'first_name',
 		header: ({ column }) =>

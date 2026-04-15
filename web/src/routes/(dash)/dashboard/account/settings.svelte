@@ -52,6 +52,7 @@
 			first_name: v.string(),
 			last_name: v.string(),
 			email: v.pipe(v.string(), v.minLength(1, 'E-Mail is required'), v.email('E-Mail must be a valid email')),
+			username: v.pipe(v.string(), v.minLength(1, 'Username is required')),
 			avatar_url: v.string()
 		})
 	});
@@ -65,6 +66,7 @@
 			first_name: data.flow?.identity.traits['first_name'] ?? '',
 			last_name: data.flow?.identity.traits['last_name'] ?? '',
 			email: data.flow?.identity.traits['email'] ?? '',
+			username: data.flow?.identity.traits['username'] ?? '',
 			avatar_url: data.flow?.identity.traits['avatar_url'] ?? ''
 		}
 	};
@@ -225,6 +227,18 @@
 							{#snippet children({ props })}
 								<Form.Label>Last name</Form.Label>
 								<Input {...props} bind:value={$form.traits.last_name} />
+							{/snippet}
+						</Form.Control>
+						<Form.Description />
+						<Form.FieldErrors />
+					</Form.Field>
+				</div>
+				<div class="grid gap-2">
+					<Form.Field form={supForm} name="traits.username">
+						<Form.Control>
+							{#snippet children({ props })}
+								<Form.Label>Username</Form.Label>
+								<Input {...props} bind:value={$form.traits.username} />
 							{/snippet}
 						</Form.Control>
 						<Form.Description />
