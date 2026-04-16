@@ -1,6 +1,6 @@
 package ws
 
-// Channel is similar to a `room|group|realm` for communication
+// Channel is similar to a `room|group|realm` for communication.
 // e.g. `lobby`, `game.{game_id}`, `gametv.{game_id}`, `gametv.{game_id}.chat` etc.
 type Channel string
 

@@ -114,7 +114,7 @@ func (h *Hub) processClientWebsocketMessage(client *client, msg []byte) error {
 }
 
 func (h *Hub) onClientConnected(client *client) {
-	h.log.Debug("client connected", slog.String("user_id", client.userID.String()), slog.String("auth_state", client.authState.String()))
+	h.log.Debug("client connected", slog.String("user_id", client.userID.String()), slog.String("auth_state", client.authState.String()), slog.Any("channels", client.channels))
 
 	h.addClient(client)
 	h.requestChannelsInfo(client)
