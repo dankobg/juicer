@@ -6,18 +6,46 @@ import (
 	"log/slog"
 	"net/http"
 	"strings"
+	"time"
 
 	api "github.com/dankobg/juicer/api/gen"
 	"github.com/dankobg/juicer/auth/keto"
 	"github.com/dankobg/juicer/auth/kratos"
 	"github.com/dankobg/juicer/config"
 	"github.com/dankobg/juicer/mailer"
+	pb "github.com/dankobg/juicer/pb/proto/juicer"
 	"github.com/dankobg/juicer/persistence"
 	"github.com/dankobg/juicer/ws"
 	"github.com/redis/go-redis/v9"
 )
 
 // var _ api.StrictServerInterface = (*ApiHandler)(nil)
+
+type categoryThreshold struct {
+	upperLimit   time.Duration
+	timeCategory pb.GameTimeCategory
+}
+
+// for now this does not change, so i keep it static and fetch once
+type protoMappingsCache struct {
+	variants       map[pb.Variant]int64
+	timeKinds      map[pb.GameTimeKind]int64
+	timeCategories map[pb.GameTimeCategory]int64
+	results        map[pb.GameResult]int64
+	resultStatuses map[pb.GameResultStatus]int64
+	states         map[pb.GameState]int64
+}
+
+func newProtoMappingsCache() protoMappingsCache {
+	return protoMappingsCache{
+		variants:       make(map[pb.Variant]int64),
+		timeKinds:      make(map[pb.GameTimeKind]int64),
+		timeCategories: make(map[pb.GameTimeCategory]int64),
+		results:        make(map[pb.GameResult]int64),
+		resultStatuses: make(map[pb.GameResultStatus]int64),
+		states:         make(map[pb.GameState]int64),
+	}
+}
 
 type ApiHandler struct {
 	Cfg        *config.Config
@@ -30,6 +58,9 @@ type ApiHandler struct {
 	Mailer     mailer.Mailer
 	openapiTpl *template.Template
 	bus        *bus
+
+	categoryThresholds []categoryThreshold
+	protoMappingsCache protoMappingsCache
 }
 
 func New(
@@ -43,15 +74,17 @@ func New(
 	p persistence.Persistor,
 ) *ApiHandler {
 	apiHandler := &ApiHandler{
-		Cfg:       cfg,
-		Log:       log,
-		Kratos:    kratos,
-		Keto:      keto,
-		persistor: p,
-		Mailer:    mailer,
-		Hub:       hub,
-		Rdb:       rdb,
-		bus:       newBus(rdb),
+		Cfg:                cfg,
+		Log:                log,
+		Kratos:             kratos,
+		Keto:               keto,
+		persistor:          p,
+		Mailer:             mailer,
+		Hub:                hub,
+		Rdb:                rdb,
+		bus:                newBus(rdb),
+		categoryThresholds: make([]categoryThreshold, 0),
+		protoMappingsCache: newProtoMappingsCache(),
 	}
 
 	return apiHandler

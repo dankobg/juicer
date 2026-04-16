@@ -88,6 +88,13 @@ func (sc *ServeCommand) Run() error {
 
 	apiHandler := server.New(cfg, logger, rdb, kratosClient, ketoClient, smtpClient, hub, persistor)
 
+	if err := apiHandler.FetchCategoryThresholds(context.Background()); err != nil {
+		return fmt.Errorf("FetchCategoryThresholds: %w", err)
+	}
+	if err := apiHandler.FetchProtoMappingsCacheLookups(context.Background()); err != nil {
+		return fmt.Errorf("FetchProtoMappingsCacheLookups: %w", err)
+	}
+
 	rootCtx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT, syscall.SIGHUP)
 	defer stop()
 

@@ -2,12 +2,17 @@ package server
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
+	"math"
+	"strconv"
 	"strings"
 	"time"
 
 	pb "github.com/dankobg/juicer/pb/proto/juicer"
+	"github.com/dankobg/juicer/persistence/dbtype"
+	"github.com/dankobg/juicer/random"
 	"github.com/dankobg/juicer/ws"
 	"github.com/redis/go-redis/v9"
 	"google.golang.org/protobuf/encoding/protojson"
@@ -74,9 +79,49 @@ func (a *ApiHandler) handleIPCLeaveSiteMsg(data *pb.LeaveSite) {
 }
 
 func (a *ApiHandler) handleIPCRequestInitialChannelsMsg(data *pb.RequestInitialChannels) {
+	channels := make([]string, 0)
+
+	if data.Path == "/" {
+		channels = append(channels, "lobby", "lobby.chat")
+	} else {
+		var gameID int64
+
+		if gameIDStr, ok := strings.CutPrefix(data.Path, "/game/"); ok {
+			n, err := strconv.ParseInt(gameIDStr, 10, 64)
+			if err != nil {
+				a.Log.Error("gameid parseint", slog.Any("error", err))
+				return
+			}
+			gameID = n
+		}
+		if gametvIDStr, ok := strings.CutPrefix(data.Path, "/gametv/"); ok {
+			n, err := strconv.ParseInt(gametvIDStr, 10, 64)
+			if err != nil {
+				a.Log.Error("gametvid parseint", slog.Any("error", err))
+				return
+			}
+			gameID = n
+		}
+
+		game, err := a.persistor.Game().GetGameByID(context.Background(), gameID)
+		if err != nil {
+			a.Log.Error("handleIPCRequestInitialChannelsMsg GetGameByID", slog.String("user_id", data.UserId), slog.String("conn_id", data.ConnId), slog.String("path", data.Path), slog.Any("error", err))
+			return
+		}
+
+		switch game.StateID {
+		case 3: // in-progress
+			channels = append(channels, fmt.Sprintf("game.%d", game.ID), fmt.Sprintf("game.%d.chat", game.ID))
+		case 4, 5: // finished or interrupted
+			channels = append(channels, fmt.Sprintf("gametv.%d", game.ID), fmt.Sprintf("gametv.%d.chat", game.ID))
+		default:
+			return
+		}
+	}
+
 	initialChannelsReplyMsg := &pb.Message{
 		Event: &pb.Message_InitialChannels{InitialChannels: &pb.InitialChannels{
-			Channels: []string{"lobby", "lobby.chat"},
+			Channels: channels,
 		}},
 	}
 
@@ -94,7 +139,36 @@ func (a *ApiHandler) handleIPCRequestInitialChannelsMsg(data *pb.RequestInitialC
 }
 
 func (a *ApiHandler) handleIPCRequestChannelsInfoMsg(data *pb.RequestChannelsInfo) {
+	// @TODO: get real username
+	username := random.Alpha(10)
+	_ = username
 
+	for _, channel := range data.GetChannels() {
+		if channel == "lobby" {
+			if err := a.sendLobbyInfo(data.UserId, data.ConnId); err != nil {
+				a.Log.Error("sendLobbyInfo", slog.Any("error", err))
+			}
+		}
+		if channel == "lobby.chat" {
+			if err := a.sendLobbyChatInfo(data.UserId, data.ConnId); err != nil {
+				a.Log.Error("sendLobbyChatInfo", slog.Any("error", err))
+			}
+		}
+		if strings.HasPrefix(channel, "game.") || strings.HasPrefix(channel, "gametv.") {
+			gameIDStr := strings.Split(channel, ".")
+			if len(gameIDStr) != 3 {
+				return
+			}
+			gameID, err := strconv.ParseInt(gameIDStr[2], 10, 64)
+			if err != nil {
+				a.Log.Error("gameid parseint", slog.Any("error", err))
+				return
+			}
+			if err := a.sendGameInfo(gameID, data.UserId, data.ConnId); err != nil {
+				a.Log.Error("sendGameInfo", slog.Any("error", err))
+			}
+		}
+	}
 }
 
 func (a *ApiHandler) onWSCMsg(m *redis.Message) {
@@ -187,4 +261,188 @@ func extractWSCTopicParts(topic string) (clientAuthInfo, error) {
 		connID:    connID,
 		authState: authState,
 	}, nil
+}
+
+func (a *ApiHandler) FetchCategoryThresholds(ctx context.Context) error {
+	gameTimeCategories, err := a.persistor.GameTimeCategory().ListGameTimeCategories(ctx, dbtype.ListGameTimeCategoriesFilters{})
+	if err != nil {
+		return err
+	}
+
+	for _, v := range gameTimeCategories.Data {
+		var limit time.Duration = math.MaxUint32
+		if v.UpperTimeLimitSecs.IsValue() {
+			limit = time.Second * time.Duration(v.UpperTimeLimitSecs.MustGet())
+		}
+		switch v.Name {
+		case "hyperbullet":
+			a.categoryThresholds = append(a.categoryThresholds, categoryThreshold{timeCategory: pb.GameTimeCategory_GAME_TIME_CATEGORY_HYPERBULLET, upperLimit: limit})
+		case "bullet":
+			a.categoryThresholds = append(a.categoryThresholds, categoryThreshold{timeCategory: pb.GameTimeCategory_GAME_TIME_CATEGORY_BULLET, upperLimit: limit})
+		case "blitz":
+			a.categoryThresholds = append(a.categoryThresholds, categoryThreshold{timeCategory: pb.GameTimeCategory_GAME_TIME_CATEGORY_BLITZ, upperLimit: limit})
+		case "rapid":
+			a.categoryThresholds = append(a.categoryThresholds, categoryThreshold{timeCategory: pb.GameTimeCategory_GAME_TIME_CATEGORY_RAPID, upperLimit: limit})
+		case "classical":
+			a.categoryThresholds = append(a.categoryThresholds, categoryThreshold{timeCategory: pb.GameTimeCategory_GAME_TIME_CATEGORY_CLASSICAL, upperLimit: limit})
+		}
+	}
+
+	return nil
+}
+
+func (a *ApiHandler) FetchProtoMappingsCacheLookups(ctx context.Context) error {
+	gameVariants, e1 := a.persistor.GameVariant().ListGameVariants(ctx, dbtype.ListGameVariantsFilters{})
+	gameTimeKinds, e2 := a.persistor.GameTimeKind().ListGameTimeKinds(ctx, dbtype.ListGameTimeKindsFilters{})
+	gameTimeCategories, e3 := a.persistor.GameTimeCategory().ListGameTimeCategories(ctx, dbtype.ListGameTimeCategoriesFilters{})
+	gameResults, e4 := a.persistor.GameResult().ListGameResults(ctx, dbtype.ListGameResultsFilters{})
+	gameResultStatuses, e5 := a.persistor.GameResultStatus().ListGameResultStatuses(ctx, dbtype.ListGameResultStatusesFilters{})
+	gameStates, e6 := a.persistor.GameState().ListGameStates(ctx, dbtype.ListGameStatesFilters{})
+	if err := errors.Join(e1, e2, e3, e4, e5, e6); err != nil {
+		return err
+	}
+
+	for _, v := range gameVariants.Data {
+		switch v.Name {
+		case "standard":
+			a.protoMappingsCache.variants[pb.Variant_VARIANT_STANDARD] = v.ID
+		case "atomic":
+			a.protoMappingsCache.variants[pb.Variant_VARIANT_ATOMIC] = v.ID
+		case "crazyhouse":
+			a.protoMappingsCache.variants[pb.Variant_VARIANT_CRAZYHOUSE] = v.ID
+		case "chess960":
+			a.protoMappingsCache.variants[pb.Variant_VARIANT_CHESS960] = v.ID
+		case "king-of-the-hill":
+			a.protoMappingsCache.variants[pb.Variant_VARIANT_KING_OF_THE_HILL] = v.ID
+		case "three-check":
+			a.protoMappingsCache.variants[pb.Variant_VARIANT_THREE_CHECK] = v.ID
+		case "horde":
+			a.protoMappingsCache.variants[pb.Variant_VARIANT_HORDE] = v.ID
+		case "racing-kings":
+			a.protoMappingsCache.variants[pb.Variant_VARIANT_RACING_KINGS] = v.ID
+		}
+	}
+
+	for _, v := range gameTimeKinds.Data {
+		switch v.Name {
+		case "realtime":
+			a.protoMappingsCache.timeKinds[pb.GameTimeKind_GAME_TIME_KIND_REALTIME] = v.ID
+		case "correspondance":
+			a.protoMappingsCache.timeKinds[pb.GameTimeKind_GAME_TIME_KIND_CORRESPONDENCE] = v.ID
+		case "unlimited":
+			a.protoMappingsCache.timeKinds[pb.GameTimeKind_GAME_TIME_KIND_UNLIMITED] = v.ID
+		}
+	}
+
+	for _, v := range gameTimeCategories.Data {
+		switch v.Name {
+		case "hyperbullet":
+			a.protoMappingsCache.timeCategories[pb.GameTimeCategory_GAME_TIME_CATEGORY_HYPERBULLET] = v.ID
+		case "bullet":
+			a.protoMappingsCache.timeCategories[pb.GameTimeCategory_GAME_TIME_CATEGORY_BULLET] = v.ID
+		case "blitz":
+			a.protoMappingsCache.timeCategories[pb.GameTimeCategory_GAME_TIME_CATEGORY_BLITZ] = v.ID
+		case "rapid":
+			a.protoMappingsCache.timeCategories[pb.GameTimeCategory_GAME_TIME_CATEGORY_RAPID] = v.ID
+		case "classical":
+			a.protoMappingsCache.timeCategories[pb.GameTimeCategory_GAME_TIME_CATEGORY_CLASSICAL] = v.ID
+		}
+	}
+
+	for _, v := range gameResults.Data {
+		switch v.Name {
+		case "white-won":
+			a.protoMappingsCache.results[pb.GameResult_GAME_RESULT_WHITE_WON] = v.ID
+		case "black-won":
+			a.protoMappingsCache.results[pb.GameResult_GAME_RESULT_BLACK_WON] = v.ID
+		case "draw":
+			a.protoMappingsCache.results[pb.GameResult_GAME_RESULT_DRAW] = v.ID
+		case "interrupted":
+			a.protoMappingsCache.results[pb.GameResult_GAME_RESULT_INTERRUPTED] = v.ID
+		}
+	}
+
+	for _, v := range gameResultStatuses.Data {
+		switch v.Name {
+		case "checkmate":
+			a.protoMappingsCache.resultStatuses[pb.GameResultStatus_GAME_RESULT_STATUS_CHECKMATE] = v.ID
+		case "insufficient-material":
+			a.protoMappingsCache.resultStatuses[pb.GameResultStatus_GAME_RESULT_STATUS_INSUFFICIENT_MATERIAL] = v.ID
+		case "threefold-repetition":
+			a.protoMappingsCache.resultStatuses[pb.GameResultStatus_GAME_RESULT_STATUS_THREEFOLD_REPETITION] = v.ID
+		case "fivefold-repetition":
+			a.protoMappingsCache.resultStatuses[pb.GameResultStatus_GAME_RESULT_STATUS_FIVEFOLD_REPETITION] = v.ID
+		case "fifty-move-rule":
+			a.protoMappingsCache.resultStatuses[pb.GameResultStatus_GAME_RESULT_STATUS_FIFTY_MOVE_RULE] = v.ID
+		case "seventyfive-move-rule":
+			a.protoMappingsCache.resultStatuses[pb.GameResultStatus_GAME_RESULT_STATUS_SEVENTYFIVE_MOVE_RULE] = v.ID
+		case "stalemate":
+			a.protoMappingsCache.resultStatuses[pb.GameResultStatus_GAME_RESULT_STATUS_STALEMATE] = v.ID
+		case "resignation":
+			a.protoMappingsCache.resultStatuses[pb.GameResultStatus_GAME_RESULT_STATUS_RESIGNATION] = v.ID
+		case "draw-agreed":
+			a.protoMappingsCache.resultStatuses[pb.GameResultStatus_GAME_RESULT_STATUS_DRAW_AGREED] = v.ID
+		case "flagged":
+			a.protoMappingsCache.resultStatuses[pb.GameResultStatus_GAME_RESULT_STATUS_FLAGGED] = v.ID
+		case "adjudication":
+			a.protoMappingsCache.resultStatuses[pb.GameResultStatus_GAME_RESULT_STATUS_ADJUDICATION] = v.ID
+		case "timed-out":
+			a.protoMappingsCache.resultStatuses[pb.GameResultStatus_GAME_RESULT_STATUS_TIMED_OUT] = v.ID
+		case "aborted":
+			a.protoMappingsCache.resultStatuses[pb.GameResultStatus_GAME_RESULT_STATUS_ABORTED] = v.ID
+		case "interrupted":
+			a.protoMappingsCache.resultStatuses[pb.GameResultStatus_GAME_RESULT_STATUS_INTERRUPTED] = v.ID
+		}
+	}
+
+	for _, v := range gameStates.Data {
+		switch v.Name {
+		case "idle":
+			a.protoMappingsCache.states[pb.GameState_GAME_STATE_IDLE] = v.ID
+		case "waiting-start":
+			a.protoMappingsCache.states[pb.GameState_GAME_STATE_WAITING_START] = v.ID
+		case "in-progress":
+			a.protoMappingsCache.states[pb.GameState_GAME_STATE_IN_PROGRESS] = v.ID
+		case "finished":
+			a.protoMappingsCache.states[pb.GameState_GAME_STATE_FINISHED] = v.ID
+		case "interrupted":
+			a.protoMappingsCache.states[pb.GameState_GAME_STATE_INTERRUPTED] = v.ID
+		}
+	}
+
+	return nil
+}
+
+func gameVariantProtoToDbID() int64 {
+	return 0
+}
+func gameTimeKindProtoToDbID() int64 {
+	return 0
+}
+func gameTimeCategorieProtoToDbID() int64 {
+	return 0
+}
+func gameResultProtoToDbID() int64 {
+	return 0
+}
+func gameResultStatuseProtoToDbID() int64 {
+	return 0
+}
+func gameStateProtoToDbID() int64 {
+	return 0
+}
+
+func (a *ApiHandler) sendLobbyInfo(userID, connID string) error {
+	fmt.Println("sendLobbyInfo")
+	return nil
+}
+
+func (a *ApiHandler) sendLobbyChatInfo(userID, connID string) error {
+	fmt.Println("sendLobbyChatInfo")
+	return nil
+}
+
+func (a *ApiHandler) sendGameInfo(gameID int64, userID, connID string) error {
+	fmt.Println("sendGameInfo")
+	return nil
 }
