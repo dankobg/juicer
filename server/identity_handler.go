@@ -812,3 +812,26 @@ func (a *ApiHandler) FetchUserInfo(ctx context.Context, userID uuid.UUID) (UserI
 
 	return resp, nil
 }
+
+// GetUsername just gets username for game related stuff
+func (a *ApiHandler) GetUsername(ctx context.Context, identityID string) (string, error) {
+	req := a.Kratos.Admin.IdentityAPI.GetIdentity(ctx, identityID)
+	identity, identityResp, err := req.Execute()
+	if err != nil {
+		return "", fmt.Errorf("failed to fetch user")
+	}
+
+	defer func() { _ = identityResp.Body.Close() }()
+
+	traits, ok := identity.Traits.(map[string]any)
+	if !ok {
+		return "", fmt.Errorf("failed to parse user traits")
+	}
+
+	username, ok := traits["username"].(string)
+	if !ok {
+		return "", fmt.Errorf("failed get username")
+	}
+
+	return username, nil
+}

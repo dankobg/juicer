@@ -299,6 +299,7 @@ func (h *Hub) RequestInitialChannels(ctx context.Context, client *client) ([]str
 		Event: &pb.Message_RequestInitialChannels{RequestInitialChannels: &pb.RequestInitialChannels{
 			UserId: client.userID.String(),
 			ConnId: client.connID.String(),
+			Guest:  client.authState == ClientGuest,
 			Path:   client.query.Get("path"),
 		}},
 	}
@@ -340,6 +341,7 @@ func (h *Hub) requestChannelsInfo(client *client) {
 			RequestChannelsInfo: &pb.RequestChannelsInfo{
 				UserId:   client.userID.String(),
 				ConnId:   client.connID.String(),
+				Guest:    client.authState == ClientGuest,
 				Channels: channels,
 			},
 		},

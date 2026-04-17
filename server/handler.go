@@ -28,7 +28,7 @@ type categoryThreshold struct {
 
 // for now this does not change, so i keep it static and fetch once
 type protoMappingsCache struct {
-	variants       map[pb.Variant]int64
+	variants       map[pb.GameVariant]int64
 	timeKinds      map[pb.GameTimeKind]int64
 	timeCategories map[pb.GameTimeCategory]int64
 	results        map[pb.GameResult]int64
@@ -38,7 +38,7 @@ type protoMappingsCache struct {
 
 func newProtoMappingsCache() protoMappingsCache {
 	return protoMappingsCache{
-		variants:       make(map[pb.Variant]int64),
+		variants:       make(map[pb.GameVariant]int64),
 		timeKinds:      make(map[pb.GameTimeKind]int64),
 		timeCategories: make(map[pb.GameTimeCategory]int64),
 		results:        make(map[pb.GameResult]int64),

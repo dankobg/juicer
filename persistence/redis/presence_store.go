@@ -2,9 +2,13 @@ package redis
 
 import (
 	"context"
+	"fmt"
+	"strings"
+	"time"
 
 	"github.com/dankobg/juicer/persistence"
 	"github.com/google/uuid"
+	"github.com/redis/go-redis/v9"
 )
 
 var _ persistence.PresencePersistor = (*RedisPresencePersistor)(nil)
@@ -20,11 +24,141 @@ func NewPgPresenceStore(rs *RedisPersistor) *RedisPresencePersistor {
 }
 
 func (pst *RedisPresencePersistor) SetPresence(ctx context.Context, userID uuid.UUID, connID uuid.UUID, username string, guest bool, channel string) ([]string, []string, error) {
-	panic("SetPresence IMPLEMENT")
+	authStr := "auth"
+	if guest {
+		authStr = "guest"
+	}
+
+	var (
+		presenceChannelKey     = "presence:channel:" + channel
+		presenceUsersKey       = "presence:users"
+		presenceUserKey        = "presence:user:" + userID.String()
+		presenceActiveGamesKey = "presence:active-games:" + userID.String()
+		userKey                = userID.String() + "#" + connID.String() + "#" + username + "#" + authStr
+		connChannelKey         = connID.String() + "#" + channel
+		userkeyChannel         = userKey + "#" + channel
+	)
+
+	now := time.Now()
+
+	expireDur := time.Minute * 2
+	expiry := now.Add(expireDur)
+
+	if _, err := pst.rdb.Pipelined(ctx, func(p redis.Pipeliner) error {
+		if err := p.ZAdd(ctx, presenceChannelKey, redis.Z{
+			Score:  float64(expiry.UnixMilli()),
+			Member: userKey,
+		}).Err(); err != nil {
+			return fmt.Errorf("setpresence zadd presenceChannelKey: %w", err)
+		}
+
+		if err := p.Expire(ctx, presenceChannelKey, expireDur).Err(); err != nil {
+			return fmt.Errorf("setpresence expire presenceChannelKey: %w", err)
+		}
+
+		if err := p.ZAdd(ctx, presenceUserKey, redis.Z{
+			Score:  float64(expiry.UnixMilli()),
+			Member: connChannelKey,
+		}).Err(); err != nil {
+			return fmt.Errorf("setpresence zadd presenceUserKey: %w", err)
+		}
+
+		if err := p.Expire(ctx, presenceUserKey, expireDur).Err(); err != nil {
+			return fmt.Errorf("setpresence expire presenceUserKey: %w", err)
+		}
+
+		if err := p.ZAdd(ctx, presenceUsersKey, redis.Z{
+			Score:  float64(expiry.UnixMilli()),
+			Member: userkeyChannel,
+		}).Err(); err != nil {
+			return fmt.Errorf("setpresence zadd userpresences: %w", err)
+		}
+
+		_ = []any{presenceActiveGamesKey}
+
+		// PUBLISH PRESENCE CHANGE
+
+		// if err := p.Publish(ctx, key, val).Err(); err != nil {
+		// return fmt.Errorf("setpresence publish presence: %w", err)
+		// }
+
+		return nil
+	}); err != nil {
+		return nil, nil, fmt.Errorf("setpresence pipeline: %w", err)
+	}
+
+	return nil, nil, nil
 }
 
 func (pst *RedisPresencePersistor) ClearPresence(ctx context.Context, userID uuid.UUID, connID uuid.UUID, username string, guest bool) ([]string, []string, []string, error) {
-	panic("ClearPresence IMPLEMENT")
+	authStr := "auth"
+	if guest {
+		authStr = "guest"
+	}
+
+	var (
+		presenceUsersKey       = "presence:users"
+		presenceUserKey        = "presence:user:" + userID.String()
+		presenceActiveGamesKey = "presence:active-games:" + userID.String()
+		userKey                = userID.String() + "#" + connID.String() + "#" + username + "#" + authStr
+		presenceLastSeenKey    = "presence:last-seen" + userID.String()
+	)
+
+	now := time.Now()
+	expireDur := time.Minute * 2
+	expiry := now.Add(expireDur)
+
+	userPresences, err := pst.rdb.ZRange(ctx, presenceUserKey, 0, -1).Result()
+	if err != nil {
+		return nil, nil, nil, fmt.Errorf("fetch old presences")
+	}
+
+	if _, err := pst.rdb.Pipelined(ctx, func(p redis.Pipeliner) error {
+		for _, connChannelKey := range userPresences {
+			parts := strings.Split(connChannelKey, "#")
+			cid, channel := parts[0], parts[1]
+			if connID.String() == cid {
+				var (
+					presenceChannelKey = "presence:channel:" + channel
+					userkeyChannel     = userKey + "#" + channel
+				)
+
+				if err := p.ZRem(ctx, presenceChannelKey, userKey).Err(); err != nil {
+					return fmt.Errorf("clearpresence zrem presenceChannelKey: %w", err)
+				}
+
+				if err := p.ZRem(ctx, presenceUserKey, connChannelKey).Err(); err != nil {
+					return fmt.Errorf("clearpresence zrem presenceUserKey: %w", err)
+				}
+
+				if err := p.ZRem(ctx, presenceUsersKey, userkeyChannel).Err(); err != nil {
+					return fmt.Errorf("clearpresence zrem presenceUserKey: %w", err)
+				}
+
+				if err := p.ZAdd(ctx, presenceLastSeenKey, redis.Z{
+					Score:  float64(now.UnixMilli()),
+					Member: userID.String(),
+				}).Err(); err != nil {
+					return fmt.Errorf("clearpresence zadd presenceLastSeenKey: %w", err)
+				}
+
+			}
+		}
+
+		_ = []any{presenceActiveGamesKey, presenceUserKey, userKey, presenceUsersKey, userPresences, expiry}
+
+		// PUBLISH PRESENCE CHANGE
+
+		// if err := p.Publish(ctx, key, val).Err(); err != nil {
+		// return fmt.Errorf("refreshpresence publish presence: %w", err)
+		// }
+
+		return nil
+	}); err != nil {
+		return nil, nil, nil, fmt.Errorf("refreshpresence pipeline: %w", err)
+	}
+
+	return nil, nil, nil, nil
 }
 
 func (pst *RedisPresencePersistor) GetPresence(ctx context.Context, userID uuid.UUID) ([]string, error) {
@@ -32,7 +166,102 @@ func (pst *RedisPresencePersistor) GetPresence(ctx context.Context, userID uuid.
 }
 
 func (pst *RedisPresencePersistor) RefreshPresence(ctx context.Context, userID uuid.UUID, connID uuid.UUID, username string, guest bool) ([]string, []string, error) {
-	panic("RefreshPresence IMPLEMENT")
+	authStr := "auth"
+	if guest {
+		authStr = "guest"
+	}
+
+	var (
+		presenceUsersKey       = "presence:users"
+		presenceUserKey        = "presence:user:" + userID.String()
+		presenceActiveGamesKey = "presence:active-games:" + userID.String()
+		userKey                = userID.String() + "#" + connID.String() + "#" + username + "#" + authStr
+		presenceLastSeenKey    = "presence:last-seen" + userID.String()
+	)
+
+	now := time.Now()
+	expireDur := time.Minute * 2
+	expiry := now.Add(expireDur)
+
+	userPresences, err := pst.rdb.ZRange(ctx, presenceUserKey, 0, -1).Result()
+	if err != nil {
+		return nil, nil, fmt.Errorf("fetch old presences")
+	}
+
+	if _, err := pst.rdb.Pipelined(ctx, func(p redis.Pipeliner) error {
+		for _, connChannelKey := range userPresences {
+			parts := strings.Split(connChannelKey, "#")
+			cid, channel := parts[0], parts[1]
+			if connID.String() == cid {
+				var (
+					presenceChannelKey = "presence:channel:" + channel
+					userkeyChannel     = userKey + "#" + channel
+				)
+
+				if err := p.ZAdd(ctx, presenceChannelKey, redis.Z{
+					Score:  float64(expiry.UnixMilli()),
+					Member: userKey,
+				}).Err(); err != nil {
+					return fmt.Errorf("refreshpresence zadd presenceChannelKey: %w", err)
+				}
+
+				if err := p.Expire(ctx, presenceChannelKey, expireDur).Err(); err != nil {
+					return fmt.Errorf("refreshpresence expire presenceChannelKey: %w", err)
+				}
+
+				if err := p.ZAdd(ctx, presenceUserKey, redis.Z{
+					Score:  float64(expiry.UnixMilli()),
+					Member: connChannelKey,
+				}).Err(); err != nil {
+					return fmt.Errorf("refreshpresence zadd presenceUserKey: %w", err)
+				}
+
+				if err := p.Expire(ctx, presenceUserKey, expireDur).Err(); err != nil {
+					return fmt.Errorf("refreshpresence expire presenceUserKey: %w", err)
+				}
+
+				if err := p.ZAdd(ctx, presenceUsersKey, redis.Z{
+					Score:  float64(expiry.UnixMilli()),
+					Member: userkeyChannel,
+				}).Err(); err != nil {
+					return fmt.Errorf("refreshpresence zadd presenceUsersKey: %w", err)
+				}
+
+				if err := p.ZAdd(ctx, presenceLastSeenKey, redis.Z{
+					Score:  float64(now.UnixMilli()),
+					Member: userID.String(),
+				}).Err(); err != nil {
+					return fmt.Errorf("refreshpresence zadd presenceUsersKey: %w", err)
+				}
+
+				removeExpired := []string{
+					presenceChannelKey,
+					presenceUserKey,
+					presenceUsersKey,
+				}
+
+				for _, key := range removeExpired {
+					if err := p.ZRemRangeByScore(ctx, key, "-inf", fmt.Sprintf("%f", float64(now.UnixMilli()))).Err(); err != nil {
+						return fmt.Errorf("refreshpresence zremrangebyscore expired presences: %w", err)
+					}
+				}
+			}
+		}
+
+		_ = []any{presenceActiveGamesKey, presenceUserKey, userKey, presenceUsersKey, userPresences, expiry}
+
+		// PUBLISH PRESENCE CHANGE
+
+		// if err := p.Publish(ctx, key, val).Err(); err != nil {
+		// return fmt.Errorf("refreshpresence publish presence: %w", err)
+		// }
+
+		return nil
+	}); err != nil {
+		return nil, nil, fmt.Errorf("refreshpresence pipeline: %w", err)
+	}
+
+	return nil, nil, nil
 }
 
 func (pst *RedisPresencePersistor) CountInChannel(ctx context.Context, channel string) (int64, error) {

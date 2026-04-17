@@ -12,8 +12,8 @@ import (
 
 	pb "github.com/dankobg/juicer/pb/proto/juicer"
 	"github.com/dankobg/juicer/persistence/dbtype"
-	"github.com/dankobg/juicer/random"
 	"github.com/dankobg/juicer/ws"
+	"github.com/google/uuid"
 	"github.com/redis/go-redis/v9"
 	"google.golang.org/protobuf/encoding/protojson"
 )
@@ -67,15 +67,55 @@ func (a *ApiHandler) onIPCMsg(m *redis.Message) {
 }
 
 func (a *ApiHandler) handleIPCHeartbeatMsg(data *pb.Heartbeat) {
+	var username string
 
+	if data.Guest {
+		username = "guest-" + data.UserId
+	} else {
+		uname, err := a.GetUsername(context.Background(), data.UserId)
+		if err != nil {
+			a.Log.Error("handleIPCHeartbeatMsg get username", slog.Any("error", err))
+			return
+		}
+		username = uname
+	}
+
+	_, _, err := a.persistor.Presence().RefreshPresence(context.Background(), uuid.MustParse(data.UserId), uuid.MustParse(data.ConnId), username, data.Guest)
+	if err != nil {
+		fmt.Println("RefreshPresence VUTRRRRRRRRRRRRRRRR", err)
+	}
+
+	// refresh presence
+	// broadcast presence change
 }
 
 func (a *ApiHandler) handleIPCLeaveTabMsg(data *pb.LeaveTab) {
+	var username string
+
+	if data.Guest {
+		username = "guest-" + data.UserId
+	} else {
+		uname, err := a.GetUsername(context.Background(), data.UserId)
+		if err != nil {
+			a.Log.Error("handleIPCLeaveTabMsg get username", slog.Any("error", err))
+			return
+		}
+		username = uname
+	}
+
+	_, _, _, err := a.persistor.Presence().ClearPresence(context.Background(), uuid.MustParse(data.UserId), uuid.MustParse(data.ConnId), username, data.Guest)
+	if err != nil {
+		fmt.Println("ClearPresence ROFLLLLLLLLLLLLLL", err)
+	}
+
+	// clear presence
+	// broadcast presence change
+	// delete active seeks for connID
 
 }
 
 func (a *ApiHandler) handleIPCLeaveSiteMsg(data *pb.LeaveSite) {
-
+	// delete active seeks for userID
 }
 
 func (a *ApiHandler) handleIPCRequestInitialChannelsMsg(data *pb.RequestInitialChannels) {
@@ -110,9 +150,10 @@ func (a *ApiHandler) handleIPCRequestInitialChannelsMsg(data *pb.RequestInitialC
 		}
 
 		switch game.StateID {
-		case 3: // in-progress
+		case a.protoGameStateToID(pb.GameState_GAME_STATE_IN_PROGRESS):
 			channels = append(channels, fmt.Sprintf("game.%d", game.ID), fmt.Sprintf("game.%d.chat", game.ID))
-		case 4, 5: // finished or interrupted
+		case a.protoGameStateToID(pb.GameState_GAME_STATE_FINISHED),
+			a.protoGameStateToID(pb.GameState_GAME_STATE_INTERRUPTED):
 			channels = append(channels, fmt.Sprintf("gametv.%d", game.ID), fmt.Sprintf("gametv.%d.chat", game.ID))
 		default:
 			return
@@ -139,11 +180,25 @@ func (a *ApiHandler) handleIPCRequestInitialChannelsMsg(data *pb.RequestInitialC
 }
 
 func (a *ApiHandler) handleIPCRequestChannelsInfoMsg(data *pb.RequestChannelsInfo) {
-	// @TODO: get real username
-	username := random.Alpha(10)
-	_ = username
+	var username string
+
+	if data.Guest {
+		username = "guest-" + data.UserId
+	} else {
+		uname, err := a.GetUsername(context.Background(), data.UserId)
+		if err != nil {
+			a.Log.Error("handleIPCRequestChannelsInfoMsg get username", slog.Any("error", err))
+			return
+		}
+		username = uname
+	}
 
 	for _, channel := range data.GetChannels() {
+		_, _, err := a.persistor.Presence().SetPresence(context.Background(), uuid.MustParse(data.UserId), uuid.MustParse(data.ConnId), username, data.Guest, channel)
+		if err != nil {
+			fmt.Println("SetPresence KEEEEEEEEEENJJJJJJJJJJJJJJJ", err)
+		}
+
 		if channel == "lobby" {
 			if err := a.sendLobbyInfo(data.UserId, data.ConnId); err != nil {
 				a.Log.Error("sendLobbyInfo", slog.Any("error", err))
@@ -305,21 +360,21 @@ func (a *ApiHandler) FetchProtoMappingsCacheLookups(ctx context.Context) error {
 	for _, v := range gameVariants.Data {
 		switch v.Name {
 		case "standard":
-			a.protoMappingsCache.variants[pb.Variant_VARIANT_STANDARD] = v.ID
+			a.protoMappingsCache.variants[pb.GameVariant_GAME_VARIANT_STANDARD] = v.ID
 		case "atomic":
-			a.protoMappingsCache.variants[pb.Variant_VARIANT_ATOMIC] = v.ID
+			a.protoMappingsCache.variants[pb.GameVariant_GAME_VARIANT_ATOMIC] = v.ID
 		case "crazyhouse":
-			a.protoMappingsCache.variants[pb.Variant_VARIANT_CRAZYHOUSE] = v.ID
+			a.protoMappingsCache.variants[pb.GameVariant_GAME_VARIANT_CRAZYHOUSE] = v.ID
 		case "chess960":
-			a.protoMappingsCache.variants[pb.Variant_VARIANT_CHESS960] = v.ID
+			a.protoMappingsCache.variants[pb.GameVariant_GAME_VARIANT_CHESS960] = v.ID
 		case "king-of-the-hill":
-			a.protoMappingsCache.variants[pb.Variant_VARIANT_KING_OF_THE_HILL] = v.ID
+			a.protoMappingsCache.variants[pb.GameVariant_GAME_VARIANT_KING_OF_THE_HILL] = v.ID
 		case "three-check":
-			a.protoMappingsCache.variants[pb.Variant_VARIANT_THREE_CHECK] = v.ID
+			a.protoMappingsCache.variants[pb.GameVariant_GAME_VARIANT_THREE_CHECK] = v.ID
 		case "horde":
-			a.protoMappingsCache.variants[pb.Variant_VARIANT_HORDE] = v.ID
+			a.protoMappingsCache.variants[pb.GameVariant_GAME_VARIANT_HORDE] = v.ID
 		case "racing-kings":
-			a.protoMappingsCache.variants[pb.Variant_VARIANT_RACING_KINGS] = v.ID
+			a.protoMappingsCache.variants[pb.GameVariant_GAME_VARIANT_RACING_KINGS] = v.ID
 		}
 	}
 
@@ -413,36 +468,38 @@ func (a *ApiHandler) FetchProtoMappingsCacheLookups(ctx context.Context) error {
 	return nil
 }
 
-func gameVariantProtoToDbID() int64 {
-	return 0
+func (a *ApiHandler) protoGameVariantToID(x pb.GameVariant) int64 {
+	return a.protoMappingsCache.variants[x]
 }
-func gameTimeKindProtoToDbID() int64 {
-	return 0
+
+func (a *ApiHandler) protoGameTimeKindToID(x pb.GameTimeKind) int64 {
+	return a.protoMappingsCache.timeKinds[x]
 }
-func gameTimeCategorieProtoToDbID() int64 {
-	return 0
+
+func (a *ApiHandler) protoGameTimeCategoryToID(x pb.GameTimeCategory) int64 {
+	return a.protoMappingsCache.timeCategories[x]
 }
-func gameResultProtoToDbID() int64 {
-	return 0
+
+func (a *ApiHandler) protoGameResultToID(x pb.GameResult) int64 {
+	return a.protoMappingsCache.results[x]
 }
-func gameResultStatuseProtoToDbID() int64 {
-	return 0
+
+func (a *ApiHandler) protoGameResultStatuseToID(x pb.GameResultStatus) int64 {
+	return a.protoMappingsCache.resultStatuses[x]
 }
-func gameStateProtoToDbID() int64 {
-	return 0
+
+func (a *ApiHandler) protoGameStateToID(x pb.GameState) int64 {
+	return a.protoMappingsCache.states[x]
 }
 
 func (a *ApiHandler) sendLobbyInfo(userID, connID string) error {
-	fmt.Println("sendLobbyInfo")
 	return nil
 }
 
 func (a *ApiHandler) sendLobbyChatInfo(userID, connID string) error {
-	fmt.Println("sendLobbyChatInfo")
 	return nil
 }
 
 func (a *ApiHandler) sendGameInfo(gameID int64, userID, connID string) error {
-	fmt.Println("sendGameInfo")
 	return nil
 }

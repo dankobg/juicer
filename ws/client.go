@@ -175,17 +175,17 @@ func (c *client) onPongReceived(ctx context.Context, payload []byte) {
 	c.avgLatency += time.Duration(mix * (float64(curLatency) - float64(c.avgLatency)))
 	c.mu.Unlock()
 
-	if c.pongCount%10 == 2 {
-		heartbeatMsg := &pb.Message{Event: &pb.Message_Heartbeat{Heartbeat: &pb.Heartbeat{UserId: c.userID.String(), ConnId: c.connID.String()}}}
-		heartbeatMsgBytes, err := protojson.Marshal(heartbeatMsg)
-		if err != nil {
-			c.log.Error("protojson marshal Message_Heartbeat", slog.Any("error", err))
-		} else {
-			if err := c.hub.bus.rdb.Publish(context.Background(), "ipc", heartbeatMsgBytes).Err(); err != nil {
-				c.log.Error("client publish Message_Heartbeat", slog.String("topic", "ipc"), slog.Any("error", err))
-			}
+	// if c.pongCount%10 == 2 {
+	heartbeatMsg := &pb.Message{Event: &pb.Message_Heartbeat{Heartbeat: &pb.Heartbeat{UserId: c.userID.String(), ConnId: c.connID.String(), Guest: c.authState == ClientGuest}}}
+	heartbeatMsgBytes, err := protojson.Marshal(heartbeatMsg)
+	if err != nil {
+		c.log.Error("protojson marshal Message_Heartbeat", slog.Any("error", err))
+	} else {
+		if err := c.hub.bus.rdb.Publish(context.Background(), "ipc", heartbeatMsgBytes).Err(); err != nil {
+			c.log.Error("client publish Message_Heartbeat", slog.String("topic", "ipc"), slog.Any("error", err))
 		}
 	}
+	// }
 
 	latencyMsg := &pb.Message{Event: &pb.Message_Latency{Latency: &pb.Latency{LatencyMs: int32(c.avgLatency.Milliseconds())}}}
 

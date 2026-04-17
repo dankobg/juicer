@@ -73,71 +73,71 @@ func (Color) EnumDescriptor() ([]byte, []int) {
 	return file_proto_juicer_juicer_proto_rawDescGZIP(), []int{0}
 }
 
-// Variant is game variant
-type Variant int32
+// GameVariant is game variant
+type GameVariant int32
 
 const (
-	Variant_VARIANT_UNSPECIFIED      Variant = 0
-	Variant_VARIANT_STANDARD         Variant = 1
-	Variant_VARIANT_ATOMIC           Variant = 2
-	Variant_VARIANT_CRAZYHOUSE       Variant = 3
-	Variant_VARIANT_CHESS960         Variant = 4
-	Variant_VARIANT_KING_OF_THE_HILL Variant = 5
-	Variant_VARIANT_THREE_CHECK      Variant = 6
-	Variant_VARIANT_HORDE            Variant = 7
-	Variant_VARIANT_RACING_KINGS     Variant = 8
+	GameVariant_GAME_VARIANT_UNSPECIFIED      GameVariant = 0
+	GameVariant_GAME_VARIANT_STANDARD         GameVariant = 1
+	GameVariant_GAME_VARIANT_ATOMIC           GameVariant = 2
+	GameVariant_GAME_VARIANT_CRAZYHOUSE       GameVariant = 3
+	GameVariant_GAME_VARIANT_CHESS960         GameVariant = 4
+	GameVariant_GAME_VARIANT_KING_OF_THE_HILL GameVariant = 5
+	GameVariant_GAME_VARIANT_THREE_CHECK      GameVariant = 6
+	GameVariant_GAME_VARIANT_HORDE            GameVariant = 7
+	GameVariant_GAME_VARIANT_RACING_KINGS     GameVariant = 8
 )
 
-// Enum value maps for Variant.
+// Enum value maps for GameVariant.
 var (
-	Variant_name = map[int32]string{
-		0: "VARIANT_UNSPECIFIED",
-		1: "VARIANT_STANDARD",
-		2: "VARIANT_ATOMIC",
-		3: "VARIANT_CRAZYHOUSE",
-		4: "VARIANT_CHESS960",
-		5: "VARIANT_KING_OF_THE_HILL",
-		6: "VARIANT_THREE_CHECK",
-		7: "VARIANT_HORDE",
-		8: "VARIANT_RACING_KINGS",
+	GameVariant_name = map[int32]string{
+		0: "GAME_VARIANT_UNSPECIFIED",
+		1: "GAME_VARIANT_STANDARD",
+		2: "GAME_VARIANT_ATOMIC",
+		3: "GAME_VARIANT_CRAZYHOUSE",
+		4: "GAME_VARIANT_CHESS960",
+		5: "GAME_VARIANT_KING_OF_THE_HILL",
+		6: "GAME_VARIANT_THREE_CHECK",
+		7: "GAME_VARIANT_HORDE",
+		8: "GAME_VARIANT_RACING_KINGS",
 	}
-	Variant_value = map[string]int32{
-		"VARIANT_UNSPECIFIED":      0,
-		"VARIANT_STANDARD":         1,
-		"VARIANT_ATOMIC":           2,
-		"VARIANT_CRAZYHOUSE":       3,
-		"VARIANT_CHESS960":         4,
-		"VARIANT_KING_OF_THE_HILL": 5,
-		"VARIANT_THREE_CHECK":      6,
-		"VARIANT_HORDE":            7,
-		"VARIANT_RACING_KINGS":     8,
+	GameVariant_value = map[string]int32{
+		"GAME_VARIANT_UNSPECIFIED":      0,
+		"GAME_VARIANT_STANDARD":         1,
+		"GAME_VARIANT_ATOMIC":           2,
+		"GAME_VARIANT_CRAZYHOUSE":       3,
+		"GAME_VARIANT_CHESS960":         4,
+		"GAME_VARIANT_KING_OF_THE_HILL": 5,
+		"GAME_VARIANT_THREE_CHECK":      6,
+		"GAME_VARIANT_HORDE":            7,
+		"GAME_VARIANT_RACING_KINGS":     8,
 	}
 )
 
-func (x Variant) Enum() *Variant {
-	p := new(Variant)
+func (x GameVariant) Enum() *GameVariant {
+	p := new(GameVariant)
 	*p = x
 	return p
 }
 
-func (x Variant) String() string {
+func (x GameVariant) String() string {
 	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
 }
 
-func (Variant) Descriptor() protoreflect.EnumDescriptor {
+func (GameVariant) Descriptor() protoreflect.EnumDescriptor {
 	return file_proto_juicer_juicer_proto_enumTypes[1].Descriptor()
 }
 
-func (Variant) Type() protoreflect.EnumType {
+func (GameVariant) Type() protoreflect.EnumType {
 	return &file_proto_juicer_juicer_proto_enumTypes[1]
 }
 
-func (x Variant) Number() protoreflect.EnumNumber {
+func (x GameVariant) Number() protoreflect.EnumNumber {
 	return protoreflect.EnumNumber(x)
 }
 
-// Deprecated: Use Variant.Descriptor instead.
-func (Variant) EnumDescriptor() ([]byte, []int) {
+// Deprecated: Use GameVariant.Descriptor instead.
+func (GameVariant) EnumDescriptor() ([]byte, []int) {
 	return file_proto_juicer_juicer_proto_rawDescGZIP(), []int{1}
 }
 
@@ -1078,6 +1078,7 @@ type Heartbeat struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
 	ConnId        string                 `protobuf:"bytes,2,opt,name=conn_id,json=connId,proto3" json:"conn_id,omitempty"`
+	Guest         bool                   `protobuf:"varint,3,opt,name=guest,proto3" json:"guest,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1126,11 +1127,19 @@ func (x *Heartbeat) GetConnId() string {
 	return ""
 }
 
+func (x *Heartbeat) GetGuest() bool {
+	if x != nil {
+		return x.Guest
+	}
+	return false
+}
+
 // LeaveTab is when user leaves a tab (one conn)
 type LeaveTab struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
 	ConnId        string                 `protobuf:"bytes,2,opt,name=conn_id,json=connId,proto3" json:"conn_id,omitempty"`
+	Guest         bool                   `protobuf:"varint,3,opt,name=guest,proto3" json:"guest,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1179,11 +1188,19 @@ func (x *LeaveTab) GetConnId() string {
 	return ""
 }
 
+func (x *LeaveTab) GetGuest() bool {
+	if x != nil {
+		return x.Guest
+	}
+	return false
+}
+
 // LeaveSite is when user leaves and has no conns anymore (all tabs closed)
 type LeaveSite struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
 	ConnId        string                 `protobuf:"bytes,2,opt,name=conn_id,json=connId,proto3" json:"conn_id,omitempty"`
+	Guest         bool                   `protobuf:"varint,3,opt,name=guest,proto3" json:"guest,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1230,6 +1247,13 @@ func (x *LeaveSite) GetConnId() string {
 		return x.ConnId
 	}
 	return ""
+}
+
+func (x *LeaveSite) GetGuest() bool {
+	if x != nil {
+		return x.Guest
+	}
+	return false
 }
 
 // Latency is avg latency measured
@@ -1417,7 +1441,8 @@ type RequestInitialChannels struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
 	ConnId        string                 `protobuf:"bytes,2,opt,name=conn_id,json=connId,proto3" json:"conn_id,omitempty"`
-	Path          string                 `protobuf:"bytes,3,opt,name=path,proto3" json:"path,omitempty"`
+	Guest         bool                   `protobuf:"varint,3,opt,name=guest,proto3" json:"guest,omitempty"`
+	Path          string                 `protobuf:"bytes,4,opt,name=path,proto3" json:"path,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1464,6 +1489,13 @@ func (x *RequestInitialChannels) GetConnId() string {
 		return x.ConnId
 	}
 	return ""
+}
+
+func (x *RequestInitialChannels) GetGuest() bool {
+	if x != nil {
+		return x.Guest
+	}
+	return false
 }
 
 func (x *RequestInitialChannels) GetPath() string {
@@ -1524,7 +1556,8 @@ type RequestChannelsInfo struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
 	ConnId        string                 `protobuf:"bytes,2,opt,name=conn_id,json=connId,proto3" json:"conn_id,omitempty"`
-	Channels      []string               `protobuf:"bytes,3,rep,name=channels,proto3" json:"channels,omitempty"`
+	Guest         bool                   `protobuf:"varint,3,opt,name=guest,proto3" json:"guest,omitempty"`
+	Channels      []string               `protobuf:"bytes,4,rep,name=channels,proto3" json:"channels,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1571,6 +1604,13 @@ func (x *RequestChannelsInfo) GetConnId() string {
 		return x.ConnId
 	}
 	return ""
+}
+
+func (x *RequestChannelsInfo) GetGuest() bool {
+	if x != nil {
+		return x.Guest
+	}
+	return false
 }
 
 func (x *RequestChannelsInfo) GetChannels() []string {
@@ -2685,16 +2725,19 @@ const file_proto_juicer_juicer_proto_rawDesc = "" +
 	"\x04echo\x18E \x01(\v2\b.pb.EchoH\x00R\x04echoB\a\n" +
 	"\x05event\" \n" +
 	"\x04Echo\x12\x18\n" +
-	"\amessage\x18\x01 \x01(\tR\amessage\"=\n" +
+	"\amessage\x18\x01 \x01(\tR\amessage\"S\n" +
 	"\tHeartbeat\x12\x17\n" +
 	"\auser_id\x18\x01 \x01(\tR\x06userId\x12\x17\n" +
-	"\aconn_id\x18\x02 \x01(\tR\x06connId\"<\n" +
+	"\aconn_id\x18\x02 \x01(\tR\x06connId\x12\x14\n" +
+	"\x05guest\x18\x03 \x01(\bR\x05guest\"R\n" +
 	"\bLeaveTab\x12\x17\n" +
 	"\auser_id\x18\x01 \x01(\tR\x06userId\x12\x17\n" +
-	"\aconn_id\x18\x02 \x01(\tR\x06connId\"=\n" +
+	"\aconn_id\x18\x02 \x01(\tR\x06connId\x12\x14\n" +
+	"\x05guest\x18\x03 \x01(\bR\x05guest\"S\n" +
 	"\tLeaveSite\x12\x17\n" +
 	"\auser_id\x18\x01 \x01(\tR\x06userId\x12\x17\n" +
-	"\aconn_id\x18\x02 \x01(\tR\x06connId\"(\n" +
+	"\aconn_id\x18\x02 \x01(\tR\x06connId\x12\x14\n" +
+	"\x05guest\x18\x03 \x01(\bR\x05guest\"(\n" +
 	"\aLatency\x12\x1d\n" +
 	"\n" +
 	"latency_ms\x18\x01 \x01(\x05R\tlatencyMs\"#\n" +
@@ -2703,17 +2746,19 @@ const file_proto_juicer_juicer_proto_rawDesc = "" +
 	"\x0fClientConnected\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\"$\n" +
 	"\x12ClientDisconnected\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\tR\x02id\"^\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\"t\n" +
 	"\x16RequestInitialChannels\x12\x17\n" +
 	"\auser_id\x18\x01 \x01(\tR\x06userId\x12\x17\n" +
-	"\aconn_id\x18\x02 \x01(\tR\x06connId\x12\x12\n" +
-	"\x04path\x18\x03 \x01(\tR\x04path\"-\n" +
+	"\aconn_id\x18\x02 \x01(\tR\x06connId\x12\x14\n" +
+	"\x05guest\x18\x03 \x01(\bR\x05guest\x12\x12\n" +
+	"\x04path\x18\x04 \x01(\tR\x04path\"-\n" +
 	"\x0fInitialChannels\x12\x1a\n" +
-	"\bchannels\x18\x01 \x03(\tR\bchannels\"c\n" +
+	"\bchannels\x18\x01 \x03(\tR\bchannels\"y\n" +
 	"\x13RequestChannelsInfo\x12\x17\n" +
 	"\auser_id\x18\x01 \x01(\tR\x06userId\x12\x17\n" +
-	"\aconn_id\x18\x02 \x01(\tR\x06connId\x12\x1a\n" +
-	"\bchannels\x18\x03 \x03(\tR\bchannels\"j\n" +
+	"\aconn_id\x18\x02 \x01(\tR\x06connId\x12\x14\n" +
+	"\x05guest\x18\x03 \x01(\bR\x05guest\x12\x1a\n" +
+	"\bchannels\x18\x04 \x03(\tR\bchannels\"j\n" +
 	"\x06Clocks\x12/\n" +
 	"\x05white\x18\x01 \x01(\v2\x19.google.protobuf.DurationR\x05white\x12/\n" +
 	"\x05black\x18\x02 \x01(\v2\x19.google.protobuf.DurationR\x05black\"B\n" +
@@ -2798,17 +2843,17 @@ const file_proto_juicer_juicer_proto_rawDesc = "" +
 	"\x05Color\x12\x15\n" +
 	"\x11COLOR_UNSPECIFIED\x10\x00\x12\x0f\n" +
 	"\vCOLOR_WHITE\x10\x01\x12\x0f\n" +
-	"\vCOLOR_BLACK\x10\x02*\xde\x01\n" +
-	"\aVariant\x12\x17\n" +
-	"\x13VARIANT_UNSPECIFIED\x10\x00\x12\x14\n" +
-	"\x10VARIANT_STANDARD\x10\x01\x12\x12\n" +
-	"\x0eVARIANT_ATOMIC\x10\x02\x12\x16\n" +
-	"\x12VARIANT_CRAZYHOUSE\x10\x03\x12\x14\n" +
-	"\x10VARIANT_CHESS960\x10\x04\x12\x1c\n" +
-	"\x18VARIANT_KING_OF_THE_HILL\x10\x05\x12\x17\n" +
-	"\x13VARIANT_THREE_CHECK\x10\x06\x12\x11\n" +
-	"\rVARIANT_HORDE\x10\a\x12\x18\n" +
-	"\x14VARIANT_RACING_KINGS\x10\b*\x8c\x01\n" +
+	"\vCOLOR_BLACK\x10\x02*\x8f\x02\n" +
+	"\vGameVariant\x12\x1c\n" +
+	"\x18GAME_VARIANT_UNSPECIFIED\x10\x00\x12\x19\n" +
+	"\x15GAME_VARIANT_STANDARD\x10\x01\x12\x17\n" +
+	"\x13GAME_VARIANT_ATOMIC\x10\x02\x12\x1b\n" +
+	"\x17GAME_VARIANT_CRAZYHOUSE\x10\x03\x12\x19\n" +
+	"\x15GAME_VARIANT_CHESS960\x10\x04\x12!\n" +
+	"\x1dGAME_VARIANT_KING_OF_THE_HILL\x10\x05\x12\x1c\n" +
+	"\x18GAME_VARIANT_THREE_CHECK\x10\x06\x12\x16\n" +
+	"\x12GAME_VARIANT_HORDE\x10\a\x12\x1d\n" +
+	"\x19GAME_VARIANT_RACING_KINGS\x10\b*\x8c\x01\n" +
 	"\fGameTimeKind\x12\x1e\n" +
 	"\x1aGAME_TIME_KIND_UNSPECIFIED\x10\x00\x12\x1b\n" +
 	"\x17GAME_TIME_KIND_REALTIME\x10\x01\x12!\n" +
@@ -2874,7 +2919,7 @@ var file_proto_juicer_juicer_proto_enumTypes = make([]protoimpl.EnumInfo, 8)
 var file_proto_juicer_juicer_proto_msgTypes = make([]protoimpl.MessageInfo, 32)
 var file_proto_juicer_juicer_proto_goTypes = []any{
 	(Color)(0),                     // 0: pb.Color
-	(Variant)(0),                   // 1: pb.Variant
+	(GameVariant)(0),               // 1: pb.GameVariant
 	(GameTimeKind)(0),              // 2: pb.GameTimeKind
 	(GameTimeCategory)(0),          // 3: pb.GameTimeCategory
 	(GameResult)(0),                // 4: pb.GameResult
