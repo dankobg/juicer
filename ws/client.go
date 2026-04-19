@@ -101,7 +101,7 @@ func (c *client) ReadLoop(ctx context.Context) {
 	for {
 		msgType, msg, err := c.conn.Read(ctx)
 		if err != nil {
-			c.log.Error("conn.Read", slog.Any("error", err))
+			c.log.Debug("conn.Read", slog.Any("error", err))
 			return
 		}
 

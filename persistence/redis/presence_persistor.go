@@ -79,13 +79,14 @@ func (pst *RedisPresencePersistor) SetPresence(ctx context.Context, userID uuid.
 			return fmt.Errorf("setpresence zadd userpresences: %w", err)
 		}
 
-		_ = []any{presenceActiveGamesKey}
-
-		// @TODO: HANDLE ACTIVE GAMES
-
 		return nil
 	}); err != nil {
 		return nil, nil, fmt.Errorf("setpresence pipeline: %w", err)
+	}
+
+	activeUserGamesPresences, err := pst.rdb.ZRange(ctx, presenceActiveGamesKey, 0, -1).Result()
+	if err != nil {
+		return nil, nil, fmt.Errorf("fetch active games presences")
 	}
 
 	afterUserPresences, err := pst.rdb.ZRange(ctx, presenceUserKey, 0, -1).Result()
@@ -103,6 +104,13 @@ func (pst *RedisPresencePersistor) SetPresence(ctx context.Context, userID uuid.
 	for _, after := range afterUserPresences {
 		channel := strings.Split(after, "#")[1]
 		newChannels = append(newChannels, channel)
+	}
+
+	for _, x := range activeUserGamesPresences {
+		gameIDStr := strings.Split(x, "#")[1]
+		activeGameKey := "activegame:" + gameIDStr
+		oldChannels = append(oldChannels, activeGameKey)
+		newChannels = append(newChannels, activeGameKey)
 	}
 
 	slices.Sort(oldChannels)
@@ -182,6 +190,7 @@ func (pst *RedisPresencePersistor) ClearPresence(ctx context.Context, userID uui
 
 	oldChannels := make([]string, 0)
 	newChannels := make([]string, 0)
+	removedChannels := make([]string, 0)
 
 	for _, before := range beforePresences {
 		channel := strings.Split(before, "#")[1]
@@ -195,7 +204,39 @@ func (pst *RedisPresencePersistor) ClearPresence(ctx context.Context, userID uui
 	slices.Sort(oldChannels)
 	slices.Sort(newChannels)
 
-	return oldChannels, newChannels, nil, nil
+	var i, j int
+
+	for i < len(oldChannels) && j < len(newChannels) {
+		if oldChannels[i] == newChannels[j] {
+			// present in both -> unchanged
+			i++
+			j++
+		} else if oldChannels[i] < newChannels[j] {
+			// in old but not in new -> removed
+			removedChannels = append(removedChannels, oldChannels[i])
+			i++
+		} else {
+			// in new but not in old -> added (optional)
+			// addedChannels = append(addedChannels, newChannels[j])
+			j++
+		}
+	}
+
+	// anything left in old -> removed
+	for i < len(oldChannels) {
+		removedChannels = append(removedChannels, oldChannels[i])
+		i++
+	}
+
+	// anything left in new -> added (optional)
+	for j < len(newChannels) {
+		// addedChannels = append(addedChannels, newChannels[j])
+		j++
+	}
+
+	slices.Sort(removedChannels)
+
+	return oldChannels, newChannels, removedChannels, nil
 }
 
 func (pst *RedisPresencePersistor) GetPresence(ctx context.Context, userID uuid.UUID) ([]string, error) {
@@ -223,6 +264,20 @@ func (pst *RedisPresencePersistor) RefreshPresence(ctx context.Context, userID u
 	beforePresences, err := pst.rdb.ZRange(ctx, presenceUserKey, 0, -1).Result()
 	if err != nil {
 		return nil, nil, fmt.Errorf("fetch before presences")
+	}
+
+	oldChannels := make([]string, 0)
+	newChannels := make([]string, 0)
+
+	beforeActiveUserGamesPresences, err := pst.rdb.ZRange(ctx, presenceActiveGamesKey, 0, -1).Result()
+	if err != nil {
+		return nil, nil, fmt.Errorf("fetch active games presences")
+	}
+
+	for _, x := range beforeActiveUserGamesPresences {
+		gameIDStr := strings.Split(x, "#")[1]
+		activeGameKey := "activegame:" + gameIDStr
+		oldChannels = append(oldChannels, activeGameKey)
 	}
 
 	if _, err := pst.rdb.Pipelined(ctx, func(p redis.Pipeliner) error {
@@ -275,6 +330,7 @@ func (pst *RedisPresencePersistor) RefreshPresence(ctx context.Context, userID u
 					presenceChannelKey,
 					presenceUserKey,
 					presenceUsersKey,
+					presenceActiveGamesKey,
 				}
 
 				for _, key := range removeExpired {
@@ -284,10 +340,6 @@ func (pst *RedisPresencePersistor) RefreshPresence(ctx context.Context, userID u
 				}
 			}
 		}
-
-		_ = []any{presenceActiveGamesKey}
-
-		// @TODO: HANDLE ACTIVE GAMES
 
 		return nil
 	}); err != nil {
@@ -299,9 +351,6 @@ func (pst *RedisPresencePersistor) RefreshPresence(ctx context.Context, userID u
 		return nil, nil, fmt.Errorf("fetch after presences")
 	}
 
-	oldChannels := make([]string, 0)
-	newChannels := make([]string, 0)
-
 	for _, before := range beforePresences {
 		channel := strings.Split(before, "#")[1]
 		oldChannels = append(oldChannels, channel)
@@ -309,6 +358,17 @@ func (pst *RedisPresencePersistor) RefreshPresence(ctx context.Context, userID u
 	for _, after := range afterPresences {
 		channel := strings.Split(after, "#")[1]
 		newChannels = append(newChannels, channel)
+	}
+
+	afterActiveUserGamesPresences, err := pst.rdb.ZRange(ctx, presenceActiveGamesKey, 0, -1).Result()
+	if err != nil {
+		return nil, nil, fmt.Errorf("fetch active games presences")
+	}
+
+	for _, x := range afterActiveUserGamesPresences {
+		gameIDStr := strings.Split(x, "#")[1]
+		activeGameKey := "activegame:" + gameIDStr
+		newChannels = append(newChannels, activeGameKey)
 	}
 
 	slices.Sort(oldChannels)
