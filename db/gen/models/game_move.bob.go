@@ -44,7 +44,7 @@ type GameMovesQuery = *psql.ViewQuery[*GameMove, GameMoveSlice]
 
 // gameMoveR is where relationships are stored.
 type gameMoveR struct {
-	Game *Game // game_move.game_move_game_id_fkey
+	Game *Game // game_move.fk_game_move_game_id
 }
 
 func buildGameMoveColumns(alias string) gameMoveColumns {

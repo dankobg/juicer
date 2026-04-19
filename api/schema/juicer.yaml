@@ -392,6 +392,662 @@ paths:
           $ref: "#/components/responses/UnauthorizedErrorResponse"
         default:
           $ref: "#/components/responses/UnexpectedErrorResponse"
+  /me/friend-requests:
+    get:
+      operationId: listFriendRequests
+      summary: List friend requests
+      description: List my friend requests
+      security:
+        - cookieAuth: []
+      tags:
+        - juicer
+      parameters:
+        - $ref: "#/components/parameters/PaginationPage"
+        - $ref: "#/components/parameters/PaginationPageSize"
+        - in: query
+          name: username
+          description: Filter friend requests by username (partial match)
+          required: false
+          schema:
+            type: string
+        - in: query
+          name: direction
+          description: Filter friend requests by direction (incoming or outgoing)
+          required: false
+          schema:
+            type: string
+            enum:
+              - incoming
+              - outgoing
+        - name: id
+          in: query
+          description: Filter friends by ids
+          required: false
+          schema:
+            type: array
+            items:
+              type: string
+              format: uuid
+        - in: query
+          name: sort
+          description: Sort by fields (add prefix `-` for descending e.g. -created_at)
+          required: false
+          explode: false
+          schema:
+            type: array
+            items:
+              type: string
+      responses:
+        "200":
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                  - meta
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/FriendRequest"
+                  meta:
+                    $ref: "#/components/schemas/PaginationMeta"
+        default:
+          $ref: "#/components/responses/UnexpectedErrorResponse"
+    post:
+      operationId: createFriendRequest
+      summary: Create friend request
+      description: Create friend request
+      security:
+        - cookieAuth: []
+      tags:
+        - juicer
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateFriendRequestBody"
+      responses:
+        "201":
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FriendRequest"
+        "400":
+          $ref: "#/components/responses/GenericErrorResponse"
+        "401":
+          $ref: "#/components/responses/UnauthenticatedErrorResponse"
+        "403":
+          $ref: "#/components/responses/UnauthorizedErrorResponse"
+        "404":
+          $ref: "#/components/responses/NotFoundErrorResponse"
+        default:
+          $ref: "#/components/responses/UnexpectedErrorResponse"
+  "/me/friend-requests/{id}/accept":
+    post:
+      operationId: acceptFriendRequest
+      summary: Accept friend request
+      description: Accept friend request
+      security:
+        - cookieAuth: []
+      tags:
+        - juicer
+      parameters:
+        - description: The friend id
+          in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          $ref: "#/components/responses/EmptyResponse"
+        "400":
+          $ref: "#/components/responses/GenericErrorResponse"
+        "401":
+          $ref: "#/components/responses/UnauthenticatedErrorResponse"
+        "403":
+          $ref: "#/components/responses/UnauthorizedErrorResponse"
+        "404":
+          $ref: "#/components/responses/NotFoundErrorResponse"
+        default:
+          $ref: "#/components/responses/UnexpectedErrorResponse"
+  "/me/friend-requests/{id}/decline":
+    post:
+      operationId: declineFriendRequest
+      summary: Decline friend request
+      description: Decline friend request
+      security:
+        - cookieAuth: []
+      tags:
+        - juicer
+      parameters:
+        - description: The friend id
+          in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          $ref: "#/components/responses/EmptyResponse"
+        "400":
+          $ref: "#/components/responses/GenericErrorResponse"
+        "401":
+          $ref: "#/components/responses/UnauthenticatedErrorResponse"
+        "403":
+          $ref: "#/components/responses/UnauthorizedErrorResponse"
+        "404":
+          $ref: "#/components/responses/NotFoundErrorResponse"
+        default:
+          $ref: "#/components/responses/UnexpectedErrorResponse"
+  "/me/friend-requests/{id}/cancel":
+    delete:
+      operationId: cancelFriendRequest
+      summary: Cancel friend request
+      description: Cancel friend request
+      security:
+        - cookieAuth: []
+      tags:
+        - juicer
+      parameters:
+        - description: The friend id
+          in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          $ref: "#/components/responses/EmptyResponse"
+        "400":
+          $ref: "#/components/responses/GenericErrorResponse"
+        "401":
+          $ref: "#/components/responses/UnauthenticatedErrorResponse"
+        "403":
+          $ref: "#/components/responses/UnauthorizedErrorResponse"
+        "404":
+          $ref: "#/components/responses/NotFoundErrorResponse"
+        default:
+          $ref: "#/components/responses/UnexpectedErrorResponse"
+  /me/friends:
+    get:
+      operationId: listFriends
+      summary: List my friends
+      description: List all my friends
+      security:
+        - cookieAuth: []
+      tags:
+        - juicer
+      parameters:
+        - $ref: "#/components/parameters/PaginationPage"
+        - $ref: "#/components/parameters/PaginationPageSize"
+        - in: query
+          name: username
+          description: Filter friends by username (partial match)
+          required: false
+          schema:
+            type: string
+        - name: id
+          in: query
+          description: Filter friends by ids
+          required: false
+          schema:
+            type: array
+            items:
+              type: string
+              format: uuid
+        - in: query
+          name: sort
+          description: Sort by fields (add prefix `-` for descending e.g. -created_at)
+          required: false
+          explode: false
+          schema:
+            type: array
+            items:
+              type: string
+      responses:
+        "200":
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                  - meta
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/User"
+                  meta:
+                    $ref: "#/components/schemas/PaginationMeta"
+        default:
+          $ref: "#/components/responses/UnexpectedErrorResponse"
+      delete:
+        operationId: deleteFriends
+        summary: Delete friends
+        description: Delete all my friends
+        security:
+          - cookieAuth: []
+        tags:
+          - juicer
+        requestBody:
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DeleteFriendsBody"
+        responses:
+          "204":
+            $ref: "#/components/responses/EmptyResponse"
+          "400":
+            $ref: "#/components/responses/GenericErrorResponse"
+          "401":
+            $ref: "#/components/responses/UnauthenticatedErrorResponse"
+          "403":
+            $ref: "#/components/responses/UnauthorizedErrorResponse"
+          default:
+            $ref: "#/components/responses/UnexpectedErrorResponse"
+  "/me/friends/{id}":
+    get:
+      operationId: getFriend
+      summary: Get friend by id
+      description: Return a specific friend by id
+      security:
+        - cookieAuth: []
+      tags:
+        - juicer
+      parameters:
+        - description: The friend id
+          in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+          description: identitySchema
+        "400":
+          $ref: "#/components/responses/GenericErrorResponse"
+        "401":
+          $ref: "#/components/responses/UnauthenticatedErrorResponse"
+        "403":
+          $ref: "#/components/responses/UnauthorizedErrorResponse"
+        "404":
+          $ref: "#/components/responses/NotFoundErrorResponse"
+        default:
+          $ref: "#/components/responses/UnexpectedErrorResponse"
+  delete:
+    operationId: deleteFriend
+    summary: Delete friend by id
+    description: Delete a specific friend by id
+    security:
+      - cookieAuth: []
+    tags:
+      - juicer
+    parameters:
+      - description: The friend id
+        in: path
+        name: id
+        required: true
+        schema:
+          type: string
+          format: uuid
+    responses:
+      "204":
+        $ref: "#/components/responses/EmptyResponse"
+      "400":
+        $ref: "#/components/responses/GenericErrorResponse"
+      "401":
+        $ref: "#/components/responses/UnauthenticatedErrorResponse"
+      "403":
+        $ref: "#/components/responses/UnauthorizedErrorResponse"
+      default:
+        $ref: "#/components/responses/UnexpectedErrorResponse"
+  /me/followings:
+    get:
+      operationId: listFollowings
+      summary: List my followings
+      description: List all people that i follow
+      security:
+        - cookieAuth: []
+      tags:
+        - juicer
+      parameters:
+        - $ref: "#/components/parameters/PaginationPage"
+        - $ref: "#/components/parameters/PaginationPageSize"
+        - in: query
+          name: username
+          description: Filter followings by username (partial match)
+          required: false
+          schema:
+            type: string
+        - name: id
+          in: query
+          description: Filter followings by ids
+          required: false
+          schema:
+            type: array
+            items:
+              type: string
+              format: uuid
+        - in: query
+          name: sort
+          description: Sort by fields (add prefix `-` for descending e.g. -created_at)
+          required: false
+          explode: false
+          schema:
+            type: array
+            items:
+              type: string
+      responses:
+        "200":
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                  - meta
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/User"
+                  meta:
+                    $ref: "#/components/schemas/PaginationMeta"
+        default:
+          $ref: "#/components/responses/UnexpectedErrorResponse"
+    post:
+      operationId: followUser
+      summary: Follow user
+      description: Follow another user
+      security:
+        - cookieAuth: []
+      tags:
+        - juicer
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FollowUserBody"
+      responses:
+        "201":
+          $ref: "#/components/responses/EmptyResponse"
+        "400":
+          $ref: "#/components/responses/GenericErrorResponse"
+        "401":
+          $ref: "#/components/responses/UnauthenticatedErrorResponse"
+        "403":
+          $ref: "#/components/responses/UnauthorizedErrorResponse"
+        "404":
+          $ref: "#/components/responses/NotFoundErrorResponse"
+        default:
+          $ref: "#/components/responses/UnexpectedErrorResponse"
+    delete:
+      operationId: unfollowUsers
+      summary: Unfollow users
+      description: Unfollow users
+      security:
+        - cookieAuth: []
+      tags:
+        - juicer
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UnfollowUsersBody"
+      responses:
+        "204":
+          $ref: "#/components/responses/EmptyResponse"
+        "400":
+          $ref: "#/components/responses/GenericErrorResponse"
+        "401":
+          $ref: "#/components/responses/UnauthenticatedErrorResponse"
+        "403":
+          $ref: "#/components/responses/UnauthorizedErrorResponse"
+        default:
+          $ref: "#/components/responses/UnexpectedErrorResponse"
+  "/me/followings/{id}":
+    get:
+      operationId: getFollowing
+      summary: Get following by id
+      description: Return a specific following by id
+      security:
+        - cookieAuth: []
+      tags:
+        - juicer
+      parameters:
+        - description: The following id
+          in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+          description: identitySchema
+        "400":
+          $ref: "#/components/responses/GenericErrorResponse"
+        "401":
+          $ref: "#/components/responses/UnauthenticatedErrorResponse"
+        "403":
+          $ref: "#/components/responses/UnauthorizedErrorResponse"
+        "404":
+          $ref: "#/components/responses/NotFoundErrorResponse"
+        default:
+          $ref: "#/components/responses/UnexpectedErrorResponse"
+    delete:
+      operationId: unfollowUser
+      summary: Unfollow user
+      description: Unfollow user
+      security:
+        - cookieAuth: []
+      tags:
+        - juicer
+      parameters:
+        - description: The following id
+          in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "204":
+          $ref: "#/components/responses/EmptyResponse"
+        "400":
+          $ref: "#/components/responses/GenericErrorResponse"
+        "401":
+          $ref: "#/components/responses/UnauthenticatedErrorResponse"
+        "403":
+          $ref: "#/components/responses/UnauthorizedErrorResponse"
+        default:
+          $ref: "#/components/responses/UnexpectedErrorResponse"
+  /me/blocklist:
+    get:
+      operationId: listBlockedUsers
+      summary: List my blocked users
+      description: List all the users that i blocked
+      security:
+        - cookieAuth: []
+      tags:
+        - juicer
+      parameters:
+        - $ref: "#/components/parameters/PaginationPage"
+        - $ref: "#/components/parameters/PaginationPageSize"
+        - in: query
+          name: username
+          description: Filter blocked users by username (partial match)
+          required: false
+          schema:
+            type: string
+        - name: id
+          in: query
+          description: Filter blocked users by ids
+          required: false
+          schema:
+            type: array
+            items:
+              type: string
+              format: uuid
+        - in: query
+          name: sort
+          description: Sort by fields (add prefix `-` for descending e.g. -created_at)
+          required: false
+          explode: false
+          schema:
+            type: array
+            items:
+              type: string
+      responses:
+        "200":
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                  - meta
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/User"
+                  meta:
+                    $ref: "#/components/schemas/PaginationMeta"
+        default:
+          $ref: "#/components/responses/UnexpectedErrorResponse"
+    post:
+      operationId: blockUser
+      summary: block user
+      description: block another user
+      security:
+        - cookieAuth: []
+      tags:
+        - juicer
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BlockUserBody"
+      responses:
+        "201":
+          $ref: "#/components/responses/EmptyResponse"
+        "400":
+          $ref: "#/components/responses/GenericErrorResponse"
+        "401":
+          $ref: "#/components/responses/UnauthenticatedErrorResponse"
+        "403":
+          $ref: "#/components/responses/UnauthorizedErrorResponse"
+        "404":
+          $ref: "#/components/responses/NotFoundErrorResponse"
+        default:
+          $ref: "#/components/responses/UnexpectedErrorResponse"
+    delete:
+      operationId: unblockUsers
+      summary: Unblock users
+      description: Unblock users
+      security:
+        - cookieAuth: []
+      tags:
+        - juicer
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UnblockUsersBody"
+      responses:
+        "204":
+          $ref: "#/components/responses/EmptyResponse"
+        "400":
+          $ref: "#/components/responses/GenericErrorResponse"
+        "401":
+          $ref: "#/components/responses/UnauthenticatedErrorResponse"
+        "403":
+          $ref: "#/components/responses/UnauthorizedErrorResponse"
+        default:
+          $ref: "#/components/responses/UnexpectedErrorResponse"
+  "/me/blocklist/{id}":
+    get:
+      operationId: getBlockedUser
+      summary: Get blocked user by id
+      description: Return a specific blocked user by id
+      security:
+        - cookieAuth: []
+      tags:
+        - juicer
+      parameters:
+        - description: The blocked user id
+          in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+          description: identitySchema
+        "400":
+          $ref: "#/components/responses/GenericErrorResponse"
+        "401":
+          $ref: "#/components/responses/UnauthenticatedErrorResponse"
+        "403":
+          $ref: "#/components/responses/UnauthorizedErrorResponse"
+        "404":
+          $ref: "#/components/responses/NotFoundErrorResponse"
+        default:
+          $ref: "#/components/responses/UnexpectedErrorResponse"
+    delete:
+      operationId: unblockUser
+      summary: Unblock user
+      description: Unblock user
+      security:
+        - cookieAuth: []
+      tags:
+        - juicer
+      parameters:
+        - description: The blocked user id
+          in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "204":
+          $ref: "#/components/responses/EmptyResponse"
+        "400":
+          $ref: "#/components/responses/GenericErrorResponse"
+        "401":
+          $ref: "#/components/responses/UnauthenticatedErrorResponse"
+        "403":
+          $ref: "#/components/responses/UnauthorizedErrorResponse"
+        default:
+          $ref: "#/components/responses/UnexpectedErrorResponse"
   /schemas:
     get:
       operationId: listIdentitySchemas
@@ -2234,6 +2890,69 @@ components:
         - loss
         - draw
         - interrupted
+    CreateFriendRequestBody:
+      type: object
+      properties:
+        user_id:
+          type: string
+          format: uuid
+      required:
+        - user_id
+    FollowUserBody:
+      type: object
+      properties:
+        user_id:
+          type: string
+          format: uuid
+      required:
+        - user_id
+    UnfollowUsersBody:
+      type: object
+      required:
+        - ids
+      properties:
+        ids:
+          type: array
+          items:
+            type: string
+            format: uuid
+          description: Users to unfollow
+    BlockUserBody:
+      type: object
+      properties:
+        user_id:
+          type: string
+          format: uuid
+      required:
+        - user_id
+    UnblockUsersBody:
+      type: object
+      required:
+        - ids
+      properties:
+        ids:
+          type: array
+          items:
+            type: string
+            format: uuid
+          description: Users to unblock
+    FriendRequest:
+      type: object
+      properties:
+        user_id:
+          type: string
+          format: uuid
+        friend_id:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum:
+            - pending
+            - accepted
+            - declined
+      required:
+        - user_id
     UUID:
       type: string
       format: uuid

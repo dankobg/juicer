@@ -82,7 +82,7 @@ func (a *ApiHandler) handleIPCHeartbeatMsg(data *pb.Heartbeat) {
 
 	_, _, err := a.persistor.Presence().RefreshPresence(context.Background(), uuid.MustParse(data.UserId), uuid.MustParse(data.ConnId), username, data.Guest)
 	if err != nil {
-		fmt.Println("RefreshPresence VUTRRRRRRRRRRRRRRRR", err)
+		a.Log.Error("RefreshPresence", slog.String("user_id", data.UserId), slog.String("conn_id", data.ConnId), slog.Any("error", err))
 	}
 
 	// refresh presence
@@ -105,7 +105,7 @@ func (a *ApiHandler) handleIPCLeaveTabMsg(data *pb.LeaveTab) {
 
 	_, _, _, err := a.persistor.Presence().ClearPresence(context.Background(), uuid.MustParse(data.UserId), uuid.MustParse(data.ConnId), username, data.Guest)
 	if err != nil {
-		fmt.Println("ClearPresence ROFLLLLLLLLLLLLLL", err)
+		a.Log.Error("ClearPresence", slog.String("user_id", data.UserId), slog.String("conn_id", data.ConnId), slog.Any("error", err))
 	}
 
 	// clear presence
@@ -196,7 +196,8 @@ func (a *ApiHandler) handleIPCRequestChannelsInfoMsg(data *pb.RequestChannelsInf
 	for _, channel := range data.GetChannels() {
 		_, _, err := a.persistor.Presence().SetPresence(context.Background(), uuid.MustParse(data.UserId), uuid.MustParse(data.ConnId), username, data.Guest, channel)
 		if err != nil {
-			fmt.Println("SetPresence KEEEEEEEEEENJJJJJJJJJJJJJJJ", err)
+			a.Log.Error("SetPresence", slog.String("user_id", data.UserId), slog.String("conn_id", data.ConnId), slog.String("channel", channel), slog.Any("error", err))
+			return
 		}
 
 		if channel == "lobby" {
@@ -501,5 +502,42 @@ func (a *ApiHandler) sendLobbyChatInfo(userID, connID string) error {
 }
 
 func (a *ApiHandler) sendGameInfo(gameID int64, userID, connID string) error {
+	return nil
+}
+
+func channelsChanged(oldChannels, newChannels []string) bool {
+	// they come sorted already
+	if len(newChannels) != len(oldChannels) {
+		return true
+	}
+
+	for i, nc := range newChannels {
+		if nc != oldChannels[i] {
+			return true
+		}
+	}
+
+	return false
+}
+
+func (a *ApiHandler) broadcastPresenceChanged(ctx context.Context, oldChannels, newChannels []string, userID, username string) error {
+	if !channelsChanged(oldChannels, newChannels) {
+		return nil
+	}
+
+	presenceChangedMsg := &pb.Message{Event: &pb.Message_PresenceChanged{PresenceChanged: &pb.PresenceChanged{
+		UserId:   userID,
+		Username: username,
+		Channels: newChannels,
+	}}}
+	presenceChangedMsgBytes, err := protojson.Marshal(presenceChangedMsg)
+	if err != nil {
+		return fmt.Errorf("protojson.Marshal Message_PresenceChanged: %w", err)
+	}
+
+	topic := "presence.changed." + userID
+	if err := a.Rdb.Publish(ctx, topic, presenceChangedMsgBytes).Err(); err != nil {
+		return fmt.Errorf("publish Message_PresenceChanged: %w", err)
+	}
 	return nil
 }

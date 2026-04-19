@@ -835,3 +835,71 @@ func (a *ApiHandler) GetUsername(ctx context.Context, identityID string) (string
 
 	return username, nil
 }
+
+func (a *ApiHandler) CreateFriendRequest(ctx context.Context, request api.CreateFriendRequestRequestObject) (api.CreateFriendRequestResponseObject, error) {
+	panic("@TODO: IMPLEMENT API CreateFriendRequest")
+}
+
+func (a *ApiHandler) ListFriendRequests(ctx context.Context, request api.ListFriendRequestsRequestObject) (api.ListFriendRequestsResponseObject, error) {
+	panic("@TODO: IMPLEMENT API ListFriendRequests")
+}
+
+func (a *ApiHandler) AcceptFriendRequest(ctx context.Context, request api.AcceptFriendRequestRequestObject) (api.AcceptFriendRequestResponseObject, error) {
+	panic("@TODO: IMPLEMENT API AcceptFriendRequest")
+}
+
+func (a *ApiHandler) DeclineFriendRequest(ctx context.Context, request api.DeclineFriendRequestRequestObject) (api.DeclineFriendRequestResponseObject, error) {
+	panic("@TODO: IMPLEMENT API DeclineFriendRequest")
+}
+
+func (a *ApiHandler) CancelFriendRequest(ctx context.Context, request api.CancelFriendRequestRequestObject) (api.CancelFriendRequestResponseObject, error) {
+	panic("@TODO: IMPLEMENT API CancelFriendRequest")
+}
+
+func (a *ApiHandler) ListFriends(ctx context.Context, request api.ListFriendsRequestObject) (api.ListFriendsResponseObject, error) {
+	panic("@TODO: IMPLEMENT API ListFriends")
+}
+
+func (a *ApiHandler) GetFriend(ctx context.Context, request api.GetFriendRequestObject) (api.GetFriendResponseObject, error) {
+	panic("@TODO: IMPLEMENT API GetFriend")
+}
+
+func (a *ApiHandler) ListFollowings(ctx context.Context, request api.ListFollowingsRequestObject) (api.ListFollowingsResponseObject, error) {
+	panic("@TODO: IMPLEMENT API ListFollowings")
+}
+
+func (a *ApiHandler) GetFollowing(ctx context.Context, request api.GetFollowingRequestObject) (api.GetFollowingResponseObject, error) {
+	panic("@TODO: IMPLEMENT API GetFollowing")
+}
+
+func (a *ApiHandler) FollowUser(ctx context.Context, request api.FollowUserRequestObject) (api.FollowUserResponseObject, error) {
+	panic("@TODO: IMPLEMENT API FollowUser")
+}
+
+func (a *ApiHandler) UnfollowUser(ctx context.Context, request api.UnfollowUserRequestObject) (api.UnfollowUserResponseObject, error) {
+	panic("@TODO: IMPLEMENT API UnfollowUser")
+}
+
+func (a *ApiHandler) UnfollowUsers(ctx context.Context, request api.UnfollowUsersRequestObject) (api.UnfollowUsersResponseObject, error) {
+	panic("@TODO: IMPLEMENT API UnfollowUsers")
+}
+
+func (a *ApiHandler) ListBlockedUsers(ctx context.Context, request api.ListBlockedUsersRequestObject) (api.ListBlockedUsersResponseObject, error) {
+	panic("@TODO: IMPLEMENT API ListBlockedUsers")
+}
+
+func (a *ApiHandler) GetBlockedUser(ctx context.Context, request api.GetBlockedUserRequestObject) (api.GetBlockedUserResponseObject, error) {
+	panic("@TODO: IMPLEMENT API GetBlockedUser")
+}
+
+func (a *ApiHandler) BlockUser(ctx context.Context, request api.BlockUserRequestObject) (api.BlockUserResponseObject, error) {
+	panic("@TODO: IMPLEMENT API BlockUser")
+}
+
+func (a *ApiHandler) UnblockUser(ctx context.Context, request api.UnblockUserRequestObject) (api.UnblockUserResponseObject, error) {
+	panic("@TODO: IMPLEMENT API UnblockUser")
+}
+
+func (a *ApiHandler) UnblockUsers(ctx context.Context, request api.UnblockUsersRequestObject) (api.UnblockUsersResponseObject, error) {
+	panic("@TODO: IMPLEMENT API UnblockUsers")
+}

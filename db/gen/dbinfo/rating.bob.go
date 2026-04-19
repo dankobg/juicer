@@ -80,9 +80,9 @@ var Ratings = Table[
 		},
 	},
 	Indexes: ratingIndexes{
-		RatingPkey: index{
+		PKRatingID: index{
 			Type: "btree",
-			Name: "rating_pkey",
+			Name: "pk_rating_id",
 			Columns: []indexColumn{
 				{
 					Name:         "id",
@@ -97,9 +97,9 @@ var Ratings = Table[
 			Where:         "",
 			Include:       []string{},
 		},
-		RatingUserIDGameTimeCategoryIDKey: index{
+		UqRatingUserIDGameTimeCategoryID: index{
 			Type: "btree",
-			Name: "rating_user_id_game_time_category_id_key",
+			Name: "uq_rating_user_id_game_time_category_id",
 			Columns: []indexColumn{
 				{
 					Name:         "user_id",
@@ -121,14 +121,14 @@ var Ratings = Table[
 		},
 	},
 	PrimaryKey: &constraint{
-		Name:    "rating_pkey",
+		Name:    "pk_rating_id",
 		Columns: []string{"id"},
 		Comment: "",
 	},
 	ForeignKeys: ratingForeignKeys{
-		RatingRatingUserIDFkey: foreignKey{
+		RatingFKRatingUserID: foreignKey{
 			constraint: constraint{
-				Name:    "rating.rating_user_id_fkey",
+				Name:    "rating.fk_rating_user_id",
 				Columns: []string{"user_id"},
 				Comment: "",
 			},
@@ -137,8 +137,8 @@ var Ratings = Table[
 		},
 	},
 	Uniques: ratingUniques{
-		RatingUserIDGameTimeCategoryIDKey: constraint{
-			Name:    "rating_user_id_game_time_category_id_key",
+		UqRatingUserIDGameTimeCategoryID: constraint{
+			Name:    "uq_rating_user_id_game_time_category_id",
 			Columns: []string{"user_id", "game_time_category_id"},
 			Comment: "",
 		},
@@ -164,33 +164,33 @@ func (c ratingColumns) AsSlice() []column {
 }
 
 type ratingIndexes struct {
-	RatingPkey                        index
-	RatingUserIDGameTimeCategoryIDKey index
+	PKRatingID                       index
+	UqRatingUserIDGameTimeCategoryID index
 }
 
 func (i ratingIndexes) AsSlice() []index {
 	return []index{
-		i.RatingPkey, i.RatingUserIDGameTimeCategoryIDKey,
+		i.PKRatingID, i.UqRatingUserIDGameTimeCategoryID,
 	}
 }
 
 type ratingForeignKeys struct {
-	RatingRatingUserIDFkey foreignKey
+	RatingFKRatingUserID foreignKey
 }
 
 func (f ratingForeignKeys) AsSlice() []foreignKey {
 	return []foreignKey{
-		f.RatingRatingUserIDFkey,
+		f.RatingFKRatingUserID,
 	}
 }
 
 type ratingUniques struct {
-	RatingUserIDGameTimeCategoryIDKey constraint
+	UqRatingUserIDGameTimeCategoryID constraint
 }
 
 func (u ratingUniques) AsSlice() []constraint {
 	return []constraint{
-		u.RatingUserIDGameTimeCategoryIDKey,
+		u.UqRatingUserIDGameTimeCategoryID,
 	}
 }
 

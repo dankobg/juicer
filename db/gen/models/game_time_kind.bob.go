@@ -43,7 +43,7 @@ type GameTimeKindsQuery = *psql.ViewQuery[*GameTimeKind, GameTimeKindSlice]
 
 // gameTimeKindR is where relationships are stored.
 type gameTimeKindR struct {
-	TimeKindGames GameSlice // game.game_time_kind_fkey
+	TimeKindGames GameSlice // game.fk_game_time_kind
 }
 
 func buildGameTimeKindColumns(alias string) gameTimeKindColumns {

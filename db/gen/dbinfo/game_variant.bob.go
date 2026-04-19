@@ -62,9 +62,9 @@ var GameVariants = Table[
 		},
 	},
 	Indexes: gameVariantIndexes{
-		GameVariantPkey: index{
+		PKGameVariantID: index{
 			Type: "btree",
-			Name: "game_variant_pkey",
+			Name: "pk_game_variant_id",
 			Columns: []indexColumn{
 				{
 					Name:         "id",
@@ -81,7 +81,7 @@ var GameVariants = Table[
 		},
 	},
 	PrimaryKey: &constraint{
-		Name:    "game_variant_pkey",
+		Name:    "pk_game_variant_id",
 		Columns: []string{"id"},
 		Comment: "",
 	},
@@ -104,12 +104,12 @@ func (c gameVariantColumns) AsSlice() []column {
 }
 
 type gameVariantIndexes struct {
-	GameVariantPkey index
+	PKGameVariantID index
 }
 
 func (i gameVariantIndexes) AsSlice() []index {
 	return []index{
-		i.GameVariantPkey,
+		i.PKGameVariantID,
 	}
 }
 

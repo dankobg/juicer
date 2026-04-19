@@ -184,6 +184,253 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/me/friend-requests": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List friend requests
+         * @description List my friend requests
+         */
+        get: operations["listFriendRequests"];
+        put?: never;
+        /**
+         * Create friend request
+         * @description Create friend request
+         */
+        post: operations["createFriendRequest"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/me/friend-requests/{id}/accept": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Accept friend request
+         * @description Accept friend request
+         */
+        post: operations["acceptFriendRequest"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/me/friend-requests/{id}/decline": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Decline friend request
+         * @description Decline friend request
+         */
+        post: operations["declineFriendRequest"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/me/friend-requests/{id}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Cancel friend request
+         * @description Cancel friend request
+         */
+        delete: operations["cancelFriendRequest"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/me/friends": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List my friends
+         * @description List all my friends
+         */
+        get: operations["listFriends"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/me/friends/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get friend by id
+         * @description Return a specific friend by id
+         */
+        get: operations["getFriend"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The friend id */
+                id: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/me/followings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List my followings
+         * @description List all people that i follow
+         */
+        get: operations["listFollowings"];
+        put?: never;
+        /**
+         * Follow user
+         * @description Follow another user
+         */
+        post: operations["followUser"];
+        /**
+         * Unfollow users
+         * @description Unfollow users
+         */
+        delete: operations["unfollowUsers"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/me/followings/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get following by id
+         * @description Return a specific following by id
+         */
+        get: operations["getFollowing"];
+        put?: never;
+        post?: never;
+        /**
+         * Unfollow user
+         * @description Unfollow user
+         */
+        delete: operations["unfollowUser"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/me/blocklist": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List my blocked users
+         * @description List all the users that i blocked
+         */
+        get: operations["listBlockedUsers"];
+        put?: never;
+        /**
+         * block user
+         * @description block another user
+         */
+        post: operations["blockUser"];
+        /**
+         * Unblock users
+         * @description Unblock users
+         */
+        delete: operations["unblockUsers"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/me/blocklist/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get blocked user by id
+         * @description Return a specific blocked user by id
+         */
+        get: operations["getBlockedUser"];
+        put?: never;
+        post?: never;
+        /**
+         * Unblock user
+         * @description Unblock user
+         */
+        delete: operations["unblockUser"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/schemas": {
         parameters: {
             query?: never;
@@ -1001,6 +1248,34 @@ export interface components {
             interrupted: number;
             /** Format: int32 */
             total?: number;
+        };
+        CreateFriendRequestBody: {
+            /** Format: uuid */
+            user_id: string;
+        };
+        FollowUserBody: {
+            /** Format: uuid */
+            user_id: string;
+        };
+        UnfollowUsersBody: {
+            /** @description Users to unfollow */
+            ids: string[];
+        };
+        BlockUserBody: {
+            /** Format: uuid */
+            user_id: string;
+        };
+        UnblockUsersBody: {
+            /** @description Users to unblock */
+            ids: string[];
+        };
+        FriendRequest: {
+            /** Format: uuid */
+            user_id: string;
+            /** Format: uuid */
+            friend_id?: string;
+            /** @enum {string} */
+            status?: FriendRequestStatus;
         };
         /** Format: uuid */
         UUID: string;
@@ -2190,6 +2465,441 @@ export interface operations {
             default: components["responses"]["UnexpectedErrorResponse"];
         };
     };
+    listFriendRequests: {
+        parameters: {
+            query?: {
+                /** @description Page number (1-based) */
+                page?: components["parameters"]["PaginationPage"];
+                /** @description Number of items per page */
+                page_size?: components["parameters"]["PaginationPageSize"];
+                /** @description Filter friend requests by username (partial match) */
+                username?: string;
+                /** @description Filter friend requests by direction (incoming or outgoing) */
+                direction?: PathsMeFriendRequestsGetParametersQueryDirection;
+                /** @description Filter friends by ids */
+                id?: string[];
+                /** @description Sort by fields (add prefix `-` for descending e.g. -created_at) */
+                sort?: string[];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful operation */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["FriendRequest"][];
+                        meta: components["schemas"]["PaginationMeta"];
+                    };
+                };
+            };
+            default: components["responses"]["UnexpectedErrorResponse"];
+        };
+    };
+    createFriendRequest: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["CreateFriendRequestBody"];
+            };
+        };
+        responses: {
+            /** @description Successful operation */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FriendRequest"];
+                };
+            };
+            400: components["responses"]["GenericErrorResponse"];
+            401: components["responses"]["UnauthenticatedErrorResponse"];
+            403: components["responses"]["UnauthorizedErrorResponse"];
+            404: components["responses"]["NotFoundErrorResponse"];
+            default: components["responses"]["UnexpectedErrorResponse"];
+        };
+    };
+    acceptFriendRequest: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The friend id */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: components["responses"]["EmptyResponse"];
+            400: components["responses"]["GenericErrorResponse"];
+            401: components["responses"]["UnauthenticatedErrorResponse"];
+            403: components["responses"]["UnauthorizedErrorResponse"];
+            404: components["responses"]["NotFoundErrorResponse"];
+            default: components["responses"]["UnexpectedErrorResponse"];
+        };
+    };
+    declineFriendRequest: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The friend id */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: components["responses"]["EmptyResponse"];
+            400: components["responses"]["GenericErrorResponse"];
+            401: components["responses"]["UnauthenticatedErrorResponse"];
+            403: components["responses"]["UnauthorizedErrorResponse"];
+            404: components["responses"]["NotFoundErrorResponse"];
+            default: components["responses"]["UnexpectedErrorResponse"];
+        };
+    };
+    cancelFriendRequest: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The friend id */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: components["responses"]["EmptyResponse"];
+            400: components["responses"]["GenericErrorResponse"];
+            401: components["responses"]["UnauthenticatedErrorResponse"];
+            403: components["responses"]["UnauthorizedErrorResponse"];
+            404: components["responses"]["NotFoundErrorResponse"];
+            default: components["responses"]["UnexpectedErrorResponse"];
+        };
+    };
+    listFriends: {
+        parameters: {
+            query?: {
+                /** @description Page number (1-based) */
+                page?: components["parameters"]["PaginationPage"];
+                /** @description Number of items per page */
+                page_size?: components["parameters"]["PaginationPageSize"];
+                /** @description Filter friends by username (partial match) */
+                username?: string;
+                /** @description Filter friends by ids */
+                id?: string[];
+                /** @description Sort by fields (add prefix `-` for descending e.g. -created_at) */
+                sort?: string[];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful operation */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["User"][];
+                        meta: components["schemas"]["PaginationMeta"];
+                    };
+                };
+            };
+            default: components["responses"]["UnexpectedErrorResponse"];
+        };
+    };
+    getFriend: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The friend id */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description identitySchema */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["User"];
+                };
+            };
+            400: components["responses"]["GenericErrorResponse"];
+            401: components["responses"]["UnauthenticatedErrorResponse"];
+            403: components["responses"]["UnauthorizedErrorResponse"];
+            404: components["responses"]["NotFoundErrorResponse"];
+            default: components["responses"]["UnexpectedErrorResponse"];
+        };
+    };
+    listFollowings: {
+        parameters: {
+            query?: {
+                /** @description Page number (1-based) */
+                page?: components["parameters"]["PaginationPage"];
+                /** @description Number of items per page */
+                page_size?: components["parameters"]["PaginationPageSize"];
+                /** @description Filter followings by username (partial match) */
+                username?: string;
+                /** @description Filter followings by ids */
+                id?: string[];
+                /** @description Sort by fields (add prefix `-` for descending e.g. -created_at) */
+                sort?: string[];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful operation */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["User"][];
+                        meta: components["schemas"]["PaginationMeta"];
+                    };
+                };
+            };
+            default: components["responses"]["UnexpectedErrorResponse"];
+        };
+    };
+    followUser: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["FollowUserBody"];
+            };
+        };
+        responses: {
+            201: components["responses"]["EmptyResponse"];
+            400: components["responses"]["GenericErrorResponse"];
+            401: components["responses"]["UnauthenticatedErrorResponse"];
+            403: components["responses"]["UnauthorizedErrorResponse"];
+            404: components["responses"]["NotFoundErrorResponse"];
+            default: components["responses"]["UnexpectedErrorResponse"];
+        };
+    };
+    unfollowUsers: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["UnfollowUsersBody"];
+            };
+        };
+        responses: {
+            204: components["responses"]["EmptyResponse"];
+            400: components["responses"]["GenericErrorResponse"];
+            401: components["responses"]["UnauthenticatedErrorResponse"];
+            403: components["responses"]["UnauthorizedErrorResponse"];
+            default: components["responses"]["UnexpectedErrorResponse"];
+        };
+    };
+    getFollowing: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The following id */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description identitySchema */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["User"];
+                };
+            };
+            400: components["responses"]["GenericErrorResponse"];
+            401: components["responses"]["UnauthenticatedErrorResponse"];
+            403: components["responses"]["UnauthorizedErrorResponse"];
+            404: components["responses"]["NotFoundErrorResponse"];
+            default: components["responses"]["UnexpectedErrorResponse"];
+        };
+    };
+    unfollowUser: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The following id */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: components["responses"]["EmptyResponse"];
+            400: components["responses"]["GenericErrorResponse"];
+            401: components["responses"]["UnauthenticatedErrorResponse"];
+            403: components["responses"]["UnauthorizedErrorResponse"];
+            default: components["responses"]["UnexpectedErrorResponse"];
+        };
+    };
+    listBlockedUsers: {
+        parameters: {
+            query?: {
+                /** @description Page number (1-based) */
+                page?: components["parameters"]["PaginationPage"];
+                /** @description Number of items per page */
+                page_size?: components["parameters"]["PaginationPageSize"];
+                /** @description Filter blocked users by username (partial match) */
+                username?: string;
+                /** @description Filter blocked users by ids */
+                id?: string[];
+                /** @description Sort by fields (add prefix `-` for descending e.g. -created_at) */
+                sort?: string[];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful operation */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["User"][];
+                        meta: components["schemas"]["PaginationMeta"];
+                    };
+                };
+            };
+            default: components["responses"]["UnexpectedErrorResponse"];
+        };
+    };
+    blockUser: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["BlockUserBody"];
+            };
+        };
+        responses: {
+            201: components["responses"]["EmptyResponse"];
+            400: components["responses"]["GenericErrorResponse"];
+            401: components["responses"]["UnauthenticatedErrorResponse"];
+            403: components["responses"]["UnauthorizedErrorResponse"];
+            404: components["responses"]["NotFoundErrorResponse"];
+            default: components["responses"]["UnexpectedErrorResponse"];
+        };
+    };
+    unblockUsers: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["UnblockUsersBody"];
+            };
+        };
+        responses: {
+            204: components["responses"]["EmptyResponse"];
+            400: components["responses"]["GenericErrorResponse"];
+            401: components["responses"]["UnauthenticatedErrorResponse"];
+            403: components["responses"]["UnauthorizedErrorResponse"];
+            default: components["responses"]["UnexpectedErrorResponse"];
+        };
+    };
+    getBlockedUser: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The blocked user id */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description identitySchema */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["User"];
+                };
+            };
+            400: components["responses"]["GenericErrorResponse"];
+            401: components["responses"]["UnauthenticatedErrorResponse"];
+            403: components["responses"]["UnauthorizedErrorResponse"];
+            404: components["responses"]["NotFoundErrorResponse"];
+            default: components["responses"]["UnexpectedErrorResponse"];
+        };
+    };
+    unblockUser: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The blocked user id */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: components["responses"]["EmptyResponse"];
+            400: components["responses"]["GenericErrorResponse"];
+            401: components["responses"]["UnauthenticatedErrorResponse"];
+            403: components["responses"]["UnauthorizedErrorResponse"];
+            default: components["responses"]["UnexpectedErrorResponse"];
+        };
+    };
     listIdentitySchemas: {
         parameters: {
             query?: {
@@ -2840,6 +3550,10 @@ export interface operations {
         };
     };
 }
+export enum PathsMeFriendRequestsGetParametersQueryDirection {
+    incoming = "incoming",
+    outgoing = "outgoing"
+}
 export enum PathsIdentitiesGetParametersQueryConsistency {
     strong = "strong",
     eventual = "eventual"
@@ -2877,6 +3591,11 @@ export enum PathsSessionsGetParametersQueryExpand {
 export enum PathsSessionsIdGetParametersQueryExpand {
     identity = "identity",
     devices = "devices"
+}
+export enum FriendRequestStatus {
+    pending = "pending",
+    accepted = "accepted",
+    declined = "declined"
 }
 export enum AuthenticatorAssuranceLevel {
     aal0 = "aal0",

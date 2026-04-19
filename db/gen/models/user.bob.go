@@ -43,9 +43,15 @@ type UsersQuery = *psql.ViewQuery[*User, UserSlice]
 
 // userR is where relationships are stored.
 type userR struct {
-	BlackGames GameSlice   // game.game_black_id_fkey
-	WhiteGames GameSlice   // game.game_white_id_fkey
-	Ratings    RatingSlice // rating.rating_user_id_fkey
+	BlockedUserBlocklists  BlocklistSlice  // blocklist.fk_blocklist_blocked_user_id
+	Blocklists             BlocklistSlice  // blocklist.fk_blocklist_user_id
+	FollowedUserFollowings FollowingSlice  // following.fk_following_followed_user_id
+	Followings             FollowingSlice  // following.fk_following_user_id
+	InitiatorFriendships   FriendshipSlice // friendship.fk_friendship_initiator_id
+	ReceiverFriendships    FriendshipSlice // friendship.fk_friendship_receiver_id
+	BlackGames             GameSlice       // game.fk_game_black_id
+	WhiteGames             GameSlice       // game.fk_game_white_id
+	Ratings                RatingSlice     // rating.fk_rating_user_id
 }
 
 func buildUserColumns(alias string) userColumns {
@@ -394,6 +400,150 @@ func (o UserSlice) ReloadAll(ctx context.Context, exec bob.Executor) error {
 	return nil
 }
 
+// BlockedUserBlocklists starts a query for related objects on blocklist
+func (o *User) BlockedUserBlocklists(mods ...bob.Mod[*dialect.SelectQuery]) BlocklistsQuery {
+	return Blocklists.Query(append(mods,
+		sm.Where(Blocklists.Columns.BlockedUserID.EQ(psql.Arg(o.ID))),
+	)...)
+}
+
+func (os UserSlice) BlockedUserBlocklists(mods ...bob.Mod[*dialect.SelectQuery]) BlocklistsQuery {
+	pkID := make(pgtypes.Array[uuid.UUID], 0, len(os))
+	for _, o := range os {
+		if o == nil {
+			continue
+		}
+		pkID = append(pkID, o.ID)
+	}
+	PKArgExpr := psql.Select(sm.Columns(
+		psql.F("unnest", psql.Cast(psql.Arg(pkID), "uuid[]")),
+	))
+
+	return Blocklists.Query(append(mods,
+		sm.Where(psql.Group(Blocklists.Columns.BlockedUserID).OP("IN", PKArgExpr)),
+	)...)
+}
+
+// Blocklists starts a query for related objects on blocklist
+func (o *User) Blocklists(mods ...bob.Mod[*dialect.SelectQuery]) BlocklistsQuery {
+	return Blocklists.Query(append(mods,
+		sm.Where(Blocklists.Columns.UserID.EQ(psql.Arg(o.ID))),
+	)...)
+}
+
+func (os UserSlice) Blocklists(mods ...bob.Mod[*dialect.SelectQuery]) BlocklistsQuery {
+	pkID := make(pgtypes.Array[uuid.UUID], 0, len(os))
+	for _, o := range os {
+		if o == nil {
+			continue
+		}
+		pkID = append(pkID, o.ID)
+	}
+	PKArgExpr := psql.Select(sm.Columns(
+		psql.F("unnest", psql.Cast(psql.Arg(pkID), "uuid[]")),
+	))
+
+	return Blocklists.Query(append(mods,
+		sm.Where(psql.Group(Blocklists.Columns.UserID).OP("IN", PKArgExpr)),
+	)...)
+}
+
+// FollowedUserFollowings starts a query for related objects on following
+func (o *User) FollowedUserFollowings(mods ...bob.Mod[*dialect.SelectQuery]) FollowingsQuery {
+	return Followings.Query(append(mods,
+		sm.Where(Followings.Columns.FollowedUserID.EQ(psql.Arg(o.ID))),
+	)...)
+}
+
+func (os UserSlice) FollowedUserFollowings(mods ...bob.Mod[*dialect.SelectQuery]) FollowingsQuery {
+	pkID := make(pgtypes.Array[uuid.UUID], 0, len(os))
+	for _, o := range os {
+		if o == nil {
+			continue
+		}
+		pkID = append(pkID, o.ID)
+	}
+	PKArgExpr := psql.Select(sm.Columns(
+		psql.F("unnest", psql.Cast(psql.Arg(pkID), "uuid[]")),
+	))
+
+	return Followings.Query(append(mods,
+		sm.Where(psql.Group(Followings.Columns.FollowedUserID).OP("IN", PKArgExpr)),
+	)...)
+}
+
+// Followings starts a query for related objects on following
+func (o *User) Followings(mods ...bob.Mod[*dialect.SelectQuery]) FollowingsQuery {
+	return Followings.Query(append(mods,
+		sm.Where(Followings.Columns.UserID.EQ(psql.Arg(o.ID))),
+	)...)
+}
+
+func (os UserSlice) Followings(mods ...bob.Mod[*dialect.SelectQuery]) FollowingsQuery {
+	pkID := make(pgtypes.Array[uuid.UUID], 0, len(os))
+	for _, o := range os {
+		if o == nil {
+			continue
+		}
+		pkID = append(pkID, o.ID)
+	}
+	PKArgExpr := psql.Select(sm.Columns(
+		psql.F("unnest", psql.Cast(psql.Arg(pkID), "uuid[]")),
+	))
+
+	return Followings.Query(append(mods,
+		sm.Where(psql.Group(Followings.Columns.UserID).OP("IN", PKArgExpr)),
+	)...)
+}
+
+// InitiatorFriendships starts a query for related objects on friendship
+func (o *User) InitiatorFriendships(mods ...bob.Mod[*dialect.SelectQuery]) FriendshipsQuery {
+	return Friendships.Query(append(mods,
+		sm.Where(Friendships.Columns.InitiatorID.EQ(psql.Arg(o.ID))),
+	)...)
+}
+
+func (os UserSlice) InitiatorFriendships(mods ...bob.Mod[*dialect.SelectQuery]) FriendshipsQuery {
+	pkID := make(pgtypes.Array[uuid.UUID], 0, len(os))
+	for _, o := range os {
+		if o == nil {
+			continue
+		}
+		pkID = append(pkID, o.ID)
+	}
+	PKArgExpr := psql.Select(sm.Columns(
+		psql.F("unnest", psql.Cast(psql.Arg(pkID), "uuid[]")),
+	))
+
+	return Friendships.Query(append(mods,
+		sm.Where(psql.Group(Friendships.Columns.InitiatorID).OP("IN", PKArgExpr)),
+	)...)
+}
+
+// ReceiverFriendships starts a query for related objects on friendship
+func (o *User) ReceiverFriendships(mods ...bob.Mod[*dialect.SelectQuery]) FriendshipsQuery {
+	return Friendships.Query(append(mods,
+		sm.Where(Friendships.Columns.ReceiverID.EQ(psql.Arg(o.ID))),
+	)...)
+}
+
+func (os UserSlice) ReceiverFriendships(mods ...bob.Mod[*dialect.SelectQuery]) FriendshipsQuery {
+	pkID := make(pgtypes.Array[uuid.UUID], 0, len(os))
+	for _, o := range os {
+		if o == nil {
+			continue
+		}
+		pkID = append(pkID, o.ID)
+	}
+	PKArgExpr := psql.Select(sm.Columns(
+		psql.F("unnest", psql.Cast(psql.Arg(pkID), "uuid[]")),
+	))
+
+	return Friendships.Query(append(mods,
+		sm.Where(psql.Group(Friendships.Columns.ReceiverID).OP("IN", PKArgExpr)),
+	)...)
+}
+
 // BlackGames starts a query for related objects on game
 func (o *User) BlackGames(mods ...bob.Mod[*dialect.SelectQuery]) GamesQuery {
 	return Games.Query(append(mods,
@@ -464,6 +614,414 @@ func (os UserSlice) Ratings(mods ...bob.Mod[*dialect.SelectQuery]) RatingsQuery 
 	return Ratings.Query(append(mods,
 		sm.Where(psql.Group(Ratings.Columns.UserID).OP("IN", PKArgExpr)),
 	)...)
+}
+
+func insertUserBlockedUserBlocklists0(ctx context.Context, exec bob.Executor, blocklists1 []*BlocklistSetter, user0 *User) (BlocklistSlice, error) {
+	for i := range blocklists1 {
+		blocklists1[i].BlockedUserID = omit.From(user0.ID)
+	}
+
+	ret, err := Blocklists.Insert(bob.ToMods(blocklists1...)).All(ctx, exec)
+	if err != nil {
+		return ret, fmt.Errorf("insertUserBlockedUserBlocklists0: %w", err)
+	}
+
+	return ret, nil
+}
+
+func attachUserBlockedUserBlocklists0(ctx context.Context, exec bob.Executor, count int, blocklists1 BlocklistSlice, user0 *User) (BlocklistSlice, error) {
+	setter := &BlocklistSetter{
+		BlockedUserID: omit.From(user0.ID),
+	}
+
+	err := blocklists1.UpdateAll(ctx, exec, *setter)
+	if err != nil {
+		return nil, fmt.Errorf("attachUserBlockedUserBlocklists0: %w", err)
+	}
+
+	return blocklists1, nil
+}
+
+func (user0 *User) InsertBlockedUserBlocklists(ctx context.Context, exec bob.Executor, related ...*BlocklistSetter) error {
+	if len(related) == 0 {
+		return nil
+	}
+
+	var err error
+
+	blocklists1, err := insertUserBlockedUserBlocklists0(ctx, exec, related, user0)
+	if err != nil {
+		return err
+	}
+
+	user0.R.BlockedUserBlocklists = append(user0.R.BlockedUserBlocklists, blocklists1...)
+
+	for _, rel := range blocklists1 {
+		rel.R.BlockedUserUser = user0
+	}
+	return nil
+}
+
+func (user0 *User) AttachBlockedUserBlocklists(ctx context.Context, exec bob.Executor, related ...*Blocklist) error {
+	if len(related) == 0 {
+		return nil
+	}
+
+	var err error
+	blocklists1 := BlocklistSlice(related)
+
+	_, err = attachUserBlockedUserBlocklists0(ctx, exec, len(related), blocklists1, user0)
+	if err != nil {
+		return err
+	}
+
+	user0.R.BlockedUserBlocklists = append(user0.R.BlockedUserBlocklists, blocklists1...)
+
+	for _, rel := range related {
+		rel.R.BlockedUserUser = user0
+	}
+
+	return nil
+}
+
+func insertUserBlocklists0(ctx context.Context, exec bob.Executor, blocklists1 []*BlocklistSetter, user0 *User) (BlocklistSlice, error) {
+	for i := range blocklists1 {
+		blocklists1[i].UserID = omit.From(user0.ID)
+	}
+
+	ret, err := Blocklists.Insert(bob.ToMods(blocklists1...)).All(ctx, exec)
+	if err != nil {
+		return ret, fmt.Errorf("insertUserBlocklists0: %w", err)
+	}
+
+	return ret, nil
+}
+
+func attachUserBlocklists0(ctx context.Context, exec bob.Executor, count int, blocklists1 BlocklistSlice, user0 *User) (BlocklistSlice, error) {
+	setter := &BlocklistSetter{
+		UserID: omit.From(user0.ID),
+	}
+
+	err := blocklists1.UpdateAll(ctx, exec, *setter)
+	if err != nil {
+		return nil, fmt.Errorf("attachUserBlocklists0: %w", err)
+	}
+
+	return blocklists1, nil
+}
+
+func (user0 *User) InsertBlocklists(ctx context.Context, exec bob.Executor, related ...*BlocklistSetter) error {
+	if len(related) == 0 {
+		return nil
+	}
+
+	var err error
+
+	blocklists1, err := insertUserBlocklists0(ctx, exec, related, user0)
+	if err != nil {
+		return err
+	}
+
+	user0.R.Blocklists = append(user0.R.Blocklists, blocklists1...)
+
+	for _, rel := range blocklists1 {
+		rel.R.User = user0
+	}
+	return nil
+}
+
+func (user0 *User) AttachBlocklists(ctx context.Context, exec bob.Executor, related ...*Blocklist) error {
+	if len(related) == 0 {
+		return nil
+	}
+
+	var err error
+	blocklists1 := BlocklistSlice(related)
+
+	_, err = attachUserBlocklists0(ctx, exec, len(related), blocklists1, user0)
+	if err != nil {
+		return err
+	}
+
+	user0.R.Blocklists = append(user0.R.Blocklists, blocklists1...)
+
+	for _, rel := range related {
+		rel.R.User = user0
+	}
+
+	return nil
+}
+
+func insertUserFollowedUserFollowings0(ctx context.Context, exec bob.Executor, followings1 []*FollowingSetter, user0 *User) (FollowingSlice, error) {
+	for i := range followings1 {
+		followings1[i].FollowedUserID = omit.From(user0.ID)
+	}
+
+	ret, err := Followings.Insert(bob.ToMods(followings1...)).All(ctx, exec)
+	if err != nil {
+		return ret, fmt.Errorf("insertUserFollowedUserFollowings0: %w", err)
+	}
+
+	return ret, nil
+}
+
+func attachUserFollowedUserFollowings0(ctx context.Context, exec bob.Executor, count int, followings1 FollowingSlice, user0 *User) (FollowingSlice, error) {
+	setter := &FollowingSetter{
+		FollowedUserID: omit.From(user0.ID),
+	}
+
+	err := followings1.UpdateAll(ctx, exec, *setter)
+	if err != nil {
+		return nil, fmt.Errorf("attachUserFollowedUserFollowings0: %w", err)
+	}
+
+	return followings1, nil
+}
+
+func (user0 *User) InsertFollowedUserFollowings(ctx context.Context, exec bob.Executor, related ...*FollowingSetter) error {
+	if len(related) == 0 {
+		return nil
+	}
+
+	var err error
+
+	followings1, err := insertUserFollowedUserFollowings0(ctx, exec, related, user0)
+	if err != nil {
+		return err
+	}
+
+	user0.R.FollowedUserFollowings = append(user0.R.FollowedUserFollowings, followings1...)
+
+	for _, rel := range followings1 {
+		rel.R.FollowedUserUser = user0
+	}
+	return nil
+}
+
+func (user0 *User) AttachFollowedUserFollowings(ctx context.Context, exec bob.Executor, related ...*Following) error {
+	if len(related) == 0 {
+		return nil
+	}
+
+	var err error
+	followings1 := FollowingSlice(related)
+
+	_, err = attachUserFollowedUserFollowings0(ctx, exec, len(related), followings1, user0)
+	if err != nil {
+		return err
+	}
+
+	user0.R.FollowedUserFollowings = append(user0.R.FollowedUserFollowings, followings1...)
+
+	for _, rel := range related {
+		rel.R.FollowedUserUser = user0
+	}
+
+	return nil
+}
+
+func insertUserFollowings0(ctx context.Context, exec bob.Executor, followings1 []*FollowingSetter, user0 *User) (FollowingSlice, error) {
+	for i := range followings1 {
+		followings1[i].UserID = omit.From(user0.ID)
+	}
+
+	ret, err := Followings.Insert(bob.ToMods(followings1...)).All(ctx, exec)
+	if err != nil {
+		return ret, fmt.Errorf("insertUserFollowings0: %w", err)
+	}
+
+	return ret, nil
+}
+
+func attachUserFollowings0(ctx context.Context, exec bob.Executor, count int, followings1 FollowingSlice, user0 *User) (FollowingSlice, error) {
+	setter := &FollowingSetter{
+		UserID: omit.From(user0.ID),
+	}
+
+	err := followings1.UpdateAll(ctx, exec, *setter)
+	if err != nil {
+		return nil, fmt.Errorf("attachUserFollowings0: %w", err)
+	}
+
+	return followings1, nil
+}
+
+func (user0 *User) InsertFollowings(ctx context.Context, exec bob.Executor, related ...*FollowingSetter) error {
+	if len(related) == 0 {
+		return nil
+	}
+
+	var err error
+
+	followings1, err := insertUserFollowings0(ctx, exec, related, user0)
+	if err != nil {
+		return err
+	}
+
+	user0.R.Followings = append(user0.R.Followings, followings1...)
+
+	for _, rel := range followings1 {
+		rel.R.User = user0
+	}
+	return nil
+}
+
+func (user0 *User) AttachFollowings(ctx context.Context, exec bob.Executor, related ...*Following) error {
+	if len(related) == 0 {
+		return nil
+	}
+
+	var err error
+	followings1 := FollowingSlice(related)
+
+	_, err = attachUserFollowings0(ctx, exec, len(related), followings1, user0)
+	if err != nil {
+		return err
+	}
+
+	user0.R.Followings = append(user0.R.Followings, followings1...)
+
+	for _, rel := range related {
+		rel.R.User = user0
+	}
+
+	return nil
+}
+
+func insertUserInitiatorFriendships0(ctx context.Context, exec bob.Executor, friendships1 []*FriendshipSetter, user0 *User) (FriendshipSlice, error) {
+	for i := range friendships1 {
+		friendships1[i].InitiatorID = omit.From(user0.ID)
+	}
+
+	ret, err := Friendships.Insert(bob.ToMods(friendships1...)).All(ctx, exec)
+	if err != nil {
+		return ret, fmt.Errorf("insertUserInitiatorFriendships0: %w", err)
+	}
+
+	return ret, nil
+}
+
+func attachUserInitiatorFriendships0(ctx context.Context, exec bob.Executor, count int, friendships1 FriendshipSlice, user0 *User) (FriendshipSlice, error) {
+	setter := &FriendshipSetter{
+		InitiatorID: omit.From(user0.ID),
+	}
+
+	err := friendships1.UpdateAll(ctx, exec, *setter)
+	if err != nil {
+		return nil, fmt.Errorf("attachUserInitiatorFriendships0: %w", err)
+	}
+
+	return friendships1, nil
+}
+
+func (user0 *User) InsertInitiatorFriendships(ctx context.Context, exec bob.Executor, related ...*FriendshipSetter) error {
+	if len(related) == 0 {
+		return nil
+	}
+
+	var err error
+
+	friendships1, err := insertUserInitiatorFriendships0(ctx, exec, related, user0)
+	if err != nil {
+		return err
+	}
+
+	user0.R.InitiatorFriendships = append(user0.R.InitiatorFriendships, friendships1...)
+
+	for _, rel := range friendships1 {
+		rel.R.InitiatorUser = user0
+	}
+	return nil
+}
+
+func (user0 *User) AttachInitiatorFriendships(ctx context.Context, exec bob.Executor, related ...*Friendship) error {
+	if len(related) == 0 {
+		return nil
+	}
+
+	var err error
+	friendships1 := FriendshipSlice(related)
+
+	_, err = attachUserInitiatorFriendships0(ctx, exec, len(related), friendships1, user0)
+	if err != nil {
+		return err
+	}
+
+	user0.R.InitiatorFriendships = append(user0.R.InitiatorFriendships, friendships1...)
+
+	for _, rel := range related {
+		rel.R.InitiatorUser = user0
+	}
+
+	return nil
+}
+
+func insertUserReceiverFriendships0(ctx context.Context, exec bob.Executor, friendships1 []*FriendshipSetter, user0 *User) (FriendshipSlice, error) {
+	for i := range friendships1 {
+		friendships1[i].ReceiverID = omit.From(user0.ID)
+	}
+
+	ret, err := Friendships.Insert(bob.ToMods(friendships1...)).All(ctx, exec)
+	if err != nil {
+		return ret, fmt.Errorf("insertUserReceiverFriendships0: %w", err)
+	}
+
+	return ret, nil
+}
+
+func attachUserReceiverFriendships0(ctx context.Context, exec bob.Executor, count int, friendships1 FriendshipSlice, user0 *User) (FriendshipSlice, error) {
+	setter := &FriendshipSetter{
+		ReceiverID: omit.From(user0.ID),
+	}
+
+	err := friendships1.UpdateAll(ctx, exec, *setter)
+	if err != nil {
+		return nil, fmt.Errorf("attachUserReceiverFriendships0: %w", err)
+	}
+
+	return friendships1, nil
+}
+
+func (user0 *User) InsertReceiverFriendships(ctx context.Context, exec bob.Executor, related ...*FriendshipSetter) error {
+	if len(related) == 0 {
+		return nil
+	}
+
+	var err error
+
+	friendships1, err := insertUserReceiverFriendships0(ctx, exec, related, user0)
+	if err != nil {
+		return err
+	}
+
+	user0.R.ReceiverFriendships = append(user0.R.ReceiverFriendships, friendships1...)
+
+	for _, rel := range friendships1 {
+		rel.R.ReceiverUser = user0
+	}
+	return nil
+}
+
+func (user0 *User) AttachReceiverFriendships(ctx context.Context, exec bob.Executor, related ...*Friendship) error {
+	if len(related) == 0 {
+		return nil
+	}
+
+	var err error
+	friendships1 := FriendshipSlice(related)
+
+	_, err = attachUserReceiverFriendships0(ctx, exec, len(related), friendships1, user0)
+	if err != nil {
+		return err
+	}
+
+	user0.R.ReceiverFriendships = append(user0.R.ReceiverFriendships, friendships1...)
+
+	for _, rel := range related {
+		rel.R.ReceiverUser = user0
+	}
+
+	return nil
 }
 
 func insertUserBlackGames0(ctx context.Context, exec bob.Executor, games1 []*GameSetter, user0 *User) (GameSlice, error) {

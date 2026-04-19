@@ -66,15 +66,15 @@ type GamesQuery = *psql.ViewQuery[*Game, GameSlice]
 
 // gameR is where relationships are stored.
 type gameR struct {
-	BlackUser                    *User             // game.game_black_id_fkey
-	ResultGameResult             *GameResult       // game.game_result_fkey
-	ResultStatusGameResultStatus *GameResultStatus // game.game_result_status_fkey
-	StateGameState               *GameState        // game.game_state_fkey
-	TimeCategoryGameTimeCategory *GameTimeCategory // game.game_time_category_fkey
-	TimeKindGameTimeKind         *GameTimeKind     // game.game_time_kind_fkey
-	VariantGameVariant           *GameVariant      // game.game_variant_fkey
-	WhiteUser                    *User             // game.game_white_id_fkey
-	GameMoves                    GameMoveSlice     // game_move.game_move_game_id_fkey
+	BlackUser                    *User             // game.fk_game_black_id
+	ResultGameResult             *GameResult       // game.fk_game_result
+	ResultStatusGameResultStatus *GameResultStatus // game.fk_game_result_status
+	StateGameState               *GameState        // game.fk_game_state
+	TimeCategoryGameTimeCategory *GameTimeCategory // game.fk_game_time_category
+	TimeKindGameTimeKind         *GameTimeKind     // game.fk_game_time_kind
+	VariantGameVariant           *GameVariant      // game.fk_game_variant
+	WhiteUser                    *User             // game.fk_game_white_id
+	GameMoves                    GameMoveSlice     // game_move.fk_game_move_game_id
 }
 
 func buildGameColumns(alias string) gameColumns {

@@ -62,9 +62,9 @@ var GameTimeCategories = Table[
 		},
 	},
 	Indexes: gameTimeCategoryIndexes{
-		GameTimeCategoryPkey: index{
+		PKGameTimeCategoryID: index{
 			Type: "btree",
-			Name: "game_time_category_pkey",
+			Name: "pk_game_time_category_id",
 			Columns: []indexColumn{
 				{
 					Name:         "id",
@@ -81,7 +81,7 @@ var GameTimeCategories = Table[
 		},
 	},
 	PrimaryKey: &constraint{
-		Name:    "game_time_category_pkey",
+		Name:    "pk_game_time_category_id",
 		Columns: []string{"id"},
 		Comment: "",
 	},
@@ -104,12 +104,12 @@ func (c gameTimeCategoryColumns) AsSlice() []column {
 }
 
 type gameTimeCategoryIndexes struct {
-	GameTimeCategoryPkey index
+	PKGameTimeCategoryID index
 }
 
 func (i gameTimeCategoryIndexes) AsSlice() []index {
 	return []index{
-		i.GameTimeCategoryPkey,
+		i.PKGameTimeCategoryID,
 	}
 }
 

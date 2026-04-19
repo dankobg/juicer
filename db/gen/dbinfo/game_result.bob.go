@@ -53,9 +53,9 @@ var GameResults = Table[
 		},
 	},
 	Indexes: gameResultIndexes{
-		GameResultPkey: index{
+		PKGameResultID: index{
 			Type: "btree",
-			Name: "game_result_pkey",
+			Name: "pk_game_result_id",
 			Columns: []indexColumn{
 				{
 					Name:         "id",
@@ -72,7 +72,7 @@ var GameResults = Table[
 		},
 	},
 	PrimaryKey: &constraint{
-		Name:    "game_result_pkey",
+		Name:    "pk_game_result_id",
 		Columns: []string{"id"},
 		Comment: "",
 	},
@@ -94,12 +94,12 @@ func (c gameResultColumns) AsSlice() []column {
 }
 
 type gameResultIndexes struct {
-	GameResultPkey index
+	PKGameResultID index
 }
 
 func (i gameResultIndexes) AsSlice() []index {
 	return []index{
-		i.GameResultPkey,
+		i.PKGameResultID,
 	}
 }
 

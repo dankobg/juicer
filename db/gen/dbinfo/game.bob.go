@@ -242,9 +242,9 @@ var Games = Table[
 		},
 	},
 	Indexes: gameIndexes{
-		GamePkey: index{
+		PKGameID: index{
 			Type: "btree",
-			Name: "game_pkey",
+			Name: "pk_game_id",
 			Columns: []indexColumn{
 				{
 					Name:         "id",
@@ -261,77 +261,77 @@ var Games = Table[
 		},
 	},
 	PrimaryKey: &constraint{
-		Name:    "game_pkey",
+		Name:    "pk_game_id",
 		Columns: []string{"id"},
 		Comment: "",
 	},
 	ForeignKeys: gameForeignKeys{
-		GameGameBlackIDFkey: foreignKey{
+		GameFKGameBlackID: foreignKey{
 			constraint: constraint{
-				Name:    "game.game_black_id_fkey",
+				Name:    "game.fk_game_black_id",
 				Columns: []string{"black_id"},
 				Comment: "",
 			},
 			ForeignTable:   "user",
 			ForeignColumns: []string{"id"},
 		},
-		GameGameResultFkey: foreignKey{
+		GameFKGameResult: foreignKey{
 			constraint: constraint{
-				Name:    "game.game_result_fkey",
+				Name:    "game.fk_game_result",
 				Columns: []string{"result_id"},
 				Comment: "",
 			},
 			ForeignTable:   "game_result",
 			ForeignColumns: []string{"id"},
 		},
-		GameGameResultStatusFkey: foreignKey{
+		GameFKGameResultStatus: foreignKey{
 			constraint: constraint{
-				Name:    "game.game_result_status_fkey",
+				Name:    "game.fk_game_result_status",
 				Columns: []string{"result_status_id"},
 				Comment: "",
 			},
 			ForeignTable:   "game_result_status",
 			ForeignColumns: []string{"id"},
 		},
-		GameGameStateFkey: foreignKey{
+		GameFKGameState: foreignKey{
 			constraint: constraint{
-				Name:    "game.game_state_fkey",
+				Name:    "game.fk_game_state",
 				Columns: []string{"state_id"},
 				Comment: "",
 			},
 			ForeignTable:   "game_state",
 			ForeignColumns: []string{"id"},
 		},
-		GameGameTimeCategoryFkey: foreignKey{
+		GameFKGameTimeCategory: foreignKey{
 			constraint: constraint{
-				Name:    "game.game_time_category_fkey",
+				Name:    "game.fk_game_time_category",
 				Columns: []string{"time_category_id"},
 				Comment: "",
 			},
 			ForeignTable:   "game_time_category",
 			ForeignColumns: []string{"id"},
 		},
-		GameGameTimeKindFkey: foreignKey{
+		GameFKGameTimeKind: foreignKey{
 			constraint: constraint{
-				Name:    "game.game_time_kind_fkey",
+				Name:    "game.fk_game_time_kind",
 				Columns: []string{"time_kind_id"},
 				Comment: "",
 			},
 			ForeignTable:   "game_time_kind",
 			ForeignColumns: []string{"id"},
 		},
-		GameGameVariantFkey: foreignKey{
+		GameFKGameVariant: foreignKey{
 			constraint: constraint{
-				Name:    "game.game_variant_fkey",
+				Name:    "game.fk_game_variant",
 				Columns: []string{"variant_id"},
 				Comment: "",
 			},
 			ForeignTable:   "game_variant",
 			ForeignColumns: []string{"id"},
 		},
-		GameGameWhiteIDFkey: foreignKey{
+		GameFKGameWhiteID: foreignKey{
 			constraint: constraint{
-				Name:    "game.game_white_id_fkey",
+				Name:    "game.fk_game_white_id",
 				Columns: []string{"white_id"},
 				Comment: "",
 			},
@@ -341,9 +341,9 @@ var Games = Table[
 	},
 
 	Checks: gameChecks{
-		GameCheck: check{
+		CKGameWhiteBlack: check{
 			constraint: constraint{
-				Name:    "game_check",
+				Name:    "ck_game_white_black",
 				Columns: []string{"white_id", "black_id", "guest_white_id", "guest_black_id"},
 				Comment: "",
 			},
@@ -388,29 +388,29 @@ func (c gameColumns) AsSlice() []column {
 }
 
 type gameIndexes struct {
-	GamePkey index
+	PKGameID index
 }
 
 func (i gameIndexes) AsSlice() []index {
 	return []index{
-		i.GamePkey,
+		i.PKGameID,
 	}
 }
 
 type gameForeignKeys struct {
-	GameGameBlackIDFkey      foreignKey
-	GameGameResultFkey       foreignKey
-	GameGameResultStatusFkey foreignKey
-	GameGameStateFkey        foreignKey
-	GameGameTimeCategoryFkey foreignKey
-	GameGameTimeKindFkey     foreignKey
-	GameGameVariantFkey      foreignKey
-	GameGameWhiteIDFkey      foreignKey
+	GameFKGameBlackID      foreignKey
+	GameFKGameResult       foreignKey
+	GameFKGameResultStatus foreignKey
+	GameFKGameState        foreignKey
+	GameFKGameTimeCategory foreignKey
+	GameFKGameTimeKind     foreignKey
+	GameFKGameVariant      foreignKey
+	GameFKGameWhiteID      foreignKey
 }
 
 func (f gameForeignKeys) AsSlice() []foreignKey {
 	return []foreignKey{
-		f.GameGameBlackIDFkey, f.GameGameResultFkey, f.GameGameResultStatusFkey, f.GameGameStateFkey, f.GameGameTimeCategoryFkey, f.GameGameTimeKindFkey, f.GameGameVariantFkey, f.GameGameWhiteIDFkey,
+		f.GameFKGameBlackID, f.GameFKGameResult, f.GameFKGameResultStatus, f.GameFKGameState, f.GameFKGameTimeCategory, f.GameFKGameTimeKind, f.GameFKGameVariant, f.GameFKGameWhiteID,
 	}
 }
 
@@ -421,11 +421,11 @@ func (u gameUniques) AsSlice() []constraint {
 }
 
 type gameChecks struct {
-	GameCheck check
+	CKGameWhiteBlack check
 }
 
 func (c gameChecks) AsSlice() []check {
 	return []check{
-		c.GameCheck,
+		c.CKGameWhiteBlack,
 	}
 }

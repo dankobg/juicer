@@ -43,7 +43,7 @@ type GameResultsQuery = *psql.ViewQuery[*GameResult, GameResultSlice]
 
 // gameResultR is where relationships are stored.
 type gameResultR struct {
-	ResultGames GameSlice // game.game_result_fkey
+	ResultGames GameSlice // game.fk_game_result
 }
 
 func buildGameResultColumns(alias string) gameResultColumns {

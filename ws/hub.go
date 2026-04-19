@@ -251,7 +251,7 @@ func (h *Hub) removeClient(c *client) {
 	delete(h.clientsByConnID, c.connID)
 
 	leaveTabMsg := &pb.Message{
-		Event: &pb.Message_LeaveTab{LeaveTab: &pb.LeaveTab{UserId: c.userID.String(), ConnId: c.connID.String()}},
+		Event: &pb.Message_LeaveTab{LeaveTab: &pb.LeaveTab{UserId: c.userID.String(), Guest: c.authState == ClientGuest, ConnId: c.connID.String()}},
 	}
 	leaveTabMsgBytes, err := protojson.Marshal(leaveTabMsg)
 	if err != nil {
@@ -266,7 +266,7 @@ func (h *Hub) removeClient(c *client) {
 		delete(h.clientsByUserID, c.userID)
 
 		leaveSiteMsg := &pb.Message{
-			Event: &pb.Message_LeaveSite{LeaveSite: &pb.LeaveSite{UserId: c.userID.String(), ConnId: c.connID.String()}},
+			Event: &pb.Message_LeaveSite{LeaveSite: &pb.LeaveSite{UserId: c.userID.String(), Guest: c.authState == ClientGuest, ConnId: c.connID.String()}},
 		}
 		leaveSiteMsgBytes, err := protojson.Marshal(leaveSiteMsg)
 		if err != nil {
@@ -362,6 +362,8 @@ func (h *Hub) PubsubProcess(ctx context.Context) {
 
 	for {
 		select {
+		case msg := <-h.bus.subMessages["presence.changed.*"]:
+			h.onPresenceChangedMsg(msg)
 		case msg := <-h.bus.subMessages["lobby*"]:
 			h.onLobbyMsg(msg)
 		case msg := <-h.bus.subMessages["user.*"]:
@@ -378,6 +380,17 @@ func (h *Hub) PubsubProcess(ctx context.Context) {
 			return
 		}
 	}
+}
+
+func (h *Hub) onPresenceChangedMsg(m *redis.Message) {
+	h.log.Debug("hub onPresenceChangedMsg", slog.Any("msg", m))
+
+	userID, err := extractPresenceChangedTopicParts(m.Channel)
+	if err != nil {
+		return
+	}
+
+	h.broadcastUser <- UserMessage{userID: userID, msg: []byte(m.Payload)}
 }
 
 func (h *Hub) onLobbyMsg(m *redis.Message) {
@@ -479,4 +492,24 @@ func extractLobbyTopicParts(topic string) (string, error) {
 	}
 
 	return topic, nil
+}
+
+// extractPresenceChangedTopicParts extracts the user_id
+func extractPresenceChangedTopicParts(topic string) (uuid.UUID, error) {
+	parts := strings.Split(topic, ".")
+	if len(parts) != 2 {
+		return uuid.Nil, fmt.Errorf("invalid parts length, expected 2, got: %d", len(parts))
+	}
+
+	userIDStr := parts[1]
+	if userIDStr == "" {
+		return uuid.Nil, fmt.Errorf("empty conn id")
+	}
+
+	userID, err := uuid.Parse(userIDStr)
+	if err != nil {
+		return uuid.Nil, fmt.Errorf("failed to parse conn id")
+	}
+
+	return userID, nil
 }

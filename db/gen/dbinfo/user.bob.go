@@ -44,9 +44,9 @@ var Users = Table[
 		},
 	},
 	Indexes: userIndexes{
-		UserPkey: index{
+		PKUserID: index{
 			Type: "btree",
-			Name: "user_pkey",
+			Name: "pk_user_id",
 			Columns: []indexColumn{
 				{
 					Name:         "id",
@@ -63,7 +63,7 @@ var Users = Table[
 		},
 	},
 	PrimaryKey: &constraint{
-		Name:    "user_pkey",
+		Name:    "pk_user_id",
 		Columns: []string{"id"},
 		Comment: "",
 	},
@@ -84,12 +84,12 @@ func (c userColumns) AsSlice() []column {
 }
 
 type userIndexes struct {
-	UserPkey index
+	PKUserID index
 }
 
 func (i userIndexes) AsSlice() []index {
 	return []index{
-		i.UserPkey,
+		i.PKUserID,
 	}
 }
 

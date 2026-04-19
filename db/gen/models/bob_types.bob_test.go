@@ -14,6 +14,15 @@ import (
 // Set the testDB to enable tests that use the database
 var testDB bob.Transactor[bob.Tx]
 
+// Make sure the type Blocklist runs hooks after queries
+var _ bob.HookableType = &Blocklist{}
+
+// Make sure the type Following runs hooks after queries
+var _ bob.HookableType = &Following{}
+
+// Make sure the type Friendship runs hooks after queries
+var _ bob.HookableType = &Friendship{}
+
 // Make sure the type Game runs hooks after queries
 var _ bob.HookableType = &Game{}
 

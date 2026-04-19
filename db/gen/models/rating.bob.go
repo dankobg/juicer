@@ -46,7 +46,7 @@ type RatingsQuery = *psql.ViewQuery[*Rating, RatingSlice]
 
 // ratingR is where relationships are stored.
 type ratingR struct {
-	User *User // rating.rating_user_id_fkey
+	User *User // rating.fk_rating_user_id
 }
 
 func buildRatingColumns(alias string) ratingColumns {

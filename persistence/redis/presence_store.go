@@ -3,6 +3,7 @@ package redis
 import (
 	"context"
 	"fmt"
+	"slices"
 	"strings"
 	"time"
 
@@ -40,9 +41,13 @@ func (pst *RedisPresencePersistor) SetPresence(ctx context.Context, userID uuid.
 	)
 
 	now := time.Now()
-
 	expireDur := time.Minute * 2
 	expiry := now.Add(expireDur)
+
+	beforeUserPresences, err := pst.rdb.ZRange(ctx, presenceUserKey, 0, -1).Result()
+	if err != nil {
+		return nil, nil, fmt.Errorf("fetch before presences")
+	}
 
 	if _, err := pst.rdb.Pipelined(ctx, func(p redis.Pipeliner) error {
 		if err := p.ZAdd(ctx, presenceChannelKey, redis.Z{
@@ -76,18 +81,22 @@ func (pst *RedisPresencePersistor) SetPresence(ctx context.Context, userID uuid.
 
 		_ = []any{presenceActiveGamesKey}
 
-		// PUBLISH PRESENCE CHANGE
-
-		// if err := p.Publish(ctx, key, val).Err(); err != nil {
-		// return fmt.Errorf("setpresence publish presence: %w", err)
-		// }
+		// @TODO: HANDLE ACTIVE GAMES
 
 		return nil
 	}); err != nil {
 		return nil, nil, fmt.Errorf("setpresence pipeline: %w", err)
 	}
 
-	return nil, nil, nil
+	afterUserPresences, err := pst.rdb.ZRange(ctx, presenceUserKey, 0, -1).Result()
+	if err != nil {
+		return nil, nil, fmt.Errorf("fetch after presences")
+	}
+
+	slices.Sort(beforeUserPresences)
+	slices.Sort(afterUserPresences)
+
+	return beforeUserPresences, afterUserPresences, nil
 }
 
 func (pst *RedisPresencePersistor) ClearPresence(ctx context.Context, userID uuid.UUID, connID uuid.UUID, username string, guest bool) ([]string, []string, []string, error) {
@@ -108,13 +117,13 @@ func (pst *RedisPresencePersistor) ClearPresence(ctx context.Context, userID uui
 	expireDur := time.Minute * 2
 	expiry := now.Add(expireDur)
 
-	userPresences, err := pst.rdb.ZRange(ctx, presenceUserKey, 0, -1).Result()
+	beforePresences, err := pst.rdb.ZRange(ctx, presenceUserKey, 0, -1).Result()
 	if err != nil {
-		return nil, nil, nil, fmt.Errorf("fetch old presences")
+		return nil, nil, nil, fmt.Errorf("fetch before presences")
 	}
 
 	if _, err := pst.rdb.Pipelined(ctx, func(p redis.Pipeliner) error {
-		for _, connChannelKey := range userPresences {
+		for _, connChannelKey := range beforePresences {
 			parts := strings.Split(connChannelKey, "#")
 			cid, channel := parts[0], parts[1]
 			if connID.String() == cid {
@@ -145,20 +154,24 @@ func (pst *RedisPresencePersistor) ClearPresence(ctx context.Context, userID uui
 			}
 		}
 
-		_ = []any{presenceActiveGamesKey, presenceUserKey, userKey, presenceUsersKey, userPresences, expiry}
+		_ = []any{presenceActiveGamesKey, expiry}
 
-		// PUBLISH PRESENCE CHANGE
-
-		// if err := p.Publish(ctx, key, val).Err(); err != nil {
-		// return fmt.Errorf("refreshpresence publish presence: %w", err)
-		// }
+		// @TODO: HANDLE ACTIVE GAMES
 
 		return nil
 	}); err != nil {
 		return nil, nil, nil, fmt.Errorf("refreshpresence pipeline: %w", err)
 	}
 
-	return nil, nil, nil, nil
+	afterPresences, err := pst.rdb.ZRange(ctx, presenceUserKey, 0, -1).Result()
+	if err != nil {
+		return nil, nil, nil, fmt.Errorf("fetch after presences")
+	}
+
+	slices.Sort(beforePresences)
+	slices.Sort(afterPresences)
+
+	return beforePresences, afterPresences, nil, nil
 }
 
 func (pst *RedisPresencePersistor) GetPresence(ctx context.Context, userID uuid.UUID) ([]string, error) {
@@ -183,13 +196,13 @@ func (pst *RedisPresencePersistor) RefreshPresence(ctx context.Context, userID u
 	expireDur := time.Minute * 2
 	expiry := now.Add(expireDur)
 
-	userPresences, err := pst.rdb.ZRange(ctx, presenceUserKey, 0, -1).Result()
+	beforePresences, err := pst.rdb.ZRange(ctx, presenceUserKey, 0, -1).Result()
 	if err != nil {
-		return nil, nil, fmt.Errorf("fetch old presences")
+		return nil, nil, fmt.Errorf("fetch before presences")
 	}
 
 	if _, err := pst.rdb.Pipelined(ctx, func(p redis.Pipeliner) error {
-		for _, connChannelKey := range userPresences {
+		for _, connChannelKey := range beforePresences {
 			parts := strings.Split(connChannelKey, "#")
 			cid, channel := parts[0], parts[1]
 			if connID.String() == cid {
@@ -248,20 +261,24 @@ func (pst *RedisPresencePersistor) RefreshPresence(ctx context.Context, userID u
 			}
 		}
 
-		_ = []any{presenceActiveGamesKey, presenceUserKey, userKey, presenceUsersKey, userPresences, expiry}
+		_ = []any{presenceActiveGamesKey}
 
-		// PUBLISH PRESENCE CHANGE
-
-		// if err := p.Publish(ctx, key, val).Err(); err != nil {
-		// return fmt.Errorf("refreshpresence publish presence: %w", err)
-		// }
+		// @TODO: HANDLE ACTIVE GAMES
 
 		return nil
 	}); err != nil {
 		return nil, nil, fmt.Errorf("refreshpresence pipeline: %w", err)
 	}
 
-	return nil, nil, nil
+	afterPresences, err := pst.rdb.ZRange(ctx, presenceUserKey, 0, -1).Result()
+	if err != nil {
+		return nil, nil, fmt.Errorf("fetch after presences")
+	}
+
+	slices.Sort(beforePresences)
+	slices.Sort(afterPresences)
+
+	return beforePresences, afterPresences, nil
 }
 
 func (pst *RedisPresencePersistor) CountInChannel(ctx context.Context, channel string) (int64, error) {

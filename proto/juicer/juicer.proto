@@ -110,22 +110,23 @@ message Message {
     RequestInitialChannels request_initial_channels = 8;
     InitialChannels initial_channels = 9;
     RequestChannelsInfo request_channels_info = 10;
+    PresenceChanged presence_changed = 11;
     // ------------------------------------------------------
-    SeekGame seek_game = 11;
-    CancelSeekGame cancel_seek_game = 12;
-    HubInfo hub_info = 13;
-    MatchFound match_found = 14;
-    GameAbort game_abort = 15;
-    GameResign game_resign = 16;
-    GameOfferDraw game_offer_draw = 17;
-    GameAcceptDraw game_accept_draw = 18;
-    GameDeclineDraw game_decline_draw = 19;
-    GameChat game_chat = 20;
-    GameChatReceive game_chat_receive = 21;
-    GameChatRetrieve game_chat_retrieve = 22;
-    PlayMoveUCI play_move_uci = 23;
-    ReceiveMove receive_move = 24;
-    GameFinished game_finished = 25;
+    SeekGame seek_game = 12;
+    CancelSeekGame cancel_seek_game = 13;
+    HubInfo hub_info = 14;
+    MatchFound match_found = 15;
+    GameAbort game_abort = 16;
+    GameResign game_resign = 17;
+    GameOfferDraw game_offer_draw = 18;
+    GameAcceptDraw game_accept_draw = 19;
+    GameDeclineDraw game_decline_draw = 20;
+    GameChat game_chat = 21;
+    GameChatReceive game_chat_receive = 22;
+    GameChatRetrieve game_chat_retrieve = 23;
+    PlayMoveUCI play_move_uci = 24;
+    ReceiveMove receive_move = 25;
+    GameFinished game_finished = 26;
 
     Echo echo = 69;
   }
@@ -197,6 +198,13 @@ message RequestChannelsInfo {
   string conn_id = 2;
   bool guest = 3;
   repeated string channels = 4;
+}
+
+// PresenceChanged notifes that presence has changed
+message PresenceChanged {
+  string user_id = 1;
+  string username = 2;
+  repeated string channels = 3;
 }
 
 // Clocks is white and black game clock

@@ -62,9 +62,9 @@ var GameTimeKinds = Table[
 		},
 	},
 	Indexes: gameTimeKindIndexes{
-		GameTimeKindPkey: index{
+		PKGameTimeKindID: index{
 			Type: "btree",
-			Name: "game_time_kind_pkey",
+			Name: "pk_game_time_kind_id",
 			Columns: []indexColumn{
 				{
 					Name:         "id",
@@ -81,7 +81,7 @@ var GameTimeKinds = Table[
 		},
 	},
 	PrimaryKey: &constraint{
-		Name:    "game_time_kind_pkey",
+		Name:    "pk_game_time_kind_id",
 		Columns: []string{"id"},
 		Comment: "",
 	},
@@ -104,12 +104,12 @@ func (c gameTimeKindColumns) AsSlice() []column {
 }
 
 type gameTimeKindIndexes struct {
-	GameTimeKindPkey index
+	PKGameTimeKindID index
 }
 
 func (i gameTimeKindIndexes) AsSlice() []index {
 	return []index{
-		i.GameTimeKindPkey,
+		i.PKGameTimeKindID,
 	}
 }
 

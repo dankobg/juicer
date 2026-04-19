@@ -6,7 +6,49 @@ create table "user" (
   "id" uuid not null,
   "created_at" timestamptz not null default current_timestamp,
   "updated_at" timestamptz not null default current_timestamp,
-  primary key ("id")
+  constraint "pk_user_id" primary key ("id")
+);
+
+create table "friendship" (
+  "initiator_id" uuid not null,
+  "receiver_id" uuid not null,
+  "status" varchar(30) not null default 'pending',
+  "created_at" timestamptz not null default current_timestamp,
+  "answered_at" timestamptz,
+  constraint "pk_friendship_initiator_id_receiver_id" primary key ("initiator_id", "receiver_id"),
+  constraint "ck_friendship_no_self" check ("initiator_id" <> "receiver_id"),
+  constraint "ck_friendship_status_valid" check ("status" in ('pending', 'accepted', 'declined')),
+  constraint "fk_friendship_initiator_id" foreign key ("initiator_id") references "user" ("id"),
+  constraint "fk_friendship_receiver_id" foreign key ("receiver_id") references "user" ("id")
+);
+
+create unique index "uq_friendship_users_undirected" on "friendship" (
+  least("initiator_id", "receiver_id"),
+  greatest("initiator_id", "receiver_id")
+);
+
+create table "following" (
+  "user_id" uuid not null,
+  "followed_user_id" uuid not null,
+  "created_at" timestamptz not null default current_timestamp,
+  "updated_at" timestamptz not null default current_timestamp,
+  constraint "pk_following_user_id_followed_user_id" primary key ("user_id", "followed_user_id"),
+  constraint "ck_following_no_self" check ("user_id" <> "followed_user_id"),
+  constraint "uq_following_user_id_followed_user_id" unique ("user_id", "followed_user_id"),
+  constraint "fk_following_user_id" foreign key ("user_id") references "user" ("id"),
+  constraint "fk_following_followed_user_id" foreign key ("followed_user_id") references "user" ("id")
+);
+
+create table "blocklist" (
+  "user_id" uuid not null,
+  "blocked_user_id" uuid not null,
+  "created_at" timestamptz not null default current_timestamp,
+  "updated_at" timestamptz not null default current_timestamp,
+  constraint "pk_blocklist_user_id_blocked_user_id" primary key ("user_id", "blocked_user_id"),
+  constraint "ck_blocklist_no_self" check ("user_id" <> "blocked_user_id"),
+  constraint "uq_blocklist_user_id_blocked_user_id" unique ("user_id", "blocked_user_id"),
+  constraint "fk_blocklist_user_id" foreign key ("user_id") references "user" ("id"),
+  constraint "fk_blocklist_blocked_user_id" foreign key ("blocked_user_id") references "user" ("id")
 );
 
 create table "game_result" (
@@ -14,7 +56,7 @@ create table "game_result" (
   "name" character varying(20) not null,
   "created_at" timestamptz not null default current_timestamp,
   "updated_at" timestamptz not null default current_timestamp,
-  primary key ("id")
+  constraint "pk_game_result_id" primary key ("id")
 );
 
 create table "game_result_status" (
@@ -22,7 +64,7 @@ create table "game_result_status" (
   "name" character varying(30) not null,
   "created_at" timestamptz not null default current_timestamp,
   "updated_at" timestamptz not null default current_timestamp,
-  primary key ("id")
+  constraint "pk_game_result_status_id" primary key ("id")
 );
 
 create table "game_state" (
@@ -30,7 +72,7 @@ create table "game_state" (
   "name" character varying(20) not null,
   "created_at" timestamptz not null default current_timestamp,
   "updated_at" timestamptz not null default current_timestamp,
-  primary key ("id")
+  constraint "pk_game_state_id" primary key ("id")
 );
 
 create table "game_time_category" (
@@ -39,7 +81,7 @@ create table "game_time_category" (
   "upper_time_limit_secs" integer null,
   "created_at" timestamptz not null default current_timestamp,
   "updated_at" timestamptz not null default current_timestamp,
-  primary key ("id")
+  constraint "pk_game_time_category_id" primary key ("id")
 );
 
 create table "game_time_kind" (
@@ -48,7 +90,7 @@ create table "game_time_kind" (
   "enabled" boolean not null,
   "created_at" timestamptz not null default current_timestamp,
   "updated_at" timestamptz not null default current_timestamp,
-  primary key ("id")
+  constraint "pk_game_time_kind_id" primary key ("id")
 );
 
 create table "game_variant" (
@@ -57,7 +99,7 @@ create table "game_variant" (
   "enabled" boolean not null,
   "created_at" timestamptz not null default current_timestamp,
   "updated_at" timestamptz not null default current_timestamp,
-  primary key ("id")
+  constraint "pk_game_variant_id" primary key ("id")
 );
 
 create table "game" (
@@ -86,16 +128,19 @@ create table "game" (
   "pgn" text null,
   "created_at" timestamptz not null default current_timestamp,
   "updated_at" timestamptz not null default current_timestamp,
-  primary key ("id"),
-  constraint "game_black_id_fkey" foreign key ("black_id") references "user" ("id") on update no action on delete no action,
-  constraint "game_result_fkey" foreign key ("result_id") references "game_result" ("id") on update no action on delete no action,
-  constraint "game_result_status_fkey" foreign key ("result_status_id") references "game_result_status" ("id") on update no action on delete no action,
-  constraint "game_state_fkey" foreign key ("state_id") references "game_state" ("id") on update no action on delete no action,
-  constraint "game_time_category_fkey" foreign key ("time_category_id") references "game_time_category" ("id") on update no action on delete no action,
-  constraint "game_time_kind_fkey" foreign key ("time_kind_id") references "game_time_kind" ("id") on update no action on delete no action,
-  constraint "game_variant_fkey" foreign key ("variant_id") references "game_variant" ("id") on update no action on delete no action,
-  constraint "game_white_id_fkey" foreign key ("white_id") references "user" ("id") on update no action on delete no action,
-  check (("white_id" is not null and "black_id" is not null and "guest_white_id" is null and "guest_black_id" is null) or ("guest_white_id" is not null and "guest_black_id" is not null and "white_id" is null and "black_id" is null))
+  constraint "pk_game_id" primary key ("id"),
+  constraint "fk_game_black_id" foreign key ("black_id") references "user" ("id"),
+  constraint "fk_game_result" foreign key ("result_id") references "game_result" ("id"),
+  constraint "fk_game_result_status" foreign key ("result_status_id") references "game_result_status" ("id"),
+  constraint "fk_game_state" foreign key ("state_id") references "game_state" ("id"),
+  constraint "fk_game_time_category" foreign key ("time_category_id") references "game_time_category" ("id"),
+  constraint "fk_game_time_kind" foreign key ("time_kind_id") references "game_time_kind" ("id"),
+  constraint "fk_game_variant" foreign key ("variant_id") references "game_variant" ("id"),
+  constraint "fk_game_white_id" foreign key ("white_id") references "user" ("id"),
+  constraint "ck_game_white_black" check (
+    ("white_id" is not null and "black_id" is not null and "guest_white_id" is null and "guest_black_id" is null) or
+    ("guest_white_id" is not null and "guest_black_id" is not null and "white_id" is null and "black_id" is null)
+  )
 );
 
 create table "game_move" (
@@ -105,21 +150,21 @@ create table "game_move" (
   "uci" character varying(5) not null,
   "san" character varying(10) not null,
   "played_at" timestamptz not null default current_timestamp,
-  primary key ("id"),
-  constraint "game_move_game_id_fkey" foreign key ("game_id") references "game" ("id") on update no action on delete cascade
+  constraint "pk_game_move_id" primary key ("id"),
+  constraint "fk_game_move_game_id" foreign key ("game_id") references "game" ("id") on delete cascade
 );
 
 create table "rating" (
   "id" bigint not null generated always as identity,
   "user_id" uuid not null,
-  "game_time_category_id" bigint not null, 
+  "game_time_category_id" bigint not null,
   "glicko" integer not null,
   "glicko2" integer not null,
   "created_at" timestamptz not null default current_timestamp,
   "updated_at" timestamptz not null default current_timestamp,
-  primary key ("id"),
-  unique ("user_id", "game_time_category_id"),
-  constraint "rating_user_id_fkey" foreign key ("user_id") references "user" ("id") on update cascade on delete cascade
+  constraint "pk_rating_id" primary key ("id"),
+  constraint "uq_rating_user_id_game_time_category_id" unique ("user_id", "game_time_category_id"),
+  constraint "fk_rating_user_id" foreign key ("user_id") references "user" ("id") on update cascade on delete cascade
 );
 -- +goose StatementEnd
 

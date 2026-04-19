@@ -71,9 +71,9 @@ var GameMoves = Table[
 		},
 	},
 	Indexes: gameMoveIndexes{
-		GameMovePkey: index{
+		PKGameMoveID: index{
 			Type: "btree",
-			Name: "game_move_pkey",
+			Name: "pk_game_move_id",
 			Columns: []indexColumn{
 				{
 					Name:         "id",
@@ -90,14 +90,14 @@ var GameMoves = Table[
 		},
 	},
 	PrimaryKey: &constraint{
-		Name:    "game_move_pkey",
+		Name:    "pk_game_move_id",
 		Columns: []string{"id"},
 		Comment: "",
 	},
 	ForeignKeys: gameMoveForeignKeys{
-		GameMoveGameMoveGameIDFkey: foreignKey{
+		GameMoveFKGameMoveGameID: foreignKey{
 			constraint: constraint{
-				Name:    "game_move.game_move_game_id_fkey",
+				Name:    "game_move.fk_game_move_game_id",
 				Columns: []string{"game_id"},
 				Comment: "",
 			},
@@ -125,22 +125,22 @@ func (c gameMoveColumns) AsSlice() []column {
 }
 
 type gameMoveIndexes struct {
-	GameMovePkey index
+	PKGameMoveID index
 }
 
 func (i gameMoveIndexes) AsSlice() []index {
 	return []index{
-		i.GameMovePkey,
+		i.PKGameMoveID,
 	}
 }
 
 type gameMoveForeignKeys struct {
-	GameMoveGameMoveGameIDFkey foreignKey
+	GameMoveFKGameMoveGameID foreignKey
 }
 
 func (f gameMoveForeignKeys) AsSlice() []foreignKey {
 	return []foreignKey{
-		f.GameMoveGameMoveGameIDFkey,
+		f.GameMoveFKGameMoveGameID,
 	}
 }
 

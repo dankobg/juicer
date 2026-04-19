@@ -14,6 +14,21 @@ type UserPersistor interface {
 	CreateUser(ctx context.Context, in models.UserSetter) (models.User, error)
 	UpdateUser(ctx context.Context, userID uuid.UUID, in models.UserSetter) (models.User, error)
 	DeleteUserByID(ctx context.Context, userID uuid.UUID) (uuid.UUID, error)
+
+	CreateFriendRequest(ctx context.Context, in models.FriendshipSetter) (dbtype.FriendRequest, error)
+	ListFriendRequests(ctx context.Context, filters dbtype.ListFriendRequestsFilters) (dbtype.PagedResult[dbtype.FriendRequest], error)
+	AcceptFriendRequest(ctx context.Context, userID, friendID uuid.UUID) error
+	DeclineFriendRequest(ctx context.Context, userID, friendID uuid.UUID) error
+	CancelFriendRequest(ctx context.Context, userID, friendID uuid.UUID) error
+	ListFriends(ctx context.Context, userID uuid.UUID, filters dbtype.ListFriendsFilters) (dbtype.PagedResult[models.User], error)
+	GetFriend(ctx context.Context, userID, friendID uuid.UUID) (models.User, error)
+
+	ListFollowings(ctx context.Context, userID uuid.UUID, filters dbtype.ListFollowingsFilters) (dbtype.PagedResult[models.User], error)
+	GetFollowing(ctx context.Context, userID, followingID uuid.UUID) (models.User, error)
+	FollowUser(ctx context.Context, userID uuid.UUID, in models.FollowingSetter) error
+	ListBlockedUsers(ctx context.Context, userID uuid.UUID, filters dbtype.ListBlockedUsersFilters) (dbtype.PagedResult[models.User], error)
+	GetBlockedUser(ctx context.Context, userID, blockedUserID uuid.UUID) (models.User, error)
+	BlockUser(ctx context.Context, userID uuid.UUID, in models.BlocklistSetter) error
 }
 
 type GameResultPersistor interface {

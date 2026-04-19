@@ -43,7 +43,7 @@ type GameVariantsQuery = *psql.ViewQuery[*GameVariant, GameVariantSlice]
 
 // gameVariantR is where relationships are stored.
 type gameVariantR struct {
-	VariantGames GameSlice // game.game_variant_fkey
+	VariantGames GameSlice // game.fk_game_variant
 }
 
 func buildGameVariantColumns(alias string) gameVariantColumns {

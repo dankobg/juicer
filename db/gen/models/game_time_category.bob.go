@@ -45,7 +45,7 @@ type GameTimeCategoriesQuery = *psql.ViewQuery[*GameTimeCategory, GameTimeCatego
 
 // gameTimeCategoryR is where relationships are stored.
 type gameTimeCategoryR struct {
-	TimeCategoryGames GameSlice // game.game_time_category_fkey
+	TimeCategoryGames GameSlice // game.fk_game_time_category
 }
 
 func buildGameTimeCategoryColumns(alias string) gameTimeCategoryColumns {

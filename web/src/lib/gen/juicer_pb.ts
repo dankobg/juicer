@@ -12,7 +12,7 @@ import type { Message as Message$1 } from "@bufbuild/protobuf";
  * Describes the file juicer.proto.
  */
 export const file_juicer: GenFile = /*@__PURE__*/
-  fileDesc("CgxqdWljZXIucHJvdG8SAnBiImkKD0dhbWVUaW1lQ29udHJvbBIoCgVjbG9jaxgBIAEoCzIZLmdvb2dsZS5wcm90b2J1Zi5EdXJhdGlvbhIsCglpbmNyZW1lbnQYAiABKAsyGS5nb29nbGUucHJvdG9idWYuRHVyYXRpb24i6QgKB01lc3NhZ2USHgoHcHJvYmxlbRgBIAEoCzILLnBiLlByb2JsZW1IABIeCgdsYXRlbmN5GAIgASgLMgsucGIuTGF0ZW5jeUgAEiIKCWhlYXJ0YmVhdBgDIAEoCzINLnBiLkhlYXJ0YmVhdEgAEiEKCWxlYXZlX3RhYhgEIAEoCzIMLnBiLkxlYXZlVGFiSAASIwoKbGVhdmVfc2l0ZRgFIAEoCzINLnBiLkxlYXZlU2l0ZUgAEi8KEGNsaWVudF9jb25uZWN0ZWQYBiABKAsyEy5wYi5DbGllbnRDb25uZWN0ZWRIABI1ChNjbGllbnRfZGlzY29ubmVjdGVkGAcgASgLMhYucGIuQ2xpZW50RGlzY29ubmVjdGVkSAASPgoYcmVxdWVzdF9pbml0aWFsX2NoYW5uZWxzGAggASgLMhoucGIuUmVxdWVzdEluaXRpYWxDaGFubmVsc0gAEi8KEGluaXRpYWxfY2hhbm5lbHMYCSABKAsyEy5wYi5Jbml0aWFsQ2hhbm5lbHNIABI4ChVyZXF1ZXN0X2NoYW5uZWxzX2luZm8YCiABKAsyFy5wYi5SZXF1ZXN0Q2hhbm5lbHNJbmZvSAASIQoJc2Vla19nYW1lGAsgASgLMgwucGIuU2Vla0dhbWVIABIuChBjYW5jZWxfc2Vla19nYW1lGAwgASgLMhIucGIuQ2FuY2VsU2Vla0dhbWVIABIfCghodWJfaW5mbxgNIAEoCzILLnBiLkh1YkluZm9IABIlCgttYXRjaF9mb3VuZBgOIAEoCzIOLnBiLk1hdGNoRm91bmRIABIjCgpnYW1lX2Fib3J0GA8gASgLMg0ucGIuR2FtZUFib3J0SAASJQoLZ2FtZV9yZXNpZ24YECABKAsyDi5wYi5HYW1lUmVzaWduSAASLAoPZ2FtZV9vZmZlcl9kcmF3GBEgASgLMhEucGIuR2FtZU9mZmVyRHJhd0gAEi4KEGdhbWVfYWNjZXB0X2RyYXcYEiABKAsyEi5wYi5HYW1lQWNjZXB0RHJhd0gAEjAKEWdhbWVfZGVjbGluZV9kcmF3GBMgASgLMhMucGIuR2FtZURlY2xpbmVEcmF3SAASIQoJZ2FtZV9jaGF0GBQgASgLMgwucGIuR2FtZUNoYXRIABIwChFnYW1lX2NoYXRfcmVjZWl2ZRgVIAEoCzITLnBiLkdhbWVDaGF0UmVjZWl2ZUgAEjIKEmdhbWVfY2hhdF9yZXRyaWV2ZRgWIAEoCzIULnBiLkdhbWVDaGF0UmV0cmlldmVIABIoCg1wbGF5X21vdmVfdWNpGBcgASgLMg8ucGIuUGxheU1vdmVVQ0lIABInCgxyZWNlaXZlX21vdmUYGCABKAsyDy5wYi5SZWNlaXZlTW92ZUgAEikKDWdhbWVfZmluaXNoZWQYGSABKAsyEC5wYi5HYW1lRmluaXNoZWRIABIYCgRlY2hvGEUgASgLMggucGIuRWNob0gAQgcKBWV2ZW50IhcKBEVjaG8SDwoHbWVzc2FnZRgBIAEoCSI8CglIZWFydGJlYXQSDwoHdXNlcl9pZBgBIAEoCRIPCgdjb25uX2lkGAIgASgJEg0KBWd1ZXN0GAMgASgIIjsKCExlYXZlVGFiEg8KB3VzZXJfaWQYASABKAkSDwoHY29ubl9pZBgCIAEoCRINCgVndWVzdBgDIAEoCCI8CglMZWF2ZVNpdGUSDwoHdXNlcl9pZBgBIAEoCRIPCgdjb25uX2lkGAIgASgJEg0KBWd1ZXN0GAMgASgIIh0KB0xhdGVuY3kSEgoKbGF0ZW5jeV9tcxgBIAEoBSIaCgdQcm9ibGVtEg8KB21lc3NhZ2UYASABKAkiHQoPQ2xpZW50Q29ubmVjdGVkEgoKAmlkGAEgASgJIiAKEkNsaWVudERpc2Nvbm5lY3RlZBIKCgJpZBgBIAEoCSJXChZSZXF1ZXN0SW5pdGlhbENoYW5uZWxzEg8KB3VzZXJfaWQYASABKAkSDwoHY29ubl9pZBgCIAEoCRINCgVndWVzdBgDIAEoCBIMCgRwYXRoGAQgASgJIiMKD0luaXRpYWxDaGFubmVscxIQCghjaGFubmVscxgBIAMoCSJYChNSZXF1ZXN0Q2hhbm5lbHNJbmZvEg8KB3VzZXJfaWQYASABKAkSDwoHY29ubl9pZBgCIAEoCRINCgVndWVzdBgDIAEoCBIQCghjaGFubmVscxgEIAMoCSJcCgZDbG9ja3MSKAoFd2hpdGUYASABKAsyGS5nb29nbGUucHJvdG9idWYuRHVyYXRpb24SKAoFYmxhY2sYAiABKAsyGS5nb29nbGUucHJvdG9idWYuRHVyYXRpb24iNQoIU2Vla0dhbWUSKQoMdGltZV9jb250cm9sGAEgASgLMhMucGIuR2FtZVRpbWVDb250cm9sIjsKDkNhbmNlbFNlZWtHYW1lEikKDHRpbWVfY29udHJvbBgBIAEoCzITLnBiLkdhbWVUaW1lQ29udHJvbCIpCgdIdWJJbmZvEg0KBWxvYmJ5GAEgASgFEg8KB3BsYXlpbmcYAiABKAUiRAoMT3Bwb25lbnRJbmZvEhAKCHVzZXJuYW1lGAkgASgJEhIKCmF2YXRhcl91cmwYCiABKAkSDgoGcmF0aW5nGAsgASgFIicKC0hpc3RvcnlNb3ZlEgsKA3VjaRgBIAEoCRILCgNzYW4YAiABKAkinAEKD0hpc3RvcnlNb3ZlSW5mbxILCgNmZW4YASABKAkSMgoJcGxheWVkX2F0GAIgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEgAiAEBEiIKBG1vdmUYAyABKAsyDy5wYi5IaXN0b3J5TW92ZUgBiAEBEg0KBWNoZWNrGAQgASgIQgwKCl9wbGF5ZWRfYXRCBwoFX21vdmUivwMKCk1hdGNoRm91bmQSDwoHZ2FtZV9pZBgBIAEoAxIPCgd1c2VyX2lkGAIgASgJEiEKCmdhbWVfc3RhdGUYAyABKA4yDS5wYi5HYW1lU3RhdGUSGAoFY29sb3IYBCABKA4yCS5wYi5Db2xvchILCgNmZW4YBSABKAkSCwoDcGx5GAYgASgNEhoKBmNsb2NrcxgHIAEoCzIKLnBiLkNsb2NrcxITCgtsZWdhbF9tb3ZlcxgIIAMoCRIpCgx0aW1lX2NvbnRyb2wYCSABKAsyEy5wYi5HYW1lVGltZUNvbnRyb2wSLAoNb3Bwb25lbnRfaW5mbxgKIAEoCzIQLnBiLk9wcG9uZW50SW5mb0gAiAEBEhwKFHJlY29ubmVjdF90aW1lb3V0X21zGAsgASgDEh0KFWZpcnN0X21vdmVfdGltZW91dF9tcxgMIAEoAxIvChJoaXN0b3J5X21vdmVfaW5mb3MYDSADKAsyEy5wYi5IaXN0b3J5TW92ZUluZm8SLgoKc3RhcnRfdGltZRgOIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCEAoOX29wcG9uZW50X2luZm8iCwoJR2FtZUFib3J0IgwKCkdhbWVSZXNpZ24iDwoNR2FtZU9mZmVyRHJhdyIRCg9HYW1lRGVjbGluZURyYXciEAoOR2FtZUFjY2VwdERyYXciGwoIR2FtZUNoYXQSDwoHbWVzc2FnZRgBIAEoCSI/Cg9HYW1lQ2hhdFJlY2VpdmUSDwoHdXNlcl9pZBgBIAEoCRIKCgJpZBgCIAEoCRIPCgdtZXNzYWdlGAMgASgJIjoKEEdhbWVDaGF0UmV0cmlldmUSJgoJZ2FtZV9jaGF0GAEgAygLMhMucGIuR2FtZUNoYXRSZWNlaXZlIhsKC1BsYXlNb3ZlVUNJEgwKBG1vdmUYASABKAkifwoLUmVjZWl2ZU1vdmUSCwoDdWNpGAEgASgJEgsKA2xhbhgCIAEoCRILCgNzYW4YAyABKAkSCwoDZmVuGAQgASgJEgsKA3BseRgFIAEoDRIaCgZjbG9ja3MYBiABKAsyCi5wYi5DbG9ja3MSEwoLbGVnYWxfbW92ZXMYByADKAkiiAEKDEdhbWVGaW5pc2hlZBIjCgtnYW1lX3Jlc3VsdBgBIAEoDjIOLnBiLkdhbWVSZXN1bHQSMAoSZ2FtZV9yZXN1bHRfc3RhdHVzGAIgASgOMhQucGIuR2FtZVJlc3VsdFN0YXR1cxIhCgpnYW1lX3N0YXRlGAMgASgOMg0ucGIuR2FtZVN0YXRlKkAKBUNvbG9yEhUKEUNPTE9SX1VOU1BFQ0lGSUVEEAASDwoLQ09MT1JfV0hJVEUQARIPCgtDT0xPUl9CTEFDSxACKo8CCgtHYW1lVmFyaWFudBIcChhHQU1FX1ZBUklBTlRfVU5TUEVDSUZJRUQQABIZChVHQU1FX1ZBUklBTlRfU1RBTkRBUkQQARIXChNHQU1FX1ZBUklBTlRfQVRPTUlDEAISGwoXR0FNRV9WQVJJQU5UX0NSQVpZSE9VU0UQAxIZChVHQU1FX1ZBUklBTlRfQ0hFU1M5NjAQBBIhCh1HQU1FX1ZBUklBTlRfS0lOR19PRl9USEVfSElMTBAFEhwKGEdBTUVfVkFSSUFOVF9USFJFRV9DSEVDSxAGEhYKEkdBTUVfVkFSSUFOVF9IT1JERRAHEh0KGUdBTUVfVkFSSUFOVF9SQUNJTkdfS0lOR1MQCCqMAQoMR2FtZVRpbWVLaW5kEh4KGkdBTUVfVElNRV9LSU5EX1VOU1BFQ0lGSUVEEAASGwoXR0FNRV9USU1FX0tJTkRfUkVBTFRJTUUQARIhCh1HQU1FX1RJTUVfS0lORF9DT1JSRVNQT05ERU5DRRACEhwKGEdBTUVfVElNRV9LSU5EX1VOTElNSVRFRBADKtcBChBHYW1lVGltZUNhdGVnb3J5EiIKHkdBTUVfVElNRV9DQVRFR09SWV9VTlNQRUNJRklFRBAAEiIKHkdBTUVfVElNRV9DQVRFR09SWV9IWVBFUkJVTExFVBABEh0KGUdBTUVfVElNRV9DQVRFR09SWV9CVUxMRVQQAhIcChhHQU1FX1RJTUVfQ0FURUdPUllfQkxJVFoQAxIcChhHQU1FX1RJTUVfQ0FURUdPUllfUkFQSUQQBBIgChxHQU1FX1RJTUVfQ0FURUdPUllfQ0xBU1NJQ0FMEAUqkgEKCkdhbWVSZXN1bHQSGwoXR0FNRV9SRVNVTFRfVU5TUEVDSUZJRUQQABIZChVHQU1FX1JFU1VMVF9XSElURV9XT04QARIZChVHQU1FX1JFU1VMVF9CTEFDS19XT04QAhIUChBHQU1FX1JFU1VMVF9EUkFXEAMSGwoXR0FNRV9SRVNVTFRfSU5URVJSVVBURUQQBCrKBAoQR2FtZVJlc3VsdFN0YXR1cxIiCh5HQU1FX1JFU1VMVF9TVEFUVVNfVU5TUEVDSUZJRUQQABIgChxHQU1FX1JFU1VMVF9TVEFUVVNfQ0hFQ0tNQVRFEAESLAooR0FNRV9SRVNVTFRfU1RBVFVTX0lOU1VGRklDSUVOVF9NQVRFUklBTBACEisKJ0dBTUVfUkVTVUxUX1NUQVRVU19USFJFRUZPTERfUkVQRVRJVElPThADEioKJkdBTUVfUkVTVUxUX1NUQVRVU19GSVZFRk9MRF9SRVBFVElUSU9OEAQSJgoiR0FNRV9SRVNVTFRfU1RBVFVTX0ZJRlRZX01PVkVfUlVMRRAFEiwKKEdBTUVfUkVTVUxUX1NUQVRVU19TRVZFTlRZRklWRV9NT1ZFX1JVTEUQBhIgChxHQU1FX1JFU1VMVF9TVEFUVVNfU1RBTEVNQVRFEAcSIgoeR0FNRV9SRVNVTFRfU1RBVFVTX1JFU0lHTkFUSU9OEAgSIgoeR0FNRV9SRVNVTFRfU1RBVFVTX0RSQVdfQUdSRUVEEAkSHgoaR0FNRV9SRVNVTFRfU1RBVFVTX0ZMQUdHRUQQChIjCh9HQU1FX1JFU1VMVF9TVEFUVVNfQURKVURJQ0FUSU9OEAsSIAocR0FNRV9SRVNVTFRfU1RBVFVTX1RJTUVEX09VVBAMEh4KGkdBTUVfUkVTVUxUX1NUQVRVU19BQk9SVEVEEA0SIgoeR0FNRV9SRVNVTFRfU1RBVFVTX0lOVEVSUlVQVEVEEA4qqwEKCUdhbWVTdGF0ZRIaChZHQU1FX1NUQVRFX1VOU1BFQ0lGSUVEEAASEwoPR0FNRV9TVEFURV9JRExFEAESHAoYR0FNRV9TVEFURV9XQUlUSU5HX1NUQVJUEAISGgoWR0FNRV9TVEFURV9JTl9QUk9HUkVTUxADEhcKE0dBTUVfU1RBVEVfRklOSVNIRUQQBBIaChZHQU1FX1NUQVRFX0lOVEVSUlVQVEVEEAUqhwEKDkdhbWVTaWRlQ2hvaWNlEiAKHEdBTUVfU0lERV9DSE9JQ0VfVU5TUEVDSUZJRUQQABIbChdHQU1FX1NJREVfQ0hPSUNFX1JBTkRPTRABEhoKFkdBTUVfU0lERV9DSE9JQ0VfV0hJVEUQAhIaChZHQU1FX1NJREVfQ0hPSUNFX0JMQUNLEANCHlocZ2l0aHViLmNvbS9kYW5rb2JnL2p1aWNlci9wYmIGcHJvdG8z", [file_google_protobuf_duration, file_google_protobuf_timestamp]);
+  fileDesc("CgxqdWljZXIucHJvdG8SAnBiImkKD0dhbWVUaW1lQ29udHJvbBIoCgVjbG9jaxgBIAEoCzIZLmdvb2dsZS5wcm90b2J1Zi5EdXJhdGlvbhIsCglpbmNyZW1lbnQYAiABKAsyGS5nb29nbGUucHJvdG9idWYuRHVyYXRpb24imgkKB01lc3NhZ2USHgoHcHJvYmxlbRgBIAEoCzILLnBiLlByb2JsZW1IABIeCgdsYXRlbmN5GAIgASgLMgsucGIuTGF0ZW5jeUgAEiIKCWhlYXJ0YmVhdBgDIAEoCzINLnBiLkhlYXJ0YmVhdEgAEiEKCWxlYXZlX3RhYhgEIAEoCzIMLnBiLkxlYXZlVGFiSAASIwoKbGVhdmVfc2l0ZRgFIAEoCzINLnBiLkxlYXZlU2l0ZUgAEi8KEGNsaWVudF9jb25uZWN0ZWQYBiABKAsyEy5wYi5DbGllbnRDb25uZWN0ZWRIABI1ChNjbGllbnRfZGlzY29ubmVjdGVkGAcgASgLMhYucGIuQ2xpZW50RGlzY29ubmVjdGVkSAASPgoYcmVxdWVzdF9pbml0aWFsX2NoYW5uZWxzGAggASgLMhoucGIuUmVxdWVzdEluaXRpYWxDaGFubmVsc0gAEi8KEGluaXRpYWxfY2hhbm5lbHMYCSABKAsyEy5wYi5Jbml0aWFsQ2hhbm5lbHNIABI4ChVyZXF1ZXN0X2NoYW5uZWxzX2luZm8YCiABKAsyFy5wYi5SZXF1ZXN0Q2hhbm5lbHNJbmZvSAASLwoQcHJlc2VuY2VfY2hhbmdlZBgLIAEoCzITLnBiLlByZXNlbmNlQ2hhbmdlZEgAEiEKCXNlZWtfZ2FtZRgMIAEoCzIMLnBiLlNlZWtHYW1lSAASLgoQY2FuY2VsX3NlZWtfZ2FtZRgNIAEoCzISLnBiLkNhbmNlbFNlZWtHYW1lSAASHwoIaHViX2luZm8YDiABKAsyCy5wYi5IdWJJbmZvSAASJQoLbWF0Y2hfZm91bmQYDyABKAsyDi5wYi5NYXRjaEZvdW5kSAASIwoKZ2FtZV9hYm9ydBgQIAEoCzINLnBiLkdhbWVBYm9ydEgAEiUKC2dhbWVfcmVzaWduGBEgASgLMg4ucGIuR2FtZVJlc2lnbkgAEiwKD2dhbWVfb2ZmZXJfZHJhdxgSIAEoCzIRLnBiLkdhbWVPZmZlckRyYXdIABIuChBnYW1lX2FjY2VwdF9kcmF3GBMgASgLMhIucGIuR2FtZUFjY2VwdERyYXdIABIwChFnYW1lX2RlY2xpbmVfZHJhdxgUIAEoCzITLnBiLkdhbWVEZWNsaW5lRHJhd0gAEiEKCWdhbWVfY2hhdBgVIAEoCzIMLnBiLkdhbWVDaGF0SAASMAoRZ2FtZV9jaGF0X3JlY2VpdmUYFiABKAsyEy5wYi5HYW1lQ2hhdFJlY2VpdmVIABIyChJnYW1lX2NoYXRfcmV0cmlldmUYFyABKAsyFC5wYi5HYW1lQ2hhdFJldHJpZXZlSAASKAoNcGxheV9tb3ZlX3VjaRgYIAEoCzIPLnBiLlBsYXlNb3ZlVUNJSAASJwoMcmVjZWl2ZV9tb3ZlGBkgASgLMg8ucGIuUmVjZWl2ZU1vdmVIABIpCg1nYW1lX2ZpbmlzaGVkGBogASgLMhAucGIuR2FtZUZpbmlzaGVkSAASGAoEZWNobxhFIAEoCzIILnBiLkVjaG9IAEIHCgVldmVudCIXCgRFY2hvEg8KB21lc3NhZ2UYASABKAkiPAoJSGVhcnRiZWF0Eg8KB3VzZXJfaWQYASABKAkSDwoHY29ubl9pZBgCIAEoCRINCgVndWVzdBgDIAEoCCI7CghMZWF2ZVRhYhIPCgd1c2VyX2lkGAEgASgJEg8KB2Nvbm5faWQYAiABKAkSDQoFZ3Vlc3QYAyABKAgiPAoJTGVhdmVTaXRlEg8KB3VzZXJfaWQYASABKAkSDwoHY29ubl9pZBgCIAEoCRINCgVndWVzdBgDIAEoCCIdCgdMYXRlbmN5EhIKCmxhdGVuY3lfbXMYASABKAUiGgoHUHJvYmxlbRIPCgdtZXNzYWdlGAEgASgJIh0KD0NsaWVudENvbm5lY3RlZBIKCgJpZBgBIAEoCSIgChJDbGllbnREaXNjb25uZWN0ZWQSCgoCaWQYASABKAkiVwoWUmVxdWVzdEluaXRpYWxDaGFubmVscxIPCgd1c2VyX2lkGAEgASgJEg8KB2Nvbm5faWQYAiABKAkSDQoFZ3Vlc3QYAyABKAgSDAoEcGF0aBgEIAEoCSIjCg9Jbml0aWFsQ2hhbm5lbHMSEAoIY2hhbm5lbHMYASADKAkiWAoTUmVxdWVzdENoYW5uZWxzSW5mbxIPCgd1c2VyX2lkGAEgASgJEg8KB2Nvbm5faWQYAiABKAkSDQoFZ3Vlc3QYAyABKAgSEAoIY2hhbm5lbHMYBCADKAkiRgoPUHJlc2VuY2VDaGFuZ2VkEg8KB3VzZXJfaWQYASABKAkSEAoIdXNlcm5hbWUYAiABKAkSEAoIY2hhbm5lbHMYAyADKAkiXAoGQ2xvY2tzEigKBXdoaXRlGAEgASgLMhkuZ29vZ2xlLnByb3RvYnVmLkR1cmF0aW9uEigKBWJsYWNrGAIgASgLMhkuZ29vZ2xlLnByb3RvYnVmLkR1cmF0aW9uIjUKCFNlZWtHYW1lEikKDHRpbWVfY29udHJvbBgBIAEoCzITLnBiLkdhbWVUaW1lQ29udHJvbCI7Cg5DYW5jZWxTZWVrR2FtZRIpCgx0aW1lX2NvbnRyb2wYASABKAsyEy5wYi5HYW1lVGltZUNvbnRyb2wiKQoHSHViSW5mbxINCgVsb2JieRgBIAEoBRIPCgdwbGF5aW5nGAIgASgFIkQKDE9wcG9uZW50SW5mbxIQCgh1c2VybmFtZRgJIAEoCRISCgphdmF0YXJfdXJsGAogASgJEg4KBnJhdGluZxgLIAEoBSInCgtIaXN0b3J5TW92ZRILCgN1Y2kYASABKAkSCwoDc2FuGAIgASgJIpwBCg9IaXN0b3J5TW92ZUluZm8SCwoDZmVuGAEgASgJEjIKCXBsYXllZF9hdBgCIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBIAIgBARIiCgRtb3ZlGAMgASgLMg8ucGIuSGlzdG9yeU1vdmVIAYgBARINCgVjaGVjaxgEIAEoCEIMCgpfcGxheWVkX2F0QgcKBV9tb3ZlIr8DCgpNYXRjaEZvdW5kEg8KB2dhbWVfaWQYASABKAMSDwoHdXNlcl9pZBgCIAEoCRIhCgpnYW1lX3N0YXRlGAMgASgOMg0ucGIuR2FtZVN0YXRlEhgKBWNvbG9yGAQgASgOMgkucGIuQ29sb3ISCwoDZmVuGAUgASgJEgsKA3BseRgGIAEoDRIaCgZjbG9ja3MYByABKAsyCi5wYi5DbG9ja3MSEwoLbGVnYWxfbW92ZXMYCCADKAkSKQoMdGltZV9jb250cm9sGAkgASgLMhMucGIuR2FtZVRpbWVDb250cm9sEiwKDW9wcG9uZW50X2luZm8YCiABKAsyEC5wYi5PcHBvbmVudEluZm9IAIgBARIcChRyZWNvbm5lY3RfdGltZW91dF9tcxgLIAEoAxIdChVmaXJzdF9tb3ZlX3RpbWVvdXRfbXMYDCABKAMSLwoSaGlzdG9yeV9tb3ZlX2luZm9zGA0gAygLMhMucGIuSGlzdG9yeU1vdmVJbmZvEi4KCnN0YXJ0X3RpbWUYDiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQhAKDl9vcHBvbmVudF9pbmZvIgsKCUdhbWVBYm9ydCIMCgpHYW1lUmVzaWduIg8KDUdhbWVPZmZlckRyYXciEQoPR2FtZURlY2xpbmVEcmF3IhAKDkdhbWVBY2NlcHREcmF3IhsKCEdhbWVDaGF0Eg8KB21lc3NhZ2UYASABKAkiPwoPR2FtZUNoYXRSZWNlaXZlEg8KB3VzZXJfaWQYASABKAkSCgoCaWQYAiABKAkSDwoHbWVzc2FnZRgDIAEoCSI6ChBHYW1lQ2hhdFJldHJpZXZlEiYKCWdhbWVfY2hhdBgBIAMoCzITLnBiLkdhbWVDaGF0UmVjZWl2ZSIbCgtQbGF5TW92ZVVDSRIMCgRtb3ZlGAEgASgJIn8KC1JlY2VpdmVNb3ZlEgsKA3VjaRgBIAEoCRILCgNsYW4YAiABKAkSCwoDc2FuGAMgASgJEgsKA2ZlbhgEIAEoCRILCgNwbHkYBSABKA0SGgoGY2xvY2tzGAYgASgLMgoucGIuQ2xvY2tzEhMKC2xlZ2FsX21vdmVzGAcgAygJIogBCgxHYW1lRmluaXNoZWQSIwoLZ2FtZV9yZXN1bHQYASABKA4yDi5wYi5HYW1lUmVzdWx0EjAKEmdhbWVfcmVzdWx0X3N0YXR1cxgCIAEoDjIULnBiLkdhbWVSZXN1bHRTdGF0dXMSIQoKZ2FtZV9zdGF0ZRgDIAEoDjINLnBiLkdhbWVTdGF0ZSpACgVDb2xvchIVChFDT0xPUl9VTlNQRUNJRklFRBAAEg8KC0NPTE9SX1dISVRFEAESDwoLQ09MT1JfQkxBQ0sQAiqPAgoLR2FtZVZhcmlhbnQSHAoYR0FNRV9WQVJJQU5UX1VOU1BFQ0lGSUVEEAASGQoVR0FNRV9WQVJJQU5UX1NUQU5EQVJEEAESFwoTR0FNRV9WQVJJQU5UX0FUT01JQxACEhsKF0dBTUVfVkFSSUFOVF9DUkFaWUhPVVNFEAMSGQoVR0FNRV9WQVJJQU5UX0NIRVNTOTYwEAQSIQodR0FNRV9WQVJJQU5UX0tJTkdfT0ZfVEhFX0hJTEwQBRIcChhHQU1FX1ZBUklBTlRfVEhSRUVfQ0hFQ0sQBhIWChJHQU1FX1ZBUklBTlRfSE9SREUQBxIdChlHQU1FX1ZBUklBTlRfUkFDSU5HX0tJTkdTEAgqjAEKDEdhbWVUaW1lS2luZBIeChpHQU1FX1RJTUVfS0lORF9VTlNQRUNJRklFRBAAEhsKF0dBTUVfVElNRV9LSU5EX1JFQUxUSU1FEAESIQodR0FNRV9USU1FX0tJTkRfQ09SUkVTUE9OREVOQ0UQAhIcChhHQU1FX1RJTUVfS0lORF9VTkxJTUlURUQQAyrXAQoQR2FtZVRpbWVDYXRlZ29yeRIiCh5HQU1FX1RJTUVfQ0FURUdPUllfVU5TUEVDSUZJRUQQABIiCh5HQU1FX1RJTUVfQ0FURUdPUllfSFlQRVJCVUxMRVQQARIdChlHQU1FX1RJTUVfQ0FURUdPUllfQlVMTEVUEAISHAoYR0FNRV9USU1FX0NBVEVHT1JZX0JMSVRaEAMSHAoYR0FNRV9USU1FX0NBVEVHT1JZX1JBUElEEAQSIAocR0FNRV9USU1FX0NBVEVHT1JZX0NMQVNTSUNBTBAFKpIBCgpHYW1lUmVzdWx0EhsKF0dBTUVfUkVTVUxUX1VOU1BFQ0lGSUVEEAASGQoVR0FNRV9SRVNVTFRfV0hJVEVfV09OEAESGQoVR0FNRV9SRVNVTFRfQkxBQ0tfV09OEAISFAoQR0FNRV9SRVNVTFRfRFJBVxADEhsKF0dBTUVfUkVTVUxUX0lOVEVSUlVQVEVEEAQqygQKEEdhbWVSZXN1bHRTdGF0dXMSIgoeR0FNRV9SRVNVTFRfU1RBVFVTX1VOU1BFQ0lGSUVEEAASIAocR0FNRV9SRVNVTFRfU1RBVFVTX0NIRUNLTUFURRABEiwKKEdBTUVfUkVTVUxUX1NUQVRVU19JTlNVRkZJQ0lFTlRfTUFURVJJQUwQAhIrCidHQU1FX1JFU1VMVF9TVEFUVVNfVEhSRUVGT0xEX1JFUEVUSVRJT04QAxIqCiZHQU1FX1JFU1VMVF9TVEFUVVNfRklWRUZPTERfUkVQRVRJVElPThAEEiYKIkdBTUVfUkVTVUxUX1NUQVRVU19GSUZUWV9NT1ZFX1JVTEUQBRIsCihHQU1FX1JFU1VMVF9TVEFUVVNfU0VWRU5UWUZJVkVfTU9WRV9SVUxFEAYSIAocR0FNRV9SRVNVTFRfU1RBVFVTX1NUQUxFTUFURRAHEiIKHkdBTUVfUkVTVUxUX1NUQVRVU19SRVNJR05BVElPThAIEiIKHkdBTUVfUkVTVUxUX1NUQVRVU19EUkFXX0FHUkVFRBAJEh4KGkdBTUVfUkVTVUxUX1NUQVRVU19GTEFHR0VEEAoSIwofR0FNRV9SRVNVTFRfU1RBVFVTX0FESlVESUNBVElPThALEiAKHEdBTUVfUkVTVUxUX1NUQVRVU19USU1FRF9PVVQQDBIeChpHQU1FX1JFU1VMVF9TVEFUVVNfQUJPUlRFRBANEiIKHkdBTUVfUkVTVUxUX1NUQVRVU19JTlRFUlJVUFRFRBAOKqsBCglHYW1lU3RhdGUSGgoWR0FNRV9TVEFURV9VTlNQRUNJRklFRBAAEhMKD0dBTUVfU1RBVEVfSURMRRABEhwKGEdBTUVfU1RBVEVfV0FJVElOR19TVEFSVBACEhoKFkdBTUVfU1RBVEVfSU5fUFJPR1JFU1MQAxIXChNHQU1FX1NUQVRFX0ZJTklTSEVEEAQSGgoWR0FNRV9TVEFURV9JTlRFUlJVUFRFRBAFKocBCg5HYW1lU2lkZUNob2ljZRIgChxHQU1FX1NJREVfQ0hPSUNFX1VOU1BFQ0lGSUVEEAASGwoXR0FNRV9TSURFX0NIT0lDRV9SQU5ET00QARIaChZHQU1FX1NJREVfQ0hPSUNFX1dISVRFEAISGgoWR0FNRV9TSURFX0NIT0lDRV9CTEFDSxADQh5aHGdpdGh1Yi5jb20vZGFua29iZy9qdWljZXIvcGJiBnByb3RvMw", [file_google_protobuf_duration, file_google_protobuf_timestamp]);
 
 /**
  * GameTimeControl is game time control
@@ -109,93 +109,99 @@ export type Message = Message$1<"pb.Message"> & {
     case: "requestChannelsInfo";
   } | {
     /**
+     * @generated from field: pb.PresenceChanged presence_changed = 11;
+     */
+    value: PresenceChanged;
+    case: "presenceChanged";
+  } | {
+    /**
      * ------------------------------------------------------
      *
-     * @generated from field: pb.SeekGame seek_game = 11;
+     * @generated from field: pb.SeekGame seek_game = 12;
      */
     value: SeekGame;
     case: "seekGame";
   } | {
     /**
-     * @generated from field: pb.CancelSeekGame cancel_seek_game = 12;
+     * @generated from field: pb.CancelSeekGame cancel_seek_game = 13;
      */
     value: CancelSeekGame;
     case: "cancelSeekGame";
   } | {
     /**
-     * @generated from field: pb.HubInfo hub_info = 13;
+     * @generated from field: pb.HubInfo hub_info = 14;
      */
     value: HubInfo;
     case: "hubInfo";
   } | {
     /**
-     * @generated from field: pb.MatchFound match_found = 14;
+     * @generated from field: pb.MatchFound match_found = 15;
      */
     value: MatchFound;
     case: "matchFound";
   } | {
     /**
-     * @generated from field: pb.GameAbort game_abort = 15;
+     * @generated from field: pb.GameAbort game_abort = 16;
      */
     value: GameAbort;
     case: "gameAbort";
   } | {
     /**
-     * @generated from field: pb.GameResign game_resign = 16;
+     * @generated from field: pb.GameResign game_resign = 17;
      */
     value: GameResign;
     case: "gameResign";
   } | {
     /**
-     * @generated from field: pb.GameOfferDraw game_offer_draw = 17;
+     * @generated from field: pb.GameOfferDraw game_offer_draw = 18;
      */
     value: GameOfferDraw;
     case: "gameOfferDraw";
   } | {
     /**
-     * @generated from field: pb.GameAcceptDraw game_accept_draw = 18;
+     * @generated from field: pb.GameAcceptDraw game_accept_draw = 19;
      */
     value: GameAcceptDraw;
     case: "gameAcceptDraw";
   } | {
     /**
-     * @generated from field: pb.GameDeclineDraw game_decline_draw = 19;
+     * @generated from field: pb.GameDeclineDraw game_decline_draw = 20;
      */
     value: GameDeclineDraw;
     case: "gameDeclineDraw";
   } | {
     /**
-     * @generated from field: pb.GameChat game_chat = 20;
+     * @generated from field: pb.GameChat game_chat = 21;
      */
     value: GameChat;
     case: "gameChat";
   } | {
     /**
-     * @generated from field: pb.GameChatReceive game_chat_receive = 21;
+     * @generated from field: pb.GameChatReceive game_chat_receive = 22;
      */
     value: GameChatReceive;
     case: "gameChatReceive";
   } | {
     /**
-     * @generated from field: pb.GameChatRetrieve game_chat_retrieve = 22;
+     * @generated from field: pb.GameChatRetrieve game_chat_retrieve = 23;
      */
     value: GameChatRetrieve;
     case: "gameChatRetrieve";
   } | {
     /**
-     * @generated from field: pb.PlayMoveUCI play_move_uci = 23;
+     * @generated from field: pb.PlayMoveUCI play_move_uci = 24;
      */
     value: PlayMoveUCI;
     case: "playMoveUci";
   } | {
     /**
-     * @generated from field: pb.ReceiveMove receive_move = 24;
+     * @generated from field: pb.ReceiveMove receive_move = 25;
      */
     value: ReceiveMove;
     case: "receiveMove";
   } | {
     /**
-     * @generated from field: pb.GameFinished game_finished = 25;
+     * @generated from field: pb.GameFinished game_finished = 26;
      */
     value: GameFinished;
     case: "gameFinished";
@@ -486,6 +492,35 @@ export const RequestChannelsInfoSchema: GenMessage<RequestChannelsInfo> = /*@__P
   messageDesc(file_juicer, 12);
 
 /**
+ * PresenceChanged notifes that presence has changed
+ *
+ * @generated from message pb.PresenceChanged
+ */
+export type PresenceChanged = Message$1<"pb.PresenceChanged"> & {
+  /**
+   * @generated from field: string user_id = 1;
+   */
+  userId: string;
+
+  /**
+   * @generated from field: string username = 2;
+   */
+  username: string;
+
+  /**
+   * @generated from field: repeated string channels = 3;
+   */
+  channels: string[];
+};
+
+/**
+ * Describes the message pb.PresenceChanged.
+ * Use `create(PresenceChangedSchema)` to create a new message.
+ */
+export const PresenceChangedSchema: GenMessage<PresenceChanged> = /*@__PURE__*/
+  messageDesc(file_juicer, 13);
+
+/**
  * Clocks is white and black game clock
  *
  * @generated from message pb.Clocks
@@ -507,7 +542,7 @@ export type Clocks = Message$1<"pb.Clocks"> & {
  * Use `create(ClocksSchema)` to create a new message.
  */
 export const ClocksSchema: GenMessage<Clocks> = /*@__PURE__*/
-  messageDesc(file_juicer, 13);
+  messageDesc(file_juicer, 14);
 
 /**
  * SeekGame is searching for a game
@@ -526,7 +561,7 @@ export type SeekGame = Message$1<"pb.SeekGame"> & {
  * Use `create(SeekGameSchema)` to create a new message.
  */
 export const SeekGameSchema: GenMessage<SeekGame> = /*@__PURE__*/
-  messageDesc(file_juicer, 14);
+  messageDesc(file_juicer, 15);
 
 /**
  * CancelSeekGame cancels the game search
@@ -545,7 +580,7 @@ export type CancelSeekGame = Message$1<"pb.CancelSeekGame"> & {
  * Use `create(CancelSeekGameSchema)` to create a new message.
  */
 export const CancelSeekGameSchema: GenMessage<CancelSeekGame> = /*@__PURE__*/
-  messageDesc(file_juicer, 15);
+  messageDesc(file_juicer, 16);
 
 /**
  * HubInfo is hub information
@@ -569,7 +604,7 @@ export type HubInfo = Message$1<"pb.HubInfo"> & {
  * Use `create(HubInfoSchema)` to create a new message.
  */
 export const HubInfoSchema: GenMessage<HubInfo> = /*@__PURE__*/
-  messageDesc(file_juicer, 16);
+  messageDesc(file_juicer, 17);
 
 /**
  * OpponentInfo is info about opponent
@@ -598,7 +633,7 @@ export type OpponentInfo = Message$1<"pb.OpponentInfo"> & {
  * Use `create(OpponentInfoSchema)` to create a new message.
  */
 export const OpponentInfoSchema: GenMessage<OpponentInfo> = /*@__PURE__*/
-  messageDesc(file_juicer, 17);
+  messageDesc(file_juicer, 18);
 
 /**
  * HistoryMove is the move played
@@ -622,7 +657,7 @@ export type HistoryMove = Message$1<"pb.HistoryMove"> & {
  * Use `create(HistoryMoveSchema)` to create a new message.
  */
 export const HistoryMoveSchema: GenMessage<HistoryMove> = /*@__PURE__*/
-  messageDesc(file_juicer, 18);
+  messageDesc(file_juicer, 19);
 
 /**
  * HistoryMoveInfo holds info about the move
@@ -656,7 +691,7 @@ export type HistoryMoveInfo = Message$1<"pb.HistoryMoveInfo"> & {
  * Use `create(HistoryMoveInfoSchema)` to create a new message.
  */
 export const HistoryMoveInfoSchema: GenMessage<HistoryMoveInfo> = /*@__PURE__*/
-  messageDesc(file_juicer, 19);
+  messageDesc(file_juicer, 20);
 
 /**
  * MatchFound signals that the game was found
@@ -740,7 +775,7 @@ export type MatchFound = Message$1<"pb.MatchFound"> & {
  * Use `create(MatchFoundSchema)` to create a new message.
  */
 export const MatchFoundSchema: GenMessage<MatchFound> = /*@__PURE__*/
-  messageDesc(file_juicer, 20);
+  messageDesc(file_juicer, 21);
 
 /**
  * GameAbort is game abort request
@@ -755,7 +790,7 @@ export type GameAbort = Message$1<"pb.GameAbort"> & {
  * Use `create(GameAbortSchema)` to create a new message.
  */
 export const GameAbortSchema: GenMessage<GameAbort> = /*@__PURE__*/
-  messageDesc(file_juicer, 21);
+  messageDesc(file_juicer, 22);
 
 /**
  * GameResign is game resign request
@@ -770,7 +805,7 @@ export type GameResign = Message$1<"pb.GameResign"> & {
  * Use `create(GameResignSchema)` to create a new message.
  */
 export const GameResignSchema: GenMessage<GameResign> = /*@__PURE__*/
-  messageDesc(file_juicer, 22);
+  messageDesc(file_juicer, 23);
 
 /**
  * GameOfferDraw is draw offer request
@@ -785,7 +820,7 @@ export type GameOfferDraw = Message$1<"pb.GameOfferDraw"> & {
  * Use `create(GameOfferDrawSchema)` to create a new message.
  */
 export const GameOfferDrawSchema: GenMessage<GameOfferDraw> = /*@__PURE__*/
-  messageDesc(file_juicer, 23);
+  messageDesc(file_juicer, 24);
 
 /**
  * GameDeclineDraw is draw declined
@@ -800,7 +835,7 @@ export type GameDeclineDraw = Message$1<"pb.GameDeclineDraw"> & {
  * Use `create(GameDeclineDrawSchema)` to create a new message.
  */
 export const GameDeclineDrawSchema: GenMessage<GameDeclineDraw> = /*@__PURE__*/
-  messageDesc(file_juicer, 24);
+  messageDesc(file_juicer, 25);
 
 /**
  * GameAcceptDraw is accepting the draw offer
@@ -815,7 +850,7 @@ export type GameAcceptDraw = Message$1<"pb.GameAcceptDraw"> & {
  * Use `create(GameAcceptDrawSchema)` to create a new message.
  */
 export const GameAcceptDrawSchema: GenMessage<GameAcceptDraw> = /*@__PURE__*/
-  messageDesc(file_juicer, 25);
+  messageDesc(file_juicer, 26);
 
 /**
  * GameChat is the game chat
@@ -834,7 +869,7 @@ export type GameChat = Message$1<"pb.GameChat"> & {
  * Use `create(GameChatSchema)` to create a new message.
  */
 export const GameChatSchema: GenMessage<GameChat> = /*@__PURE__*/
-  messageDesc(file_juicer, 26);
+  messageDesc(file_juicer, 27);
 
 /**
  * GameChatReceive is xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -863,7 +898,7 @@ export type GameChatReceive = Message$1<"pb.GameChatReceive"> & {
  * Use `create(GameChatReceiveSchema)` to create a new message.
  */
 export const GameChatReceiveSchema: GenMessage<GameChatReceive> = /*@__PURE__*/
-  messageDesc(file_juicer, 27);
+  messageDesc(file_juicer, 28);
 
 /**
  * GameChatRetrieve is xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -882,7 +917,7 @@ export type GameChatRetrieve = Message$1<"pb.GameChatRetrieve"> & {
  * Use `create(GameChatRetrieveSchema)` to create a new message.
  */
 export const GameChatRetrieveSchema: GenMessage<GameChatRetrieve> = /*@__PURE__*/
-  messageDesc(file_juicer, 28);
+  messageDesc(file_juicer, 29);
 
 /**
  * PlayMoveUCI plays a game move
@@ -901,7 +936,7 @@ export type PlayMoveUCI = Message$1<"pb.PlayMoveUCI"> & {
  * Use `create(PlayMoveUCISchema)` to create a new message.
  */
 export const PlayMoveUCISchema: GenMessage<PlayMoveUCI> = /*@__PURE__*/
-  messageDesc(file_juicer, 29);
+  messageDesc(file_juicer, 30);
 
 /**
  * ReceiveMove receives the game move
@@ -950,7 +985,7 @@ export type ReceiveMove = Message$1<"pb.ReceiveMove"> & {
  * Use `create(ReceiveMoveSchema)` to create a new message.
  */
 export const ReceiveMoveSchema: GenMessage<ReceiveMove> = /*@__PURE__*/
-  messageDesc(file_juicer, 30);
+  messageDesc(file_juicer, 31);
 
 /**
  * GameFinished signals the game is over
@@ -979,7 +1014,7 @@ export type GameFinished = Message$1<"pb.GameFinished"> & {
  * Use `create(GameFinishedSchema)` to create a new message.
  */
 export const GameFinishedSchema: GenMessage<GameFinished> = /*@__PURE__*/
-  messageDesc(file_juicer, 31);
+  messageDesc(file_juicer, 32);
 
 /**
  * Color is the player color

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	api "github.com/dankobg/juicer/api/gen"
 	"github.com/dankobg/juicer/db/gen/models"
 	"github.com/dankobg/juicer/persistence"
 	"github.com/dankobg/juicer/persistence/dbtype"
@@ -110,4 +111,71 @@ func (pst *PgUserPersistor) UpdateUser(ctx context.Context, userID uuid.UUID, in
 	}
 
 	return user, nil
+}
+
+func (pst *PgUserPersistor) CreateFriendRequest(ctx context.Context, in models.FriendshipSetter) (dbtype.FriendRequest, error) {
+	q := models.Friendships.Insert(&in, im.Returning(models.Friendships.Columns))
+
+	friendship, err := bob.One(ctx, pst.exec, q, scan.StructMapper[models.Friendship]())
+	if err != nil {
+		return dbtype.FriendRequest{}, fmt.Errorf("insert friend request")
+	}
+
+	friendRequest := dbtype.FriendRequest{
+		UserID:     friendship.InitiatorID,
+		FriendID:   friendship.ReceiverID,
+		Status:     api.FriendRequestStatus(friendship.Status),
+		CreatedAt:  friendship.CreatedAt,
+		AnsweredAt: friendship.AnsweredAt.Ptr(),
+	}
+
+	return friendRequest, nil
+}
+
+func (pst *PgUserPersistor) ListFriendRequests(ctx context.Context, filters dbtype.ListFriendRequestsFilters) (dbtype.PagedResult[dbtype.FriendRequest], error) {
+	panic("@TODO IMPLEMENT DB - ListFriendRequests")
+}
+
+func (pst *PgUserPersistor) AcceptFriendRequest(ctx context.Context, userID, friendID uuid.UUID) error {
+	panic("@TODO IMPLEMENT DB - AcceptFriendRequest")
+}
+
+func (pst *PgUserPersistor) DeclineFriendRequest(ctx context.Context, userID, friendID uuid.UUID) error {
+	panic("@TODO IMPLEMENT DB - DeclineFriendRequest")
+}
+
+func (pst *PgUserPersistor) CancelFriendRequest(ctx context.Context, userID, friendID uuid.UUID) error {
+	panic("@TODO IMPLEMENT DB - CancelFriendRequest")
+}
+
+func (pst *PgUserPersistor) ListFriends(ctx context.Context, userID uuid.UUID, filters dbtype.ListFriendsFilters) (dbtype.PagedResult[models.User], error) {
+	panic("@TODO IMPLEMENT DB - ListFriends")
+}
+
+func (pst *PgUserPersistor) GetFriend(ctx context.Context, userID, friendID uuid.UUID) (models.User, error) {
+	panic("@TODO IMPLEMENT DB - GetFriend")
+}
+
+func (pst *PgUserPersistor) ListFollowings(ctx context.Context, userID uuid.UUID, filters dbtype.ListFollowingsFilters) (dbtype.PagedResult[models.User], error) {
+	panic("@TODO IMPLEMENT DB - ListFollowings")
+}
+
+func (pst *PgUserPersistor) GetFollowing(ctx context.Context, userID, followingID uuid.UUID) (models.User, error) {
+	panic("@TODO IMPLEMENT DB - GetFollowing")
+}
+
+func (pst *PgUserPersistor) FollowUser(ctx context.Context, userID uuid.UUID, in models.FollowingSetter) error {
+	panic("@TODO IMPLEMENT DB - FollowUser")
+}
+
+func (pst *PgUserPersistor) ListBlockedUsers(ctx context.Context, userID uuid.UUID, filters dbtype.ListBlockedUsersFilters) (dbtype.PagedResult[models.User], error) {
+	panic("@TODO IMPLEMENT DB - ListBlockedUsers")
+}
+
+func (pst *PgUserPersistor) GetBlockedUser(ctx context.Context, userID, blockedUserID uuid.UUID) (models.User, error) {
+	panic("@TODO IMPLEMENT DB - GetBlockedUser")
+}
+
+func (pst *PgUserPersistor) BlockUser(ctx context.Context, userID uuid.UUID, in models.BlocklistSetter) error {
+	panic("@TODO IMPLEMENT DB - BlockUser")
 }
