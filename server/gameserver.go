@@ -14,6 +14,7 @@ import (
 	"github.com/dankobg/juicer/persistence/dbtype"
 	"github.com/dankobg/juicer/ws"
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 	"github.com/redis/go-redis/v9"
 	"google.golang.org/protobuf/encoding/protojson"
 )
@@ -144,20 +145,23 @@ func (a *ApiHandler) handleIPCRequestInitialChannelsMsg(data *pb.RequestInitialC
 		}
 
 		game, err := a.persistor.Game().GetGameByID(context.Background(), gameID)
-		if err != nil {
+		if err != nil && !errors.Is(err, pgx.ErrNoRows) {
 			a.Log.Error("handleIPCRequestInitialChannelsMsg GetGameByID", slog.String("user_id", data.UserId), slog.String("conn_id", data.ConnId), slog.String("path", data.Path), slog.Any("error", err))
 			return
 		}
 
-		switch game.StateID {
-		case a.protoGameStateToID(pb.GameState_GAME_STATE_IN_PROGRESS):
-			channels = append(channels, fmt.Sprintf("game.%d", game.ID), fmt.Sprintf("game.%d.chat", game.ID))
-		case a.protoGameStateToID(pb.GameState_GAME_STATE_FINISHED),
-			a.protoGameStateToID(pb.GameState_GAME_STATE_INTERRUPTED):
-			channels = append(channels, fmt.Sprintf("gametv.%d", game.ID), fmt.Sprintf("gametv.%d.chat", game.ID))
-		default:
-			return
+		if game.ID != 0 {
+			switch game.StateID {
+			case a.protoGameStateToID(pb.GameState_GAME_STATE_IN_PROGRESS):
+				channels = append(channels, fmt.Sprintf("game.%d", game.ID), fmt.Sprintf("game.%d.chat", game.ID))
+			case a.protoGameStateToID(pb.GameState_GAME_STATE_FINISHED),
+				a.protoGameStateToID(pb.GameState_GAME_STATE_INTERRUPTED):
+				channels = append(channels, fmt.Sprintf("gametv.%d", game.ID), fmt.Sprintf("gametv.%d.chat", game.ID))
+			default:
+				return
+			}
 		}
+
 	}
 
 	initialChannelsReplyMsg := &pb.Message{
@@ -194,9 +198,14 @@ func (a *ApiHandler) handleIPCRequestChannelsInfoMsg(data *pb.RequestChannelsInf
 	}
 
 	for _, channel := range data.GetChannels() {
-		_, _, err := a.persistor.Presence().SetPresence(context.Background(), uuid.MustParse(data.UserId), uuid.MustParse(data.ConnId), username, data.Guest, channel)
+		oldChannels, newChannels, err := a.persistor.Presence().SetPresence(context.Background(), uuid.MustParse(data.UserId), uuid.MustParse(data.ConnId), username, data.Guest, channel)
 		if err != nil {
 			a.Log.Error("SetPresence", slog.String("user_id", data.UserId), slog.String("conn_id", data.ConnId), slog.String("channel", channel), slog.Any("error", err))
+			return
+		}
+
+		if err := a.broadcastPresenceChanged(context.Background(), oldChannels, newChannels, data.UserId, username); err != nil {
+			a.Log.Error("broadcastPresenceChanged", slog.String("user_id", data.UserId), slog.String("conn_id", data.ConnId), slog.String("channel", channel), slog.Any("error", err))
 			return
 		}
 
@@ -539,5 +548,6 @@ func (a *ApiHandler) broadcastPresenceChanged(ctx context.Context, oldChannels, 
 	if err := a.Rdb.Publish(ctx, topic, presenceChangedMsgBytes).Err(); err != nil {
 		return fmt.Errorf("publish Message_PresenceChanged: %w", err)
 	}
+
 	return nil
 }

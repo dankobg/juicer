@@ -189,10 +189,11 @@ func (c *client) onPongReceived(ctx context.Context, payload []byte) {
 
 	latencyMsg := &pb.Message{Event: &pb.Message_Latency{Latency: &pb.Latency{LatencyMs: int32(c.avgLatency.Milliseconds())}}}
 
-	latencyMsgBytes, err := protojson.Marshal(latencyMsg)
-	if err != nil {
-		c.log.Error("protojson marshal Message_Latency", slog.Any("error", err))
-	} else {
-		c.outMsg <- latencyMsgBytes
-	}
+	// latencyMsgBytes, err := protojson.Marshal(latencyMsg)
+	// if err != nil {
+	// 	c.log.Error("protojson marshal Message_Latency", slog.Any("error", err))
+	// } else {
+	// 	c.outMsg <- latencyMsgBytes
+	// }
+	_ = latencyMsg
 }
