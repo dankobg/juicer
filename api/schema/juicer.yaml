@@ -631,30 +631,30 @@ paths:
                     $ref: "#/components/schemas/PaginationMeta"
         default:
           $ref: "#/components/responses/UnexpectedErrorResponse"
-      delete:
-        operationId: deleteFriends
-        summary: Delete friends
-        description: Delete all my friends
-        security:
-          - cookieAuth: []
-        tags:
-          - juicer
-        requestBody:
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/DeleteFriendsBody"
-        responses:
-          "204":
-            $ref: "#/components/responses/EmptyResponse"
-          "400":
-            $ref: "#/components/responses/GenericErrorResponse"
-          "401":
-            $ref: "#/components/responses/UnauthenticatedErrorResponse"
-          "403":
-            $ref: "#/components/responses/UnauthorizedErrorResponse"
-          default:
-            $ref: "#/components/responses/UnexpectedErrorResponse"
+    delete:
+      operationId: deleteFriends
+      summary: Delete friends
+      description: Delete all my friends
+      security:
+        - cookieAuth: []
+      tags:
+        - juicer
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DeleteFriendsBody"
+      responses:
+        "204":
+          $ref: "#/components/responses/EmptyResponse"
+        "400":
+          $ref: "#/components/responses/GenericErrorResponse"
+        "401":
+          $ref: "#/components/responses/UnauthenticatedErrorResponse"
+        "403":
+          $ref: "#/components/responses/UnauthorizedErrorResponse"
+        default:
+          $ref: "#/components/responses/UnexpectedErrorResponse"
   "/me/friends/{id}":
     get:
       operationId: getFriend
@@ -689,33 +689,33 @@ paths:
           $ref: "#/components/responses/NotFoundErrorResponse"
         default:
           $ref: "#/components/responses/UnexpectedErrorResponse"
-  delete:
-    operationId: deleteFriend
-    summary: Delete friend by id
-    description: Delete a specific friend by id
-    security:
-      - cookieAuth: []
-    tags:
-      - juicer
-    parameters:
-      - description: The friend id
-        in: path
-        name: id
-        required: true
-        schema:
-          type: string
-          format: uuid
-    responses:
-      "204":
-        $ref: "#/components/responses/EmptyResponse"
-      "400":
-        $ref: "#/components/responses/GenericErrorResponse"
-      "401":
-        $ref: "#/components/responses/UnauthenticatedErrorResponse"
-      "403":
-        $ref: "#/components/responses/UnauthorizedErrorResponse"
-      default:
-        $ref: "#/components/responses/UnexpectedErrorResponse"
+    delete:
+      operationId: deleteFriend
+      summary: Delete friend by id
+      description: Delete a specific friend by id
+      security:
+        - cookieAuth: []
+      tags:
+        - juicer
+      parameters:
+        - description: The friend id
+          in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "204":
+          $ref: "#/components/responses/EmptyResponse"
+        "400":
+          $ref: "#/components/responses/GenericErrorResponse"
+        "401":
+          $ref: "#/components/responses/UnauthenticatedErrorResponse"
+        "403":
+          $ref: "#/components/responses/UnauthorizedErrorResponse"
+        default:
+          $ref: "#/components/responses/UnexpectedErrorResponse"
   /me/followings:
     get:
       operationId: listFollowings
@@ -2898,6 +2898,17 @@ components:
           format: uuid
       required:
         - user_id
+    DeleteFriendsBody:
+      type: object
+      required:
+        - ids
+      properties:
+        ids:
+          type: array
+          items:
+            type: integer
+            format: int64
+          description: Friend ids to delete
     FollowUserBody:
       type: object
       properties:

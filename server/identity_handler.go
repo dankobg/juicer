@@ -864,6 +864,14 @@ func (a *ApiHandler) GetFriend(ctx context.Context, request api.GetFriendRequest
 	panic("@TODO: IMPLEMENT API GetFriend")
 }
 
+func (a *ApiHandler) DeleteFriend(ctx context.Context, request api.DeleteFriendRequestObject) (api.DeleteFriendResponseObject, error) {
+	panic("@TODO: IMPLEMENT API DeleteFriend")
+}
+
+func (a *ApiHandler) DeleteFriends(ctx context.Context, request api.DeleteFriendsRequestObject) (api.DeleteFriendsResponseObject, error) {
+	panic("@TODO: IMPLEMENT API DeleteFriends")
+}
+
 func (a *ApiHandler) ListFollowings(ctx context.Context, request api.ListFollowingsRequestObject) (api.ListFollowingsResponseObject, error) {
 	panic("@TODO: IMPLEMENT API ListFollowings")
 }

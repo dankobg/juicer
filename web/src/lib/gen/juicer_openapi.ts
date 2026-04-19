@@ -282,7 +282,11 @@ export interface paths {
         get: operations["listFriends"];
         put?: never;
         post?: never;
-        delete?: never;
+        /**
+         * Delete friends
+         * @description Delete all my friends
+         */
+        delete: operations["deleteFriends"];
         options?: never;
         head?: never;
         patch?: never;
@@ -302,26 +306,11 @@ export interface paths {
         get: operations["getFriend"];
         put?: never;
         post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    delete: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description The friend id */
-                id: string;
-            };
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        delete?: never;
+        /**
+         * Delete friend by id
+         * @description Delete a specific friend by id
+         */
+        delete: operations["deleteFriend"];
         options?: never;
         head?: never;
         patch?: never;
@@ -1252,6 +1241,10 @@ export interface components {
         CreateFriendRequestBody: {
             /** Format: uuid */
             user_id: string;
+        };
+        DeleteFriendsBody: {
+            /** @description Friend ids to delete */
+            ids: number[];
         };
         FollowUserBody: {
             /** Format: uuid */
@@ -2626,6 +2619,26 @@ export interface operations {
             default: components["responses"]["UnexpectedErrorResponse"];
         };
     };
+    deleteFriends: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["DeleteFriendsBody"];
+            };
+        };
+        responses: {
+            204: components["responses"]["EmptyResponse"];
+            400: components["responses"]["GenericErrorResponse"];
+            401: components["responses"]["UnauthenticatedErrorResponse"];
+            403: components["responses"]["UnauthorizedErrorResponse"];
+            default: components["responses"]["UnexpectedErrorResponse"];
+        };
+    };
     getFriend: {
         parameters: {
             query?: never;
@@ -2651,6 +2664,25 @@ export interface operations {
             401: components["responses"]["UnauthenticatedErrorResponse"];
             403: components["responses"]["UnauthorizedErrorResponse"];
             404: components["responses"]["NotFoundErrorResponse"];
+            default: components["responses"]["UnexpectedErrorResponse"];
+        };
+    };
+    deleteFriend: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The friend id */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: components["responses"]["EmptyResponse"];
+            400: components["responses"]["GenericErrorResponse"];
+            401: components["responses"]["UnauthenticatedErrorResponse"];
+            403: components["responses"]["UnauthorizedErrorResponse"];
             default: components["responses"]["UnexpectedErrorResponse"];
         };
     };

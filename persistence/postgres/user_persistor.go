@@ -156,6 +156,18 @@ func (pst *PgUserPersistor) GetFriend(ctx context.Context, userID, friendID uuid
 	panic("@TODO IMPLEMENT DB - GetFriend")
 }
 
+func (pst *PgUserPersistor) AddFriend(ctx context.Context, in models.FriendshipSetter) error {
+	panic("@TODO IMPLEMENT DB - AddFriend")
+}
+
+func (pst *PgUserPersistor) DeleteFriend(ctx context.Context, userID, friendID uuid.UUID) error {
+	panic("@TODO IMPLEMENT DB - DeleteFriend")
+}
+
+func (pst *PgUserPersistor) DeleteFriends(ctx context.Context, userID uuid.UUID, friendIDs []uuid.UUID) error {
+	panic("@TODO IMPLEMENT DB - DeleteFriends")
+}
+
 func (pst *PgUserPersistor) ListFollowings(ctx context.Context, userID uuid.UUID, filters dbtype.ListFollowingsFilters) (dbtype.PagedResult[models.User], error) {
 	panic("@TODO IMPLEMENT DB - ListFollowings")
 }

@@ -22,6 +22,9 @@ type UserPersistor interface {
 	CancelFriendRequest(ctx context.Context, userID, friendID uuid.UUID) error
 	ListFriends(ctx context.Context, userID uuid.UUID, filters dbtype.ListFriendsFilters) (dbtype.PagedResult[models.User], error)
 	GetFriend(ctx context.Context, userID, friendID uuid.UUID) (models.User, error)
+	AddFriend(ctx context.Context, in models.FriendshipSetter) error
+	DeleteFriend(ctx context.Context, userID, friendID uuid.UUID) error
+	DeleteFriends(ctx context.Context, userID uuid.UUID, friendIDs []uuid.UUID) error
 
 	ListFollowings(ctx context.Context, userID uuid.UUID, filters dbtype.ListFollowingsFilters) (dbtype.PagedResult[models.User], error)
 	GetFollowing(ctx context.Context, userID, followingID uuid.UUID) (models.User, error)
