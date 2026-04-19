@@ -107,14 +107,14 @@ func (h *Hub) processClientWebsocketMessage(client *client, msg []byte) error {
 	topic := fmt.Sprintf("wsc.%s.%s.%d", client.userID, client.connID, client.authState)
 
 	if err := h.bus.rdb.Publish(context.Background(), topic, msg).Err(); err != nil {
-		h.log.Error("hub publish msg from websocket", slog.String("user_id", client.userID.String()), slog.String("conn_id", client.connID.String()), slog.String("topic", topic), slog.Any("error", err))
+		h.log.Error("hub publish websocket message", slog.String("user_id", client.userID.String()), slog.String("conn_id", client.connID.String()), slog.String("auth_state", client.authState.String()), slog.String("topic", topic), slog.Any("error", err))
 	}
 
 	return nil
 }
 
 func (h *Hub) onClientConnected(client *client) {
-	h.log.Debug("client connected", slog.String("user_id", client.userID.String()), slog.String("auth_state", client.authState.String()), slog.Any("channels", client.channels))
+	h.log.Debug("client connected", slog.String("user_id", client.userID.String()), slog.String("conn_id", client.connID.String()), slog.String("auth_state", client.authState.String()), slog.Any("channels", client.channels))
 
 	h.addClient(client)
 	h.requestChannelsInfo(client)
@@ -125,16 +125,16 @@ func (h *Hub) onClientConnected(client *client) {
 
 	clientConnectedMsgBytes, err := protojson.Marshal(clientConnectedMsg)
 	if err != nil {
-		h.log.Error("protojson marshal Message_ClientConnected", slog.String("user_id", client.userID.String()), slog.Any("error", err))
+		h.log.Error("protojson marshal Message_ClientConnected", slog.String("user_id", client.userID.String()), slog.String("conn_id", client.connID.String()), slog.String("auth_state", client.authState.String()), slog.Any("error", err))
 	} else {
 		if err := h.bus.rdb.Publish(context.Background(), "ipc", clientConnectedMsgBytes).Err(); err != nil {
-			h.log.Error("hub publish Message_ClientConnected", slog.String("user_id", client.userID.String()), slog.String("topic", "ipc"), slog.Any("error", err))
+			h.log.Error("hub publish Message_ClientConnected", slog.String("user_id", client.userID.String()), slog.String("conn_id", client.connID.String()), slog.String("auth_state", client.authState.String()), slog.String("topic", "ipc"), slog.Any("error", err))
 		}
 	}
 }
 
 func (h *Hub) onClientDisconnected(client *client) {
-	h.log.Debug("client disconnected", slog.String("user_id", client.userID.String()), slog.String("auth_state", client.authState.String()))
+	h.log.Debug("client disconnected", slog.String("user_id", client.userID.String()), slog.String("conn_id", client.connID.String()), slog.String("auth_state", client.authState.String()))
 	h.removeClient(client)
 
 	clientDisconnectedMsg := &pb.Message{
@@ -143,10 +143,10 @@ func (h *Hub) onClientDisconnected(client *client) {
 
 	clientDisconnectedMsgBytes, err := protojson.Marshal(clientDisconnectedMsg)
 	if err != nil {
-		h.log.Error("protojson marshal Message_ClientDisconnected", slog.String("user_id", client.userID.String()), slog.Any("error", err))
+		h.log.Error("protojson marshal Message_ClientDisconnected", slog.String("user_id", client.userID.String()), slog.String("conn_id", client.connID.String()), slog.String("auth_state", client.authState.String()), slog.Any("error", err))
 	} else {
 		if err := h.bus.rdb.Publish(context.Background(), "ipc", clientDisconnectedMsgBytes).Err(); err != nil {
-			h.log.Error("hub publish Message_ClientDisconnected", slog.String("user_id", client.userID.String()), slog.String("topic", "ipc"), slog.Any("error", err))
+			h.log.Error("hub publish Message_ClientDisconnected", slog.String("user_id", client.userID.String()), slog.String("conn_id", client.connID.String()), slog.String("auth_state", client.authState.String()), slog.String("topic", "ipc"), slog.Any("error", err))
 		}
 	}
 }
@@ -168,7 +168,7 @@ func (h *Hub) onBroadcastConn(connMsg ConnMessage) {
 }
 
 func (h *Hub) onBroadcastUser(clientMsg UserMessage) {
-	h.log.Debug("broadcasting to user", slog.String("user_id", clientMsg.userID.String()), slog.String("msg", string(clientMsg.msg)))
+	h.log.Debug("broadcasting to user", slog.String("user_id", clientMsg.userID.String()), slog.String("channel", channelSafePrint(clientMsg.channel)), slog.String("msg", string(clientMsg.msg)))
 
 	for c := range h.clientsByUserID[clientMsg.userID] {
 		canSend := true
@@ -255,10 +255,10 @@ func (h *Hub) removeClient(c *client) {
 	}
 	leaveTabMsgBytes, err := protojson.Marshal(leaveTabMsg)
 	if err != nil {
-		h.log.Error("protojson marshal Message_LeaveTab", slog.String("user_id", c.userID.String()), slog.Any("error", err))
+		h.log.Error("protojson marshal Message_LeaveTab", slog.String("user_id", c.userID.String()), slog.String("conn_id", c.connID.String()), slog.String("auth_state", c.authState.String()), slog.Any("error", err))
 	} else {
 		if err := h.bus.rdb.Publish(context.Background(), "ipc", leaveTabMsgBytes).Err(); err != nil {
-			h.log.Error("hub publish Message_LeaveTab", slog.String("user_id", c.userID.String()), slog.String("topic", "ipc"), slog.Any("error", err))
+			h.log.Error("hub publish Message_LeaveTab", slog.String("user_id", c.userID.String()), slog.String("conn_id", c.connID.String()), slog.String("auth_state", c.authState.String()), slog.String("topic", "ipc"), slog.Any("error", err))
 		}
 	}
 
@@ -270,10 +270,10 @@ func (h *Hub) removeClient(c *client) {
 		}
 		leaveSiteMsgBytes, err := protojson.Marshal(leaveSiteMsg)
 		if err != nil {
-			h.log.Error("protojson marshal Message_LeaveSite", slog.String("user_id", c.userID.String()), slog.Any("error", err))
+			h.log.Error("protojson marshal Message_LeaveSite", slog.String("user_id", c.userID.String()), slog.String("conn_id", c.connID.String()), slog.String("auth_state", c.authState.String()), slog.Any("error", err))
 		} else {
 			if err := h.bus.rdb.Publish(context.Background(), "ipc", leaveSiteMsgBytes).Err(); err != nil {
-				h.log.Error("hub publish Message_LeaveSite", slog.String("user_id", c.userID.String()), slog.String("topic", "ipc"), slog.Any("error", err))
+				h.log.Error("hub publish Message_LeaveSite", slog.String("user_id", c.userID.String()), slog.String("conn_id", c.connID.String()), slog.String("auth_state", c.authState.String()), slog.String("topic", "ipc"), slog.Any("error", err))
 			}
 		}
 	} else {
@@ -306,22 +306,22 @@ func (h *Hub) RequestInitialChannels(ctx context.Context, client *client) ([]str
 
 	requestInitialChannelsMsgBytes, err := protojson.Marshal(requestInitialChannelsMsg)
 	if err != nil {
-		h.log.Error("protojson marshal Message_InitialChannels", slog.String("user_id", client.userID.String()), slog.Any("error", err))
+		h.log.Error("protojson marshal Message_InitialChannels", slog.String("user_id", client.userID.String()), slog.String("conn_id", client.connID.String()), slog.String("auth_state", client.authState.String()), slog.Any("error", err))
 	} else {
 		if err := h.bus.rdb.Publish(context.Background(), "ipc", requestInitialChannelsMsgBytes).Err(); err != nil {
-			h.log.Error("hub publish Message_RequestInitialChannels", slog.String("user_id", client.userID.String()), slog.String("topic", "ipc"), slog.Any("error", err))
+			h.log.Error("hub publish Message_RequestInitialChannels", slog.String("user_id", client.userID.String()), slog.String("conn_id", client.connID.String()), slog.String("auth_state", client.authState.String()), slog.String("topic", "ipc"), slog.Any("error", err))
 		}
 	}
 
 	msg, err := sub.ReceiveMessage(ctx)
 	if err != nil {
-		h.log.Error("hub recv reply initial-channels", slog.String("user_id", client.userID.String()), slog.String("topic", "ipc"), slog.Any("error", err))
+		h.log.Error("hub recv reply Message_InitialChannels", slog.String("user_id", client.userID.String()), slog.String("conn_id", client.connID.String()), slog.String("auth_state", client.authState.String()), slog.String("topic", "ipc"), slog.Any("error", err))
 		return nil, fmt.Errorf("failed to receive initial channels reply: %w", err)
 	}
 
 	m := &pb.Message{}
 	if err := protojson.Unmarshal([]byte(msg.Payload), m); err != nil {
-		h.log.Error("protojson.Unmarshal reply initial-channels message")
+		h.log.Error("protojson unmarshal reply Message_InitialChannels", slog.String("user_id", client.userID.String()), slog.String("conn_id", client.connID.String()), slog.String("auth_state", client.authState.String()), slog.Any("error", err))
 		return nil, fmt.Errorf("protojson.Unmarshal Message_InitialChannels: %w", err)
 	}
 
@@ -349,10 +349,10 @@ func (h *Hub) requestChannelsInfo(client *client) {
 
 	requestChannelsInfoMsgBytes, err := protojson.Marshal(requestChannelsInfoMsg)
 	if err != nil {
-		h.log.Error("protojson marshal Message_RequestChannelsInfo", slog.String("user_id", client.userID.String()), slog.Any("error", err))
+		h.log.Error("protojson marshal Message_RequestChannelsInfo", slog.String("user_id", client.userID.String()), slog.String("conn_id", client.connID.String()), slog.String("auth_state", client.authState.String()), slog.Any("error", err))
 	} else {
 		if err := h.bus.rdb.Publish(context.Background(), "ipc", requestChannelsInfoMsgBytes).Err(); err != nil {
-			h.log.Error("hub publish Message_RequestChannelsInfo", slog.String("user_id", client.userID.String()), slog.String("topic", "ipc"), slog.Any("error", err))
+			h.log.Error("hub publish Message_RequestChannelsInfo", slog.String("user_id", client.userID.String()), slog.String("conn_id", client.connID.String()), slog.String("auth_state", client.authState.String()), slog.String("topic", "ipc"), slog.Any("error", err))
 		}
 	}
 }

@@ -7,3 +7,10 @@ type Channel string
 func (ch Channel) String() string {
 	return string(ch)
 }
+
+func channelSafePrint(ch *Channel) string {
+	if ch == nil {
+		return ""
+	}
+	return string(*ch)
+}
