@@ -385,12 +385,12 @@ func (h *Hub) PubsubProcess(ctx context.Context) {
 func (h *Hub) onPresenceChangedMsg(m *redis.Message) {
 	h.log.Debug("hub onPresenceChangedMsg", slog.Any("msg", m))
 
-	userID, err := extractPresenceChangedTopicParts(m.Channel)
-	if err != nil {
-		return
-	}
+	// userID, err := extractPresenceChangedTopicParts(m.Channel)
+	// if err != nil {
+	// 	return
+	// }
 
-	h.broadcastUser <- UserMessage{userID: userID, msg: []byte(m.Payload)}
+	// h.broadcastUser <- UserMessage{userID: userID, msg: []byte(m.Payload)}
 }
 
 func (h *Hub) onLobbyMsg(m *redis.Message) {

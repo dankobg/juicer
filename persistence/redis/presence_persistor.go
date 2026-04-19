@@ -18,7 +18,7 @@ type RedisPresencePersistor struct {
 	*RedisPersistor
 }
 
-func NewPgPresenceStore(rs *RedisPersistor) *RedisPresencePersistor {
+func NewRedisPresenceStore(rs *RedisPersistor) *RedisPresencePersistor {
 	return &RedisPresencePersistor{
 		RedisPersistor: rs,
 	}
@@ -93,10 +93,22 @@ func (pst *RedisPresencePersistor) SetPresence(ctx context.Context, userID uuid.
 		return nil, nil, fmt.Errorf("fetch after presences")
 	}
 
-	slices.Sort(beforeUserPresences)
-	slices.Sort(afterUserPresences)
+	oldChannels := make([]string, 0)
+	newChannels := make([]string, 0)
 
-	return beforeUserPresences, afterUserPresences, nil
+	for _, before := range beforeUserPresences {
+		channel := strings.Split(before, "#")[1]
+		oldChannels = append(oldChannels, channel)
+	}
+	for _, after := range afterUserPresences {
+		channel := strings.Split(after, "#")[1]
+		newChannels = append(newChannels, channel)
+	}
+
+	slices.Sort(oldChannels)
+	slices.Sort(newChannels)
+
+	return oldChannels, newChannels, nil
 }
 
 func (pst *RedisPresencePersistor) ClearPresence(ctx context.Context, userID uuid.UUID, connID uuid.UUID, username string, guest bool) ([]string, []string, []string, error) {
@@ -168,10 +180,22 @@ func (pst *RedisPresencePersistor) ClearPresence(ctx context.Context, userID uui
 		return nil, nil, nil, fmt.Errorf("fetch after presences")
 	}
 
-	slices.Sort(beforePresences)
-	slices.Sort(afterPresences)
+	oldChannels := make([]string, 0)
+	newChannels := make([]string, 0)
 
-	return beforePresences, afterPresences, nil, nil
+	for _, before := range beforePresences {
+		channel := strings.Split(before, "#")[1]
+		oldChannels = append(oldChannels, channel)
+	}
+	for _, after := range afterPresences {
+		channel := strings.Split(after, "#")[1]
+		newChannels = append(newChannels, channel)
+	}
+
+	slices.Sort(oldChannels)
+	slices.Sort(newChannels)
+
+	return oldChannels, newChannels, nil, nil
 }
 
 func (pst *RedisPresencePersistor) GetPresence(ctx context.Context, userID uuid.UUID) ([]string, error) {
@@ -275,8 +299,20 @@ func (pst *RedisPresencePersistor) RefreshPresence(ctx context.Context, userID u
 		return nil, nil, fmt.Errorf("fetch after presences")
 	}
 
-	slices.Sort(beforePresences)
-	slices.Sort(afterPresences)
+	oldChannels := make([]string, 0)
+	newChannels := make([]string, 0)
+
+	for _, before := range beforePresences {
+		channel := strings.Split(before, "#")[1]
+		oldChannels = append(oldChannels, channel)
+	}
+	for _, after := range afterPresences {
+		channel := strings.Split(after, "#")[1]
+		newChannels = append(newChannels, channel)
+	}
+
+	slices.Sort(oldChannels)
+	slices.Sort(newChannels)
 
 	return beforePresences, afterPresences, nil
 }

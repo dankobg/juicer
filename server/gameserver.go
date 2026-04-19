@@ -122,7 +122,7 @@ func (a *ApiHandler) handleIPCLeaveSiteMsg(data *pb.LeaveSite) {
 func (a *ApiHandler) handleIPCRequestInitialChannelsMsg(data *pb.RequestInitialChannels) {
 	channels := make([]string, 0)
 
-	if data.Path == "/" {
+	if data.Path == "" || data.Path == "/" {
 		channels = append(channels, "lobby", "lobby.chat")
 	} else {
 		var gameID int64
@@ -539,6 +539,7 @@ func (a *ApiHandler) broadcastPresenceChanged(ctx context.Context, oldChannels, 
 		Username: username,
 		Channels: newChannels,
 	}}}
+
 	presenceChangedMsgBytes, err := protojson.Marshal(presenceChangedMsg)
 	if err != nil {
 		return fmt.Errorf("protojson.Marshal Message_PresenceChanged: %w", err)
