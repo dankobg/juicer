@@ -107,26 +107,31 @@ message Message {
     LeaveSite leave_site = 5;
     ClientConnected client_connected = 6;
     ClientDisconnected client_disconnected = 7;
-    RequestInitialChannels request_initial_channels = 8;
-    InitialChannels initial_channels = 9;
-    RequestChannelsInfo request_channels_info = 10;
-    PresenceChanged presence_changed = 11;
-    // ------------------------------------------------------
-    SeekGame seek_game = 12;
-    CancelSeekGame cancel_seek_game = 13;
-    HubInfo hub_info = 14;
-    MatchFound match_found = 15;
-    GameAbort game_abort = 16;
-    GameResign game_resign = 17;
-    GameOfferDraw game_offer_draw = 18;
-    GameAcceptDraw game_accept_draw = 19;
-    GameDeclineDraw game_decline_draw = 20;
-    GameChat game_chat = 21;
-    GameChatReceive game_chat_receive = 22;
-    GameChatRetrieve game_chat_retrieve = 23;
-    PlayMoveUCI play_move_uci = 24;
-    ReceiveMove receive_move = 25;
-    GameFinished game_finished = 26;
+    InitializeChannels initialize_channels = 8;
+    InitializedChannels initialized_channels = 9;
+    RequestInitialChannelsInfo request_initial_channels_info = 10;
+
+    // PresenceEntry presence_changed = xxx;
+    // UserPresence user_presence = xxx;
+    // UserPresences user_presences = xxx;
+
+    SeekGame seek_game = 25;
+    CancelSeekGame cancel_seek_game = 26;
+
+    AbortGame abort_game = 29;
+    ResignGame resign_game = 30;
+    OfferDraw offer_draw = 31;
+    AcceptDraw accept_draw = 32;
+    DeclineDraw decline_draw = 33;
+    PlayMoveUCI play_move_uci = 34;
+
+    GameChat game_chat = 35;
+    GameChatReceive game_chat_receive = 36;
+    GameChatRetrieve game_chat_retrieve = 37;
+    ReceiveMove receive_move = 38;
+    GameFinished game_finished = 39;
+    HubInfo hub_info = 40;
+    MatchFound match_found = 41;
 
     Echo echo = 69;
   }
@@ -178,30 +183,44 @@ message ClientDisconnected {
   string id = 1;
 }
 
-// RequestInitialChannels requests initial channels that the user belongs to (e.g. ["lobby", "lobby.chat"])
-message RequestInitialChannels {
+// InitializeChannels requests initial channels that the user belongs to (e.g. ["lobby", "lobby.chat"])
+message InitializeChannels {
   string user_id = 1;
   string conn_id = 2;
   bool guest = 3;
   string path = 4;
 }
 
-// InitialChannels is the user initial channels
-message InitialChannels {
+// InitializedChannels is the user initial channels
+message InitializedChannels {
   repeated string channels = 1;
 }
 
-// RequestChannelsInfo requests backend to send some data for initial channels
-// e.g. users in lobby want to see active games, lobby.chat want lobby chat history, if in gametv, they want gamestate and move history etc.
-message RequestChannelsInfo {
+// RequestInitialChannelsInfo requests backend to send some info initial channels
+// e.g. `lobby` users want to see active games, `lobby.chat` users want loby chat history, `game.123` users want gamestate info etc
+message RequestInitialChannelsInfo {
   string user_id = 1;
   string conn_id = 2;
   bool guest = 3;
   repeated string channels = 4;
 }
 
-// PresenceChanged notifes that presence has changed
-message PresenceChanged {
+// UserPresence is user presence info
+message UserPresence {
+  string user_id = 1;
+  string username = 2;
+  bool guest = 3;
+  string channel = 4;
+  bool deleting = 5;
+}
+
+// UserPresences holds list of user presences
+message UserPresences {
+  repeated UserPresence presences = 1;
+}
+
+// PresenceEntry is presence entry
+message PresenceEntry {
   string user_id = 1;
   string username = 2;
   repeated string channels = 3;
@@ -268,20 +287,20 @@ message MatchFound {
   google.protobuf.Timestamp start_time = 14;
 }
 
-// GameAbort is game abort request
-message GameAbort {}
+// AbortGame is game abort message
+message AbortGame {}
 
-// GameResign is game resign request
-message GameResign {}
+// ResignGame is game resign message
+message ResignGame {}
 
-// GameOfferDraw is draw offer request
-message GameOfferDraw {}
+// OfferDraw is game draw offer message
+message OfferDraw {}
 
-// GameDeclineDraw is draw declined
-message GameDeclineDraw {}
+// DeclineDraw is game draw decline message
+message DeclineDraw {}
 
-// GameAcceptDraw is accepting the draw offer
-message GameAcceptDraw {}
+// AcceptDraw is game accept draw message
+message AcceptDraw {}
 
 // GameChat is the game chat
 message GameChat {

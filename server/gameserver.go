@@ -59,11 +59,11 @@ func (a *ApiHandler) onIPCMsg(m *redis.Message) {
 	case *pb.Message_LeaveSite:
 		a.handleIPCLeaveSiteMsg(msg.GetLeaveSite())
 
-	case *pb.Message_RequestInitialChannels:
-		a.handleIPCRequestInitialChannelsMsg(msg.GetRequestInitialChannels())
+	case *pb.Message_InitializeChannels:
+		a.handleIPCInitializeChannelsMsg(msg.GetInitializeChannels())
 
-	case *pb.Message_RequestChannelsInfo:
-		a.handleIPCRequestChannelsInfoMsg(msg.GetRequestChannelsInfo())
+	case *pb.Message_RequestInitialChannelsInfo:
+		a.handleIPCRequestInitialChannelsInfoMsg(msg.GetRequestInitialChannelsInfo())
 	}
 }
 
@@ -119,7 +119,7 @@ func (a *ApiHandler) handleIPCLeaveSiteMsg(data *pb.LeaveSite) {
 	// delete active seeks for userID
 }
 
-func (a *ApiHandler) handleIPCRequestInitialChannelsMsg(data *pb.RequestInitialChannels) {
+func (a *ApiHandler) handleIPCInitializeChannelsMsg(data *pb.InitializeChannels) {
 	channels := make([]string, 0)
 
 	if data.Path == "" || data.Path == "/" {
@@ -164,26 +164,26 @@ func (a *ApiHandler) handleIPCRequestInitialChannelsMsg(data *pb.RequestInitialC
 
 	}
 
-	initialChannelsReplyMsg := &pb.Message{
-		Event: &pb.Message_InitialChannels{InitialChannels: &pb.InitialChannels{
+	initializedChannelsMsg := &pb.Message{
+		Event: &pb.Message_InitializedChannels{InitializedChannels: &pb.InitializedChannels{
 			Channels: channels,
 		}},
 	}
 
-	initialChannelsReplyMsgBytes, err := protojson.Marshal(initialChannelsReplyMsg)
+	initializedChannelsMsgBytes, err := protojson.Marshal(initializedChannelsMsg)
 	if err != nil {
-		a.Log.Error("protojson marshal Message_InitialChannels", slog.String("user_id", data.UserId), slog.Any("error", err))
+		a.Log.Error("protojson marshal Message_InitializedChannels", slog.String("user_id", data.UserId), slog.Any("error", err))
 		return
 	}
 
 	topic := "reply-initial-channels." + data.UserId + "." + data.ConnId
-	if err := a.bus.rdb.Publish(context.Background(), topic, initialChannelsReplyMsgBytes).Err(); err != nil {
-		a.Log.Error("hub publish Message_InitialChannels", slog.String("user_id", data.UserId), slog.String("topic", "ipc"), slog.Any("error", err))
+	if err := a.bus.rdb.Publish(context.Background(), topic, initializedChannelsMsgBytes).Err(); err != nil {
+		a.Log.Error("hub publish Message_InitializedChannels", slog.String("user_id", data.UserId), slog.String("topic", "ipc"), slog.Any("error", err))
 		return
 	}
 }
 
-func (a *ApiHandler) handleIPCRequestChannelsInfoMsg(data *pb.RequestChannelsInfo) {
+func (a *ApiHandler) handleIPCRequestInitialChannelsInfoMsg(data *pb.RequestInitialChannelsInfo) {
 	var username string
 
 	if data.Guest {
@@ -191,7 +191,7 @@ func (a *ApiHandler) handleIPCRequestChannelsInfoMsg(data *pb.RequestChannelsInf
 	} else {
 		uname, err := a.GetUsername(context.Background(), data.UserId)
 		if err != nil {
-			a.Log.Error("handleIPCRequestChannelsInfoMsg get username", slog.Any("error", err))
+			a.Log.Error("handleIPCRequestInitialChannelsInfoMsg get username", slog.Any("error", err))
 			return
 		}
 		username = uname
@@ -256,6 +256,18 @@ func (a *ApiHandler) onWSCMsg(m *redis.Message) {
 		a.handleWSCSeekGameMsg(clientAuthInfo, msg.GetSeekGame())
 	case *pb.Message_CancelSeekGame:
 		a.handleWSCCancelSeekGameMsg(clientAuthInfo, msg.GetCancelSeekGame())
+	case *pb.Message_AbortGame:
+		a.handleWSCAbortGame(clientAuthInfo, msg.GetAbortGame())
+	case *pb.Message_ResignGame:
+		a.handleWSCResignGame(clientAuthInfo, msg.GetResignGame())
+	case *pb.Message_OfferDraw:
+		a.handleWSCOfferDraw(clientAuthInfo, msg.GetOfferDraw())
+	case *pb.Message_AcceptDraw:
+		a.handleWSCAcceptDraw(clientAuthInfo, msg.GetAcceptDraw())
+	case *pb.Message_DeclineDraw:
+		a.handleWSCDeclineDraw(clientAuthInfo, msg.GetDeclineDraw())
+	case *pb.Message_PlayMoveUci:
+		a.handleWSCPlayMoveUCI(clientAuthInfo, msg.GetPlayMoveUci())
 	}
 }
 
@@ -301,7 +313,31 @@ func (a *ApiHandler) handleWSCSeekGameMsg(authInfo clientAuthInfo, data *pb.Seek
 }
 
 func (a *ApiHandler) handleWSCCancelSeekGameMsg(authInfo clientAuthInfo, data *pb.CancelSeekGame) {
-	fmt.Println(data, "CANCEL_SEEK")
+	fmt.Println(data, "handleWSCCancelSeekGameMsg")
+}
+
+func (a *ApiHandler) handleWSCAbortGame(authInfo clientAuthInfo, data *pb.AbortGame) {
+	fmt.Println(data, "handleWSCAbortGame")
+}
+
+func (a *ApiHandler) handleWSCResignGame(authInfo clientAuthInfo, data *pb.ResignGame) {
+	fmt.Println(data, "handleWSCResignGame")
+}
+
+func (a *ApiHandler) handleWSCOfferDraw(authInfo clientAuthInfo, data *pb.OfferDraw) {
+	fmt.Println(data, "handleWSCOfferDraw")
+}
+
+func (a *ApiHandler) handleWSCAcceptDraw(authInfo clientAuthInfo, data *pb.AcceptDraw) {
+	fmt.Println(data, "handleWSCAcceptDraw")
+}
+
+func (a *ApiHandler) handleWSCDeclineDraw(authInfo clientAuthInfo, data *pb.DeclineDraw) {
+	fmt.Println(data, "handleWSCDeclineDraw")
+}
+
+func (a *ApiHandler) handleWSCPlayMoveUCI(authInfo clientAuthInfo, data *pb.PlayMoveUCI) {
+	fmt.Println(data, "handleWSCPlayMoveUCI")
 }
 
 // extractWSCTopicParts extracts the user_id, conn_id and auth_state
@@ -530,25 +566,124 @@ func channelsChanged(oldChannels, newChannels []string) bool {
 }
 
 func (a *ApiHandler) broadcastPresenceChanged(ctx context.Context, oldChannels, newChannels []string, userID, username string) error {
-	if !channelsChanged(oldChannels, newChannels) {
-		return nil
-	}
+	return nil
+	// if !channelsChanged(oldChannels, newChannels) {
+	// 	return nil
+	// }
 
-	presenceChangedMsg := &pb.Message{Event: &pb.Message_PresenceChanged{PresenceChanged: &pb.PresenceChanged{
-		UserId:   userID,
-		Username: username,
-		Channels: newChannels,
-	}}}
+	// presenceChangedMsg := &pb.Message{Event: &pb.Message_PresenceChanged{PresenceChanged: &pb.PresenceEntry{
+	// 	UserId:   userID,
+	// 	Username: username,
+	// 	Channels: newChannels,
+	// }}}
 
-	presenceChangedMsgBytes, err := protojson.Marshal(presenceChangedMsg)
+	// presenceChangedMsgBytes, err := protojson.Marshal(presenceChangedMsg)
+	// if err != nil {
+	// 	return fmt.Errorf("protojson.Marshal Message_PresenceChanged: %w", err)
+	// }
+
+	// topic := "presence.changed." + userID
+	// if err := a.Rdb.Publish(ctx, topic, presenceChangedMsgBytes).Err(); err != nil {
+	// 	return fmt.Errorf("publish Message_PresenceChanged: %w", err)
+	// }
+
+	// return nil
+}
+
+func (a *ApiHandler) broadcastPresence(ctx context.Context, userID, username string, guest bool, channels []string, deleting bool) error {
+	return nil
+	// for _, channel := range channels {
+	// 	toSend := &pb.Message{Event: &pb.Message_UserPresence{UserPresence: &pb.UserPresence{
+	// 		UserId:   userID,
+	// 		Username: username,
+	// 		Guest:    guest,
+	// 		Channel:  channel,
+	// 		Deleting: deleting,
+	// 	}}}
+	// 	bb, err := protojson.Marshal(toSend)
+	// 	if err != nil {
+	// 		return err
+	// 	}
+	// 	fmt.Println("EEEEEEEEEEEEEEEEEEEEEEE", channel)
+	// 	if err := a.bus.rdb.Publish(ctx, channel, bb).Err(); err != nil {
+	// 		return err
+	// 	}
+	// }
+
+	// return nil
+}
+
+func (a *ApiHandler) getPresence(ctx context.Context, channel string) (*pb.Message, error) {
+	return nil, nil
+	// users, err := a.persistor.Presence().GetUsersInChannel(ctx, channel)
+	// if err != nil {
+	// 	return nil, err
+	// }
+
+	// presenceList := make([]*pb.UserPresence, 0)
+	// for _, u := range users {
+	// 	presenceList = append(presenceList, &pb.UserPresence{
+	// 		UserId:   u.ID,
+	// 		Username: u.Username,
+	// 		Guest:    u.Guest,
+	// 		Channel:  channel,
+	// 	})
+	// }
+	// upsMsg := &pb.Message{Event: &pb.Message_UserPresences{UserPresences: &pb.UserPresences{Presences: presenceList}}}
+	// return upsMsg, nil
+}
+
+func (a *ApiHandler) sendPresenceInfo(ctx context.Context, userID, connID uuid.UUID, username string, guest bool, channel string) error {
+	presMsg, err := a.getPresence(ctx, channel)
 	if err != nil {
-		return fmt.Errorf("protojson.Marshal Message_PresenceChanged: %w", err)
+		return err
 	}
+	_ = presMsg
 
-	topic := "presence.changed." + userID
-	if err := a.Rdb.Publish(ctx, topic, presenceChangedMsgBytes).Err(); err != nil {
-		return fmt.Errorf("publish Message_PresenceChanged: %w", err)
+	// if err := a.publishToConnID(ctx, connID, userID, presMsg); err != nil {
+	// 	return err
+	// }
+
+	// send our presence to users in this channel also
+	if err := a.broadcastPresence(ctx, userID.String(), username, guest, []string{channel}, false); err != nil {
+		return err
 	}
 
 	return nil
 }
+
+func (a *ApiHandler) publishToUserID(ctx context.Context, userID string, msg *pb.Message, channel *string) error {
+	return nil
+}
+
+// func (b *Bus) pubToUser(userID string, evt *entity.EventWrapper, channel string) error {
+// 	// Publish to a user, but pass in a specific channel. Only publish to those user sockets that are in this channel/realm/what-have-you.
+// 	sanitized, err := sanitize(b.stores.UserStore, b.stores.GameStore, b.stores.TournamentStore, evt, userID)
+// 	if err != nil {
+// 		return err
+// 	}
+// 	bts, err := sanitized.Serialize()
+// 	if err != nil {
+// 		return err
+// 	}
+// 	var fullChannel string
+// 	if channel == "" {
+// 		fullChannel = "user." + userID
+// 	} else {
+// 		fullChannel = "user." + userID + "." + channel
+// 	}
+
+// 	return b.natsconn.Publish(fullChannel, bts)
+// }
+
+// func (b *Bus) pubToConnectionID(connID, userID string, evt *entity.EventWrapper) error {
+// 	sanitized, err := sanitize(b.stores.UserStore, b.stores.GameStore, b.stores.TournamentStore, evt, userID)
+// 	if err != nil {
+// 		return err
+// 	}
+// 	bts, err := sanitized.Serialize()
+// 	if err != nil {
+// 		return err
+// 	}
+// 	return b.natsconn.Publish("connid."+connID, bts)
+// }

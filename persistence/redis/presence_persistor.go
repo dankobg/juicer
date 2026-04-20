@@ -239,10 +239,6 @@ func (pst *RedisPresencePersistor) ClearPresence(ctx context.Context, userID uui
 	return oldChannels, newChannels, removedChannels, nil
 }
 
-func (pst *RedisPresencePersistor) GetPresence(ctx context.Context, userID uuid.UUID) ([]string, error) {
-	panic("GetPresence IMPLEMENT")
-}
-
 func (pst *RedisPresencePersistor) RefreshPresence(ctx context.Context, userID uuid.UUID, connID uuid.UUID, username string, guest bool) ([]string, []string, error) {
 	authStr := "auth"
 	if guest {
@@ -377,83 +373,105 @@ func (pst *RedisPresencePersistor) RefreshPresence(ctx context.Context, userID u
 	return beforePresences, afterPresences, nil
 }
 
+func (pst *RedisPresencePersistor) GetPresence(ctx context.Context, userID uuid.UUID) ([]string, error) {
+	presenceUserKey := "presence:user:" + userID.String()
+
+	userPresence, err := pst.rdb.ZRange(ctx, presenceUserKey, 0, -1).Result()
+	if err != nil {
+		return nil, fmt.Errorf("get user presence: %w", err)
+	}
+
+	if userPresence == nil {
+		return []string{}, nil
+	}
+
+	channels := make([]string, len(userPresence))
+	for i, connChannelKey := range userPresence {
+		channel := strings.Split(connChannelKey, "#")[1]
+		channels[i] = channel
+	}
+
+	return channels, nil
+}
+
 func (pst *RedisPresencePersistor) CountInChannel(ctx context.Context, channel string) (int64, error) {
-	panic("CountInChannel IMPLEMENT")
+	presenceChannelKey := "presence:channel:" + channel
+	count, err := pst.rdb.ZCard(ctx, presenceChannelKey).Result()
+	if err != nil {
+		return 0, fmt.Errorf("failed to get count in channel: %w", err)
+	}
+
+	return count, nil
 }
 
 func (pst *RedisPresencePersistor) LastSeen(ctx context.Context, userID uuid.UUID) (int64, error) {
-	panic("LastSeen IMPLEMENT")
+	presenceLastSeenKey := "presence:last-seen" + userID.String()
+
+	ts, err := pst.rdb.ZScore(ctx, presenceLastSeenKey, userID.String()).Result()
+	if err != nil {
+		return 0, fmt.Errorf("failed to get last seen: %w", err)
+	}
+
+	return int64(ts), nil
 }
 
-func (pst *RedisPresencePersistor) GetChannelsForUser(userID uuid.UUID) ([]string, error) {
-	panic("GetChannelsForUser IMPLEMENT")
+func (pst *RedisPresencePersistor) GetChannelsForUser(ctx context.Context, userID uuid.UUID) ([]string, error) {
+	var (
+		presenceUserKey        = "presence:user:" + userID.String()
+		presenceActiveGamesKey = "presence:active-games:" + userID.String()
+	)
+
+	userPresences, err := pst.rdb.ZRange(ctx, presenceUserKey, 0, -1).Result()
+	if err != nil {
+		return nil, fmt.Errorf("fetch user presences: %w", err)
+	}
+
+	activeUserGamesPresences, err := pst.rdb.ZRange(ctx, presenceActiveGamesKey, 0, -1).Result()
+	if err != nil {
+		return nil, fmt.Errorf("fetch active user game presences: %w", err)
+	}
+
+	channels := make([]string, 0)
+
+	for _, x := range userPresences {
+		channel := strings.Split(x, "#")[1]
+		channels = append(channels, channel)
+	}
+
+	for _, x := range activeUserGamesPresences {
+		gameIDStr := strings.Split(x, "#")[1]
+		activeGameKey := "activegame:" + gameIDStr
+		channels = append(channels, activeGameKey)
+	}
+
+	slices.Sort(channels)
+
+	return channels, nil
 }
 
-func (pst *RedisPresencePersistor) GetInChannel(ctx context.Context, channel string) ([]string, error) {
-	panic("* IMPLEMENT")
+func (pst *RedisPresencePersistor) GetUsersInChannel(ctx context.Context, channel string) ([]persistence.UserPresenceInfo, error) {
+	presenceChannelKey := "presence:channel:" + channel
+
+	presenceChannels, err := pst.rdb.ZRange(ctx, presenceChannelKey, 0, -1).Result()
+	if err != nil {
+		return nil, fmt.Errorf("fetch users in channels: %w", err)
+	}
+
+	userPresenceInfos := make([]persistence.UserPresenceInfo, len(presenceChannels))
+
+	for _, userKey := range presenceChannels {
+		parts := strings.Split(userKey, "#")
+
+		guest := true
+		if parts[3] == "auth" {
+			guest = false
+		}
+		userPresenceInfos = append(userPresenceInfos, persistence.UserPresenceInfo{
+			ID:       parts[0],
+			Username: parts[2],
+			Guest:    guest,
+		})
+	}
+
+	return userPresenceInfos, nil
 }
-
-// func (s *RedisPresencePersistor) SetActiveGame(ctx context.Context, in models.Game) (models.Game, error) {
-// 	bb, err := json.Marshal(&in)
-// 	if err != nil {
-// 		return models.Game{}, fmt.Errorf("failed to set active game presence, marshal error: %w", err)
-// 	}
-
-// 	if err := s.rdb.Set(ctx, fmt.Sprintf("game.%d", in.ID), bb, 0).Err(); err != nil {
-// 		return models.Game{}, fmt.Errorf("failed to set active game presence: %w", err)
-// 	}
-
-// 	return in, nil
-// }
-
-// func (s *RedisPresencePersistor) GetActiveGame(ctx context.Context, gameID int64) (models.Game, error) {
-// 	val, err := s.rdb.Get(ctx, fmt.Sprintf("game.%d", gameID)).Result()
-// 	if err != nil {
-// 		return models.Game{}, fmt.Errorf("failed to get active game presence: %w", err)
-// 	}
-
-// 	var game models.Game
-// 	if err := json.Unmarshal([]byte(val), &game); err != nil {
-// 		return models.Game{}, fmt.Errorf("failed to get active game presence, unmarshal error: %w", err)
-// 	}
-
-// 	return game, nil
-// }
-
-// func (s *RedisPresencePersistor) RemoveActiveGame(ctx context.Context, gameID int64) error {
-// 	if err := s.rdb.Del(ctx, fmt.Sprintf("game.%d", gameID)).Err(); err != nil {
-// 		return fmt.Errorf("failed to remove active game presence: %w", err)
-// 	}
-
-// 	return nil
-// }
-
-// func (s *RedisPresencePersistor) SetPlayerGameID(ctx context.Context, clientID uuid.UUID, gameID int64) error {
-// 	if err := s.rdb.Set(ctx, fmt.Sprintf("client.%s", clientID.String()), gameID, 0).Err(); err != nil {
-// 		return fmt.Errorf("failed to set player game id presence: %w", err)
-// 	}
-
-// 	return nil
-// }
-
-// func (s *RedisPresencePersistor) GetPlayerGameID(ctx context.Context, clientID uuid.UUID) (int64, error) {
-// 	gameID, err := s.rdb.Get(ctx, fmt.Sprintf("client.%s", clientID.String())).Result()
-// 	if err != nil {
-// 		return 0, fmt.Errorf("failed to get player game id presence: %w", err)
-// 	}
-
-// 	n, err := strconv.Atoi(gameID)
-// 	if err != nil {
-// 		return 0, fmt.Errorf("failed to convert gameID to number")
-// 	}
-
-// 	return int64(n), nil
-// }
-
-// func (s *RedisPresencePersistor) DelPlayerGameID(ctx context.Context, clientID uuid.UUID) error {
-// 	if err := s.rdb.Del(ctx, fmt.Sprintf("client.%s", clientID.String())).Err(); err != nil {
-// 		return fmt.Errorf("failed to remove player game id presence: %w", err)
-// 	}
-
-// 	return nil
-// }

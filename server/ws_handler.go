@@ -113,9 +113,9 @@ func (a *ApiHandler) serverWs(w http.ResponseWriter, r *http.Request) {
 		},
 	)
 
-	initialChannels, err := a.Hub.RequestInitialChannels(r.Context(), client)
+	initialChannels, err := a.Hub.InitializeChannels(r.Context(), client)
 	if err != nil {
-		a.Log.Error("failed to request initial channels", slog.String("user_id", clientID))
+		a.Log.Error("failed to initialize channels", slog.String("user_id", clientID))
 		return
 	}
 

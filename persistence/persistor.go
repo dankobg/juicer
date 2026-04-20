@@ -108,18 +108,28 @@ type RatingPersistor interface {
 	BulkDeleteRatings(ctx context.Context, ratingIDs []int64) error
 }
 
+type UserPresenceInfo struct {
+	ID       string
+	Username string
+	Guest    bool
+}
+
 type PresencePersistor interface {
 	SetPresence(ctx context.Context, userID uuid.UUID, connID uuid.UUID, username string, guest bool, channel string) ([]string, []string, error)
 	ClearPresence(ctx context.Context, userID uuid.UUID, connID uuid.UUID, username string, guest bool) ([]string, []string, []string, error)
-	GetPresence(ctx context.Context, userID uuid.UUID) ([]string, error)
 	RefreshPresence(ctx context.Context, userID uuid.UUID, connID uuid.UUID, username string, guest bool) ([]string, []string, error)
+	GetPresence(ctx context.Context, userID uuid.UUID) ([]string, error)
 	CountInChannel(ctx context.Context, channel string) (int64, error)
-	LastSeen(ctx context.Context, userID uuid.UUID) (int64, error)
-	GetChannelsForUser(userID uuid.UUID) ([]string, error)
-	GetInChannel(ctx context.Context, channel string) ([]string, error) // later some struct with user data
+	LastSeen(ctx context.Context, userID uuid.UUID) (int64, error) // time.Time probably
+	GetChannelsForUser(ctx context.Context, userID uuid.UUID) ([]string, error)
+	GetUsersInChannel(ctx context.Context, channel string) ([]UserPresenceInfo, error)
+
+	// ##################################################################################################################################
+	// BatchGetPresence(ctx context.Context, users []*entity.User) ([]*entity.User, error)
+	// BatchGetChannels(ctx context.Context, uuids []string) ([][]string, error)
 	// UpdateFollower(ctx context.Context, followee, follower *entity.User, following bool) error
 	// UpdateActiveGame(ctx context.Context, activeGameEntry *pb.ActiveGameEntry) ([][][]string, error)
-
+	// ##################################################################################################################################
 }
 
 type Persistor interface {
