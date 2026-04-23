@@ -57,6 +57,7 @@ type GameState struct {
 	GameID           int64
 	White            *Player
 	Black            *Player
+	Players          map[uuid.UUID]*Player
 	Guest            bool
 	GameVariant      pb.GameVariant
 	GameTimeKind     pb.GameTimeKind
@@ -115,11 +116,14 @@ func NewGameState(gameID int64, players [2]Player, timeControl *pb.GameTimeContr
 	}
 
 	var white, black *Player
+	playersByID := make(map[uuid.UUID]*Player)
 	for _, p := range players {
 		if p.Color == pb.Color_COLOR_WHITE {
 			white = &Player{ID: p.ID, Name: p.Name, Color: p.Color, Guest: p.Guest}
+			playersByID[p.ID] = white
 		} else {
 			black = &Player{ID: p.ID, Name: p.Name, Color: p.Color, Guest: p.Guest}
+			playersByID[p.ID] = black
 		}
 	}
 
@@ -130,6 +134,7 @@ func NewGameState(gameID int64, players [2]Player, timeControl *pb.GameTimeContr
 		GameID:           gameID,
 		White:            white,
 		Black:            black,
+		Players:          playersByID,
 		Guest:            guest,
 		GameVariant:      gopts.variant,
 		GameTimeKind:     gopts.timeKind,
@@ -144,6 +149,21 @@ func NewGameState(gameID int64, players [2]Player, timeControl *pb.GameTimeContr
 	}
 
 	return gs, nil
+}
+
+func (gs *GameState) GetPlayerByID(id uuid.UUID) *Player {
+	return gs.Players[id]
+}
+
+func (gs *GameState) GetPlayerByColor(color pb.Color) *Player {
+	switch color {
+	case pb.Color_COLOR_WHITE:
+		return gs.White
+	case pb.Color_COLOR_BLACK:
+		return gs.Black
+	default:
+		return nil
+	}
 }
 
 func (gs *GameState) Start() {

@@ -738,7 +738,6 @@ func ZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZ
 		EndTime:                omitnull.FromPtr(gs.EndTime),
 		LastMove:               omitnull.FromPtr(gs.LastMove),
 		Fen:                    omit.From(gs.Chess.Position.Fen()),
-		PGN:                    omitnull.From("TODO"),
 	}
 	if gs.GameResult != pb.GameResult_GAME_RESULT_UNSPECIFIED {
 		gameSetter.GameResultID = omitnull.From(a.protoGameResultToID(gs.GameResult))
@@ -765,8 +764,8 @@ func ZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZ
 	fmt.Printf("variant: %s\n", gs.GameVariant.String())
 	fmt.Printf("time_category: %s\n", gs.GameTimeCategory.String())
 	fmt.Printf("time_kind: %s\n", gs.GameTimeKind.String())
-	fmt.Printf("time_control_clock_ms: %s\n", gs.GameTimeControl.GetClockMs())
-	fmt.Printf("time_control_increment_ms: %s\n", gs.GameTimeControl.GetIncrementMs())
+	fmt.Printf("time_control_clock_ms: %d\n", gs.GameTimeControl.GetClockMs())
+	fmt.Printf("time_control_increment_ms: %d\n", gs.GameTimeControl.GetIncrementMs())
 	fmt.Printf("state: %s\n", gs.GameState.String())
 	fmt.Printf("result: %s\n", gs.GameResult.String())
 	fmt.Printf("result_status: %s\n", gs.GameResultStatus.String())
