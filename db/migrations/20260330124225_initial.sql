@@ -118,6 +118,7 @@ create table "game" (
   "first_move_timeout" integer not null,
   "white_game_clock" integer not null,
   "black_game_clock" integer not null,
+  "rated" boolean,
   "result_id" bigint null,
   "result_status_id" bigint null,
   "state_id" bigint not null,

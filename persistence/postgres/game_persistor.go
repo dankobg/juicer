@@ -83,6 +83,57 @@ func (pst *PgGamePersistor) ListGames(ctx context.Context, filters dbtype.ListGa
 
 			q.Apply(sm.Where(models.Games.Columns.ID.In(psql.Arg(ids...))))
 		}
+		if filters.VariantID != nil {
+			variantIDs := make([]any, len(*filters.VariantID))
+			for i, id := range *filters.VariantID {
+				variantIDs[i] = id
+			}
+			q.Apply(sm.Where(models.Games.Columns.VariantID.In(psql.Arg(variantIDs...))))
+		}
+		if filters.TimeKindID != nil {
+			timeKindIDs := make([]any, len(*filters.TimeKindID))
+			for i, id := range *filters.TimeKindID {
+				timeKindIDs[i] = id
+			}
+			q.Apply(sm.Where(models.Games.Columns.TimeKindID.In(psql.Arg(timeKindIDs...))))
+		}
+		if filters.TimeCategoryID != nil {
+			timeCategoryIDs := make([]any, len(*filters.TimeCategoryID))
+			for i, id := range *filters.TimeCategoryID {
+				timeCategoryIDs[i] = id
+			}
+			q.Apply(sm.Where(models.Games.Columns.TimeCategoryID.In(psql.Arg(timeCategoryIDs...))))
+		}
+		if filters.ResultID != nil {
+			resultIDs := make([]any, len(*filters.ResultID))
+			for i, id := range *filters.ResultID {
+				resultIDs[i] = id
+			}
+			q.Apply(sm.Where(models.Games.Columns.ResultID.In(psql.Arg(resultIDs...))))
+		}
+		if filters.ResultStatusID != nil {
+			resultStatusIDs := make([]any, len(*filters.ResultStatusID))
+			for i, id := range *filters.ResultStatusID {
+				resultStatusIDs[i] = id
+			}
+			q.Apply(sm.Where(models.Games.Columns.ResultStatusID.In(psql.Arg(resultStatusIDs...))))
+		}
+		if filters.StateID != nil {
+			stateIDs := make([]any, len(*filters.StateID))
+			for i, id := range *filters.StateID {
+				stateIDs[i] = id
+			}
+			q.Apply(sm.Where(models.Games.Columns.StateID.In(psql.Arg(stateIDs...))))
+		}
+		if filters.Rated != nil {
+			q.Apply(sm.Where(models.Games.Columns.Rated.EQ(psql.Arg(*filters.Rated))))
+		}
+		if filters.CreatedAtFrom != nil {
+			q.Apply(sm.Where(models.Games.Columns.CreatedAt.GTE(psql.Arg(*filters.CreatedAtFrom))))
+		}
+		if filters.CreatedAtTo != nil {
+			q.Apply(sm.Where(models.Games.Columns.CreatedAt.LTE(psql.Arg(*filters.CreatedAtTo))))
+		}
 	}
 
 	type ListGamesRow struct {

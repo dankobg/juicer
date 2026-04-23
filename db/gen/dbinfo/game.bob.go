@@ -150,6 +150,15 @@ var Games = Table[
 			Generated: false,
 			AutoIncr:  false,
 		},
+		Rated: column{
+			Name:      "rated",
+			DBType:    "boolean",
+			Default:   "NULL",
+			Comment:   "",
+			Nullable:  true,
+			Generated: false,
+			AutoIncr:  false,
+		},
 		ResultID: column{
 			Name:      "result_id",
 			DBType:    "bigint",
@@ -369,6 +378,7 @@ type gameColumns struct {
 	FirstMoveTimeout     column
 	WhiteGameClock       column
 	BlackGameClock       column
+	Rated                column
 	ResultID             column
 	ResultStatusID       column
 	StateID              column
@@ -383,7 +393,7 @@ type gameColumns struct {
 
 func (c gameColumns) AsSlice() []column {
 	return []column{
-		c.ID, c.WhiteID, c.BlackID, c.GuestWhiteID, c.GuestBlackID, c.VariantID, c.TimeKindID, c.TimeCategoryID, c.IsGuest, c.TimeControlClock, c.TimeControlIncrement, c.ReconnectTimeout, c.FirstMoveTimeout, c.WhiteGameClock, c.BlackGameClock, c.ResultID, c.ResultStatusID, c.StateID, c.StartTime, c.EndTime, c.LastMove, c.Fen, c.PGN, c.CreatedAt, c.UpdatedAt,
+		c.ID, c.WhiteID, c.BlackID, c.GuestWhiteID, c.GuestBlackID, c.VariantID, c.TimeKindID, c.TimeCategoryID, c.IsGuest, c.TimeControlClock, c.TimeControlIncrement, c.ReconnectTimeout, c.FirstMoveTimeout, c.WhiteGameClock, c.BlackGameClock, c.Rated, c.ResultID, c.ResultStatusID, c.StateID, c.StartTime, c.EndTime, c.LastMove, c.Fen, c.PGN, c.CreatedAt, c.UpdatedAt,
 	}
 }
 

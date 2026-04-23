@@ -2396,6 +2396,24 @@ export interface operations {
                 page_size?: components["parameters"]["PaginationPageSize"];
                 /** @description Filter games by ids */
                 id?: number[];
+                /** @description Filter games by variant id */
+                variant_id?: number[];
+                /** @description Filter games by time kind id */
+                time_kind_id?: number[];
+                /** @description Filter games by time category id */
+                time_category_id?: number[];
+                /** @description Filter games by result id */
+                result_id?: number[];
+                /** @description Filter games by result status id */
+                result_status_id?: number[];
+                /** @description Filter games by state id */
+                state_id?: number[];
+                /** @description Filter games by rated flag */
+                rated?: boolean;
+                /** @description Filter games by from timestamp */
+                created_at_from?: string;
+                /** @description Filter games by up to that timestamp */
+                created_at_to?: string;
                 /** @description Sort by fields (add prefix `-` for descending e.g. -created_at) */
                 sort?: string[];
             };

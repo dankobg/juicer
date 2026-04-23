@@ -17,6 +17,7 @@ type gameOpts struct {
 	state            pb.GameState
 	reconnectTimeout time.Duration
 	firstMoveTimeout time.Duration
+	rated            bool
 }
 
 type GameOption interface {
@@ -94,3 +95,8 @@ func (o firstMoveTimeoutOpt) apply(g *gameOpts) { g.firstMoveTimeout = time.Dura
 func WithFirstMoveTimeoutOpt(firstMoveTimeout time.Duration) GameOption {
 	return firstMoveTimeoutOpt(firstMoveTimeout)
 }
+
+type ratedOpt bool
+
+func (o ratedOpt) apply(g *gameOpts)  { g.rated = bool(o) }
+func WithRated(rated bool) GameOption { return ratedOpt(rated) }

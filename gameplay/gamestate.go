@@ -70,6 +70,7 @@ type GameState struct {
 	firstMoveTimeout time.Duration
 	startTime        time.Time
 	lastMove         time.Time
+	rated            bool
 	historyMoveInfos []*pb.HistoryMoveInfo
 
 	// ##########################################
@@ -112,6 +113,7 @@ func NewGameState(gameID int64, playersInfo [2]PlayerInfo, timeControl *pb.GameT
 		timeCategory:     timeCategory,
 		reconnectTimeout: defaultReconnectTimeout,
 		firstMoveTimeout: defaultFirstMoveTimeout,
+		state:            pb.GameState_GAME_STATE_WAITING_START,
 	}
 	for _, o := range opts {
 		o.apply(gopts)

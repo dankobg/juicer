@@ -355,8 +355,8 @@ func (h *Hub) PubsubProcess(ctx context.Context) {
 
 	for {
 		select {
-		case msg := <-h.bus.subMessages["presence.changed.*"]:
-			h.onPresenceChangedMsg(msg)
+		case msg := <-h.bus.subMessages["presence.diff.*"]:
+			h.onPresenceDiffMsg(msg)
 		case msg := <-h.bus.subMessages["lobby*"]:
 			h.onLobbyMsg(msg)
 		case msg := <-h.bus.subMessages["user.*"]:
@@ -375,10 +375,10 @@ func (h *Hub) PubsubProcess(ctx context.Context) {
 	}
 }
 
-func (h *Hub) onPresenceChangedMsg(m *redis.Message) {
-	h.log.Debug("hub onPresenceChangedMsg", slog.Any("msg", m))
+func (h *Hub) onPresenceDiffMsg(m *redis.Message) {
+	h.log.Debug("hub onPresenceDiffMsg", slog.Any("msg", m))
 
-	// userID, err := extractPresenceChangedTopicParts(m.Channel)
+	// userID, err := extractPresenceDiffTopicParts(m.Channel)
 	// if err != nil {
 	// 	return
 	// }
@@ -487,8 +487,8 @@ func extractLobbyTopicParts(topic string) (string, error) {
 	return topic, nil
 }
 
-// extractPresenceChangedTopicParts extracts the user_id
-func extractPresenceChangedTopicParts(topic string) (uuid.UUID, error) {
+// extractPresenceDiffTopicParts extracts the user_id
+func extractPresenceDiffTopicParts(topic string) (uuid.UUID, error) {
 	parts := strings.Split(topic, ".")
 	if len(parts) != 2 {
 		return uuid.Nil, fmt.Errorf("invalid parts length, expected 2, got: %d", len(parts))

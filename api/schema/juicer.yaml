@@ -311,6 +311,81 @@ paths:
             items:
               type: integer
               format: int64
+
+        - name: variant_id
+          in: query
+          description: Filter games by variant id
+          required: false
+          schema:
+            type: array
+            items:
+              type: integer
+              format: int64
+        - name: time_kind_id
+          in: query
+          description: Filter games by time kind id
+          required: false
+          schema:
+            type: array
+            items:
+              type: integer
+              format: int64
+        - name: time_category_id
+          in: query
+          description: Filter games by time category id
+          required: false
+          schema:
+            type: array
+            items:
+              type: integer
+              format: int64
+        - name: result_id
+          in: query
+          description: Filter games by result id
+          required: false
+          schema:
+            type: array
+            items:
+              type: integer
+              format: int64
+        - name: result_status_id
+          in: query
+          description: Filter games by result status id
+          required: false
+          schema:
+            type: array
+            items:
+              type: integer
+              format: int64
+        - name: state_id
+          in: query
+          description: Filter games by state id
+          required: false
+          schema:
+            type: array
+            items:
+              type: integer
+              format: int64
+        - name: rated
+          in: query
+          description: Filter games by rated flag
+          required: false
+          schema:
+            type: boolean
+        - name: created_at_from
+          in: query
+          description: Filter games by from timestamp
+          required: false
+          schema:
+            type: string
+            format: date-time
+        - name: created_at_to
+          in: query
+          description: Filter games by up to that timestamp
+          required: false
+          schema:
+            type: string
+            format: date-time
         - name: sort
           in: query
           description: Sort by fields (add prefix `-` for descending e.g. -created_at)

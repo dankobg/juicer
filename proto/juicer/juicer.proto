@@ -205,26 +205,45 @@ message RequestInitialChannelsInfo {
   repeated string channels = 4;
 }
 
-// UserPresence is user presence info
-message UserPresence {
+// Presence represents user presence
+message Presence {
   string user_id = 1;
   string username = 2;
   bool guest = 3;
-  string channel = 4;
-  bool deleting = 5;
+  repeated string channels = 4;
 }
 
-// UserPresences holds list of user presences
-message UserPresences {
-  repeated UserPresence presences = 1;
+// PresenceState is the full snapshot of all presences
+message PresenceState {
+  map<string, Presence> presences = 1;
 }
 
-// PresenceEntry is presence entry
-message PresenceEntry {
-  string user_id = 1;
-  string username = 2;
-  repeated string channels = 3;
+// PresenceDiff is the incremental presence change event
+message PresenceDiff {
+  map<string, Presence> joined = 1;
+  map<string, Presence> left = 2;
 }
+
+// ################################################
+
+// message UserPresence {
+//   string username = 1;
+//   string user_id = 2;
+//   string channel = 3;
+//   bool is_anonymous = 4;
+//   bool deleting = 5;
+// }
+
+// message UserPresences { repeated UserPresence presences = 1; }
+
+// // Only authenticated connections.
+// message PresenceEntry {
+//   string username = 1;
+//   string user_id = 2;
+//   repeated string channel = 3;
+// }
+
+// ################################################
 
 // Clocks is white and black game clock
 message Clocks {

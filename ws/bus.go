@@ -20,7 +20,7 @@ func newBus(rdb *redis.Client) *bus {
 		"gametv.*",
 		"user.*",
 		"conn.*",
-		"presence.changed.*",
+		"presence.diff.*",
 	}
 
 	bus := &bus{

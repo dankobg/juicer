@@ -204,8 +204,8 @@ func (a *ApiHandler) handleIPCRequestInitialChannelsInfoMsg(data *pb.RequestInit
 			return
 		}
 
-		if err := a.broadcastPresenceChanged(context.Background(), oldChannels, newChannels, data.UserId, username); err != nil {
-			a.Log.Error("broadcastPresenceChanged", slog.String("user_id", data.UserId), slog.String("conn_id", data.ConnId), slog.String("channel", channel), slog.Any("error", err))
+		if err := a.broadcastPresenceDiff(context.Background(), oldChannels, newChannels, data.UserId, username); err != nil {
+			a.Log.Error("broadcastPresenceDiff", slog.String("user_id", data.UserId), slog.String("conn_id", data.ConnId), slog.String("channel", channel), slog.Any("error", err))
 			return
 		}
 
@@ -565,26 +565,26 @@ func channelsChanged(oldChannels, newChannels []string) bool {
 	return false
 }
 
-func (a *ApiHandler) broadcastPresenceChanged(ctx context.Context, oldChannels, newChannels []string, userID, username string) error {
+func (a *ApiHandler) broadcastPresenceDiff(ctx context.Context, oldChannels, newChannels []string, userID, username string) error {
 	return nil
 	// if !channelsChanged(oldChannels, newChannels) {
 	// 	return nil
 	// }
 
-	// presenceChangedMsg := &pb.Message{Event: &pb.Message_PresenceChanged{PresenceChanged: &pb.PresenceEntry{
+	// presenceDiffMsg := &pb.Message{Event: &pb.Message_PresenceDiff{PresenceDiff: &pb.PresenceEntry{
 	// 	UserId:   userID,
 	// 	Username: username,
 	// 	Channels: newChannels,
 	// }}}
 
-	// presenceChangedMsgBytes, err := protojson.Marshal(presenceChangedMsg)
+	// presenceDiffMsgBytes, err := protojson.Marshal(presenceDiffMsg)
 	// if err != nil {
-	// 	return fmt.Errorf("protojson.Marshal Message_PresenceChanged: %w", err)
+	// 	return fmt.Errorf("protojson.Marshal Message_PresenceDiff: %w", err)
 	// }
 
-	// topic := "presence.changed." + userID
-	// if err := a.Rdb.Publish(ctx, topic, presenceChangedMsgBytes).Err(); err != nil {
-	// 	return fmt.Errorf("publish Message_PresenceChanged: %w", err)
+	// topic := "presence.diff." + userID
+	// if err := a.Rdb.Publish(ctx, topic, presenceDiffMsgBytes).Err(); err != nil {
+	// 	return fmt.Errorf("publish Message_PresenceDiff: %w", err)
 	// }
 
 	// return nil

@@ -1619,32 +1619,31 @@ func (x *RequestInitialChannelsInfo) GetChannels() []string {
 	return nil
 }
 
-// UserPresence is user presence info
-type UserPresence struct {
+// Presence represents user presence
+type Presence struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
 	Username      string                 `protobuf:"bytes,2,opt,name=username,proto3" json:"username,omitempty"`
 	Guest         bool                   `protobuf:"varint,3,opt,name=guest,proto3" json:"guest,omitempty"`
 	Channel       string                 `protobuf:"bytes,4,opt,name=channel,proto3" json:"channel,omitempty"`
-	Deleting      bool                   `protobuf:"varint,5,opt,name=deleting,proto3" json:"deleting,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *UserPresence) Reset() {
-	*x = UserPresence{}
+func (x *Presence) Reset() {
+	*x = Presence{}
 	mi := &file_proto_juicer_juicer_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *UserPresence) String() string {
+func (x *Presence) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*UserPresence) ProtoMessage() {}
+func (*Presence) ProtoMessage() {}
 
-func (x *UserPresence) ProtoReflect() protoreflect.Message {
+func (x *Presence) ProtoReflect() protoreflect.Message {
 	mi := &file_proto_juicer_juicer_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -1656,68 +1655,61 @@ func (x *UserPresence) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use UserPresence.ProtoReflect.Descriptor instead.
-func (*UserPresence) Descriptor() ([]byte, []int) {
+// Deprecated: Use Presence.ProtoReflect.Descriptor instead.
+func (*Presence) Descriptor() ([]byte, []int) {
 	return file_proto_juicer_juicer_proto_rawDescGZIP(), []int{13}
 }
 
-func (x *UserPresence) GetUserId() string {
+func (x *Presence) GetUserId() string {
 	if x != nil {
 		return x.UserId
 	}
 	return ""
 }
 
-func (x *UserPresence) GetUsername() string {
+func (x *Presence) GetUsername() string {
 	if x != nil {
 		return x.Username
 	}
 	return ""
 }
 
-func (x *UserPresence) GetGuest() bool {
+func (x *Presence) GetGuest() bool {
 	if x != nil {
 		return x.Guest
 	}
 	return false
 }
 
-func (x *UserPresence) GetChannel() string {
+func (x *Presence) GetChannel() string {
 	if x != nil {
 		return x.Channel
 	}
 	return ""
 }
 
-func (x *UserPresence) GetDeleting() bool {
-	if x != nil {
-		return x.Deleting
-	}
-	return false
-}
-
-// UserPresences holds list of user presences
-type UserPresences struct {
+// PresenceState is the full snapshot of all presences
+type PresenceState struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Presences     []*UserPresence        `protobuf:"bytes,1,rep,name=presences,proto3" json:"presences,omitempty"`
+	Presences     map[string]*Presence   `protobuf:"bytes,1,rep,name=presences,proto3" json:"presences,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *UserPresences) Reset() {
-	*x = UserPresences{}
+func (x *PresenceState) Reset() {
+	*x = PresenceState{}
 	mi := &file_proto_juicer_juicer_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *UserPresences) String() string {
+func (x *PresenceState) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*UserPresences) ProtoMessage() {}
+func (*PresenceState) ProtoMessage() {}
 
-func (x *UserPresences) ProtoReflect() protoreflect.Message {
+func (x *PresenceState) ProtoReflect() protoreflect.Message {
 	mi := &file_proto_juicer_juicer_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -1729,42 +1721,41 @@ func (x *UserPresences) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use UserPresences.ProtoReflect.Descriptor instead.
-func (*UserPresences) Descriptor() ([]byte, []int) {
+// Deprecated: Use PresenceState.ProtoReflect.Descriptor instead.
+func (*PresenceState) Descriptor() ([]byte, []int) {
 	return file_proto_juicer_juicer_proto_rawDescGZIP(), []int{14}
 }
 
-func (x *UserPresences) GetPresences() []*UserPresence {
+func (x *PresenceState) GetPresences() map[string]*Presence {
 	if x != nil {
 		return x.Presences
 	}
 	return nil
 }
 
-// PresenceEntry is presence entry
-type PresenceEntry struct {
+// PresenceDiff is the incremental presence change event
+type PresenceDiff struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
-	Username      string                 `protobuf:"bytes,2,opt,name=username,proto3" json:"username,omitempty"`
-	Channels      []string               `protobuf:"bytes,3,rep,name=channels,proto3" json:"channels,omitempty"`
+	Joined        map[string]*Presence   `protobuf:"bytes,1,rep,name=joined,proto3" json:"joined,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	Left          map[string]*Presence   `protobuf:"bytes,2,rep,name=left,proto3" json:"left,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *PresenceEntry) Reset() {
-	*x = PresenceEntry{}
+func (x *PresenceDiff) Reset() {
+	*x = PresenceDiff{}
 	mi := &file_proto_juicer_juicer_proto_msgTypes[15]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *PresenceEntry) String() string {
+func (x *PresenceDiff) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*PresenceEntry) ProtoMessage() {}
+func (*PresenceDiff) ProtoMessage() {}
 
-func (x *PresenceEntry) ProtoReflect() protoreflect.Message {
+func (x *PresenceDiff) ProtoReflect() protoreflect.Message {
 	mi := &file_proto_juicer_juicer_proto_msgTypes[15]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -1776,28 +1767,21 @@ func (x *PresenceEntry) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use PresenceEntry.ProtoReflect.Descriptor instead.
-func (*PresenceEntry) Descriptor() ([]byte, []int) {
+// Deprecated: Use PresenceDiff.ProtoReflect.Descriptor instead.
+func (*PresenceDiff) Descriptor() ([]byte, []int) {
 	return file_proto_juicer_juicer_proto_rawDescGZIP(), []int{15}
 }
 
-func (x *PresenceEntry) GetUserId() string {
+func (x *PresenceDiff) GetJoined() map[string]*Presence {
 	if x != nil {
-		return x.UserId
+		return x.Joined
 	}
-	return ""
+	return nil
 }
 
-func (x *PresenceEntry) GetUsername() string {
+func (x *PresenceDiff) GetLeft() map[string]*Presence {
 	if x != nil {
-		return x.Username
-	}
-	return ""
-}
-
-func (x *PresenceEntry) GetChannels() []string {
-	if x != nil {
-		return x.Channels
+		return x.Left
 	}
 	return nil
 }
@@ -2942,19 +2926,26 @@ const file_proto_juicer_juicer_proto_rawDesc = "" +
 	"\auser_id\x18\x01 \x01(\tR\x06userId\x12\x17\n" +
 	"\aconn_id\x18\x02 \x01(\tR\x06connId\x12\x14\n" +
 	"\x05guest\x18\x03 \x01(\bR\x05guest\x12\x1a\n" +
-	"\bchannels\x18\x04 \x03(\tR\bchannels\"\x8f\x01\n" +
-	"\fUserPresence\x12\x17\n" +
+	"\bchannels\x18\x04 \x03(\tR\bchannels\"o\n" +
+	"\bPresence\x12\x17\n" +
 	"\auser_id\x18\x01 \x01(\tR\x06userId\x12\x1a\n" +
 	"\busername\x18\x02 \x01(\tR\busername\x12\x14\n" +
 	"\x05guest\x18\x03 \x01(\bR\x05guest\x12\x18\n" +
-	"\achannel\x18\x04 \x01(\tR\achannel\x12\x1a\n" +
-	"\bdeleting\x18\x05 \x01(\bR\bdeleting\"?\n" +
-	"\rUserPresences\x12.\n" +
-	"\tpresences\x18\x01 \x03(\v2\x10.pb.UserPresenceR\tpresences\"`\n" +
-	"\rPresenceEntry\x12\x17\n" +
-	"\auser_id\x18\x01 \x01(\tR\x06userId\x12\x1a\n" +
-	"\busername\x18\x02 \x01(\tR\busername\x12\x1a\n" +
-	"\bchannels\x18\x03 \x03(\tR\bchannels\"j\n" +
+	"\achannel\x18\x04 \x01(\tR\achannel\"\x9b\x01\n" +
+	"\rPresenceState\x12>\n" +
+	"\tpresences\x18\x01 \x03(\v2 .pb.PresenceState.PresencesEntryR\tpresences\x1aJ\n" +
+	"\x0ePresencesEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\"\n" +
+	"\x05value\x18\x02 \x01(\v2\f.pb.PresenceR\x05value:\x028\x01\"\x84\x02\n" +
+	"\fPresenceDiff\x124\n" +
+	"\x06joined\x18\x01 \x03(\v2\x1c.pb.PresenceDiff.JoinedEntryR\x06joined\x12.\n" +
+	"\x04left\x18\x02 \x03(\v2\x1a.pb.PresenceDiff.LeftEntryR\x04left\x1aG\n" +
+	"\vJoinedEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\"\n" +
+	"\x05value\x18\x02 \x01(\v2\f.pb.PresenceR\x05value:\x028\x01\x1aE\n" +
+	"\tLeftEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\"\n" +
+	"\x05value\x18\x02 \x01(\v2\f.pb.PresenceR\x05value:\x028\x01\"j\n" +
 	"\x06Clocks\x12/\n" +
 	"\x05white\x18\x01 \x01(\v2\x19.google.protobuf.DurationR\x05white\x12/\n" +
 	"\x05black\x18\x02 \x01(\v2\x19.google.protobuf.DurationR\x05black\"B\n" +
@@ -3113,7 +3104,7 @@ func file_proto_juicer_juicer_proto_rawDescGZIP() []byte {
 }
 
 var file_proto_juicer_juicer_proto_enumTypes = make([]protoimpl.EnumInfo, 8)
-var file_proto_juicer_juicer_proto_msgTypes = make([]protoimpl.MessageInfo, 35)
+var file_proto_juicer_juicer_proto_msgTypes = make([]protoimpl.MessageInfo, 38)
 var file_proto_juicer_juicer_proto_goTypes = []any{
 	(Color)(0),                         // 0: pb.Color
 	(GameVariant)(0),                   // 1: pb.GameVariant
@@ -3136,9 +3127,9 @@ var file_proto_juicer_juicer_proto_goTypes = []any{
 	(*InitializeChannels)(nil),         // 18: pb.InitializeChannels
 	(*InitializedChannels)(nil),        // 19: pb.InitializedChannels
 	(*RequestInitialChannelsInfo)(nil), // 20: pb.RequestInitialChannelsInfo
-	(*UserPresence)(nil),               // 21: pb.UserPresence
-	(*UserPresences)(nil),              // 22: pb.UserPresences
-	(*PresenceEntry)(nil),              // 23: pb.PresenceEntry
+	(*Presence)(nil),                   // 21: pb.Presence
+	(*PresenceState)(nil),              // 22: pb.PresenceState
+	(*PresenceDiff)(nil),               // 23: pb.PresenceDiff
 	(*Clocks)(nil),                     // 24: pb.Clocks
 	(*SeekGame)(nil),                   // 25: pb.SeekGame
 	(*CancelSeekGame)(nil),             // 26: pb.CancelSeekGame
@@ -3158,12 +3149,15 @@ var file_proto_juicer_juicer_proto_goTypes = []any{
 	(*PlayMoveUCI)(nil),                // 40: pb.PlayMoveUCI
 	(*ReceiveMove)(nil),                // 41: pb.ReceiveMove
 	(*GameFinished)(nil),               // 42: pb.GameFinished
-	(*durationpb.Duration)(nil),        // 43: google.protobuf.Duration
-	(*timestamppb.Timestamp)(nil),      // 44: google.protobuf.Timestamp
+	nil,                                // 43: pb.PresenceState.PresencesEntry
+	nil,                                // 44: pb.PresenceDiff.JoinedEntry
+	nil,                                // 45: pb.PresenceDiff.LeftEntry
+	(*durationpb.Duration)(nil),        // 46: google.protobuf.Duration
+	(*timestamppb.Timestamp)(nil),      // 47: google.protobuf.Timestamp
 }
 var file_proto_juicer_juicer_proto_depIdxs = []int32{
-	43, // 0: pb.GameTimeControl.clock:type_name -> google.protobuf.Duration
-	43, // 1: pb.GameTimeControl.increment:type_name -> google.protobuf.Duration
+	46, // 0: pb.GameTimeControl.clock:type_name -> google.protobuf.Duration
+	46, // 1: pb.GameTimeControl.increment:type_name -> google.protobuf.Duration
 	15, // 2: pb.Message.problem:type_name -> pb.Problem
 	14, // 3: pb.Message.latency:type_name -> pb.Latency
 	11, // 4: pb.Message.heartbeat:type_name -> pb.Heartbeat
@@ -3190,30 +3184,35 @@ var file_proto_juicer_juicer_proto_depIdxs = []int32{
 	27, // 25: pb.Message.hub_info:type_name -> pb.HubInfo
 	31, // 26: pb.Message.match_found:type_name -> pb.MatchFound
 	10, // 27: pb.Message.echo:type_name -> pb.Echo
-	21, // 28: pb.UserPresences.presences:type_name -> pb.UserPresence
-	43, // 29: pb.Clocks.white:type_name -> google.protobuf.Duration
-	43, // 30: pb.Clocks.black:type_name -> google.protobuf.Duration
-	8,  // 31: pb.SeekGame.time_control:type_name -> pb.GameTimeControl
-	8,  // 32: pb.CancelSeekGame.time_control:type_name -> pb.GameTimeControl
-	44, // 33: pb.HistoryMoveInfo.played_at:type_name -> google.protobuf.Timestamp
-	29, // 34: pb.HistoryMoveInfo.move:type_name -> pb.HistoryMove
-	6,  // 35: pb.MatchFound.game_state:type_name -> pb.GameState
-	0,  // 36: pb.MatchFound.color:type_name -> pb.Color
-	24, // 37: pb.MatchFound.clocks:type_name -> pb.Clocks
-	8,  // 38: pb.MatchFound.time_control:type_name -> pb.GameTimeControl
-	28, // 39: pb.MatchFound.opponent_info:type_name -> pb.OpponentInfo
-	30, // 40: pb.MatchFound.history_move_infos:type_name -> pb.HistoryMoveInfo
-	44, // 41: pb.MatchFound.start_time:type_name -> google.protobuf.Timestamp
-	38, // 42: pb.GameChatRetrieve.game_chat:type_name -> pb.GameChatReceive
-	24, // 43: pb.ReceiveMove.clocks:type_name -> pb.Clocks
-	4,  // 44: pb.GameFinished.game_result:type_name -> pb.GameResult
-	5,  // 45: pb.GameFinished.game_result_status:type_name -> pb.GameResultStatus
-	6,  // 46: pb.GameFinished.game_state:type_name -> pb.GameState
-	47, // [47:47] is the sub-list for method output_type
-	47, // [47:47] is the sub-list for method input_type
-	47, // [47:47] is the sub-list for extension type_name
-	47, // [47:47] is the sub-list for extension extendee
-	0,  // [0:47] is the sub-list for field type_name
+	43, // 28: pb.PresenceState.presences:type_name -> pb.PresenceState.PresencesEntry
+	44, // 29: pb.PresenceDiff.joined:type_name -> pb.PresenceDiff.JoinedEntry
+	45, // 30: pb.PresenceDiff.left:type_name -> pb.PresenceDiff.LeftEntry
+	46, // 31: pb.Clocks.white:type_name -> google.protobuf.Duration
+	46, // 32: pb.Clocks.black:type_name -> google.protobuf.Duration
+	8,  // 33: pb.SeekGame.time_control:type_name -> pb.GameTimeControl
+	8,  // 34: pb.CancelSeekGame.time_control:type_name -> pb.GameTimeControl
+	47, // 35: pb.HistoryMoveInfo.played_at:type_name -> google.protobuf.Timestamp
+	29, // 36: pb.HistoryMoveInfo.move:type_name -> pb.HistoryMove
+	6,  // 37: pb.MatchFound.game_state:type_name -> pb.GameState
+	0,  // 38: pb.MatchFound.color:type_name -> pb.Color
+	24, // 39: pb.MatchFound.clocks:type_name -> pb.Clocks
+	8,  // 40: pb.MatchFound.time_control:type_name -> pb.GameTimeControl
+	28, // 41: pb.MatchFound.opponent_info:type_name -> pb.OpponentInfo
+	30, // 42: pb.MatchFound.history_move_infos:type_name -> pb.HistoryMoveInfo
+	47, // 43: pb.MatchFound.start_time:type_name -> google.protobuf.Timestamp
+	38, // 44: pb.GameChatRetrieve.game_chat:type_name -> pb.GameChatReceive
+	24, // 45: pb.ReceiveMove.clocks:type_name -> pb.Clocks
+	4,  // 46: pb.GameFinished.game_result:type_name -> pb.GameResult
+	5,  // 47: pb.GameFinished.game_result_status:type_name -> pb.GameResultStatus
+	6,  // 48: pb.GameFinished.game_state:type_name -> pb.GameState
+	21, // 49: pb.PresenceState.PresencesEntry.value:type_name -> pb.Presence
+	21, // 50: pb.PresenceDiff.JoinedEntry.value:type_name -> pb.Presence
+	21, // 51: pb.PresenceDiff.LeftEntry.value:type_name -> pb.Presence
+	52, // [52:52] is the sub-list for method output_type
+	52, // [52:52] is the sub-list for method input_type
+	52, // [52:52] is the sub-list for extension type_name
+	52, // [52:52] is the sub-list for extension extendee
+	0,  // [0:52] is the sub-list for field type_name
 }
 
 func init() { file_proto_juicer_juicer_proto_init() }
@@ -3257,7 +3256,7 @@ func file_proto_juicer_juicer_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_proto_juicer_juicer_proto_rawDesc), len(file_proto_juicer_juicer_proto_rawDesc)),
 			NumEnums:      8,
-			NumMessages:   35,
+			NumMessages:   38,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

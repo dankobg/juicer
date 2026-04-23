@@ -130,7 +130,7 @@ func (pst *RedisPresencePersistor) ClearPresence(ctx context.Context, userID uui
 		presenceUserKey        = "presence:user:" + userID.String()
 		presenceActiveGamesKey = "presence:active-games:" + userID.String()
 		userKey                = userID.String() + "#" + connID.String() + "#" + username + "#" + authStr
-		presenceLastSeenKey    = "presence:last-seen" + userID.String()
+		presenceLastSeenKey    = "presence:last-seen:" + userID.String()
 	)
 
 	now := time.Now()
@@ -250,7 +250,7 @@ func (pst *RedisPresencePersistor) RefreshPresence(ctx context.Context, userID u
 		presenceUserKey        = "presence:user:" + userID.String()
 		presenceActiveGamesKey = "presence:active-games:" + userID.String()
 		userKey                = userID.String() + "#" + connID.String() + "#" + username + "#" + authStr
-		presenceLastSeenKey    = "presence:last-seen" + userID.String()
+		presenceLastSeenKey    = "presence:last-seen:" + userID.String()
 	)
 
 	now := time.Now()
@@ -405,7 +405,7 @@ func (pst *RedisPresencePersistor) CountInChannel(ctx context.Context, channel s
 }
 
 func (pst *RedisPresencePersistor) LastSeen(ctx context.Context, userID uuid.UUID) (int64, error) {
-	presenceLastSeenKey := "presence:last-seen" + userID.String()
+	presenceLastSeenKey := "presence:last-seen:" + userID.String()
 
 	ts, err := pst.rdb.ZScore(ctx, presenceLastSeenKey, userID.String()).Result()
 	if err != nil {
@@ -459,18 +459,18 @@ func (pst *RedisPresencePersistor) GetUsersInChannel(ctx context.Context, channe
 
 	userPresenceInfos := make([]persistence.UserPresenceInfo, len(presenceChannels))
 
-	for _, userKey := range presenceChannels {
+	for i, userKey := range presenceChannels {
 		parts := strings.Split(userKey, "#")
 
 		guest := true
 		if parts[3] == "auth" {
 			guest = false
 		}
-		userPresenceInfos = append(userPresenceInfos, persistence.UserPresenceInfo{
+		userPresenceInfos[i] = persistence.UserPresenceInfo{
 			ID:       parts[0],
 			Username: parts[2],
 			Guest:    guest,
-		})
+		}
 	}
 
 	return userPresenceInfos, nil
