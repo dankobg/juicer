@@ -1116,39 +1116,43 @@ export interface components {
              * Format: int64
              * @description Game variant id
              */
-            variant_id: number;
+            game_variant_id: number;
             /**
              * Format: int64
              * @description Time kind id
              */
-            time_kind_id: number;
+            game_time_kind_id: number;
             /**
              * Format: int64
              * @description Time kind id
              */
-            time_category_id: number;
-            /** @description Whether is guest user */
-            is_guest: boolean;
+            game_time_category_id: number;
+            /** @description Whether white is guest user */
+            white_is_guest: boolean;
+            /** @description Whether game is rated */
+            rated: boolean;
+            /** @description Whether white is guest user */
+            black_is_guest: boolean;
             /**
              * Format: int64
              * @description Time control clock
              */
-            time_control_clock: number;
+            time_control_clock_ms: number;
             /**
              * Format: int64
              * @description Time control increment
              */
-            time_control_increment: number;
+            time_control_increment_ms: number;
             /**
              * Format: int64
-             * @description Reconnect timeout
+             * @description Reconnect timeout in milliseconds
              */
-            reconnect_timeout: number;
+            reconnect_timeout_ms: number;
             /**
              * Format: int64
-             * @description First move timeout
+             * @description First move timeout in milliseconds
              */
-            first_move_timeout: number;
+            first_move_timeout_ms: number;
             /**
              * Format: int64
              * @description White game clock
@@ -1163,22 +1167,22 @@ export interface components {
              * Format: int64
              * @description Result id
              */
-            result_id?: number;
+            game_result_id?: number;
             /**
              * Format: int64
              * @description Result status id
              */
-            result_status_id?: number;
+            game_result_status_id?: number;
             /**
              * Format: int64
              * @description State id
              */
-            state_id: number;
+            game_state_id: number;
             /**
              * Format: date-time
              * @description Start time
              */
-            start_time: string;
+            start_time?: string;
             /**
              * Format: date-time
              * @description End time
@@ -1642,7 +1646,7 @@ export interface components {
             hashed_password?: string;
             /** @description The password in plain text if no hash is available. */
             password?: string;
-            /** @description If set to true, the password will be migrated using the password migration hook. */
+            /** @description If set to true, the password will be migratedf using the password migration hook. */
             use_password_migration_hook?: boolean;
         };
         /** @description Payload to import SAML credentials */
@@ -2396,18 +2400,18 @@ export interface operations {
                 page_size?: components["parameters"]["PaginationPageSize"];
                 /** @description Filter games by ids */
                 id?: number[];
-                /** @description Filter games by variant id */
-                variant_id?: number[];
-                /** @description Filter games by time kind id */
-                time_kind_id?: number[];
-                /** @description Filter games by time category id */
-                time_category_id?: number[];
-                /** @description Filter games by result id */
-                result_id?: number[];
-                /** @description Filter games by result status id */
-                result_status_id?: number[];
-                /** @description Filter games by state id */
-                state_id?: number[];
+                /** @description Filter games by game variant id */
+                game_variant_id?: number[];
+                /** @description Filter games by game time kind id */
+                game_time_kind_id?: number[];
+                /** @description Filter games by game time category id */
+                game_time_category_id?: number[];
+                /** @description Filter games by game result id */
+                game_result_id?: number[];
+                /** @description Filter games by game result status id */
+                game_result_status_id?: number[];
+                /** @description Filter games by game state id */
+                game_state_id?: number[];
                 /** @description Filter games by rated flag */
                 rated?: boolean;
                 /** @description Filter games by from timestamp */

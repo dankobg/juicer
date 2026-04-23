@@ -47,8 +47,8 @@ enum GameTimeCategory {
 
 // GameTimeControl is game time control
 message GameTimeControl {
-  google.protobuf.Duration clock = 1;
-  google.protobuf.Duration increment = 2;
+  int32 clock_ms = 1;
+  int32 increment_ms = 2;
 }
 
 // GameResult is result of the game

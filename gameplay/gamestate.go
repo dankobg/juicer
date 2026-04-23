@@ -16,15 +16,16 @@ const (
 	defaultFirstMoveTimeout  = time.Second * 10
 )
 
-type categoryThreshold struct {
-	upperLimit   time.Duration
-	timeCategory pb.GameTimeCategory
+type CategoryThreshold struct {
+	UpperLimit   time.Duration
+	TimeCategory pb.GameTimeCategory
 }
 
-type player struct {
-	id    uuid.UUID
-	name  string
-	color pb.Color
+type Player struct {
+	ID    uuid.UUID
+	Name  string
+	Color pb.Color
+	Guest bool
 }
 
 type timerEvent = uint
@@ -52,36 +53,31 @@ type timerAction struct {
 }
 
 type GameState struct {
-	chess            *engine.Chess
-	gameID           int64
-	whiteID          uuid.UUID
-	blackID          uuid.UUID
-	white            *player
-	black            *player
-	guest            bool
-	gameVariant      pb.GameVariant
-	gameTimeKind     pb.GameTimeKind
-	gameTimeCategory pb.GameTimeCategory
-	gameTimeControl  *pb.GameTimeControl
-	gameResult       pb.GameResult
-	gameResultStatus pb.GameResultStatus
-	gameState        pb.GameState
-	reconnectTimeout time.Duration
-	firstMoveTimeout time.Duration
-	startTime        time.Time
-	lastMove         time.Time
-	rated            bool
-	historyMoveInfos []*pb.HistoryMoveInfo
+	Chess            *engine.Chess
+	GameID           int64
+	White            *Player
+	Black            *Player
+	Guest            bool
+	GameVariant      pb.GameVariant
+	GameTimeKind     pb.GameTimeKind
+	GameTimeCategory pb.GameTimeCategory
+	// It could be much more complicated with many phases (e.g. increment only after move 30 etc)
+	GameTimeControl  *pb.GameTimeControl
+	GameResult       pb.GameResult
+	GameResultStatus pb.GameResultStatus
+	GameState        pb.GameState
+	ReconnectTimeout time.Duration
+	FirstMoveTimeout time.Duration
+	LastMove         *time.Time
+	StartTime        *time.Time
+	EndTime          *time.Time
+	Rated            bool
+	HistoryMoveInfos []*pb.HistoryMoveInfo
 
 	// ##########################################
 
-	timerAction chan timerAction
-
-	whiteGameTimeRemaining time.Duration
-	blackGameTimeRemaining time.Duration
-	whiteIncrement         time.Duration
-	blackIncrement         time.Duration
-	activeGameTimer        *time.Timer
+	TimerAction     chan timerAction
+	activeGameTimer *time.Timer
 
 	whiteFirstMoveTimer *time.Timer
 	blackFirstMoveTimer *time.Timer
@@ -89,14 +85,8 @@ type GameState struct {
 	blackReconnectTimer *time.Timer
 }
 
-type PlayerInfo struct {
-	ID    uuid.UUID
-	Name  string
-	Color pb.Color
-}
-
-func NewGameState(gameID int64, playersInfo [2]PlayerInfo, timeControl *pb.GameTimeControl, guest bool, thresholds []categoryThreshold, opts ...GameOption) (*GameState, error) {
-	if err := validatePlayersInfo(playersInfo); err != nil {
+func NewGameState(gameID int64, players [2]Player, timeControl *pb.GameTimeControl, guest bool, thresholds []CategoryThreshold, opts ...GameOption) (*GameState, error) {
+	if err := validatePlayers(players); err != nil {
 		return nil, err
 	}
 
@@ -124,45 +114,40 @@ func NewGameState(gameID int64, playersInfo [2]PlayerInfo, timeControl *pb.GameT
 		return nil, fmt.Errorf("failed to init chess engine: %w", err)
 	}
 
-	var whiteID, blackID uuid.UUID
-	var white, black *player
-	for _, p := range playersInfo {
+	var white, black *Player
+	for _, p := range players {
 		if p.Color == pb.Color_COLOR_WHITE {
-			whiteID = p.ID
-			white = &player{id: p.ID, name: p.Name, color: p.Color}
+			white = &Player{ID: p.ID, Name: p.Name, Color: p.Color, Guest: p.Guest}
 		} else {
-			blackID = p.ID
-			black = &player{id: p.ID, name: p.Name, color: p.Color}
+			black = &Player{ID: p.ID, Name: p.Name, Color: p.Color, Guest: p.Guest}
 		}
 	}
 
 	historyMoveInfos := []*pb.HistoryMoveInfo{{Fen: gopts.fen, Check: false, PlayedAt: nil, Move: nil}}
 
 	gs := &GameState{
-		chess:            chess,
-		gameID:           gameID,
-		whiteID:          whiteID,
-		blackID:          blackID,
-		white:            white,
-		black:            black,
-		guest:            guest,
-		gameVariant:      gopts.variant,
-		gameTimeKind:     gopts.timeKind,
-		gameTimeCategory: gopts.timeCategory,
-		gameTimeControl:  timeControl,
-		gameState:        pb.GameState_GAME_STATE_WAITING_START,
-		firstMoveTimeout: gopts.firstMoveTimeout,
-		reconnectTimeout: gopts.reconnectTimeout,
-		timerAction:      make(chan timerAction),
-		historyMoveInfos: historyMoveInfos,
-		// maybe later i can have different time control or increment per player, but who cares...
-		whiteGameTimeRemaining: gopts.timeControl.GetClock().AsDuration(),
-		blackGameTimeRemaining: gopts.timeControl.GetClock().AsDuration(),
-		whiteIncrement:         gopts.timeControl.GetIncrement().AsDuration(),
-		blackIncrement:         gopts.timeControl.GetIncrement().AsDuration(),
+		Chess:            chess,
+		GameID:           gameID,
+		White:            white,
+		Black:            black,
+		Guest:            guest,
+		GameVariant:      gopts.variant,
+		GameTimeKind:     gopts.timeKind,
+		GameTimeCategory: gopts.timeCategory,
+		GameTimeControl:  timeControl,
+		GameState:        pb.GameState_GAME_STATE_IDLE,
+		FirstMoveTimeout: gopts.firstMoveTimeout,
+		ReconnectTimeout: gopts.reconnectTimeout,
+		TimerAction:      make(chan timerAction),
+		HistoryMoveInfos: historyMoveInfos,
+		Rated:            gopts.rated,
 	}
 
 	return gs, nil
+}
+
+func (gs *GameState) Start() {
+	gs.GameState = pb.GameState_GAME_STATE_WAITING_START
 }
 
 func (gs *GameState) Stop() {
@@ -183,8 +168,8 @@ func (gs *GameState) Stop() {
 	}
 }
 
-func validatePlayersInfo(playersInfo [2]PlayerInfo) error {
-	for _, p := range playersInfo {
+func validatePlayers(players [2]Player) error {
+	for _, p := range players {
 		if p.ID == uuid.Nil {
 			return errors.New("player id can't be empty")
 		}
@@ -192,27 +177,35 @@ func validatePlayersInfo(playersInfo [2]PlayerInfo) error {
 			return errors.New("player color can't be empty")
 		}
 	}
-	if playersInfo[0].Color == playersInfo[1].Color {
+	if players[0].Color == players[1].Color {
 		return errors.New("player can't have the same color")
 	}
 	return nil
 }
 
-func determineGameTimeCategoryFromTimeControl(gtc *pb.GameTimeControl, thresholds []categoryThreshold) (pb.GameTimeCategory, error) {
+func determineGameTimeCategoryFromTimeControl(gtc *pb.GameTimeControl, thresholds []CategoryThreshold) (pb.GameTimeCategory, error) {
 	if gtc == nil {
 		return pb.GameTimeCategory_GAME_TIME_CATEGORY_UNSPECIFIED, errors.New("time control is required")
 	}
-	if gtc.GetClock().AsDuration() <= 0 {
+
+	if gtc.GetClockMs() <= 0 {
 		return pb.GameTimeCategory_GAME_TIME_CATEGORY_UNSPECIFIED, errors.New("clock must be > 0")
 	}
-	if gtc.GetIncrement().AsDuration() < 0 {
+
+	if gtc.GetIncrementMs() < 0 {
 		return pb.GameTimeCategory_GAME_TIME_CATEGORY_UNSPECIFIED, errors.New("increment must be >= 0")
 	}
-	totalTime := gtc.GetClock().AsDuration() + gtc.GetIncrement().AsDuration()*AverageGameMovesEstimate
+
+	clock := time.Duration(gtc.GetClockMs()) * time.Millisecond
+	increment := time.Duration(gtc.GetIncrementMs()) * time.Millisecond
+
+	totalTime := clock + increment*time.Duration(AverageGameMovesEstimate)
+
 	for _, threshold := range thresholds {
-		if totalTime < threshold.upperLimit {
-			return threshold.timeCategory, nil
+		if totalTime < threshold.UpperLimit {
+			return threshold.TimeCategory, nil
 		}
 	}
-	return thresholds[len(thresholds)-1].timeCategory, nil
+
+	return thresholds[len(thresholds)-1].TimeCategory, nil
 }

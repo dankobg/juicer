@@ -43,7 +43,7 @@ type GameResultStatusesQuery = *psql.ViewQuery[*GameResultStatus, GameResultStat
 
 // gameResultStatusR is where relationships are stored.
 type gameResultStatusR struct {
-	ResultStatusGames GameSlice // game.fk_game_result_status
+	Games GameSlice // game.fk_game_result_status_id
 }
 
 func buildGameResultStatusColumns(alias string) gameResultStatusColumns {
@@ -394,14 +394,14 @@ func (o GameResultStatusSlice) ReloadAll(ctx context.Context, exec bob.Executor)
 	return nil
 }
 
-// ResultStatusGames starts a query for related objects on game
-func (o *GameResultStatus) ResultStatusGames(mods ...bob.Mod[*dialect.SelectQuery]) GamesQuery {
+// Games starts a query for related objects on game
+func (o *GameResultStatus) Games(mods ...bob.Mod[*dialect.SelectQuery]) GamesQuery {
 	return Games.Query(append(mods,
-		sm.Where(Games.Columns.ResultStatusID.EQ(psql.Arg(o.ID))),
+		sm.Where(Games.Columns.GameResultStatusID.EQ(psql.Arg(o.ID))),
 	)...)
 }
 
-func (os GameResultStatusSlice) ResultStatusGames(mods ...bob.Mod[*dialect.SelectQuery]) GamesQuery {
+func (os GameResultStatusSlice) Games(mods ...bob.Mod[*dialect.SelectQuery]) GamesQuery {
 	pkID := make(pgtypes.Array[int64], 0, len(os))
 	for _, o := range os {
 		if o == nil {
@@ -414,57 +414,57 @@ func (os GameResultStatusSlice) ResultStatusGames(mods ...bob.Mod[*dialect.Selec
 	))
 
 	return Games.Query(append(mods,
-		sm.Where(psql.Group(Games.Columns.ResultStatusID).OP("IN", PKArgExpr)),
+		sm.Where(psql.Group(Games.Columns.GameResultStatusID).OP("IN", PKArgExpr)),
 	)...)
 }
 
-func insertGameResultStatusResultStatusGames0(ctx context.Context, exec bob.Executor, games1 []*GameSetter, gameResultStatus0 *GameResultStatus) (GameSlice, error) {
+func insertGameResultStatusGames0(ctx context.Context, exec bob.Executor, games1 []*GameSetter, gameResultStatus0 *GameResultStatus) (GameSlice, error) {
 	for i := range games1 {
-		games1[i].ResultStatusID = omitnull.From(gameResultStatus0.ID)
+		games1[i].GameResultStatusID = omitnull.From(gameResultStatus0.ID)
 	}
 
 	ret, err := Games.Insert(bob.ToMods(games1...)).All(ctx, exec)
 	if err != nil {
-		return ret, fmt.Errorf("insertGameResultStatusResultStatusGames0: %w", err)
+		return ret, fmt.Errorf("insertGameResultStatusGames0: %w", err)
 	}
 
 	return ret, nil
 }
 
-func attachGameResultStatusResultStatusGames0(ctx context.Context, exec bob.Executor, count int, games1 GameSlice, gameResultStatus0 *GameResultStatus) (GameSlice, error) {
+func attachGameResultStatusGames0(ctx context.Context, exec bob.Executor, count int, games1 GameSlice, gameResultStatus0 *GameResultStatus) (GameSlice, error) {
 	setter := &GameSetter{
-		ResultStatusID: omitnull.From(gameResultStatus0.ID),
+		GameResultStatusID: omitnull.From(gameResultStatus0.ID),
 	}
 
 	err := games1.UpdateAll(ctx, exec, *setter)
 	if err != nil {
-		return nil, fmt.Errorf("attachGameResultStatusResultStatusGames0: %w", err)
+		return nil, fmt.Errorf("attachGameResultStatusGames0: %w", err)
 	}
 
 	return games1, nil
 }
 
-func (gameResultStatus0 *GameResultStatus) InsertResultStatusGames(ctx context.Context, exec bob.Executor, related ...*GameSetter) error {
+func (gameResultStatus0 *GameResultStatus) InsertGames(ctx context.Context, exec bob.Executor, related ...*GameSetter) error {
 	if len(related) == 0 {
 		return nil
 	}
 
 	var err error
 
-	games1, err := insertGameResultStatusResultStatusGames0(ctx, exec, related, gameResultStatus0)
+	games1, err := insertGameResultStatusGames0(ctx, exec, related, gameResultStatus0)
 	if err != nil {
 		return err
 	}
 
-	gameResultStatus0.R.ResultStatusGames = append(gameResultStatus0.R.ResultStatusGames, games1...)
+	gameResultStatus0.R.Games = append(gameResultStatus0.R.Games, games1...)
 
 	for _, rel := range games1 {
-		rel.R.ResultStatusGameResultStatus = gameResultStatus0
+		rel.R.GameResultStatus = gameResultStatus0
 	}
 	return nil
 }
 
-func (gameResultStatus0 *GameResultStatus) AttachResultStatusGames(ctx context.Context, exec bob.Executor, related ...*Game) error {
+func (gameResultStatus0 *GameResultStatus) AttachGames(ctx context.Context, exec bob.Executor, related ...*Game) error {
 	if len(related) == 0 {
 		return nil
 	}
@@ -472,15 +472,15 @@ func (gameResultStatus0 *GameResultStatus) AttachResultStatusGames(ctx context.C
 	var err error
 	games1 := GameSlice(related)
 
-	_, err = attachGameResultStatusResultStatusGames0(ctx, exec, len(related), games1, gameResultStatus0)
+	_, err = attachGameResultStatusGames0(ctx, exec, len(related), games1, gameResultStatus0)
 	if err != nil {
 		return err
 	}
 
-	gameResultStatus0.R.ResultStatusGames = append(gameResultStatus0.R.ResultStatusGames, games1...)
+	gameResultStatus0.R.Games = append(gameResultStatus0.R.Games, games1...)
 
 	for _, rel := range related {
-		rel.R.ResultStatusGameResultStatus = gameResultStatus0
+		rel.R.GameResultStatus = gameResultStatus0
 	}
 
 	return nil

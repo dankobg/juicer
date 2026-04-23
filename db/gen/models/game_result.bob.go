@@ -43,7 +43,7 @@ type GameResultsQuery = *psql.ViewQuery[*GameResult, GameResultSlice]
 
 // gameResultR is where relationships are stored.
 type gameResultR struct {
-	ResultGames GameSlice // game.fk_game_result
+	Games GameSlice // game.fk_game_result_id
 }
 
 func buildGameResultColumns(alias string) gameResultColumns {
@@ -394,14 +394,14 @@ func (o GameResultSlice) ReloadAll(ctx context.Context, exec bob.Executor) error
 	return nil
 }
 
-// ResultGames starts a query for related objects on game
-func (o *GameResult) ResultGames(mods ...bob.Mod[*dialect.SelectQuery]) GamesQuery {
+// Games starts a query for related objects on game
+func (o *GameResult) Games(mods ...bob.Mod[*dialect.SelectQuery]) GamesQuery {
 	return Games.Query(append(mods,
-		sm.Where(Games.Columns.ResultID.EQ(psql.Arg(o.ID))),
+		sm.Where(Games.Columns.GameResultID.EQ(psql.Arg(o.ID))),
 	)...)
 }
 
-func (os GameResultSlice) ResultGames(mods ...bob.Mod[*dialect.SelectQuery]) GamesQuery {
+func (os GameResultSlice) Games(mods ...bob.Mod[*dialect.SelectQuery]) GamesQuery {
 	pkID := make(pgtypes.Array[int64], 0, len(os))
 	for _, o := range os {
 		if o == nil {
@@ -414,57 +414,57 @@ func (os GameResultSlice) ResultGames(mods ...bob.Mod[*dialect.SelectQuery]) Gam
 	))
 
 	return Games.Query(append(mods,
-		sm.Where(psql.Group(Games.Columns.ResultID).OP("IN", PKArgExpr)),
+		sm.Where(psql.Group(Games.Columns.GameResultID).OP("IN", PKArgExpr)),
 	)...)
 }
 
-func insertGameResultResultGames0(ctx context.Context, exec bob.Executor, games1 []*GameSetter, gameResult0 *GameResult) (GameSlice, error) {
+func insertGameResultGames0(ctx context.Context, exec bob.Executor, games1 []*GameSetter, gameResult0 *GameResult) (GameSlice, error) {
 	for i := range games1 {
-		games1[i].ResultID = omitnull.From(gameResult0.ID)
+		games1[i].GameResultID = omitnull.From(gameResult0.ID)
 	}
 
 	ret, err := Games.Insert(bob.ToMods(games1...)).All(ctx, exec)
 	if err != nil {
-		return ret, fmt.Errorf("insertGameResultResultGames0: %w", err)
+		return ret, fmt.Errorf("insertGameResultGames0: %w", err)
 	}
 
 	return ret, nil
 }
 
-func attachGameResultResultGames0(ctx context.Context, exec bob.Executor, count int, games1 GameSlice, gameResult0 *GameResult) (GameSlice, error) {
+func attachGameResultGames0(ctx context.Context, exec bob.Executor, count int, games1 GameSlice, gameResult0 *GameResult) (GameSlice, error) {
 	setter := &GameSetter{
-		ResultID: omitnull.From(gameResult0.ID),
+		GameResultID: omitnull.From(gameResult0.ID),
 	}
 
 	err := games1.UpdateAll(ctx, exec, *setter)
 	if err != nil {
-		return nil, fmt.Errorf("attachGameResultResultGames0: %w", err)
+		return nil, fmt.Errorf("attachGameResultGames0: %w", err)
 	}
 
 	return games1, nil
 }
 
-func (gameResult0 *GameResult) InsertResultGames(ctx context.Context, exec bob.Executor, related ...*GameSetter) error {
+func (gameResult0 *GameResult) InsertGames(ctx context.Context, exec bob.Executor, related ...*GameSetter) error {
 	if len(related) == 0 {
 		return nil
 	}
 
 	var err error
 
-	games1, err := insertGameResultResultGames0(ctx, exec, related, gameResult0)
+	games1, err := insertGameResultGames0(ctx, exec, related, gameResult0)
 	if err != nil {
 		return err
 	}
 
-	gameResult0.R.ResultGames = append(gameResult0.R.ResultGames, games1...)
+	gameResult0.R.Games = append(gameResult0.R.Games, games1...)
 
 	for _, rel := range games1 {
-		rel.R.ResultGameResult = gameResult0
+		rel.R.GameResult = gameResult0
 	}
 	return nil
 }
 
-func (gameResult0 *GameResult) AttachResultGames(ctx context.Context, exec bob.Executor, related ...*Game) error {
+func (gameResult0 *GameResult) AttachGames(ctx context.Context, exec bob.Executor, related ...*Game) error {
 	if len(related) == 0 {
 		return nil
 	}
@@ -472,15 +472,15 @@ func (gameResult0 *GameResult) AttachResultGames(ctx context.Context, exec bob.E
 	var err error
 	games1 := GameSlice(related)
 
-	_, err = attachGameResultResultGames0(ctx, exec, len(related), games1, gameResult0)
+	_, err = attachGameResultGames0(ctx, exec, len(related), games1, gameResult0)
 	if err != nil {
 		return err
 	}
 
-	gameResult0.R.ResultGames = append(gameResult0.R.ResultGames, games1...)
+	gameResult0.R.Games = append(gameResult0.R.Games, games1...)
 
 	for _, rel := range related {
-		rel.R.ResultGameResult = gameResult0
+		rel.R.GameResult = gameResult0
 	}
 
 	return nil

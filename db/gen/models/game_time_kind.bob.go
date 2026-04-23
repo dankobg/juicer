@@ -43,7 +43,7 @@ type GameTimeKindsQuery = *psql.ViewQuery[*GameTimeKind, GameTimeKindSlice]
 
 // gameTimeKindR is where relationships are stored.
 type gameTimeKindR struct {
-	TimeKindGames GameSlice // game.fk_game_time_kind
+	Games GameSlice // game.fk_game_time_kind_id
 }
 
 func buildGameTimeKindColumns(alias string) gameTimeKindColumns {
@@ -416,14 +416,14 @@ func (o GameTimeKindSlice) ReloadAll(ctx context.Context, exec bob.Executor) err
 	return nil
 }
 
-// TimeKindGames starts a query for related objects on game
-func (o *GameTimeKind) TimeKindGames(mods ...bob.Mod[*dialect.SelectQuery]) GamesQuery {
+// Games starts a query for related objects on game
+func (o *GameTimeKind) Games(mods ...bob.Mod[*dialect.SelectQuery]) GamesQuery {
 	return Games.Query(append(mods,
-		sm.Where(Games.Columns.TimeKindID.EQ(psql.Arg(o.ID))),
+		sm.Where(Games.Columns.GameTimeKindID.EQ(psql.Arg(o.ID))),
 	)...)
 }
 
-func (os GameTimeKindSlice) TimeKindGames(mods ...bob.Mod[*dialect.SelectQuery]) GamesQuery {
+func (os GameTimeKindSlice) Games(mods ...bob.Mod[*dialect.SelectQuery]) GamesQuery {
 	pkID := make(pgtypes.Array[int64], 0, len(os))
 	for _, o := range os {
 		if o == nil {
@@ -436,57 +436,57 @@ func (os GameTimeKindSlice) TimeKindGames(mods ...bob.Mod[*dialect.SelectQuery])
 	))
 
 	return Games.Query(append(mods,
-		sm.Where(psql.Group(Games.Columns.TimeKindID).OP("IN", PKArgExpr)),
+		sm.Where(psql.Group(Games.Columns.GameTimeKindID).OP("IN", PKArgExpr)),
 	)...)
 }
 
-func insertGameTimeKindTimeKindGames0(ctx context.Context, exec bob.Executor, games1 []*GameSetter, gameTimeKind0 *GameTimeKind) (GameSlice, error) {
+func insertGameTimeKindGames0(ctx context.Context, exec bob.Executor, games1 []*GameSetter, gameTimeKind0 *GameTimeKind) (GameSlice, error) {
 	for i := range games1 {
-		games1[i].TimeKindID = omit.From(gameTimeKind0.ID)
+		games1[i].GameTimeKindID = omit.From(gameTimeKind0.ID)
 	}
 
 	ret, err := Games.Insert(bob.ToMods(games1...)).All(ctx, exec)
 	if err != nil {
-		return ret, fmt.Errorf("insertGameTimeKindTimeKindGames0: %w", err)
+		return ret, fmt.Errorf("insertGameTimeKindGames0: %w", err)
 	}
 
 	return ret, nil
 }
 
-func attachGameTimeKindTimeKindGames0(ctx context.Context, exec bob.Executor, count int, games1 GameSlice, gameTimeKind0 *GameTimeKind) (GameSlice, error) {
+func attachGameTimeKindGames0(ctx context.Context, exec bob.Executor, count int, games1 GameSlice, gameTimeKind0 *GameTimeKind) (GameSlice, error) {
 	setter := &GameSetter{
-		TimeKindID: omit.From(gameTimeKind0.ID),
+		GameTimeKindID: omit.From(gameTimeKind0.ID),
 	}
 
 	err := games1.UpdateAll(ctx, exec, *setter)
 	if err != nil {
-		return nil, fmt.Errorf("attachGameTimeKindTimeKindGames0: %w", err)
+		return nil, fmt.Errorf("attachGameTimeKindGames0: %w", err)
 	}
 
 	return games1, nil
 }
 
-func (gameTimeKind0 *GameTimeKind) InsertTimeKindGames(ctx context.Context, exec bob.Executor, related ...*GameSetter) error {
+func (gameTimeKind0 *GameTimeKind) InsertGames(ctx context.Context, exec bob.Executor, related ...*GameSetter) error {
 	if len(related) == 0 {
 		return nil
 	}
 
 	var err error
 
-	games1, err := insertGameTimeKindTimeKindGames0(ctx, exec, related, gameTimeKind0)
+	games1, err := insertGameTimeKindGames0(ctx, exec, related, gameTimeKind0)
 	if err != nil {
 		return err
 	}
 
-	gameTimeKind0.R.TimeKindGames = append(gameTimeKind0.R.TimeKindGames, games1...)
+	gameTimeKind0.R.Games = append(gameTimeKind0.R.Games, games1...)
 
 	for _, rel := range games1 {
-		rel.R.TimeKindGameTimeKind = gameTimeKind0
+		rel.R.GameTimeKind = gameTimeKind0
 	}
 	return nil
 }
 
-func (gameTimeKind0 *GameTimeKind) AttachTimeKindGames(ctx context.Context, exec bob.Executor, related ...*Game) error {
+func (gameTimeKind0 *GameTimeKind) AttachGames(ctx context.Context, exec bob.Executor, related ...*Game) error {
 	if len(related) == 0 {
 		return nil
 	}
@@ -494,15 +494,15 @@ func (gameTimeKind0 *GameTimeKind) AttachTimeKindGames(ctx context.Context, exec
 	var err error
 	games1 := GameSlice(related)
 
-	_, err = attachGameTimeKindTimeKindGames0(ctx, exec, len(related), games1, gameTimeKind0)
+	_, err = attachGameTimeKindGames0(ctx, exec, len(related), games1, gameTimeKind0)
 	if err != nil {
 		return err
 	}
 
-	gameTimeKind0.R.TimeKindGames = append(gameTimeKind0.R.TimeKindGames, games1...)
+	gameTimeKind0.R.Games = append(gameTimeKind0.R.Games, games1...)
 
 	for _, rel := range related {
-		rel.R.TimeKindGameTimeKind = gameTimeKind0
+		rel.R.GameTimeKind = gameTimeKind0
 	}
 
 	return nil

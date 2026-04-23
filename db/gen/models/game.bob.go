@@ -25,32 +25,33 @@ import (
 
 // Game is an object representing the database table.
 type Game struct {
-	ID                   int64               `db:"id,pk,generated" `
-	WhiteID              null.Val[uuid.UUID] `db:"white_id" `
-	BlackID              null.Val[uuid.UUID] `db:"black_id" `
-	GuestWhiteID         null.Val[uuid.UUID] `db:"guest_white_id" `
-	GuestBlackID         null.Val[uuid.UUID] `db:"guest_black_id" `
-	VariantID            int64               `db:"variant_id" `
-	TimeKindID           int64               `db:"time_kind_id" `
-	TimeCategoryID       int64               `db:"time_category_id" `
-	IsGuest              bool                `db:"is_guest" `
-	TimeControlClock     int32               `db:"time_control_clock" `
-	TimeControlIncrement int32               `db:"time_control_increment" `
-	ReconnectTimeout     int32               `db:"reconnect_timeout" `
-	FirstMoveTimeout     int32               `db:"first_move_timeout" `
-	WhiteGameClock       int32               `db:"white_game_clock" `
-	BlackGameClock       int32               `db:"black_game_clock" `
-	Rated                null.Val[bool]      `db:"rated" `
-	ResultID             null.Val[int64]     `db:"result_id" `
-	ResultStatusID       null.Val[int64]     `db:"result_status_id" `
-	StateID              int64               `db:"state_id" `
-	StartTime            time.Time           `db:"start_time" `
-	EndTime              null.Val[time.Time] `db:"end_time" `
-	LastMove             null.Val[time.Time] `db:"last_move" `
-	Fen                  string              `db:"fen" `
-	PGN                  null.Val[string]    `db:"pgn" `
-	CreatedAt            time.Time           `db:"created_at" `
-	UpdatedAt            time.Time           `db:"updated_at" `
+	ID                     int64               `db:"id,pk,generated" `
+	WhiteID                null.Val[uuid.UUID] `db:"white_id" `
+	BlackID                null.Val[uuid.UUID] `db:"black_id" `
+	WhiteIsGuest           bool                `db:"white_is_guest" `
+	BlackIsGuest           bool                `db:"black_is_guest" `
+	GuestWhiteID           null.Val[uuid.UUID] `db:"guest_white_id" `
+	GuestBlackID           null.Val[uuid.UUID] `db:"guest_black_id" `
+	GameVariantID          int64               `db:"game_variant_id" `
+	GameTimeKindID         int64               `db:"game_time_kind_id" `
+	GameTimeCategoryID     int64               `db:"game_time_category_id" `
+	GameStateID            int64               `db:"game_state_id" `
+	GameResultID           null.Val[int64]     `db:"game_result_id" `
+	GameResultStatusID     null.Val[int64]     `db:"game_result_status_id" `
+	TimeControlClockMS     int32               `db:"time_control_clock_ms" `
+	TimeControlIncrementMS int32               `db:"time_control_increment_ms" `
+	ReconnectTimeoutMS     int32               `db:"reconnect_timeout_ms" `
+	FirstMoveTimeoutMS     int32               `db:"first_move_timeout_ms" `
+	WhiteGameClock         int32               `db:"white_game_clock" `
+	BlackGameClock         int32               `db:"black_game_clock" `
+	Rated                  bool                `db:"rated" `
+	StartTime              null.Val[time.Time] `db:"start_time" `
+	EndTime                null.Val[time.Time] `db:"end_time" `
+	LastMove               null.Val[time.Time] `db:"last_move" `
+	Fen                    string              `db:"fen" `
+	PGN                    null.Val[string]    `db:"pgn" `
+	CreatedAt              time.Time           `db:"created_at" `
+	UpdatedAt              time.Time           `db:"updated_at" `
 
 	R gameR `db:"-" `
 }
@@ -67,81 +68,83 @@ type GamesQuery = *psql.ViewQuery[*Game, GameSlice]
 
 // gameR is where relationships are stored.
 type gameR struct {
-	BlackUser                    *User             // game.fk_game_black_id
-	ResultGameResult             *GameResult       // game.fk_game_result
-	ResultStatusGameResultStatus *GameResultStatus // game.fk_game_result_status
-	StateGameState               *GameState        // game.fk_game_state
-	TimeCategoryGameTimeCategory *GameTimeCategory // game.fk_game_time_category
-	TimeKindGameTimeKind         *GameTimeKind     // game.fk_game_time_kind
-	VariantGameVariant           *GameVariant      // game.fk_game_variant
-	WhiteUser                    *User             // game.fk_game_white_id
-	GameMoves                    GameMoveSlice     // game_move.fk_game_move_game_id
+	BlackUser        *User             // game.fk_game_black_id
+	GameResult       *GameResult       // game.fk_game_result_id
+	GameResultStatus *GameResultStatus // game.fk_game_result_status_id
+	GameState        *GameState        // game.fk_game_state_id
+	GameTimeCategory *GameTimeCategory // game.fk_game_time_category_id
+	GameTimeKind     *GameTimeKind     // game.fk_game_time_kind_id
+	GameVariant      *GameVariant      // game.fk_game_variant_id
+	WhiteUser        *User             // game.fk_game_white_id
+	GameMoves        GameMoveSlice     // game_move.fk_game_move_game_id
 }
 
 func buildGameColumns(alias string) gameColumns {
 	return gameColumns{
 		ColumnsExpr: expr.NewColumnsExpr(
-			"id", "white_id", "black_id", "guest_white_id", "guest_black_id", "variant_id", "time_kind_id", "time_category_id", "is_guest", "time_control_clock", "time_control_increment", "reconnect_timeout", "first_move_timeout", "white_game_clock", "black_game_clock", "rated", "result_id", "result_status_id", "state_id", "start_time", "end_time", "last_move", "fen", "pgn", "created_at", "updated_at",
+			"id", "white_id", "black_id", "white_is_guest", "black_is_guest", "guest_white_id", "guest_black_id", "game_variant_id", "game_time_kind_id", "game_time_category_id", "game_state_id", "game_result_id", "game_result_status_id", "time_control_clock_ms", "time_control_increment_ms", "reconnect_timeout_ms", "first_move_timeout_ms", "white_game_clock", "black_game_clock", "rated", "start_time", "end_time", "last_move", "fen", "pgn", "created_at", "updated_at",
 		).WithParent("game"),
-		tableAlias:           alias,
-		ID:                   psql.Quote(alias, "id"),
-		WhiteID:              psql.Quote(alias, "white_id"),
-		BlackID:              psql.Quote(alias, "black_id"),
-		GuestWhiteID:         psql.Quote(alias, "guest_white_id"),
-		GuestBlackID:         psql.Quote(alias, "guest_black_id"),
-		VariantID:            psql.Quote(alias, "variant_id"),
-		TimeKindID:           psql.Quote(alias, "time_kind_id"),
-		TimeCategoryID:       psql.Quote(alias, "time_category_id"),
-		IsGuest:              psql.Quote(alias, "is_guest"),
-		TimeControlClock:     psql.Quote(alias, "time_control_clock"),
-		TimeControlIncrement: psql.Quote(alias, "time_control_increment"),
-		ReconnectTimeout:     psql.Quote(alias, "reconnect_timeout"),
-		FirstMoveTimeout:     psql.Quote(alias, "first_move_timeout"),
-		WhiteGameClock:       psql.Quote(alias, "white_game_clock"),
-		BlackGameClock:       psql.Quote(alias, "black_game_clock"),
-		Rated:                psql.Quote(alias, "rated"),
-		ResultID:             psql.Quote(alias, "result_id"),
-		ResultStatusID:       psql.Quote(alias, "result_status_id"),
-		StateID:              psql.Quote(alias, "state_id"),
-		StartTime:            psql.Quote(alias, "start_time"),
-		EndTime:              psql.Quote(alias, "end_time"),
-		LastMove:             psql.Quote(alias, "last_move"),
-		Fen:                  psql.Quote(alias, "fen"),
-		PGN:                  psql.Quote(alias, "pgn"),
-		CreatedAt:            psql.Quote(alias, "created_at"),
-		UpdatedAt:            psql.Quote(alias, "updated_at"),
+		tableAlias:             alias,
+		ID:                     psql.Quote(alias, "id"),
+		WhiteID:                psql.Quote(alias, "white_id"),
+		BlackID:                psql.Quote(alias, "black_id"),
+		WhiteIsGuest:           psql.Quote(alias, "white_is_guest"),
+		BlackIsGuest:           psql.Quote(alias, "black_is_guest"),
+		GuestWhiteID:           psql.Quote(alias, "guest_white_id"),
+		GuestBlackID:           psql.Quote(alias, "guest_black_id"),
+		GameVariantID:          psql.Quote(alias, "game_variant_id"),
+		GameTimeKindID:         psql.Quote(alias, "game_time_kind_id"),
+		GameTimeCategoryID:     psql.Quote(alias, "game_time_category_id"),
+		GameStateID:            psql.Quote(alias, "game_state_id"),
+		GameResultID:           psql.Quote(alias, "game_result_id"),
+		GameResultStatusID:     psql.Quote(alias, "game_result_status_id"),
+		TimeControlClockMS:     psql.Quote(alias, "time_control_clock_ms"),
+		TimeControlIncrementMS: psql.Quote(alias, "time_control_increment_ms"),
+		ReconnectTimeoutMS:     psql.Quote(alias, "reconnect_timeout_ms"),
+		FirstMoveTimeoutMS:     psql.Quote(alias, "first_move_timeout_ms"),
+		WhiteGameClock:         psql.Quote(alias, "white_game_clock"),
+		BlackGameClock:         psql.Quote(alias, "black_game_clock"),
+		Rated:                  psql.Quote(alias, "rated"),
+		StartTime:              psql.Quote(alias, "start_time"),
+		EndTime:                psql.Quote(alias, "end_time"),
+		LastMove:               psql.Quote(alias, "last_move"),
+		Fen:                    psql.Quote(alias, "fen"),
+		PGN:                    psql.Quote(alias, "pgn"),
+		CreatedAt:              psql.Quote(alias, "created_at"),
+		UpdatedAt:              psql.Quote(alias, "updated_at"),
 	}
 }
 
 type gameColumns struct {
 	expr.ColumnsExpr
-	tableAlias           string
-	ID                   psql.Expression
-	WhiteID              psql.Expression
-	BlackID              psql.Expression
-	GuestWhiteID         psql.Expression
-	GuestBlackID         psql.Expression
-	VariantID            psql.Expression
-	TimeKindID           psql.Expression
-	TimeCategoryID       psql.Expression
-	IsGuest              psql.Expression
-	TimeControlClock     psql.Expression
-	TimeControlIncrement psql.Expression
-	ReconnectTimeout     psql.Expression
-	FirstMoveTimeout     psql.Expression
-	WhiteGameClock       psql.Expression
-	BlackGameClock       psql.Expression
-	Rated                psql.Expression
-	ResultID             psql.Expression
-	ResultStatusID       psql.Expression
-	StateID              psql.Expression
-	StartTime            psql.Expression
-	EndTime              psql.Expression
-	LastMove             psql.Expression
-	Fen                  psql.Expression
-	PGN                  psql.Expression
-	CreatedAt            psql.Expression
-	UpdatedAt            psql.Expression
+	tableAlias             string
+	ID                     psql.Expression
+	WhiteID                psql.Expression
+	BlackID                psql.Expression
+	WhiteIsGuest           psql.Expression
+	BlackIsGuest           psql.Expression
+	GuestWhiteID           psql.Expression
+	GuestBlackID           psql.Expression
+	GameVariantID          psql.Expression
+	GameTimeKindID         psql.Expression
+	GameTimeCategoryID     psql.Expression
+	GameStateID            psql.Expression
+	GameResultID           psql.Expression
+	GameResultStatusID     psql.Expression
+	TimeControlClockMS     psql.Expression
+	TimeControlIncrementMS psql.Expression
+	ReconnectTimeoutMS     psql.Expression
+	FirstMoveTimeoutMS     psql.Expression
+	WhiteGameClock         psql.Expression
+	BlackGameClock         psql.Expression
+	Rated                  psql.Expression
+	StartTime              psql.Expression
+	EndTime                psql.Expression
+	LastMove               psql.Expression
+	Fen                    psql.Expression
+	PGN                    psql.Expression
+	CreatedAt              psql.Expression
+	UpdatedAt              psql.Expression
 }
 
 func (c gameColumns) Alias() string {
@@ -156,40 +159,47 @@ func (gameColumns) AliasedAs(alias string) gameColumns {
 // All values are optional, and do not have to be set
 // Generated columns are not included
 type GameSetter struct {
-	WhiteID              omitnull.Val[uuid.UUID] `db:"white_id" `
-	BlackID              omitnull.Val[uuid.UUID] `db:"black_id" `
-	GuestWhiteID         omitnull.Val[uuid.UUID] `db:"guest_white_id" `
-	GuestBlackID         omitnull.Val[uuid.UUID] `db:"guest_black_id" `
-	VariantID            omit.Val[int64]         `db:"variant_id" `
-	TimeKindID           omit.Val[int64]         `db:"time_kind_id" `
-	TimeCategoryID       omit.Val[int64]         `db:"time_category_id" `
-	IsGuest              omit.Val[bool]          `db:"is_guest" `
-	TimeControlClock     omit.Val[int32]         `db:"time_control_clock" `
-	TimeControlIncrement omit.Val[int32]         `db:"time_control_increment" `
-	ReconnectTimeout     omit.Val[int32]         `db:"reconnect_timeout" `
-	FirstMoveTimeout     omit.Val[int32]         `db:"first_move_timeout" `
-	WhiteGameClock       omit.Val[int32]         `db:"white_game_clock" `
-	BlackGameClock       omit.Val[int32]         `db:"black_game_clock" `
-	Rated                omitnull.Val[bool]      `db:"rated" `
-	ResultID             omitnull.Val[int64]     `db:"result_id" `
-	ResultStatusID       omitnull.Val[int64]     `db:"result_status_id" `
-	StateID              omit.Val[int64]         `db:"state_id" `
-	StartTime            omit.Val[time.Time]     `db:"start_time" `
-	EndTime              omitnull.Val[time.Time] `db:"end_time" `
-	LastMove             omitnull.Val[time.Time] `db:"last_move" `
-	Fen                  omit.Val[string]        `db:"fen" `
-	PGN                  omitnull.Val[string]    `db:"pgn" `
-	CreatedAt            omit.Val[time.Time]     `db:"created_at" `
-	UpdatedAt            omit.Val[time.Time]     `db:"updated_at" `
+	WhiteID                omitnull.Val[uuid.UUID] `db:"white_id" `
+	BlackID                omitnull.Val[uuid.UUID] `db:"black_id" `
+	WhiteIsGuest           omit.Val[bool]          `db:"white_is_guest" `
+	BlackIsGuest           omit.Val[bool]          `db:"black_is_guest" `
+	GuestWhiteID           omitnull.Val[uuid.UUID] `db:"guest_white_id" `
+	GuestBlackID           omitnull.Val[uuid.UUID] `db:"guest_black_id" `
+	GameVariantID          omit.Val[int64]         `db:"game_variant_id" `
+	GameTimeKindID         omit.Val[int64]         `db:"game_time_kind_id" `
+	GameTimeCategoryID     omit.Val[int64]         `db:"game_time_category_id" `
+	GameStateID            omit.Val[int64]         `db:"game_state_id" `
+	GameResultID           omitnull.Val[int64]     `db:"game_result_id" `
+	GameResultStatusID     omitnull.Val[int64]     `db:"game_result_status_id" `
+	TimeControlClockMS     omit.Val[int32]         `db:"time_control_clock_ms" `
+	TimeControlIncrementMS omit.Val[int32]         `db:"time_control_increment_ms" `
+	ReconnectTimeoutMS     omit.Val[int32]         `db:"reconnect_timeout_ms" `
+	FirstMoveTimeoutMS     omit.Val[int32]         `db:"first_move_timeout_ms" `
+	WhiteGameClock         omit.Val[int32]         `db:"white_game_clock" `
+	BlackGameClock         omit.Val[int32]         `db:"black_game_clock" `
+	Rated                  omit.Val[bool]          `db:"rated" `
+	StartTime              omitnull.Val[time.Time] `db:"start_time" `
+	EndTime                omitnull.Val[time.Time] `db:"end_time" `
+	LastMove               omitnull.Val[time.Time] `db:"last_move" `
+	Fen                    omit.Val[string]        `db:"fen" `
+	PGN                    omitnull.Val[string]    `db:"pgn" `
+	CreatedAt              omit.Val[time.Time]     `db:"created_at" `
+	UpdatedAt              omit.Val[time.Time]     `db:"updated_at" `
 }
 
 func (s GameSetter) SetColumns() []string {
-	vals := make([]string, 0, 25)
+	vals := make([]string, 0, 26)
 	if !s.WhiteID.IsUnset() {
 		vals = append(vals, "white_id")
 	}
 	if !s.BlackID.IsUnset() {
 		vals = append(vals, "black_id")
+	}
+	if s.WhiteIsGuest.IsValue() {
+		vals = append(vals, "white_is_guest")
+	}
+	if s.BlackIsGuest.IsValue() {
+		vals = append(vals, "black_is_guest")
 	}
 	if !s.GuestWhiteID.IsUnset() {
 		vals = append(vals, "guest_white_id")
@@ -197,29 +207,35 @@ func (s GameSetter) SetColumns() []string {
 	if !s.GuestBlackID.IsUnset() {
 		vals = append(vals, "guest_black_id")
 	}
-	if s.VariantID.IsValue() {
-		vals = append(vals, "variant_id")
+	if s.GameVariantID.IsValue() {
+		vals = append(vals, "game_variant_id")
 	}
-	if s.TimeKindID.IsValue() {
-		vals = append(vals, "time_kind_id")
+	if s.GameTimeKindID.IsValue() {
+		vals = append(vals, "game_time_kind_id")
 	}
-	if s.TimeCategoryID.IsValue() {
-		vals = append(vals, "time_category_id")
+	if s.GameTimeCategoryID.IsValue() {
+		vals = append(vals, "game_time_category_id")
 	}
-	if s.IsGuest.IsValue() {
-		vals = append(vals, "is_guest")
+	if s.GameStateID.IsValue() {
+		vals = append(vals, "game_state_id")
 	}
-	if s.TimeControlClock.IsValue() {
-		vals = append(vals, "time_control_clock")
+	if !s.GameResultID.IsUnset() {
+		vals = append(vals, "game_result_id")
 	}
-	if s.TimeControlIncrement.IsValue() {
-		vals = append(vals, "time_control_increment")
+	if !s.GameResultStatusID.IsUnset() {
+		vals = append(vals, "game_result_status_id")
 	}
-	if s.ReconnectTimeout.IsValue() {
-		vals = append(vals, "reconnect_timeout")
+	if s.TimeControlClockMS.IsValue() {
+		vals = append(vals, "time_control_clock_ms")
 	}
-	if s.FirstMoveTimeout.IsValue() {
-		vals = append(vals, "first_move_timeout")
+	if s.TimeControlIncrementMS.IsValue() {
+		vals = append(vals, "time_control_increment_ms")
+	}
+	if s.ReconnectTimeoutMS.IsValue() {
+		vals = append(vals, "reconnect_timeout_ms")
+	}
+	if s.FirstMoveTimeoutMS.IsValue() {
+		vals = append(vals, "first_move_timeout_ms")
 	}
 	if s.WhiteGameClock.IsValue() {
 		vals = append(vals, "white_game_clock")
@@ -227,19 +243,10 @@ func (s GameSetter) SetColumns() []string {
 	if s.BlackGameClock.IsValue() {
 		vals = append(vals, "black_game_clock")
 	}
-	if !s.Rated.IsUnset() {
+	if s.Rated.IsValue() {
 		vals = append(vals, "rated")
 	}
-	if !s.ResultID.IsUnset() {
-		vals = append(vals, "result_id")
-	}
-	if !s.ResultStatusID.IsUnset() {
-		vals = append(vals, "result_status_id")
-	}
-	if s.StateID.IsValue() {
-		vals = append(vals, "state_id")
-	}
-	if s.StartTime.IsValue() {
+	if !s.StartTime.IsUnset() {
 		vals = append(vals, "start_time")
 	}
 	if !s.EndTime.IsUnset() {
@@ -270,35 +277,47 @@ func (s GameSetter) Overwrite(t *Game) {
 	if !s.BlackID.IsUnset() {
 		t.BlackID = s.BlackID.MustGetNull()
 	}
+	if s.WhiteIsGuest.IsValue() {
+		t.WhiteIsGuest = s.WhiteIsGuest.MustGet()
+	}
+	if s.BlackIsGuest.IsValue() {
+		t.BlackIsGuest = s.BlackIsGuest.MustGet()
+	}
 	if !s.GuestWhiteID.IsUnset() {
 		t.GuestWhiteID = s.GuestWhiteID.MustGetNull()
 	}
 	if !s.GuestBlackID.IsUnset() {
 		t.GuestBlackID = s.GuestBlackID.MustGetNull()
 	}
-	if s.VariantID.IsValue() {
-		t.VariantID = s.VariantID.MustGet()
+	if s.GameVariantID.IsValue() {
+		t.GameVariantID = s.GameVariantID.MustGet()
 	}
-	if s.TimeKindID.IsValue() {
-		t.TimeKindID = s.TimeKindID.MustGet()
+	if s.GameTimeKindID.IsValue() {
+		t.GameTimeKindID = s.GameTimeKindID.MustGet()
 	}
-	if s.TimeCategoryID.IsValue() {
-		t.TimeCategoryID = s.TimeCategoryID.MustGet()
+	if s.GameTimeCategoryID.IsValue() {
+		t.GameTimeCategoryID = s.GameTimeCategoryID.MustGet()
 	}
-	if s.IsGuest.IsValue() {
-		t.IsGuest = s.IsGuest.MustGet()
+	if s.GameStateID.IsValue() {
+		t.GameStateID = s.GameStateID.MustGet()
 	}
-	if s.TimeControlClock.IsValue() {
-		t.TimeControlClock = s.TimeControlClock.MustGet()
+	if !s.GameResultID.IsUnset() {
+		t.GameResultID = s.GameResultID.MustGetNull()
 	}
-	if s.TimeControlIncrement.IsValue() {
-		t.TimeControlIncrement = s.TimeControlIncrement.MustGet()
+	if !s.GameResultStatusID.IsUnset() {
+		t.GameResultStatusID = s.GameResultStatusID.MustGetNull()
 	}
-	if s.ReconnectTimeout.IsValue() {
-		t.ReconnectTimeout = s.ReconnectTimeout.MustGet()
+	if s.TimeControlClockMS.IsValue() {
+		t.TimeControlClockMS = s.TimeControlClockMS.MustGet()
 	}
-	if s.FirstMoveTimeout.IsValue() {
-		t.FirstMoveTimeout = s.FirstMoveTimeout.MustGet()
+	if s.TimeControlIncrementMS.IsValue() {
+		t.TimeControlIncrementMS = s.TimeControlIncrementMS.MustGet()
+	}
+	if s.ReconnectTimeoutMS.IsValue() {
+		t.ReconnectTimeoutMS = s.ReconnectTimeoutMS.MustGet()
+	}
+	if s.FirstMoveTimeoutMS.IsValue() {
+		t.FirstMoveTimeoutMS = s.FirstMoveTimeoutMS.MustGet()
 	}
 	if s.WhiteGameClock.IsValue() {
 		t.WhiteGameClock = s.WhiteGameClock.MustGet()
@@ -306,20 +325,11 @@ func (s GameSetter) Overwrite(t *Game) {
 	if s.BlackGameClock.IsValue() {
 		t.BlackGameClock = s.BlackGameClock.MustGet()
 	}
-	if !s.Rated.IsUnset() {
-		t.Rated = s.Rated.MustGetNull()
+	if s.Rated.IsValue() {
+		t.Rated = s.Rated.MustGet()
 	}
-	if !s.ResultID.IsUnset() {
-		t.ResultID = s.ResultID.MustGetNull()
-	}
-	if !s.ResultStatusID.IsUnset() {
-		t.ResultStatusID = s.ResultStatusID.MustGetNull()
-	}
-	if s.StateID.IsValue() {
-		t.StateID = s.StateID.MustGet()
-	}
-	if s.StartTime.IsValue() {
-		t.StartTime = s.StartTime.MustGet()
+	if !s.StartTime.IsUnset() {
+		t.StartTime = s.StartTime.MustGetNull()
 	}
 	if !s.EndTime.IsUnset() {
 		t.EndTime = s.EndTime.MustGetNull()
@@ -347,7 +357,7 @@ func (s *GameSetter) Apply(q *dialect.InsertQuery) {
 	})
 
 	q.AppendValues(bob.ExpressionFunc(func(ctx context.Context, w io.StringWriter, d bob.Dialect, start int) ([]any, error) {
-		vals := make([]bob.Expression, 25)
+		vals := make([]bob.Expression, 26)
 		if !s.WhiteID.IsUnset() {
 			vals[0] = psql.Arg(s.WhiteID.MustGetNull())
 		} else {
@@ -360,142 +370,148 @@ func (s *GameSetter) Apply(q *dialect.InsertQuery) {
 			vals[1] = psql.Raw("DEFAULT")
 		}
 
-		if !s.GuestWhiteID.IsUnset() {
-			vals[2] = psql.Arg(s.GuestWhiteID.MustGetNull())
+		if s.WhiteIsGuest.IsValue() {
+			vals[2] = psql.Arg(s.WhiteIsGuest.MustGet())
 		} else {
 			vals[2] = psql.Raw("DEFAULT")
 		}
 
-		if !s.GuestBlackID.IsUnset() {
-			vals[3] = psql.Arg(s.GuestBlackID.MustGetNull())
+		if s.BlackIsGuest.IsValue() {
+			vals[3] = psql.Arg(s.BlackIsGuest.MustGet())
 		} else {
 			vals[3] = psql.Raw("DEFAULT")
 		}
 
-		if s.VariantID.IsValue() {
-			vals[4] = psql.Arg(s.VariantID.MustGet())
+		if !s.GuestWhiteID.IsUnset() {
+			vals[4] = psql.Arg(s.GuestWhiteID.MustGetNull())
 		} else {
 			vals[4] = psql.Raw("DEFAULT")
 		}
 
-		if s.TimeKindID.IsValue() {
-			vals[5] = psql.Arg(s.TimeKindID.MustGet())
+		if !s.GuestBlackID.IsUnset() {
+			vals[5] = psql.Arg(s.GuestBlackID.MustGetNull())
 		} else {
 			vals[5] = psql.Raw("DEFAULT")
 		}
 
-		if s.TimeCategoryID.IsValue() {
-			vals[6] = psql.Arg(s.TimeCategoryID.MustGet())
+		if s.GameVariantID.IsValue() {
+			vals[6] = psql.Arg(s.GameVariantID.MustGet())
 		} else {
 			vals[6] = psql.Raw("DEFAULT")
 		}
 
-		if s.IsGuest.IsValue() {
-			vals[7] = psql.Arg(s.IsGuest.MustGet())
+		if s.GameTimeKindID.IsValue() {
+			vals[7] = psql.Arg(s.GameTimeKindID.MustGet())
 		} else {
 			vals[7] = psql.Raw("DEFAULT")
 		}
 
-		if s.TimeControlClock.IsValue() {
-			vals[8] = psql.Arg(s.TimeControlClock.MustGet())
+		if s.GameTimeCategoryID.IsValue() {
+			vals[8] = psql.Arg(s.GameTimeCategoryID.MustGet())
 		} else {
 			vals[8] = psql.Raw("DEFAULT")
 		}
 
-		if s.TimeControlIncrement.IsValue() {
-			vals[9] = psql.Arg(s.TimeControlIncrement.MustGet())
+		if s.GameStateID.IsValue() {
+			vals[9] = psql.Arg(s.GameStateID.MustGet())
 		} else {
 			vals[9] = psql.Raw("DEFAULT")
 		}
 
-		if s.ReconnectTimeout.IsValue() {
-			vals[10] = psql.Arg(s.ReconnectTimeout.MustGet())
+		if !s.GameResultID.IsUnset() {
+			vals[10] = psql.Arg(s.GameResultID.MustGetNull())
 		} else {
 			vals[10] = psql.Raw("DEFAULT")
 		}
 
-		if s.FirstMoveTimeout.IsValue() {
-			vals[11] = psql.Arg(s.FirstMoveTimeout.MustGet())
+		if !s.GameResultStatusID.IsUnset() {
+			vals[11] = psql.Arg(s.GameResultStatusID.MustGetNull())
 		} else {
 			vals[11] = psql.Raw("DEFAULT")
 		}
 
-		if s.WhiteGameClock.IsValue() {
-			vals[12] = psql.Arg(s.WhiteGameClock.MustGet())
+		if s.TimeControlClockMS.IsValue() {
+			vals[12] = psql.Arg(s.TimeControlClockMS.MustGet())
 		} else {
 			vals[12] = psql.Raw("DEFAULT")
 		}
 
-		if s.BlackGameClock.IsValue() {
-			vals[13] = psql.Arg(s.BlackGameClock.MustGet())
+		if s.TimeControlIncrementMS.IsValue() {
+			vals[13] = psql.Arg(s.TimeControlIncrementMS.MustGet())
 		} else {
 			vals[13] = psql.Raw("DEFAULT")
 		}
 
-		if !s.Rated.IsUnset() {
-			vals[14] = psql.Arg(s.Rated.MustGetNull())
+		if s.ReconnectTimeoutMS.IsValue() {
+			vals[14] = psql.Arg(s.ReconnectTimeoutMS.MustGet())
 		} else {
 			vals[14] = psql.Raw("DEFAULT")
 		}
 
-		if !s.ResultID.IsUnset() {
-			vals[15] = psql.Arg(s.ResultID.MustGetNull())
+		if s.FirstMoveTimeoutMS.IsValue() {
+			vals[15] = psql.Arg(s.FirstMoveTimeoutMS.MustGet())
 		} else {
 			vals[15] = psql.Raw("DEFAULT")
 		}
 
-		if !s.ResultStatusID.IsUnset() {
-			vals[16] = psql.Arg(s.ResultStatusID.MustGetNull())
+		if s.WhiteGameClock.IsValue() {
+			vals[16] = psql.Arg(s.WhiteGameClock.MustGet())
 		} else {
 			vals[16] = psql.Raw("DEFAULT")
 		}
 
-		if s.StateID.IsValue() {
-			vals[17] = psql.Arg(s.StateID.MustGet())
+		if s.BlackGameClock.IsValue() {
+			vals[17] = psql.Arg(s.BlackGameClock.MustGet())
 		} else {
 			vals[17] = psql.Raw("DEFAULT")
 		}
 
-		if s.StartTime.IsValue() {
-			vals[18] = psql.Arg(s.StartTime.MustGet())
+		if s.Rated.IsValue() {
+			vals[18] = psql.Arg(s.Rated.MustGet())
 		} else {
 			vals[18] = psql.Raw("DEFAULT")
 		}
 
-		if !s.EndTime.IsUnset() {
-			vals[19] = psql.Arg(s.EndTime.MustGetNull())
+		if !s.StartTime.IsUnset() {
+			vals[19] = psql.Arg(s.StartTime.MustGetNull())
 		} else {
 			vals[19] = psql.Raw("DEFAULT")
 		}
 
-		if !s.LastMove.IsUnset() {
-			vals[20] = psql.Arg(s.LastMove.MustGetNull())
+		if !s.EndTime.IsUnset() {
+			vals[20] = psql.Arg(s.EndTime.MustGetNull())
 		} else {
 			vals[20] = psql.Raw("DEFAULT")
 		}
 
-		if s.Fen.IsValue() {
-			vals[21] = psql.Arg(s.Fen.MustGet())
+		if !s.LastMove.IsUnset() {
+			vals[21] = psql.Arg(s.LastMove.MustGetNull())
 		} else {
 			vals[21] = psql.Raw("DEFAULT")
 		}
 
-		if !s.PGN.IsUnset() {
-			vals[22] = psql.Arg(s.PGN.MustGetNull())
+		if s.Fen.IsValue() {
+			vals[22] = psql.Arg(s.Fen.MustGet())
 		} else {
 			vals[22] = psql.Raw("DEFAULT")
 		}
 
-		if s.CreatedAt.IsValue() {
-			vals[23] = psql.Arg(s.CreatedAt.MustGet())
+		if !s.PGN.IsUnset() {
+			vals[23] = psql.Arg(s.PGN.MustGetNull())
 		} else {
 			vals[23] = psql.Raw("DEFAULT")
 		}
 
-		if s.UpdatedAt.IsValue() {
-			vals[24] = psql.Arg(s.UpdatedAt.MustGet())
+		if s.CreatedAt.IsValue() {
+			vals[24] = psql.Arg(s.CreatedAt.MustGet())
 		} else {
 			vals[24] = psql.Raw("DEFAULT")
+		}
+
+		if s.UpdatedAt.IsValue() {
+			vals[25] = psql.Arg(s.UpdatedAt.MustGet())
+		} else {
+			vals[25] = psql.Raw("DEFAULT")
 		}
 
 		return bob.ExpressSlice(ctx, w, d, start, vals, "", ", ", "")
@@ -507,7 +523,7 @@ func (s GameSetter) UpdateMod() bob.Mod[*dialect.UpdateQuery] {
 }
 
 func (s GameSetter) Expressions(prefix ...string) []bob.Expression {
-	exprs := make([]bob.Expression, 0, 25)
+	exprs := make([]bob.Expression, 0, 26)
 
 	if !s.WhiteID.IsUnset() {
 		exprs = append(exprs, expr.Join{Sep: " = ", Exprs: []bob.Expression{
@@ -520,6 +536,20 @@ func (s GameSetter) Expressions(prefix ...string) []bob.Expression {
 		exprs = append(exprs, expr.Join{Sep: " = ", Exprs: []bob.Expression{
 			psql.Quote(append(prefix, "black_id")...),
 			psql.Arg(s.BlackID),
+		}})
+	}
+
+	if s.WhiteIsGuest.IsValue() {
+		exprs = append(exprs, expr.Join{Sep: " = ", Exprs: []bob.Expression{
+			psql.Quote(append(prefix, "white_is_guest")...),
+			psql.Arg(s.WhiteIsGuest),
+		}})
+	}
+
+	if s.BlackIsGuest.IsValue() {
+		exprs = append(exprs, expr.Join{Sep: " = ", Exprs: []bob.Expression{
+			psql.Quote(append(prefix, "black_is_guest")...),
+			psql.Arg(s.BlackIsGuest),
 		}})
 	}
 
@@ -537,59 +567,73 @@ func (s GameSetter) Expressions(prefix ...string) []bob.Expression {
 		}})
 	}
 
-	if s.VariantID.IsValue() {
+	if s.GameVariantID.IsValue() {
 		exprs = append(exprs, expr.Join{Sep: " = ", Exprs: []bob.Expression{
-			psql.Quote(append(prefix, "variant_id")...),
-			psql.Arg(s.VariantID),
+			psql.Quote(append(prefix, "game_variant_id")...),
+			psql.Arg(s.GameVariantID),
 		}})
 	}
 
-	if s.TimeKindID.IsValue() {
+	if s.GameTimeKindID.IsValue() {
 		exprs = append(exprs, expr.Join{Sep: " = ", Exprs: []bob.Expression{
-			psql.Quote(append(prefix, "time_kind_id")...),
-			psql.Arg(s.TimeKindID),
+			psql.Quote(append(prefix, "game_time_kind_id")...),
+			psql.Arg(s.GameTimeKindID),
 		}})
 	}
 
-	if s.TimeCategoryID.IsValue() {
+	if s.GameTimeCategoryID.IsValue() {
 		exprs = append(exprs, expr.Join{Sep: " = ", Exprs: []bob.Expression{
-			psql.Quote(append(prefix, "time_category_id")...),
-			psql.Arg(s.TimeCategoryID),
+			psql.Quote(append(prefix, "game_time_category_id")...),
+			psql.Arg(s.GameTimeCategoryID),
 		}})
 	}
 
-	if s.IsGuest.IsValue() {
+	if s.GameStateID.IsValue() {
 		exprs = append(exprs, expr.Join{Sep: " = ", Exprs: []bob.Expression{
-			psql.Quote(append(prefix, "is_guest")...),
-			psql.Arg(s.IsGuest),
+			psql.Quote(append(prefix, "game_state_id")...),
+			psql.Arg(s.GameStateID),
 		}})
 	}
 
-	if s.TimeControlClock.IsValue() {
+	if !s.GameResultID.IsUnset() {
 		exprs = append(exprs, expr.Join{Sep: " = ", Exprs: []bob.Expression{
-			psql.Quote(append(prefix, "time_control_clock")...),
-			psql.Arg(s.TimeControlClock),
+			psql.Quote(append(prefix, "game_result_id")...),
+			psql.Arg(s.GameResultID),
 		}})
 	}
 
-	if s.TimeControlIncrement.IsValue() {
+	if !s.GameResultStatusID.IsUnset() {
 		exprs = append(exprs, expr.Join{Sep: " = ", Exprs: []bob.Expression{
-			psql.Quote(append(prefix, "time_control_increment")...),
-			psql.Arg(s.TimeControlIncrement),
+			psql.Quote(append(prefix, "game_result_status_id")...),
+			psql.Arg(s.GameResultStatusID),
 		}})
 	}
 
-	if s.ReconnectTimeout.IsValue() {
+	if s.TimeControlClockMS.IsValue() {
 		exprs = append(exprs, expr.Join{Sep: " = ", Exprs: []bob.Expression{
-			psql.Quote(append(prefix, "reconnect_timeout")...),
-			psql.Arg(s.ReconnectTimeout),
+			psql.Quote(append(prefix, "time_control_clock_ms")...),
+			psql.Arg(s.TimeControlClockMS),
 		}})
 	}
 
-	if s.FirstMoveTimeout.IsValue() {
+	if s.TimeControlIncrementMS.IsValue() {
 		exprs = append(exprs, expr.Join{Sep: " = ", Exprs: []bob.Expression{
-			psql.Quote(append(prefix, "first_move_timeout")...),
-			psql.Arg(s.FirstMoveTimeout),
+			psql.Quote(append(prefix, "time_control_increment_ms")...),
+			psql.Arg(s.TimeControlIncrementMS),
+		}})
+	}
+
+	if s.ReconnectTimeoutMS.IsValue() {
+		exprs = append(exprs, expr.Join{Sep: " = ", Exprs: []bob.Expression{
+			psql.Quote(append(prefix, "reconnect_timeout_ms")...),
+			psql.Arg(s.ReconnectTimeoutMS),
+		}})
+	}
+
+	if s.FirstMoveTimeoutMS.IsValue() {
+		exprs = append(exprs, expr.Join{Sep: " = ", Exprs: []bob.Expression{
+			psql.Quote(append(prefix, "first_move_timeout_ms")...),
+			psql.Arg(s.FirstMoveTimeoutMS),
 		}})
 	}
 
@@ -607,35 +651,14 @@ func (s GameSetter) Expressions(prefix ...string) []bob.Expression {
 		}})
 	}
 
-	if !s.Rated.IsUnset() {
+	if s.Rated.IsValue() {
 		exprs = append(exprs, expr.Join{Sep: " = ", Exprs: []bob.Expression{
 			psql.Quote(append(prefix, "rated")...),
 			psql.Arg(s.Rated),
 		}})
 	}
 
-	if !s.ResultID.IsUnset() {
-		exprs = append(exprs, expr.Join{Sep: " = ", Exprs: []bob.Expression{
-			psql.Quote(append(prefix, "result_id")...),
-			psql.Arg(s.ResultID),
-		}})
-	}
-
-	if !s.ResultStatusID.IsUnset() {
-		exprs = append(exprs, expr.Join{Sep: " = ", Exprs: []bob.Expression{
-			psql.Quote(append(prefix, "result_status_id")...),
-			psql.Arg(s.ResultStatusID),
-		}})
-	}
-
-	if s.StateID.IsValue() {
-		exprs = append(exprs, expr.Join{Sep: " = ", Exprs: []bob.Expression{
-			psql.Quote(append(prefix, "state_id")...),
-			psql.Arg(s.StateID),
-		}})
-	}
-
-	if s.StartTime.IsValue() {
+	if !s.StartTime.IsUnset() {
 		exprs = append(exprs, expr.Join{Sep: " = ", Exprs: []bob.Expression{
 			psql.Quote(append(prefix, "start_time")...),
 			psql.Arg(s.StartTime),
@@ -934,23 +957,23 @@ func (os GameSlice) BlackUser(mods ...bob.Mod[*dialect.SelectQuery]) UsersQuery 
 	)...)
 }
 
-// ResultGameResult starts a query for related objects on game_result
-func (o *Game) ResultGameResult(mods ...bob.Mod[*dialect.SelectQuery]) GameResultsQuery {
+// GameResult starts a query for related objects on game_result
+func (o *Game) GameResult(mods ...bob.Mod[*dialect.SelectQuery]) GameResultsQuery {
 	return GameResults.Query(append(mods,
-		sm.Where(GameResults.Columns.ID.EQ(psql.Arg(o.ResultID))),
+		sm.Where(GameResults.Columns.ID.EQ(psql.Arg(o.GameResultID))),
 	)...)
 }
 
-func (os GameSlice) ResultGameResult(mods ...bob.Mod[*dialect.SelectQuery]) GameResultsQuery {
-	pkResultID := make(pgtypes.Array[null.Val[int64]], 0, len(os))
+func (os GameSlice) GameResult(mods ...bob.Mod[*dialect.SelectQuery]) GameResultsQuery {
+	pkGameResultID := make(pgtypes.Array[null.Val[int64]], 0, len(os))
 	for _, o := range os {
 		if o == nil {
 			continue
 		}
-		pkResultID = append(pkResultID, o.ResultID)
+		pkGameResultID = append(pkGameResultID, o.GameResultID)
 	}
 	PKArgExpr := psql.Select(sm.Columns(
-		psql.F("unnest", psql.Cast(psql.Arg(pkResultID), "bigint[]")),
+		psql.F("unnest", psql.Cast(psql.Arg(pkGameResultID), "bigint[]")),
 	))
 
 	return GameResults.Query(append(mods,
@@ -958,23 +981,23 @@ func (os GameSlice) ResultGameResult(mods ...bob.Mod[*dialect.SelectQuery]) Game
 	)...)
 }
 
-// ResultStatusGameResultStatus starts a query for related objects on game_result_status
-func (o *Game) ResultStatusGameResultStatus(mods ...bob.Mod[*dialect.SelectQuery]) GameResultStatusesQuery {
+// GameResultStatus starts a query for related objects on game_result_status
+func (o *Game) GameResultStatus(mods ...bob.Mod[*dialect.SelectQuery]) GameResultStatusesQuery {
 	return GameResultStatuses.Query(append(mods,
-		sm.Where(GameResultStatuses.Columns.ID.EQ(psql.Arg(o.ResultStatusID))),
+		sm.Where(GameResultStatuses.Columns.ID.EQ(psql.Arg(o.GameResultStatusID))),
 	)...)
 }
 
-func (os GameSlice) ResultStatusGameResultStatus(mods ...bob.Mod[*dialect.SelectQuery]) GameResultStatusesQuery {
-	pkResultStatusID := make(pgtypes.Array[null.Val[int64]], 0, len(os))
+func (os GameSlice) GameResultStatus(mods ...bob.Mod[*dialect.SelectQuery]) GameResultStatusesQuery {
+	pkGameResultStatusID := make(pgtypes.Array[null.Val[int64]], 0, len(os))
 	for _, o := range os {
 		if o == nil {
 			continue
 		}
-		pkResultStatusID = append(pkResultStatusID, o.ResultStatusID)
+		pkGameResultStatusID = append(pkGameResultStatusID, o.GameResultStatusID)
 	}
 	PKArgExpr := psql.Select(sm.Columns(
-		psql.F("unnest", psql.Cast(psql.Arg(pkResultStatusID), "bigint[]")),
+		psql.F("unnest", psql.Cast(psql.Arg(pkGameResultStatusID), "bigint[]")),
 	))
 
 	return GameResultStatuses.Query(append(mods,
@@ -982,23 +1005,23 @@ func (os GameSlice) ResultStatusGameResultStatus(mods ...bob.Mod[*dialect.Select
 	)...)
 }
 
-// StateGameState starts a query for related objects on game_state
-func (o *Game) StateGameState(mods ...bob.Mod[*dialect.SelectQuery]) GameStatesQuery {
+// GameState starts a query for related objects on game_state
+func (o *Game) GameState(mods ...bob.Mod[*dialect.SelectQuery]) GameStatesQuery {
 	return GameStates.Query(append(mods,
-		sm.Where(GameStates.Columns.ID.EQ(psql.Arg(o.StateID))),
+		sm.Where(GameStates.Columns.ID.EQ(psql.Arg(o.GameStateID))),
 	)...)
 }
 
-func (os GameSlice) StateGameState(mods ...bob.Mod[*dialect.SelectQuery]) GameStatesQuery {
-	pkStateID := make(pgtypes.Array[int64], 0, len(os))
+func (os GameSlice) GameState(mods ...bob.Mod[*dialect.SelectQuery]) GameStatesQuery {
+	pkGameStateID := make(pgtypes.Array[int64], 0, len(os))
 	for _, o := range os {
 		if o == nil {
 			continue
 		}
-		pkStateID = append(pkStateID, o.StateID)
+		pkGameStateID = append(pkGameStateID, o.GameStateID)
 	}
 	PKArgExpr := psql.Select(sm.Columns(
-		psql.F("unnest", psql.Cast(psql.Arg(pkStateID), "bigint[]")),
+		psql.F("unnest", psql.Cast(psql.Arg(pkGameStateID), "bigint[]")),
 	))
 
 	return GameStates.Query(append(mods,
@@ -1006,23 +1029,23 @@ func (os GameSlice) StateGameState(mods ...bob.Mod[*dialect.SelectQuery]) GameSt
 	)...)
 }
 
-// TimeCategoryGameTimeCategory starts a query for related objects on game_time_category
-func (o *Game) TimeCategoryGameTimeCategory(mods ...bob.Mod[*dialect.SelectQuery]) GameTimeCategoriesQuery {
+// GameTimeCategory starts a query for related objects on game_time_category
+func (o *Game) GameTimeCategory(mods ...bob.Mod[*dialect.SelectQuery]) GameTimeCategoriesQuery {
 	return GameTimeCategories.Query(append(mods,
-		sm.Where(GameTimeCategories.Columns.ID.EQ(psql.Arg(o.TimeCategoryID))),
+		sm.Where(GameTimeCategories.Columns.ID.EQ(psql.Arg(o.GameTimeCategoryID))),
 	)...)
 }
 
-func (os GameSlice) TimeCategoryGameTimeCategory(mods ...bob.Mod[*dialect.SelectQuery]) GameTimeCategoriesQuery {
-	pkTimeCategoryID := make(pgtypes.Array[int64], 0, len(os))
+func (os GameSlice) GameTimeCategory(mods ...bob.Mod[*dialect.SelectQuery]) GameTimeCategoriesQuery {
+	pkGameTimeCategoryID := make(pgtypes.Array[int64], 0, len(os))
 	for _, o := range os {
 		if o == nil {
 			continue
 		}
-		pkTimeCategoryID = append(pkTimeCategoryID, o.TimeCategoryID)
+		pkGameTimeCategoryID = append(pkGameTimeCategoryID, o.GameTimeCategoryID)
 	}
 	PKArgExpr := psql.Select(sm.Columns(
-		psql.F("unnest", psql.Cast(psql.Arg(pkTimeCategoryID), "bigint[]")),
+		psql.F("unnest", psql.Cast(psql.Arg(pkGameTimeCategoryID), "bigint[]")),
 	))
 
 	return GameTimeCategories.Query(append(mods,
@@ -1030,23 +1053,23 @@ func (os GameSlice) TimeCategoryGameTimeCategory(mods ...bob.Mod[*dialect.Select
 	)...)
 }
 
-// TimeKindGameTimeKind starts a query for related objects on game_time_kind
-func (o *Game) TimeKindGameTimeKind(mods ...bob.Mod[*dialect.SelectQuery]) GameTimeKindsQuery {
+// GameTimeKind starts a query for related objects on game_time_kind
+func (o *Game) GameTimeKind(mods ...bob.Mod[*dialect.SelectQuery]) GameTimeKindsQuery {
 	return GameTimeKinds.Query(append(mods,
-		sm.Where(GameTimeKinds.Columns.ID.EQ(psql.Arg(o.TimeKindID))),
+		sm.Where(GameTimeKinds.Columns.ID.EQ(psql.Arg(o.GameTimeKindID))),
 	)...)
 }
 
-func (os GameSlice) TimeKindGameTimeKind(mods ...bob.Mod[*dialect.SelectQuery]) GameTimeKindsQuery {
-	pkTimeKindID := make(pgtypes.Array[int64], 0, len(os))
+func (os GameSlice) GameTimeKind(mods ...bob.Mod[*dialect.SelectQuery]) GameTimeKindsQuery {
+	pkGameTimeKindID := make(pgtypes.Array[int64], 0, len(os))
 	for _, o := range os {
 		if o == nil {
 			continue
 		}
-		pkTimeKindID = append(pkTimeKindID, o.TimeKindID)
+		pkGameTimeKindID = append(pkGameTimeKindID, o.GameTimeKindID)
 	}
 	PKArgExpr := psql.Select(sm.Columns(
-		psql.F("unnest", psql.Cast(psql.Arg(pkTimeKindID), "bigint[]")),
+		psql.F("unnest", psql.Cast(psql.Arg(pkGameTimeKindID), "bigint[]")),
 	))
 
 	return GameTimeKinds.Query(append(mods,
@@ -1054,23 +1077,23 @@ func (os GameSlice) TimeKindGameTimeKind(mods ...bob.Mod[*dialect.SelectQuery]) 
 	)...)
 }
 
-// VariantGameVariant starts a query for related objects on game_variant
-func (o *Game) VariantGameVariant(mods ...bob.Mod[*dialect.SelectQuery]) GameVariantsQuery {
+// GameVariant starts a query for related objects on game_variant
+func (o *Game) GameVariant(mods ...bob.Mod[*dialect.SelectQuery]) GameVariantsQuery {
 	return GameVariants.Query(append(mods,
-		sm.Where(GameVariants.Columns.ID.EQ(psql.Arg(o.VariantID))),
+		sm.Where(GameVariants.Columns.ID.EQ(psql.Arg(o.GameVariantID))),
 	)...)
 }
 
-func (os GameSlice) VariantGameVariant(mods ...bob.Mod[*dialect.SelectQuery]) GameVariantsQuery {
-	pkVariantID := make(pgtypes.Array[int64], 0, len(os))
+func (os GameSlice) GameVariant(mods ...bob.Mod[*dialect.SelectQuery]) GameVariantsQuery {
+	pkGameVariantID := make(pgtypes.Array[int64], 0, len(os))
 	for _, o := range os {
 		if o == nil {
 			continue
 		}
-		pkVariantID = append(pkVariantID, o.VariantID)
+		pkGameVariantID = append(pkGameVariantID, o.GameVariantID)
 	}
 	PKArgExpr := psql.Select(sm.Columns(
-		psql.F("unnest", psql.Cast(psql.Arg(pkVariantID), "bigint[]")),
+		psql.F("unnest", psql.Cast(psql.Arg(pkGameVariantID), "bigint[]")),
 	))
 
 	return GameVariants.Query(append(mods,
@@ -1174,20 +1197,20 @@ func (game0 *Game) AttachBlackUser(ctx context.Context, exec bob.Executor, user1
 	return nil
 }
 
-func attachGameResultGameResult0(ctx context.Context, exec bob.Executor, count int, game0 *Game, gameResult1 *GameResult) (*Game, error) {
+func attachGameGameResult0(ctx context.Context, exec bob.Executor, count int, game0 *Game, gameResult1 *GameResult) (*Game, error) {
 	setter := &GameSetter{
-		ResultID: omitnull.From(gameResult1.ID),
+		GameResultID: omitnull.From(gameResult1.ID),
 	}
 
 	err := game0.Update(ctx, exec, setter)
 	if err != nil {
-		return nil, fmt.Errorf("attachGameResultGameResult0: %w", err)
+		return nil, fmt.Errorf("attachGameGameResult0: %w", err)
 	}
 
 	return game0, nil
 }
 
-func (game0 *Game) InsertResultGameResult(ctx context.Context, exec bob.Executor, related *GameResultSetter) error {
+func (game0 *Game) InsertGameResult(ctx context.Context, exec bob.Executor, related *GameResultSetter) error {
 	var err error
 
 	gameResult1, err := GameResults.Insert(related).One(ctx, exec)
@@ -1195,47 +1218,47 @@ func (game0 *Game) InsertResultGameResult(ctx context.Context, exec bob.Executor
 		return fmt.Errorf("inserting related objects: %w", err)
 	}
 
-	_, err = attachGameResultGameResult0(ctx, exec, 1, game0, gameResult1)
+	_, err = attachGameGameResult0(ctx, exec, 1, game0, gameResult1)
 	if err != nil {
 		return err
 	}
 
-	game0.R.ResultGameResult = gameResult1
+	game0.R.GameResult = gameResult1
 
-	gameResult1.R.ResultGames = append(gameResult1.R.ResultGames, game0)
+	gameResult1.R.Games = append(gameResult1.R.Games, game0)
 
 	return nil
 }
 
-func (game0 *Game) AttachResultGameResult(ctx context.Context, exec bob.Executor, gameResult1 *GameResult) error {
+func (game0 *Game) AttachGameResult(ctx context.Context, exec bob.Executor, gameResult1 *GameResult) error {
 	var err error
 
-	_, err = attachGameResultGameResult0(ctx, exec, 1, game0, gameResult1)
+	_, err = attachGameGameResult0(ctx, exec, 1, game0, gameResult1)
 	if err != nil {
 		return err
 	}
 
-	game0.R.ResultGameResult = gameResult1
+	game0.R.GameResult = gameResult1
 
-	gameResult1.R.ResultGames = append(gameResult1.R.ResultGames, game0)
+	gameResult1.R.Games = append(gameResult1.R.Games, game0)
 
 	return nil
 }
 
-func attachGameResultStatusGameResultStatus0(ctx context.Context, exec bob.Executor, count int, game0 *Game, gameResultStatus1 *GameResultStatus) (*Game, error) {
+func attachGameGameResultStatus0(ctx context.Context, exec bob.Executor, count int, game0 *Game, gameResultStatus1 *GameResultStatus) (*Game, error) {
 	setter := &GameSetter{
-		ResultStatusID: omitnull.From(gameResultStatus1.ID),
+		GameResultStatusID: omitnull.From(gameResultStatus1.ID),
 	}
 
 	err := game0.Update(ctx, exec, setter)
 	if err != nil {
-		return nil, fmt.Errorf("attachGameResultStatusGameResultStatus0: %w", err)
+		return nil, fmt.Errorf("attachGameGameResultStatus0: %w", err)
 	}
 
 	return game0, nil
 }
 
-func (game0 *Game) InsertResultStatusGameResultStatus(ctx context.Context, exec bob.Executor, related *GameResultStatusSetter) error {
+func (game0 *Game) InsertGameResultStatus(ctx context.Context, exec bob.Executor, related *GameResultStatusSetter) error {
 	var err error
 
 	gameResultStatus1, err := GameResultStatuses.Insert(related).One(ctx, exec)
@@ -1243,47 +1266,47 @@ func (game0 *Game) InsertResultStatusGameResultStatus(ctx context.Context, exec 
 		return fmt.Errorf("inserting related objects: %w", err)
 	}
 
-	_, err = attachGameResultStatusGameResultStatus0(ctx, exec, 1, game0, gameResultStatus1)
+	_, err = attachGameGameResultStatus0(ctx, exec, 1, game0, gameResultStatus1)
 	if err != nil {
 		return err
 	}
 
-	game0.R.ResultStatusGameResultStatus = gameResultStatus1
+	game0.R.GameResultStatus = gameResultStatus1
 
-	gameResultStatus1.R.ResultStatusGames = append(gameResultStatus1.R.ResultStatusGames, game0)
+	gameResultStatus1.R.Games = append(gameResultStatus1.R.Games, game0)
 
 	return nil
 }
 
-func (game0 *Game) AttachResultStatusGameResultStatus(ctx context.Context, exec bob.Executor, gameResultStatus1 *GameResultStatus) error {
+func (game0 *Game) AttachGameResultStatus(ctx context.Context, exec bob.Executor, gameResultStatus1 *GameResultStatus) error {
 	var err error
 
-	_, err = attachGameResultStatusGameResultStatus0(ctx, exec, 1, game0, gameResultStatus1)
+	_, err = attachGameGameResultStatus0(ctx, exec, 1, game0, gameResultStatus1)
 	if err != nil {
 		return err
 	}
 
-	game0.R.ResultStatusGameResultStatus = gameResultStatus1
+	game0.R.GameResultStatus = gameResultStatus1
 
-	gameResultStatus1.R.ResultStatusGames = append(gameResultStatus1.R.ResultStatusGames, game0)
+	gameResultStatus1.R.Games = append(gameResultStatus1.R.Games, game0)
 
 	return nil
 }
 
-func attachGameStateGameState0(ctx context.Context, exec bob.Executor, count int, game0 *Game, gameState1 *GameState) (*Game, error) {
+func attachGameGameState0(ctx context.Context, exec bob.Executor, count int, game0 *Game, gameState1 *GameState) (*Game, error) {
 	setter := &GameSetter{
-		StateID: omit.From(gameState1.ID),
+		GameStateID: omit.From(gameState1.ID),
 	}
 
 	err := game0.Update(ctx, exec, setter)
 	if err != nil {
-		return nil, fmt.Errorf("attachGameStateGameState0: %w", err)
+		return nil, fmt.Errorf("attachGameGameState0: %w", err)
 	}
 
 	return game0, nil
 }
 
-func (game0 *Game) InsertStateGameState(ctx context.Context, exec bob.Executor, related *GameStateSetter) error {
+func (game0 *Game) InsertGameState(ctx context.Context, exec bob.Executor, related *GameStateSetter) error {
 	var err error
 
 	gameState1, err := GameStates.Insert(related).One(ctx, exec)
@@ -1291,47 +1314,47 @@ func (game0 *Game) InsertStateGameState(ctx context.Context, exec bob.Executor, 
 		return fmt.Errorf("inserting related objects: %w", err)
 	}
 
-	_, err = attachGameStateGameState0(ctx, exec, 1, game0, gameState1)
+	_, err = attachGameGameState0(ctx, exec, 1, game0, gameState1)
 	if err != nil {
 		return err
 	}
 
-	game0.R.StateGameState = gameState1
+	game0.R.GameState = gameState1
 
-	gameState1.R.StateGames = append(gameState1.R.StateGames, game0)
+	gameState1.R.Games = append(gameState1.R.Games, game0)
 
 	return nil
 }
 
-func (game0 *Game) AttachStateGameState(ctx context.Context, exec bob.Executor, gameState1 *GameState) error {
+func (game0 *Game) AttachGameState(ctx context.Context, exec bob.Executor, gameState1 *GameState) error {
 	var err error
 
-	_, err = attachGameStateGameState0(ctx, exec, 1, game0, gameState1)
+	_, err = attachGameGameState0(ctx, exec, 1, game0, gameState1)
 	if err != nil {
 		return err
 	}
 
-	game0.R.StateGameState = gameState1
+	game0.R.GameState = gameState1
 
-	gameState1.R.StateGames = append(gameState1.R.StateGames, game0)
+	gameState1.R.Games = append(gameState1.R.Games, game0)
 
 	return nil
 }
 
-func attachGameTimeCategoryGameTimeCategory0(ctx context.Context, exec bob.Executor, count int, game0 *Game, gameTimeCategory1 *GameTimeCategory) (*Game, error) {
+func attachGameGameTimeCategory0(ctx context.Context, exec bob.Executor, count int, game0 *Game, gameTimeCategory1 *GameTimeCategory) (*Game, error) {
 	setter := &GameSetter{
-		TimeCategoryID: omit.From(gameTimeCategory1.ID),
+		GameTimeCategoryID: omit.From(gameTimeCategory1.ID),
 	}
 
 	err := game0.Update(ctx, exec, setter)
 	if err != nil {
-		return nil, fmt.Errorf("attachGameTimeCategoryGameTimeCategory0: %w", err)
+		return nil, fmt.Errorf("attachGameGameTimeCategory0: %w", err)
 	}
 
 	return game0, nil
 }
 
-func (game0 *Game) InsertTimeCategoryGameTimeCategory(ctx context.Context, exec bob.Executor, related *GameTimeCategorySetter) error {
+func (game0 *Game) InsertGameTimeCategory(ctx context.Context, exec bob.Executor, related *GameTimeCategorySetter) error {
 	var err error
 
 	gameTimeCategory1, err := GameTimeCategories.Insert(related).One(ctx, exec)
@@ -1339,47 +1362,47 @@ func (game0 *Game) InsertTimeCategoryGameTimeCategory(ctx context.Context, exec 
 		return fmt.Errorf("inserting related objects: %w", err)
 	}
 
-	_, err = attachGameTimeCategoryGameTimeCategory0(ctx, exec, 1, game0, gameTimeCategory1)
+	_, err = attachGameGameTimeCategory0(ctx, exec, 1, game0, gameTimeCategory1)
 	if err != nil {
 		return err
 	}
 
-	game0.R.TimeCategoryGameTimeCategory = gameTimeCategory1
+	game0.R.GameTimeCategory = gameTimeCategory1
 
-	gameTimeCategory1.R.TimeCategoryGames = append(gameTimeCategory1.R.TimeCategoryGames, game0)
+	gameTimeCategory1.R.Games = append(gameTimeCategory1.R.Games, game0)
 
 	return nil
 }
 
-func (game0 *Game) AttachTimeCategoryGameTimeCategory(ctx context.Context, exec bob.Executor, gameTimeCategory1 *GameTimeCategory) error {
+func (game0 *Game) AttachGameTimeCategory(ctx context.Context, exec bob.Executor, gameTimeCategory1 *GameTimeCategory) error {
 	var err error
 
-	_, err = attachGameTimeCategoryGameTimeCategory0(ctx, exec, 1, game0, gameTimeCategory1)
+	_, err = attachGameGameTimeCategory0(ctx, exec, 1, game0, gameTimeCategory1)
 	if err != nil {
 		return err
 	}
 
-	game0.R.TimeCategoryGameTimeCategory = gameTimeCategory1
+	game0.R.GameTimeCategory = gameTimeCategory1
 
-	gameTimeCategory1.R.TimeCategoryGames = append(gameTimeCategory1.R.TimeCategoryGames, game0)
+	gameTimeCategory1.R.Games = append(gameTimeCategory1.R.Games, game0)
 
 	return nil
 }
 
-func attachGameTimeKindGameTimeKind0(ctx context.Context, exec bob.Executor, count int, game0 *Game, gameTimeKind1 *GameTimeKind) (*Game, error) {
+func attachGameGameTimeKind0(ctx context.Context, exec bob.Executor, count int, game0 *Game, gameTimeKind1 *GameTimeKind) (*Game, error) {
 	setter := &GameSetter{
-		TimeKindID: omit.From(gameTimeKind1.ID),
+		GameTimeKindID: omit.From(gameTimeKind1.ID),
 	}
 
 	err := game0.Update(ctx, exec, setter)
 	if err != nil {
-		return nil, fmt.Errorf("attachGameTimeKindGameTimeKind0: %w", err)
+		return nil, fmt.Errorf("attachGameGameTimeKind0: %w", err)
 	}
 
 	return game0, nil
 }
 
-func (game0 *Game) InsertTimeKindGameTimeKind(ctx context.Context, exec bob.Executor, related *GameTimeKindSetter) error {
+func (game0 *Game) InsertGameTimeKind(ctx context.Context, exec bob.Executor, related *GameTimeKindSetter) error {
 	var err error
 
 	gameTimeKind1, err := GameTimeKinds.Insert(related).One(ctx, exec)
@@ -1387,47 +1410,47 @@ func (game0 *Game) InsertTimeKindGameTimeKind(ctx context.Context, exec bob.Exec
 		return fmt.Errorf("inserting related objects: %w", err)
 	}
 
-	_, err = attachGameTimeKindGameTimeKind0(ctx, exec, 1, game0, gameTimeKind1)
+	_, err = attachGameGameTimeKind0(ctx, exec, 1, game0, gameTimeKind1)
 	if err != nil {
 		return err
 	}
 
-	game0.R.TimeKindGameTimeKind = gameTimeKind1
+	game0.R.GameTimeKind = gameTimeKind1
 
-	gameTimeKind1.R.TimeKindGames = append(gameTimeKind1.R.TimeKindGames, game0)
+	gameTimeKind1.R.Games = append(gameTimeKind1.R.Games, game0)
 
 	return nil
 }
 
-func (game0 *Game) AttachTimeKindGameTimeKind(ctx context.Context, exec bob.Executor, gameTimeKind1 *GameTimeKind) error {
+func (game0 *Game) AttachGameTimeKind(ctx context.Context, exec bob.Executor, gameTimeKind1 *GameTimeKind) error {
 	var err error
 
-	_, err = attachGameTimeKindGameTimeKind0(ctx, exec, 1, game0, gameTimeKind1)
+	_, err = attachGameGameTimeKind0(ctx, exec, 1, game0, gameTimeKind1)
 	if err != nil {
 		return err
 	}
 
-	game0.R.TimeKindGameTimeKind = gameTimeKind1
+	game0.R.GameTimeKind = gameTimeKind1
 
-	gameTimeKind1.R.TimeKindGames = append(gameTimeKind1.R.TimeKindGames, game0)
+	gameTimeKind1.R.Games = append(gameTimeKind1.R.Games, game0)
 
 	return nil
 }
 
-func attachGameVariantGameVariant0(ctx context.Context, exec bob.Executor, count int, game0 *Game, gameVariant1 *GameVariant) (*Game, error) {
+func attachGameGameVariant0(ctx context.Context, exec bob.Executor, count int, game0 *Game, gameVariant1 *GameVariant) (*Game, error) {
 	setter := &GameSetter{
-		VariantID: omit.From(gameVariant1.ID),
+		GameVariantID: omit.From(gameVariant1.ID),
 	}
 
 	err := game0.Update(ctx, exec, setter)
 	if err != nil {
-		return nil, fmt.Errorf("attachGameVariantGameVariant0: %w", err)
+		return nil, fmt.Errorf("attachGameGameVariant0: %w", err)
 	}
 
 	return game0, nil
 }
 
-func (game0 *Game) InsertVariantGameVariant(ctx context.Context, exec bob.Executor, related *GameVariantSetter) error {
+func (game0 *Game) InsertGameVariant(ctx context.Context, exec bob.Executor, related *GameVariantSetter) error {
 	var err error
 
 	gameVariant1, err := GameVariants.Insert(related).One(ctx, exec)
@@ -1435,29 +1458,29 @@ func (game0 *Game) InsertVariantGameVariant(ctx context.Context, exec bob.Execut
 		return fmt.Errorf("inserting related objects: %w", err)
 	}
 
-	_, err = attachGameVariantGameVariant0(ctx, exec, 1, game0, gameVariant1)
+	_, err = attachGameGameVariant0(ctx, exec, 1, game0, gameVariant1)
 	if err != nil {
 		return err
 	}
 
-	game0.R.VariantGameVariant = gameVariant1
+	game0.R.GameVariant = gameVariant1
 
-	gameVariant1.R.VariantGames = append(gameVariant1.R.VariantGames, game0)
+	gameVariant1.R.Games = append(gameVariant1.R.Games, game0)
 
 	return nil
 }
 
-func (game0 *Game) AttachVariantGameVariant(ctx context.Context, exec bob.Executor, gameVariant1 *GameVariant) error {
+func (game0 *Game) AttachGameVariant(ctx context.Context, exec bob.Executor, gameVariant1 *GameVariant) error {
 	var err error
 
-	_, err = attachGameVariantGameVariant0(ctx, exec, 1, game0, gameVariant1)
+	_, err = attachGameGameVariant0(ctx, exec, 1, game0, gameVariant1)
 	if err != nil {
 		return err
 	}
 
-	game0.R.VariantGameVariant = gameVariant1
+	game0.R.GameVariant = gameVariant1
 
-	gameVariant1.R.VariantGames = append(gameVariant1.R.VariantGames, game0)
+	gameVariant1.R.Games = append(gameVariant1.R.Games, game0)
 
 	return nil
 }

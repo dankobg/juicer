@@ -510,8 +510,8 @@ func (GameSideChoice) EnumDescriptor() ([]byte, []int) {
 // GameTimeControl is game time control
 type GameTimeControl struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Clock         *durationpb.Duration   `protobuf:"bytes,1,opt,name=clock,proto3" json:"clock,omitempty"`
-	Increment     *durationpb.Duration   `protobuf:"bytes,2,opt,name=increment,proto3" json:"increment,omitempty"`
+	ClockMs       int32                  `protobuf:"varint,1,opt,name=clock_ms,json=clockMs,proto3" json:"clock_ms,omitempty"`
+	IncrementMs   int32                  `protobuf:"varint,2,opt,name=increment_ms,json=incrementMs,proto3" json:"increment_ms,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -546,18 +546,18 @@ func (*GameTimeControl) Descriptor() ([]byte, []int) {
 	return file_proto_juicer_juicer_proto_rawDescGZIP(), []int{0}
 }
 
-func (x *GameTimeControl) GetClock() *durationpb.Duration {
+func (x *GameTimeControl) GetClockMs() int32 {
 	if x != nil {
-		return x.Clock
+		return x.ClockMs
 	}
-	return nil
+	return 0
 }
 
-func (x *GameTimeControl) GetIncrement() *durationpb.Duration {
+func (x *GameTimeControl) GetIncrementMs() int32 {
 	if x != nil {
-		return x.Increment
+		return x.IncrementMs
 	}
-	return nil
+	return 0
 }
 
 // Message represents websocket message
@@ -1625,7 +1625,7 @@ type Presence struct {
 	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
 	Username      string                 `protobuf:"bytes,2,opt,name=username,proto3" json:"username,omitempty"`
 	Guest         bool                   `protobuf:"varint,3,opt,name=guest,proto3" json:"guest,omitempty"`
-	Channel       string                 `protobuf:"bytes,4,opt,name=channel,proto3" json:"channel,omitempty"`
+	Channels      []string               `protobuf:"bytes,4,rep,name=channels,proto3" json:"channels,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1681,11 +1681,11 @@ func (x *Presence) GetGuest() bool {
 	return false
 }
 
-func (x *Presence) GetChannel() string {
+func (x *Presence) GetChannels() []string {
 	if x != nil {
-		return x.Channel
+		return x.Channels
 	}
-	return ""
+	return nil
 }
 
 // PresenceState is the full snapshot of all presences
@@ -2853,10 +2853,10 @@ var File_proto_juicer_juicer_proto protoreflect.FileDescriptor
 
 const file_proto_juicer_juicer_proto_rawDesc = "" +
 	"\n" +
-	"\x19proto/juicer/juicer.proto\x12\x02pb\x1a\x1egoogle/protobuf/duration.proto\x1a\x1fgoogle/protobuf/timestamp.proto\"{\n" +
-	"\x0fGameTimeControl\x12/\n" +
-	"\x05clock\x18\x01 \x01(\v2\x19.google.protobuf.DurationR\x05clock\x127\n" +
-	"\tincrement\x18\x02 \x01(\v2\x19.google.protobuf.DurationR\tincrement\"\xbd\v\n" +
+	"\x19proto/juicer/juicer.proto\x12\x02pb\x1a\x1egoogle/protobuf/duration.proto\x1a\x1fgoogle/protobuf/timestamp.proto\"O\n" +
+	"\x0fGameTimeControl\x12\x19\n" +
+	"\bclock_ms\x18\x01 \x01(\x05R\aclockMs\x12!\n" +
+	"\fincrement_ms\x18\x02 \x01(\x05R\vincrementMs\"\xbd\v\n" +
 	"\aMessage\x12'\n" +
 	"\aproblem\x18\x01 \x01(\v2\v.pb.ProblemH\x00R\aproblem\x12'\n" +
 	"\alatency\x18\x02 \x01(\v2\v.pb.LatencyH\x00R\alatency\x12-\n" +
@@ -2926,12 +2926,12 @@ const file_proto_juicer_juicer_proto_rawDesc = "" +
 	"\auser_id\x18\x01 \x01(\tR\x06userId\x12\x17\n" +
 	"\aconn_id\x18\x02 \x01(\tR\x06connId\x12\x14\n" +
 	"\x05guest\x18\x03 \x01(\bR\x05guest\x12\x1a\n" +
-	"\bchannels\x18\x04 \x03(\tR\bchannels\"o\n" +
+	"\bchannels\x18\x04 \x03(\tR\bchannels\"q\n" +
 	"\bPresence\x12\x17\n" +
 	"\auser_id\x18\x01 \x01(\tR\x06userId\x12\x1a\n" +
 	"\busername\x18\x02 \x01(\tR\busername\x12\x14\n" +
-	"\x05guest\x18\x03 \x01(\bR\x05guest\x12\x18\n" +
-	"\achannel\x18\x04 \x01(\tR\achannel\"\x9b\x01\n" +
+	"\x05guest\x18\x03 \x01(\bR\x05guest\x12\x1a\n" +
+	"\bchannels\x18\x04 \x03(\tR\bchannels\"\x9b\x01\n" +
 	"\rPresenceState\x12>\n" +
 	"\tpresences\x18\x01 \x03(\v2 .pb.PresenceState.PresencesEntryR\tpresences\x1aJ\n" +
 	"\x0ePresencesEntry\x12\x10\n" +
@@ -3156,63 +3156,61 @@ var file_proto_juicer_juicer_proto_goTypes = []any{
 	(*timestamppb.Timestamp)(nil),      // 47: google.protobuf.Timestamp
 }
 var file_proto_juicer_juicer_proto_depIdxs = []int32{
-	46, // 0: pb.GameTimeControl.clock:type_name -> google.protobuf.Duration
-	46, // 1: pb.GameTimeControl.increment:type_name -> google.protobuf.Duration
-	15, // 2: pb.Message.problem:type_name -> pb.Problem
-	14, // 3: pb.Message.latency:type_name -> pb.Latency
-	11, // 4: pb.Message.heartbeat:type_name -> pb.Heartbeat
-	12, // 5: pb.Message.leave_tab:type_name -> pb.LeaveTab
-	13, // 6: pb.Message.leave_site:type_name -> pb.LeaveSite
-	16, // 7: pb.Message.client_connected:type_name -> pb.ClientConnected
-	17, // 8: pb.Message.client_disconnected:type_name -> pb.ClientDisconnected
-	18, // 9: pb.Message.initialize_channels:type_name -> pb.InitializeChannels
-	19, // 10: pb.Message.initialized_channels:type_name -> pb.InitializedChannels
-	20, // 11: pb.Message.request_initial_channels_info:type_name -> pb.RequestInitialChannelsInfo
-	25, // 12: pb.Message.seek_game:type_name -> pb.SeekGame
-	26, // 13: pb.Message.cancel_seek_game:type_name -> pb.CancelSeekGame
-	32, // 14: pb.Message.abort_game:type_name -> pb.AbortGame
-	33, // 15: pb.Message.resign_game:type_name -> pb.ResignGame
-	34, // 16: pb.Message.offer_draw:type_name -> pb.OfferDraw
-	36, // 17: pb.Message.accept_draw:type_name -> pb.AcceptDraw
-	35, // 18: pb.Message.decline_draw:type_name -> pb.DeclineDraw
-	40, // 19: pb.Message.play_move_uci:type_name -> pb.PlayMoveUCI
-	37, // 20: pb.Message.game_chat:type_name -> pb.GameChat
-	38, // 21: pb.Message.game_chat_receive:type_name -> pb.GameChatReceive
-	39, // 22: pb.Message.game_chat_retrieve:type_name -> pb.GameChatRetrieve
-	41, // 23: pb.Message.receive_move:type_name -> pb.ReceiveMove
-	42, // 24: pb.Message.game_finished:type_name -> pb.GameFinished
-	27, // 25: pb.Message.hub_info:type_name -> pb.HubInfo
-	31, // 26: pb.Message.match_found:type_name -> pb.MatchFound
-	10, // 27: pb.Message.echo:type_name -> pb.Echo
-	43, // 28: pb.PresenceState.presences:type_name -> pb.PresenceState.PresencesEntry
-	44, // 29: pb.PresenceDiff.joined:type_name -> pb.PresenceDiff.JoinedEntry
-	45, // 30: pb.PresenceDiff.left:type_name -> pb.PresenceDiff.LeftEntry
-	46, // 31: pb.Clocks.white:type_name -> google.protobuf.Duration
-	46, // 32: pb.Clocks.black:type_name -> google.protobuf.Duration
-	8,  // 33: pb.SeekGame.time_control:type_name -> pb.GameTimeControl
-	8,  // 34: pb.CancelSeekGame.time_control:type_name -> pb.GameTimeControl
-	47, // 35: pb.HistoryMoveInfo.played_at:type_name -> google.protobuf.Timestamp
-	29, // 36: pb.HistoryMoveInfo.move:type_name -> pb.HistoryMove
-	6,  // 37: pb.MatchFound.game_state:type_name -> pb.GameState
-	0,  // 38: pb.MatchFound.color:type_name -> pb.Color
-	24, // 39: pb.MatchFound.clocks:type_name -> pb.Clocks
-	8,  // 40: pb.MatchFound.time_control:type_name -> pb.GameTimeControl
-	28, // 41: pb.MatchFound.opponent_info:type_name -> pb.OpponentInfo
-	30, // 42: pb.MatchFound.history_move_infos:type_name -> pb.HistoryMoveInfo
-	47, // 43: pb.MatchFound.start_time:type_name -> google.protobuf.Timestamp
-	38, // 44: pb.GameChatRetrieve.game_chat:type_name -> pb.GameChatReceive
-	24, // 45: pb.ReceiveMove.clocks:type_name -> pb.Clocks
-	4,  // 46: pb.GameFinished.game_result:type_name -> pb.GameResult
-	5,  // 47: pb.GameFinished.game_result_status:type_name -> pb.GameResultStatus
-	6,  // 48: pb.GameFinished.game_state:type_name -> pb.GameState
-	21, // 49: pb.PresenceState.PresencesEntry.value:type_name -> pb.Presence
-	21, // 50: pb.PresenceDiff.JoinedEntry.value:type_name -> pb.Presence
-	21, // 51: pb.PresenceDiff.LeftEntry.value:type_name -> pb.Presence
-	52, // [52:52] is the sub-list for method output_type
-	52, // [52:52] is the sub-list for method input_type
-	52, // [52:52] is the sub-list for extension type_name
-	52, // [52:52] is the sub-list for extension extendee
-	0,  // [0:52] is the sub-list for field type_name
+	15, // 0: pb.Message.problem:type_name -> pb.Problem
+	14, // 1: pb.Message.latency:type_name -> pb.Latency
+	11, // 2: pb.Message.heartbeat:type_name -> pb.Heartbeat
+	12, // 3: pb.Message.leave_tab:type_name -> pb.LeaveTab
+	13, // 4: pb.Message.leave_site:type_name -> pb.LeaveSite
+	16, // 5: pb.Message.client_connected:type_name -> pb.ClientConnected
+	17, // 6: pb.Message.client_disconnected:type_name -> pb.ClientDisconnected
+	18, // 7: pb.Message.initialize_channels:type_name -> pb.InitializeChannels
+	19, // 8: pb.Message.initialized_channels:type_name -> pb.InitializedChannels
+	20, // 9: pb.Message.request_initial_channels_info:type_name -> pb.RequestInitialChannelsInfo
+	25, // 10: pb.Message.seek_game:type_name -> pb.SeekGame
+	26, // 11: pb.Message.cancel_seek_game:type_name -> pb.CancelSeekGame
+	32, // 12: pb.Message.abort_game:type_name -> pb.AbortGame
+	33, // 13: pb.Message.resign_game:type_name -> pb.ResignGame
+	34, // 14: pb.Message.offer_draw:type_name -> pb.OfferDraw
+	36, // 15: pb.Message.accept_draw:type_name -> pb.AcceptDraw
+	35, // 16: pb.Message.decline_draw:type_name -> pb.DeclineDraw
+	40, // 17: pb.Message.play_move_uci:type_name -> pb.PlayMoveUCI
+	37, // 18: pb.Message.game_chat:type_name -> pb.GameChat
+	38, // 19: pb.Message.game_chat_receive:type_name -> pb.GameChatReceive
+	39, // 20: pb.Message.game_chat_retrieve:type_name -> pb.GameChatRetrieve
+	41, // 21: pb.Message.receive_move:type_name -> pb.ReceiveMove
+	42, // 22: pb.Message.game_finished:type_name -> pb.GameFinished
+	27, // 23: pb.Message.hub_info:type_name -> pb.HubInfo
+	31, // 24: pb.Message.match_found:type_name -> pb.MatchFound
+	10, // 25: pb.Message.echo:type_name -> pb.Echo
+	43, // 26: pb.PresenceState.presences:type_name -> pb.PresenceState.PresencesEntry
+	44, // 27: pb.PresenceDiff.joined:type_name -> pb.PresenceDiff.JoinedEntry
+	45, // 28: pb.PresenceDiff.left:type_name -> pb.PresenceDiff.LeftEntry
+	46, // 29: pb.Clocks.white:type_name -> google.protobuf.Duration
+	46, // 30: pb.Clocks.black:type_name -> google.protobuf.Duration
+	8,  // 31: pb.SeekGame.time_control:type_name -> pb.GameTimeControl
+	8,  // 32: pb.CancelSeekGame.time_control:type_name -> pb.GameTimeControl
+	47, // 33: pb.HistoryMoveInfo.played_at:type_name -> google.protobuf.Timestamp
+	29, // 34: pb.HistoryMoveInfo.move:type_name -> pb.HistoryMove
+	6,  // 35: pb.MatchFound.game_state:type_name -> pb.GameState
+	0,  // 36: pb.MatchFound.color:type_name -> pb.Color
+	24, // 37: pb.MatchFound.clocks:type_name -> pb.Clocks
+	8,  // 38: pb.MatchFound.time_control:type_name -> pb.GameTimeControl
+	28, // 39: pb.MatchFound.opponent_info:type_name -> pb.OpponentInfo
+	30, // 40: pb.MatchFound.history_move_infos:type_name -> pb.HistoryMoveInfo
+	47, // 41: pb.MatchFound.start_time:type_name -> google.protobuf.Timestamp
+	38, // 42: pb.GameChatRetrieve.game_chat:type_name -> pb.GameChatReceive
+	24, // 43: pb.ReceiveMove.clocks:type_name -> pb.Clocks
+	4,  // 44: pb.GameFinished.game_result:type_name -> pb.GameResult
+	5,  // 45: pb.GameFinished.game_result_status:type_name -> pb.GameResultStatus
+	6,  // 46: pb.GameFinished.game_state:type_name -> pb.GameState
+	21, // 47: pb.PresenceState.PresencesEntry.value:type_name -> pb.Presence
+	21, // 48: pb.PresenceDiff.JoinedEntry.value:type_name -> pb.Presence
+	21, // 49: pb.PresenceDiff.LeftEntry.value:type_name -> pb.Presence
+	50, // [50:50] is the sub-list for method output_type
+	50, // [50:50] is the sub-list for method input_type
+	50, // [50:50] is the sub-list for extension type_name
+	50, // [50:50] is the sub-list for extension extendee
+	0,  // [0:50] is the sub-list for field type_name
 }
 
 func init() { file_proto_juicer_juicer_proto_init() }

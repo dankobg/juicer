@@ -312,54 +312,54 @@ paths:
               type: integer
               format: int64
 
-        - name: variant_id
+        - name: game_variant_id
           in: query
-          description: Filter games by variant id
+          description: Filter games by game variant id
           required: false
           schema:
             type: array
             items:
               type: integer
               format: int64
-        - name: time_kind_id
+        - name: game_time_kind_id
           in: query
-          description: Filter games by time kind id
+          description: Filter games by game time kind id
           required: false
           schema:
             type: array
             items:
               type: integer
               format: int64
-        - name: time_category_id
+        - name: game_time_category_id
           in: query
-          description: Filter games by time category id
+          description: Filter games by game time category id
           required: false
           schema:
             type: array
             items:
               type: integer
               format: int64
-        - name: result_id
+        - name: game_result_id
           in: query
-          description: Filter games by result id
+          description: Filter games by game result id
           required: false
           schema:
             type: array
             items:
               type: integer
               format: int64
-        - name: result_status_id
+        - name: game_result_status_id
           in: query
-          description: Filter games by result status id
+          description: Filter games by game result status id
           required: false
           schema:
             type: array
             items:
               type: integer
               format: int64
-        - name: state_id
+        - name: game_state_id
           in: query
-          description: Filter games by state id
+          description: Filter games by game state id
           required: false
           schema:
             type: array
@@ -2789,18 +2789,19 @@ components:
       type: object
       required:
         - id
-        - variant_id
-        - time_kind_id
-        - time_category_id
-        - is_guest
-        - time_control_clock
-        - time_control_increment
-        - reconnect_timeout
-        - first_move_timeout
+        - game_variant_id
+        - game_time_kind_id
+        - game_time_category_id
+        - game_state_id
+        - white_is_guest
+        - black_is_guest
+        - time_control_clock_ms
+        - time_control_increment_ms
+        - reconnect_timeout_ms
+        - first_move_timeout_ms
         - white_game_clock
         - black_game_clock
-        - state_id
-        - start_time
+        - rated
         - fen
         - created_at
         - updated_at
@@ -2825,37 +2826,43 @@ components:
           type: string
           format: uuid
           description: White id
-        variant_id:
+        game_variant_id:
           format: int64
           type: integer
           description: Game variant id
-        time_kind_id:
+        game_time_kind_id:
           format: int64
           type: integer
           description: Time kind id
-        time_category_id:
+        game_time_category_id:
           format: int64
           type: integer
           description: Time kind id
-        is_guest:
+        white_is_guest:
           type: boolean
-          description: Whether is guest user
-        time_control_clock:
+          description: Whether white is guest user
+        rated:
+          type: boolean
+          description: Whether game is rated
+        black_is_guest:
+          type: boolean
+          description: Whether white is guest user
+        time_control_clock_ms:
           type: integer
           format: int64
           description: Time control clock
-        time_control_increment:
+        time_control_increment_ms:
           type: integer
           format: int64
           description: Time control increment
-        reconnect_timeout:
+        reconnect_timeout_ms:
           type: integer
           format: int64
-          description: Reconnect timeout
-        first_move_timeout:
+          description: Reconnect timeout in milliseconds
+        first_move_timeout_ms:
           type: integer
           format: int64
-          description: First move timeout
+          description: First move timeout in milliseconds
         white_game_clock:
           type: integer
           format: int64
@@ -2864,15 +2871,15 @@ components:
           type: integer
           format: int64
           description: Black game clock
-        result_id:
+        game_result_id:
           type: integer
           format: int64
           description: Result id
-        result_status_id:
+        game_result_status_id:
           type: integer
           format: int64
           description: Result status id
-        state_id:
+        game_state_id:
           type: integer
           format: int64
           description: State id
@@ -3674,7 +3681,7 @@ components:
           type: string
         use_password_migration_hook:
           description: >-
-            If set to true, the password will be migrated using the password
+            If set to true, the password will be migratedf using the password
             migration hook.
           type: boolean
       type: object

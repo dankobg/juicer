@@ -83,47 +83,47 @@ func (pst *PgGamePersistor) ListGames(ctx context.Context, filters dbtype.ListGa
 
 			q.Apply(sm.Where(models.Games.Columns.ID.In(psql.Arg(ids...))))
 		}
-		if filters.VariantID != nil {
-			variantIDs := make([]any, len(*filters.VariantID))
-			for i, id := range *filters.VariantID {
-				variantIDs[i] = id
+		if filters.GameVariantID != nil {
+			gameVariantIDs := make([]any, len(*filters.GameVariantID))
+			for i, id := range *filters.GameVariantID {
+				gameVariantIDs[i] = id
 			}
-			q.Apply(sm.Where(models.Games.Columns.VariantID.In(psql.Arg(variantIDs...))))
+			q.Apply(sm.Where(models.Games.Columns.GameVariantID.In(psql.Arg(gameVariantIDs...))))
 		}
-		if filters.TimeKindID != nil {
-			timeKindIDs := make([]any, len(*filters.TimeKindID))
-			for i, id := range *filters.TimeKindID {
-				timeKindIDs[i] = id
+		if filters.GameTimeKindID != nil {
+			gameTimeKindIDs := make([]any, len(*filters.GameTimeKindID))
+			for i, id := range *filters.GameTimeKindID {
+				gameTimeKindIDs[i] = id
 			}
-			q.Apply(sm.Where(models.Games.Columns.TimeKindID.In(psql.Arg(timeKindIDs...))))
+			q.Apply(sm.Where(models.Games.Columns.GameTimeKindID.In(psql.Arg(gameTimeKindIDs...))))
 		}
-		if filters.TimeCategoryID != nil {
-			timeCategoryIDs := make([]any, len(*filters.TimeCategoryID))
-			for i, id := range *filters.TimeCategoryID {
-				timeCategoryIDs[i] = id
+		if filters.GameTimeCategoryID != nil {
+			gameTimeCategoryIDs := make([]any, len(*filters.GameTimeCategoryID))
+			for i, id := range *filters.GameTimeCategoryID {
+				gameTimeCategoryIDs[i] = id
 			}
-			q.Apply(sm.Where(models.Games.Columns.TimeCategoryID.In(psql.Arg(timeCategoryIDs...))))
+			q.Apply(sm.Where(models.Games.Columns.GameTimeCategoryID.In(psql.Arg(gameTimeCategoryIDs...))))
 		}
-		if filters.ResultID != nil {
-			resultIDs := make([]any, len(*filters.ResultID))
-			for i, id := range *filters.ResultID {
-				resultIDs[i] = id
+		if filters.GameResultID != nil {
+			gameResultIDs := make([]any, len(*filters.GameResultID))
+			for i, id := range *filters.GameResultID {
+				gameResultIDs[i] = id
 			}
-			q.Apply(sm.Where(models.Games.Columns.ResultID.In(psql.Arg(resultIDs...))))
+			q.Apply(sm.Where(models.Games.Columns.GameResultID.In(psql.Arg(gameResultIDs...))))
 		}
-		if filters.ResultStatusID != nil {
-			resultStatusIDs := make([]any, len(*filters.ResultStatusID))
-			for i, id := range *filters.ResultStatusID {
-				resultStatusIDs[i] = id
+		if filters.GameResultStatusID != nil {
+			gameResultStatusIDs := make([]any, len(*filters.GameResultStatusID))
+			for i, id := range *filters.GameResultStatusID {
+				gameResultStatusIDs[i] = id
 			}
-			q.Apply(sm.Where(models.Games.Columns.ResultStatusID.In(psql.Arg(resultStatusIDs...))))
+			q.Apply(sm.Where(models.Games.Columns.GameResultStatusID.In(psql.Arg(gameResultStatusIDs...))))
 		}
-		if filters.StateID != nil {
-			stateIDs := make([]any, len(*filters.StateID))
-			for i, id := range *filters.StateID {
-				stateIDs[i] = id
+		if filters.GameStateID != nil {
+			gameStateIDs := make([]any, len(*filters.GameStateID))
+			for i, id := range *filters.GameStateID {
+				gameStateIDs[i] = id
 			}
-			q.Apply(sm.Where(models.Games.Columns.StateID.In(psql.Arg(stateIDs...))))
+			q.Apply(sm.Where(models.Games.Columns.GameStateID.In(psql.Arg(gameStateIDs...))))
 		}
 		if filters.Rated != nil {
 			q.Apply(sm.Where(models.Games.Columns.Rated.EQ(psql.Arg(*filters.Rated))))
@@ -180,17 +180,19 @@ func (pst *PgGamePersistor) CreateGame(ctx context.Context, in models.GameSetter
 
 	game, err := bob.One(ctx, pst.exec, q, scan.StructMapper[models.Game]())
 	if err != nil {
-		return models.Game{}, fmt.Errorf("insert game")
+		return models.Game{}, fmt.Errorf("insert game: %w", err)
 	}
 
-	moveSetters := make([]*models.GameMoveSetter, len(inMoves))
-	for i, x := range inMoves {
-		moveSetters[i] = &x
-	}
+	if len(inMoves) > 0 {
+		moveSetters := make([]*models.GameMoveSetter, len(inMoves))
+		for i, x := range inMoves {
+			moveSetters[i] = &x
+		}
 
-	q2 := models.GameMoves.Insert(bob.ToMods(moveSetters...), im.Returning(models.GameMoves.Columns))
-	if _, err := bob.Exec(ctx, pst.exec, q2); err != nil {
-		return models.Game{}, fmt.Errorf("insert game moves")
+		q2 := models.GameMoves.Insert(bob.ToMods(moveSetters...), im.Returning(models.GameMoves.Columns))
+		if _, err := bob.Exec(ctx, pst.exec, q2); err != nil {
+			return models.Game{}, fmt.Errorf("insert game moves")
+		}
 	}
 
 	return game, nil

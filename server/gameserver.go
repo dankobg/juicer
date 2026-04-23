@@ -10,9 +10,14 @@ import (
 	"strings"
 	"time"
 
+	"github.com/aarondl/opt/omit"
+	"github.com/aarondl/opt/omitnull"
+	"github.com/dankobg/juicer/db/gen/models"
+	"github.com/dankobg/juicer/gameplay"
 	pb "github.com/dankobg/juicer/pb/proto/juicer"
 	"github.com/dankobg/juicer/persistence/dbtype"
 	"github.com/dankobg/juicer/ws"
+	"github.com/goforj/godump"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/redis/go-redis/v9"
@@ -151,7 +156,7 @@ func (a *ApiHandler) handleIPCInitializeChannelsMsg(data *pb.InitializeChannels)
 		}
 
 		if game.ID != 0 {
-			switch game.StateID {
+			switch game.GameStateID {
 			case a.protoGameStateToID(pb.GameState_GAME_STATE_IN_PROGRESS):
 				channels = append(channels, fmt.Sprintf("game.%d", game.ID), fmt.Sprintf("game.%d.chat", game.ID))
 			case a.protoGameStateToID(pb.GameState_GAME_STATE_FINISHED),
@@ -272,13 +277,12 @@ func (a *ApiHandler) onWSCMsg(m *redis.Message) {
 }
 
 func (a *ApiHandler) handleWSCEchoMsg(authInfo clientAuthInfo, data *pb.Echo) {
-	xxx := &pb.Message{Event: &pb.Message_Echo{Echo: &pb.Echo{Message: strings.ToUpper(data.Message)}}}
-	b, _ := protojson.Marshal(xxx)
+	ZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZ(a)
 
-	topic := "user." + authInfo.userID
-	// topic := "conn." + authInfo.connID
-	// topic := "lobby.chat"
-	a.bus.rdb.Publish(context.Background(), topic, b)
+	bb, _ := protojson.Marshal(&pb.Message{Event: &pb.Message_Echo{Echo: &pb.Echo{Message: strings.ToUpper(data.Message)}}})
+	toUser, toConn, toLobby := "user."+authInfo.userID, "conn."+authInfo.connID, "lobby.chat"
+	_ = []any{toUser, toConn, toLobby}
+	a.bus.rdb.Publish(context.Background(), toUser, bb)
 }
 
 func (a *ApiHandler) handleWSCSeekGameMsg(authInfo clientAuthInfo, data *pb.SeekGame) {
@@ -289,7 +293,7 @@ func (a *ApiHandler) handleWSCSeekGameMsg(authInfo clientAuthInfo, data *pb.Seek
 	ctx := context.Background()
 
 	if _, err := a.bus.rdb.Pipelined(ctx, func(p redis.Pipeliner) error {
-		key := fmt.Sprintf("seek_game.%d.%d-%d", authInfo.authState, data.GetTimeControl().Clock.Seconds, data.GetTimeControl().Increment.Seconds)
+		key := fmt.Sprintf("seek_game.%d.%d-%d", authInfo.authState, data.GetTimeControl().GetClockMs(), data.GetTimeControl().GetIncrementMs())
 		if err := p.ZAdd(ctx, key, redis.Z{Member: authInfo.userID, Score: float64(time.Now().UnixNano())}).Err(); err != nil {
 			a.Log.Error("SeekGame add to queue", slog.String("user_id", authInfo.userID), slog.String("auth_state", authInfo.authState.String()), slog.Any("error", err))
 		}
@@ -530,7 +534,7 @@ func (a *ApiHandler) protoGameResultToID(x pb.GameResult) int64 {
 	return a.protoMappingsCache.results[x]
 }
 
-func (a *ApiHandler) protoGameResultStatuseToID(x pb.GameResultStatus) int64 {
+func (a *ApiHandler) protoGameResultStatusToID(x pb.GameResultStatus) int64 {
 	return a.protoMappingsCache.resultStatuses[x]
 }
 
@@ -687,3 +691,86 @@ func (a *ApiHandler) publishToUserID(ctx context.Context, userID string, msg *pb
 // 	}
 // 	return b.natsconn.Publish("connid."+connID, bts)
 // }
+
+func ZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZ(a *ApiHandler) {
+	players := [2]gameplay.Player{
+		{ID: uuid.MustParse("75f751e4-737f-40de-beb8-3964cd4eeb29"), Name: "danko", Color: pb.Color_COLOR_WHITE, Guest: false},
+		{ID: uuid.MustParse("14120b40-aa67-4cde-8a75-fcae8e057278"), Name: "bob", Color: pb.Color_COLOR_BLACK, Guest: false},
+	}
+
+	gtc := &pb.GameTimeControl{ClockMs: 300_000, IncrementMs: 0}
+
+	thresholds := []gameplay.CategoryThreshold{}
+	for _, x := range a.categoryThresholds {
+		thresholds = append(thresholds, gameplay.CategoryThreshold{
+			UpperLimit:   x.upperLimit,
+			TimeCategory: x.timeCategory,
+		})
+	}
+
+	gs, err := gameplay.NewGameState(1, players, gtc, true, thresholds)
+	if err != nil {
+		fmt.Println("gameplay.NewGameState: ", err.Error())
+		return
+	}
+
+	gs.Start()
+
+	gameSetter := models.GameSetter{
+		// WhiteID:      omitnull.From(gs.White.ID),
+		// BlackID:      omitnull.From(gs.Black.ID),
+		WhiteIsGuest:           omit.From(gs.Guest),
+		BlackIsGuest:           omit.From(gs.Guest),
+		GuestWhiteID:           omitnull.From(gs.White.ID),
+		GuestBlackID:           omitnull.From(gs.Black.ID),
+		GameVariantID:          omit.From(a.protoGameVariantToID(gs.GameVariant)),
+		GameTimeKindID:         omit.From(a.protoGameTimeKindToID(gs.GameTimeKind)),
+		GameTimeCategoryID:     omit.From(a.protoGameTimeCategoryToID(gs.GameTimeCategory)),
+		GameStateID:            omit.From(a.protoGameStateToID(gs.GameState)),
+		TimeControlClockMS:     omit.From(gs.GameTimeControl.ClockMs),
+		TimeControlIncrementMS: omit.From(gs.GameTimeControl.IncrementMs),
+		FirstMoveTimeoutMS:     omit.From(int32(gs.FirstMoveTimeout.Milliseconds())),
+		ReconnectTimeoutMS:     omit.From(int32(gs.ReconnectTimeout.Milliseconds())),
+		WhiteGameClock:         omit.From(gs.GameTimeControl.ClockMs),
+		BlackGameClock:         omit.From(gs.GameTimeControl.ClockMs),
+		Rated:                  omit.From(gs.Rated),
+		StartTime:              omitnull.FromPtr(gs.StartTime),
+		EndTime:                omitnull.FromPtr(gs.EndTime),
+		LastMove:               omitnull.FromPtr(gs.LastMove),
+		Fen:                    omit.From(gs.Chess.Position.Fen()),
+		PGN:                    omitnull.From("TODO"),
+	}
+	if gs.GameResult != pb.GameResult_GAME_RESULT_UNSPECIFIED {
+		gameSetter.GameResultID = omitnull.From(a.protoGameResultToID(gs.GameResult))
+	}
+	if gs.GameResultStatus != pb.GameResultStatus_GAME_RESULT_STATUS_UNSPECIFIED {
+		gameSetter.GameResultStatusID = omitnull.From(a.protoGameResultStatusToID(gs.GameResultStatus))
+	}
+
+	godump.DumpJSON(gameSetter, "GAME_SETTER")
+
+	game, err := a.persistor.Game().CreateGame(context.TODO(), gameSetter, nil)
+	if err != nil {
+		fmt.Println("CreateGame err: ", err)
+		return
+	}
+	godump.DumpJSON(game, "GAME_FINAL_RESULT")
+
+	gs.GameID = game.ID
+
+	fmt.Printf("game_id: %d\n", gs.GameID)
+	fmt.Printf("rated: %v\n", gs.Rated)
+	fmt.Printf("white: %s\n", gs.White.Name)
+	fmt.Printf("black: %s\n", gs.Black.Name)
+	fmt.Printf("variant: %s\n", gs.GameVariant.String())
+	fmt.Printf("time_category: %s\n", gs.GameTimeCategory.String())
+	fmt.Printf("time_kind: %s\n", gs.GameTimeKind.String())
+	fmt.Printf("time_control_clock_ms: %s\n", gs.GameTimeControl.GetClockMs())
+	fmt.Printf("time_control_increment_ms: %s\n", gs.GameTimeControl.GetIncrementMs())
+	fmt.Printf("state: %s\n", gs.GameState.String())
+	fmt.Printf("result: %s\n", gs.GameResult.String())
+	fmt.Printf("result_status: %s\n", gs.GameResultStatus.String())
+	fmt.Printf("start_time: %s\n", gs.StartTime)
+	fmt.Printf("last_move: %s\n", gs.LastMove)
+	fmt.Printf("history_moves: %v\n", gs.HistoryMoveInfos)
+}

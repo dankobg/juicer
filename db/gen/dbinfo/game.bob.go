@@ -42,6 +42,24 @@ var Games = Table[
 			Generated: false,
 			AutoIncr:  false,
 		},
+		WhiteIsGuest: column{
+			Name:      "white_is_guest",
+			DBType:    "boolean",
+			Default:   "",
+			Comment:   "",
+			Nullable:  false,
+			Generated: false,
+			AutoIncr:  false,
+		},
+		BlackIsGuest: column{
+			Name:      "black_is_guest",
+			DBType:    "boolean",
+			Default:   "",
+			Comment:   "",
+			Nullable:  false,
+			Generated: false,
+			AutoIncr:  false,
+		},
 		GuestWhiteID: column{
 			Name:      "guest_white_id",
 			DBType:    "uuid",
@@ -60,8 +78,8 @@ var Games = Table[
 			Generated: false,
 			AutoIncr:  false,
 		},
-		VariantID: column{
-			Name:      "variant_id",
+		GameVariantID: column{
+			Name:      "game_variant_id",
 			DBType:    "bigint",
 			Default:   "",
 			Comment:   "",
@@ -69,8 +87,8 @@ var Games = Table[
 			Generated: false,
 			AutoIncr:  false,
 		},
-		TimeKindID: column{
-			Name:      "time_kind_id",
+		GameTimeKindID: column{
+			Name:      "game_time_kind_id",
 			DBType:    "bigint",
 			Default:   "",
 			Comment:   "",
@@ -78,8 +96,8 @@ var Games = Table[
 			Generated: false,
 			AutoIncr:  false,
 		},
-		TimeCategoryID: column{
-			Name:      "time_category_id",
+		GameTimeCategoryID: column{
+			Name:      "game_time_category_id",
 			DBType:    "bigint",
 			Default:   "",
 			Comment:   "",
@@ -87,17 +105,35 @@ var Games = Table[
 			Generated: false,
 			AutoIncr:  false,
 		},
-		IsGuest: column{
-			Name:      "is_guest",
-			DBType:    "boolean",
+		GameStateID: column{
+			Name:      "game_state_id",
+			DBType:    "bigint",
 			Default:   "",
 			Comment:   "",
 			Nullable:  false,
 			Generated: false,
 			AutoIncr:  false,
 		},
-		TimeControlClock: column{
-			Name:      "time_control_clock",
+		GameResultID: column{
+			Name:      "game_result_id",
+			DBType:    "bigint",
+			Default:   "NULL",
+			Comment:   "",
+			Nullable:  true,
+			Generated: false,
+			AutoIncr:  false,
+		},
+		GameResultStatusID: column{
+			Name:      "game_result_status_id",
+			DBType:    "bigint",
+			Default:   "NULL",
+			Comment:   "",
+			Nullable:  true,
+			Generated: false,
+			AutoIncr:  false,
+		},
+		TimeControlClockMS: column{
+			Name:      "time_control_clock_ms",
 			DBType:    "integer",
 			Default:   "",
 			Comment:   "",
@@ -105,8 +141,8 @@ var Games = Table[
 			Generated: false,
 			AutoIncr:  false,
 		},
-		TimeControlIncrement: column{
-			Name:      "time_control_increment",
+		TimeControlIncrementMS: column{
+			Name:      "time_control_increment_ms",
 			DBType:    "integer",
 			Default:   "",
 			Comment:   "",
@@ -114,8 +150,8 @@ var Games = Table[
 			Generated: false,
 			AutoIncr:  false,
 		},
-		ReconnectTimeout: column{
-			Name:      "reconnect_timeout",
+		ReconnectTimeoutMS: column{
+			Name:      "reconnect_timeout_ms",
 			DBType:    "integer",
 			Default:   "",
 			Comment:   "",
@@ -123,8 +159,8 @@ var Games = Table[
 			Generated: false,
 			AutoIncr:  false,
 		},
-		FirstMoveTimeout: column{
-			Name:      "first_move_timeout",
+		FirstMoveTimeoutMS: column{
+			Name:      "first_move_timeout_ms",
 			DBType:    "integer",
 			Default:   "",
 			Comment:   "",
@@ -153,33 +189,6 @@ var Games = Table[
 		Rated: column{
 			Name:      "rated",
 			DBType:    "boolean",
-			Default:   "NULL",
-			Comment:   "",
-			Nullable:  true,
-			Generated: false,
-			AutoIncr:  false,
-		},
-		ResultID: column{
-			Name:      "result_id",
-			DBType:    "bigint",
-			Default:   "NULL",
-			Comment:   "",
-			Nullable:  true,
-			Generated: false,
-			AutoIncr:  false,
-		},
-		ResultStatusID: column{
-			Name:      "result_status_id",
-			DBType:    "bigint",
-			Default:   "NULL",
-			Comment:   "",
-			Nullable:  true,
-			Generated: false,
-			AutoIncr:  false,
-		},
-		StateID: column{
-			Name:      "state_id",
-			DBType:    "bigint",
 			Default:   "",
 			Comment:   "",
 			Nullable:  false,
@@ -189,9 +198,9 @@ var Games = Table[
 		StartTime: column{
 			Name:      "start_time",
 			DBType:    "timestamp with time zone",
-			Default:   "",
+			Default:   "NULL",
 			Comment:   "",
-			Nullable:  false,
+			Nullable:  true,
 			Generated: false,
 			AutoIncr:  false,
 		},
@@ -284,55 +293,55 @@ var Games = Table[
 			ForeignTable:   "user",
 			ForeignColumns: []string{"id"},
 		},
-		GameFKGameResult: foreignKey{
+		GameFKGameResultID: foreignKey{
 			constraint: constraint{
-				Name:    "game.fk_game_result",
-				Columns: []string{"result_id"},
+				Name:    "game.fk_game_result_id",
+				Columns: []string{"game_result_id"},
 				Comment: "",
 			},
 			ForeignTable:   "game_result",
 			ForeignColumns: []string{"id"},
 		},
-		GameFKGameResultStatus: foreignKey{
+		GameFKGameResultStatusID: foreignKey{
 			constraint: constraint{
-				Name:    "game.fk_game_result_status",
-				Columns: []string{"result_status_id"},
+				Name:    "game.fk_game_result_status_id",
+				Columns: []string{"game_result_status_id"},
 				Comment: "",
 			},
 			ForeignTable:   "game_result_status",
 			ForeignColumns: []string{"id"},
 		},
-		GameFKGameState: foreignKey{
+		GameFKGameStateID: foreignKey{
 			constraint: constraint{
-				Name:    "game.fk_game_state",
-				Columns: []string{"state_id"},
+				Name:    "game.fk_game_state_id",
+				Columns: []string{"game_state_id"},
 				Comment: "",
 			},
 			ForeignTable:   "game_state",
 			ForeignColumns: []string{"id"},
 		},
-		GameFKGameTimeCategory: foreignKey{
+		GameFKGameTimeCategoryID: foreignKey{
 			constraint: constraint{
-				Name:    "game.fk_game_time_category",
-				Columns: []string{"time_category_id"},
+				Name:    "game.fk_game_time_category_id",
+				Columns: []string{"game_time_category_id"},
 				Comment: "",
 			},
 			ForeignTable:   "game_time_category",
 			ForeignColumns: []string{"id"},
 		},
-		GameFKGameTimeKind: foreignKey{
+		GameFKGameTimeKindID: foreignKey{
 			constraint: constraint{
-				Name:    "game.fk_game_time_kind",
-				Columns: []string{"time_kind_id"},
+				Name:    "game.fk_game_time_kind_id",
+				Columns: []string{"game_time_kind_id"},
 				Comment: "",
 			},
 			ForeignTable:   "game_time_kind",
 			ForeignColumns: []string{"id"},
 		},
-		GameFKGameVariant: foreignKey{
+		GameFKGameVariantID: foreignKey{
 			constraint: constraint{
-				Name:    "game.fk_game_variant",
-				Columns: []string{"variant_id"},
+				Name:    "game.fk_game_variant_id",
+				Columns: []string{"game_variant_id"},
 				Comment: "",
 			},
 			ForeignTable:   "game_variant",
@@ -363,37 +372,38 @@ var Games = Table[
 }
 
 type gameColumns struct {
-	ID                   column
-	WhiteID              column
-	BlackID              column
-	GuestWhiteID         column
-	GuestBlackID         column
-	VariantID            column
-	TimeKindID           column
-	TimeCategoryID       column
-	IsGuest              column
-	TimeControlClock     column
-	TimeControlIncrement column
-	ReconnectTimeout     column
-	FirstMoveTimeout     column
-	WhiteGameClock       column
-	BlackGameClock       column
-	Rated                column
-	ResultID             column
-	ResultStatusID       column
-	StateID              column
-	StartTime            column
-	EndTime              column
-	LastMove             column
-	Fen                  column
-	PGN                  column
-	CreatedAt            column
-	UpdatedAt            column
+	ID                     column
+	WhiteID                column
+	BlackID                column
+	WhiteIsGuest           column
+	BlackIsGuest           column
+	GuestWhiteID           column
+	GuestBlackID           column
+	GameVariantID          column
+	GameTimeKindID         column
+	GameTimeCategoryID     column
+	GameStateID            column
+	GameResultID           column
+	GameResultStatusID     column
+	TimeControlClockMS     column
+	TimeControlIncrementMS column
+	ReconnectTimeoutMS     column
+	FirstMoveTimeoutMS     column
+	WhiteGameClock         column
+	BlackGameClock         column
+	Rated                  column
+	StartTime              column
+	EndTime                column
+	LastMove               column
+	Fen                    column
+	PGN                    column
+	CreatedAt              column
+	UpdatedAt              column
 }
 
 func (c gameColumns) AsSlice() []column {
 	return []column{
-		c.ID, c.WhiteID, c.BlackID, c.GuestWhiteID, c.GuestBlackID, c.VariantID, c.TimeKindID, c.TimeCategoryID, c.IsGuest, c.TimeControlClock, c.TimeControlIncrement, c.ReconnectTimeout, c.FirstMoveTimeout, c.WhiteGameClock, c.BlackGameClock, c.Rated, c.ResultID, c.ResultStatusID, c.StateID, c.StartTime, c.EndTime, c.LastMove, c.Fen, c.PGN, c.CreatedAt, c.UpdatedAt,
+		c.ID, c.WhiteID, c.BlackID, c.WhiteIsGuest, c.BlackIsGuest, c.GuestWhiteID, c.GuestBlackID, c.GameVariantID, c.GameTimeKindID, c.GameTimeCategoryID, c.GameStateID, c.GameResultID, c.GameResultStatusID, c.TimeControlClockMS, c.TimeControlIncrementMS, c.ReconnectTimeoutMS, c.FirstMoveTimeoutMS, c.WhiteGameClock, c.BlackGameClock, c.Rated, c.StartTime, c.EndTime, c.LastMove, c.Fen, c.PGN, c.CreatedAt, c.UpdatedAt,
 	}
 }
 
@@ -408,19 +418,19 @@ func (i gameIndexes) AsSlice() []index {
 }
 
 type gameForeignKeys struct {
-	GameFKGameBlackID      foreignKey
-	GameFKGameResult       foreignKey
-	GameFKGameResultStatus foreignKey
-	GameFKGameState        foreignKey
-	GameFKGameTimeCategory foreignKey
-	GameFKGameTimeKind     foreignKey
-	GameFKGameVariant      foreignKey
-	GameFKGameWhiteID      foreignKey
+	GameFKGameBlackID        foreignKey
+	GameFKGameResultID       foreignKey
+	GameFKGameResultStatusID foreignKey
+	GameFKGameStateID        foreignKey
+	GameFKGameTimeCategoryID foreignKey
+	GameFKGameTimeKindID     foreignKey
+	GameFKGameVariantID      foreignKey
+	GameFKGameWhiteID        foreignKey
 }
 
 func (f gameForeignKeys) AsSlice() []foreignKey {
 	return []foreignKey{
-		f.GameFKGameBlackID, f.GameFKGameResult, f.GameFKGameResultStatus, f.GameFKGameState, f.GameFKGameTimeCategory, f.GameFKGameTimeKind, f.GameFKGameVariant, f.GameFKGameWhiteID,
+		f.GameFKGameBlackID, f.GameFKGameResultID, f.GameFKGameResultStatusID, f.GameFKGameStateID, f.GameFKGameTimeCategoryID, f.GameFKGameTimeKindID, f.GameFKGameVariantID, f.GameFKGameWhiteID,
 	}
 }
 

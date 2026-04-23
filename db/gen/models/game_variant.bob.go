@@ -43,7 +43,7 @@ type GameVariantsQuery = *psql.ViewQuery[*GameVariant, GameVariantSlice]
 
 // gameVariantR is where relationships are stored.
 type gameVariantR struct {
-	VariantGames GameSlice // game.fk_game_variant
+	Games GameSlice // game.fk_game_variant_id
 }
 
 func buildGameVariantColumns(alias string) gameVariantColumns {
@@ -416,14 +416,14 @@ func (o GameVariantSlice) ReloadAll(ctx context.Context, exec bob.Executor) erro
 	return nil
 }
 
-// VariantGames starts a query for related objects on game
-func (o *GameVariant) VariantGames(mods ...bob.Mod[*dialect.SelectQuery]) GamesQuery {
+// Games starts a query for related objects on game
+func (o *GameVariant) Games(mods ...bob.Mod[*dialect.SelectQuery]) GamesQuery {
 	return Games.Query(append(mods,
-		sm.Where(Games.Columns.VariantID.EQ(psql.Arg(o.ID))),
+		sm.Where(Games.Columns.GameVariantID.EQ(psql.Arg(o.ID))),
 	)...)
 }
 
-func (os GameVariantSlice) VariantGames(mods ...bob.Mod[*dialect.SelectQuery]) GamesQuery {
+func (os GameVariantSlice) Games(mods ...bob.Mod[*dialect.SelectQuery]) GamesQuery {
 	pkID := make(pgtypes.Array[int64], 0, len(os))
 	for _, o := range os {
 		if o == nil {
@@ -436,57 +436,57 @@ func (os GameVariantSlice) VariantGames(mods ...bob.Mod[*dialect.SelectQuery]) G
 	))
 
 	return Games.Query(append(mods,
-		sm.Where(psql.Group(Games.Columns.VariantID).OP("IN", PKArgExpr)),
+		sm.Where(psql.Group(Games.Columns.GameVariantID).OP("IN", PKArgExpr)),
 	)...)
 }
 
-func insertGameVariantVariantGames0(ctx context.Context, exec bob.Executor, games1 []*GameSetter, gameVariant0 *GameVariant) (GameSlice, error) {
+func insertGameVariantGames0(ctx context.Context, exec bob.Executor, games1 []*GameSetter, gameVariant0 *GameVariant) (GameSlice, error) {
 	for i := range games1 {
-		games1[i].VariantID = omit.From(gameVariant0.ID)
+		games1[i].GameVariantID = omit.From(gameVariant0.ID)
 	}
 
 	ret, err := Games.Insert(bob.ToMods(games1...)).All(ctx, exec)
 	if err != nil {
-		return ret, fmt.Errorf("insertGameVariantVariantGames0: %w", err)
+		return ret, fmt.Errorf("insertGameVariantGames0: %w", err)
 	}
 
 	return ret, nil
 }
 
-func attachGameVariantVariantGames0(ctx context.Context, exec bob.Executor, count int, games1 GameSlice, gameVariant0 *GameVariant) (GameSlice, error) {
+func attachGameVariantGames0(ctx context.Context, exec bob.Executor, count int, games1 GameSlice, gameVariant0 *GameVariant) (GameSlice, error) {
 	setter := &GameSetter{
-		VariantID: omit.From(gameVariant0.ID),
+		GameVariantID: omit.From(gameVariant0.ID),
 	}
 
 	err := games1.UpdateAll(ctx, exec, *setter)
 	if err != nil {
-		return nil, fmt.Errorf("attachGameVariantVariantGames0: %w", err)
+		return nil, fmt.Errorf("attachGameVariantGames0: %w", err)
 	}
 
 	return games1, nil
 }
 
-func (gameVariant0 *GameVariant) InsertVariantGames(ctx context.Context, exec bob.Executor, related ...*GameSetter) error {
+func (gameVariant0 *GameVariant) InsertGames(ctx context.Context, exec bob.Executor, related ...*GameSetter) error {
 	if len(related) == 0 {
 		return nil
 	}
 
 	var err error
 
-	games1, err := insertGameVariantVariantGames0(ctx, exec, related, gameVariant0)
+	games1, err := insertGameVariantGames0(ctx, exec, related, gameVariant0)
 	if err != nil {
 		return err
 	}
 
-	gameVariant0.R.VariantGames = append(gameVariant0.R.VariantGames, games1...)
+	gameVariant0.R.Games = append(gameVariant0.R.Games, games1...)
 
 	for _, rel := range games1 {
-		rel.R.VariantGameVariant = gameVariant0
+		rel.R.GameVariant = gameVariant0
 	}
 	return nil
 }
 
-func (gameVariant0 *GameVariant) AttachVariantGames(ctx context.Context, exec bob.Executor, related ...*Game) error {
+func (gameVariant0 *GameVariant) AttachGames(ctx context.Context, exec bob.Executor, related ...*Game) error {
 	if len(related) == 0 {
 		return nil
 	}
@@ -494,15 +494,15 @@ func (gameVariant0 *GameVariant) AttachVariantGames(ctx context.Context, exec bo
 	var err error
 	games1 := GameSlice(related)
 
-	_, err = attachGameVariantVariantGames0(ctx, exec, len(related), games1, gameVariant0)
+	_, err = attachGameVariantGames0(ctx, exec, len(related), games1, gameVariant0)
 	if err != nil {
 		return err
 	}
 
-	gameVariant0.R.VariantGames = append(gameVariant0.R.VariantGames, games1...)
+	gameVariant0.R.Games = append(gameVariant0.R.Games, games1...)
 
 	for _, rel := range related {
-		rel.R.VariantGameVariant = gameVariant0
+		rel.R.GameVariant = gameVariant0
 	}
 
 	return nil

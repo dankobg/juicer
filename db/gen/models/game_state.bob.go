@@ -42,7 +42,7 @@ type GameStatesQuery = *psql.ViewQuery[*GameState, GameStateSlice]
 
 // gameStateR is where relationships are stored.
 type gameStateR struct {
-	StateGames GameSlice // game.fk_game_state
+	Games GameSlice // game.fk_game_state_id
 }
 
 func buildGameStateColumns(alias string) gameStateColumns {
@@ -393,14 +393,14 @@ func (o GameStateSlice) ReloadAll(ctx context.Context, exec bob.Executor) error 
 	return nil
 }
 
-// StateGames starts a query for related objects on game
-func (o *GameState) StateGames(mods ...bob.Mod[*dialect.SelectQuery]) GamesQuery {
+// Games starts a query for related objects on game
+func (o *GameState) Games(mods ...bob.Mod[*dialect.SelectQuery]) GamesQuery {
 	return Games.Query(append(mods,
-		sm.Where(Games.Columns.StateID.EQ(psql.Arg(o.ID))),
+		sm.Where(Games.Columns.GameStateID.EQ(psql.Arg(o.ID))),
 	)...)
 }
 
-func (os GameStateSlice) StateGames(mods ...bob.Mod[*dialect.SelectQuery]) GamesQuery {
+func (os GameStateSlice) Games(mods ...bob.Mod[*dialect.SelectQuery]) GamesQuery {
 	pkID := make(pgtypes.Array[int64], 0, len(os))
 	for _, o := range os {
 		if o == nil {
@@ -413,57 +413,57 @@ func (os GameStateSlice) StateGames(mods ...bob.Mod[*dialect.SelectQuery]) Games
 	))
 
 	return Games.Query(append(mods,
-		sm.Where(psql.Group(Games.Columns.StateID).OP("IN", PKArgExpr)),
+		sm.Where(psql.Group(Games.Columns.GameStateID).OP("IN", PKArgExpr)),
 	)...)
 }
 
-func insertGameStateStateGames0(ctx context.Context, exec bob.Executor, games1 []*GameSetter, gameState0 *GameState) (GameSlice, error) {
+func insertGameStateGames0(ctx context.Context, exec bob.Executor, games1 []*GameSetter, gameState0 *GameState) (GameSlice, error) {
 	for i := range games1 {
-		games1[i].StateID = omit.From(gameState0.ID)
+		games1[i].GameStateID = omit.From(gameState0.ID)
 	}
 
 	ret, err := Games.Insert(bob.ToMods(games1...)).All(ctx, exec)
 	if err != nil {
-		return ret, fmt.Errorf("insertGameStateStateGames0: %w", err)
+		return ret, fmt.Errorf("insertGameStateGames0: %w", err)
 	}
 
 	return ret, nil
 }
 
-func attachGameStateStateGames0(ctx context.Context, exec bob.Executor, count int, games1 GameSlice, gameState0 *GameState) (GameSlice, error) {
+func attachGameStateGames0(ctx context.Context, exec bob.Executor, count int, games1 GameSlice, gameState0 *GameState) (GameSlice, error) {
 	setter := &GameSetter{
-		StateID: omit.From(gameState0.ID),
+		GameStateID: omit.From(gameState0.ID),
 	}
 
 	err := games1.UpdateAll(ctx, exec, *setter)
 	if err != nil {
-		return nil, fmt.Errorf("attachGameStateStateGames0: %w", err)
+		return nil, fmt.Errorf("attachGameStateGames0: %w", err)
 	}
 
 	return games1, nil
 }
 
-func (gameState0 *GameState) InsertStateGames(ctx context.Context, exec bob.Executor, related ...*GameSetter) error {
+func (gameState0 *GameState) InsertGames(ctx context.Context, exec bob.Executor, related ...*GameSetter) error {
 	if len(related) == 0 {
 		return nil
 	}
 
 	var err error
 
-	games1, err := insertGameStateStateGames0(ctx, exec, related, gameState0)
+	games1, err := insertGameStateGames0(ctx, exec, related, gameState0)
 	if err != nil {
 		return err
 	}
 
-	gameState0.R.StateGames = append(gameState0.R.StateGames, games1...)
+	gameState0.R.Games = append(gameState0.R.Games, games1...)
 
 	for _, rel := range games1 {
-		rel.R.StateGameState = gameState0
+		rel.R.GameState = gameState0
 	}
 	return nil
 }
 
-func (gameState0 *GameState) AttachStateGames(ctx context.Context, exec bob.Executor, related ...*Game) error {
+func (gameState0 *GameState) AttachGames(ctx context.Context, exec bob.Executor, related ...*Game) error {
 	if len(related) == 0 {
 		return nil
 	}
@@ -471,15 +471,15 @@ func (gameState0 *GameState) AttachStateGames(ctx context.Context, exec bob.Exec
 	var err error
 	games1 := GameSlice(related)
 
-	_, err = attachGameStateStateGames0(ctx, exec, len(related), games1, gameState0)
+	_, err = attachGameStateGames0(ctx, exec, len(related), games1, gameState0)
 	if err != nil {
 		return err
 	}
 
-	gameState0.R.StateGames = append(gameState0.R.StateGames, games1...)
+	gameState0.R.Games = append(gameState0.R.Games, games1...)
 
 	for _, rel := range related {
-		rel.R.StateGameState = gameState0
+		rel.R.GameState = gameState0
 	}
 
 	return nil

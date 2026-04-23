@@ -45,7 +45,7 @@ type GameTimeCategoriesQuery = *psql.ViewQuery[*GameTimeCategory, GameTimeCatego
 
 // gameTimeCategoryR is where relationships are stored.
 type gameTimeCategoryR struct {
-	TimeCategoryGames GameSlice // game.fk_game_time_category
+	Games GameSlice // game.fk_game_time_category_id
 }
 
 func buildGameTimeCategoryColumns(alias string) gameTimeCategoryColumns {
@@ -418,14 +418,14 @@ func (o GameTimeCategorySlice) ReloadAll(ctx context.Context, exec bob.Executor)
 	return nil
 }
 
-// TimeCategoryGames starts a query for related objects on game
-func (o *GameTimeCategory) TimeCategoryGames(mods ...bob.Mod[*dialect.SelectQuery]) GamesQuery {
+// Games starts a query for related objects on game
+func (o *GameTimeCategory) Games(mods ...bob.Mod[*dialect.SelectQuery]) GamesQuery {
 	return Games.Query(append(mods,
-		sm.Where(Games.Columns.TimeCategoryID.EQ(psql.Arg(o.ID))),
+		sm.Where(Games.Columns.GameTimeCategoryID.EQ(psql.Arg(o.ID))),
 	)...)
 }
 
-func (os GameTimeCategorySlice) TimeCategoryGames(mods ...bob.Mod[*dialect.SelectQuery]) GamesQuery {
+func (os GameTimeCategorySlice) Games(mods ...bob.Mod[*dialect.SelectQuery]) GamesQuery {
 	pkID := make(pgtypes.Array[int64], 0, len(os))
 	for _, o := range os {
 		if o == nil {
@@ -438,57 +438,57 @@ func (os GameTimeCategorySlice) TimeCategoryGames(mods ...bob.Mod[*dialect.Selec
 	))
 
 	return Games.Query(append(mods,
-		sm.Where(psql.Group(Games.Columns.TimeCategoryID).OP("IN", PKArgExpr)),
+		sm.Where(psql.Group(Games.Columns.GameTimeCategoryID).OP("IN", PKArgExpr)),
 	)...)
 }
 
-func insertGameTimeCategoryTimeCategoryGames0(ctx context.Context, exec bob.Executor, games1 []*GameSetter, gameTimeCategory0 *GameTimeCategory) (GameSlice, error) {
+func insertGameTimeCategoryGames0(ctx context.Context, exec bob.Executor, games1 []*GameSetter, gameTimeCategory0 *GameTimeCategory) (GameSlice, error) {
 	for i := range games1 {
-		games1[i].TimeCategoryID = omit.From(gameTimeCategory0.ID)
+		games1[i].GameTimeCategoryID = omit.From(gameTimeCategory0.ID)
 	}
 
 	ret, err := Games.Insert(bob.ToMods(games1...)).All(ctx, exec)
 	if err != nil {
-		return ret, fmt.Errorf("insertGameTimeCategoryTimeCategoryGames0: %w", err)
+		return ret, fmt.Errorf("insertGameTimeCategoryGames0: %w", err)
 	}
 
 	return ret, nil
 }
 
-func attachGameTimeCategoryTimeCategoryGames0(ctx context.Context, exec bob.Executor, count int, games1 GameSlice, gameTimeCategory0 *GameTimeCategory) (GameSlice, error) {
+func attachGameTimeCategoryGames0(ctx context.Context, exec bob.Executor, count int, games1 GameSlice, gameTimeCategory0 *GameTimeCategory) (GameSlice, error) {
 	setter := &GameSetter{
-		TimeCategoryID: omit.From(gameTimeCategory0.ID),
+		GameTimeCategoryID: omit.From(gameTimeCategory0.ID),
 	}
 
 	err := games1.UpdateAll(ctx, exec, *setter)
 	if err != nil {
-		return nil, fmt.Errorf("attachGameTimeCategoryTimeCategoryGames0: %w", err)
+		return nil, fmt.Errorf("attachGameTimeCategoryGames0: %w", err)
 	}
 
 	return games1, nil
 }
 
-func (gameTimeCategory0 *GameTimeCategory) InsertTimeCategoryGames(ctx context.Context, exec bob.Executor, related ...*GameSetter) error {
+func (gameTimeCategory0 *GameTimeCategory) InsertGames(ctx context.Context, exec bob.Executor, related ...*GameSetter) error {
 	if len(related) == 0 {
 		return nil
 	}
 
 	var err error
 
-	games1, err := insertGameTimeCategoryTimeCategoryGames0(ctx, exec, related, gameTimeCategory0)
+	games1, err := insertGameTimeCategoryGames0(ctx, exec, related, gameTimeCategory0)
 	if err != nil {
 		return err
 	}
 
-	gameTimeCategory0.R.TimeCategoryGames = append(gameTimeCategory0.R.TimeCategoryGames, games1...)
+	gameTimeCategory0.R.Games = append(gameTimeCategory0.R.Games, games1...)
 
 	for _, rel := range games1 {
-		rel.R.TimeCategoryGameTimeCategory = gameTimeCategory0
+		rel.R.GameTimeCategory = gameTimeCategory0
 	}
 	return nil
 }
 
-func (gameTimeCategory0 *GameTimeCategory) AttachTimeCategoryGames(ctx context.Context, exec bob.Executor, related ...*Game) error {
+func (gameTimeCategory0 *GameTimeCategory) AttachGames(ctx context.Context, exec bob.Executor, related ...*Game) error {
 	if len(related) == 0 {
 		return nil
 	}
@@ -496,15 +496,15 @@ func (gameTimeCategory0 *GameTimeCategory) AttachTimeCategoryGames(ctx context.C
 	var err error
 	games1 := GameSlice(related)
 
-	_, err = attachGameTimeCategoryTimeCategoryGames0(ctx, exec, len(related), games1, gameTimeCategory0)
+	_, err = attachGameTimeCategoryGames0(ctx, exec, len(related), games1, gameTimeCategory0)
 	if err != nil {
 		return err
 	}
 
-	gameTimeCategory0.R.TimeCategoryGames = append(gameTimeCategory0.R.TimeCategoryGames, games1...)
+	gameTimeCategory0.R.Games = append(gameTimeCategory0.R.Games, games1...)
 
 	for _, rel := range related {
-		rel.R.TimeCategoryGameTimeCategory = gameTimeCategory0
+		rel.R.GameTimeCategory = gameTimeCategory0
 	}
 
 	return nil
