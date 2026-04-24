@@ -16,5 +16,9 @@ func New(rdb *redis.Client) *RedisPersistor {
 }
 
 func (ps *RedisPersistor) Presence() persistence.PresencePersistor {
-	return NewRedisPresenceStore(ps)
+	return NewRedisPresencePersistor(ps)
+}
+
+func (ps *RedisPersistor) Pool() persistence.PoolPersistor {
+	return NewRedisPoolPersistor(ps)
 }

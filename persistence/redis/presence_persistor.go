@@ -18,7 +18,7 @@ type RedisPresencePersistor struct {
 	*RedisPersistor
 }
 
-func NewRedisPresenceStore(rs *RedisPersistor) *RedisPresencePersistor {
+func NewRedisPresencePersistor(rs *RedisPersistor) *RedisPresencePersistor {
 	return &RedisPresencePersistor{
 		RedisPersistor: rs,
 	}

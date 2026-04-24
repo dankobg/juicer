@@ -21,7 +21,7 @@ class GameManager {
 	board!: JuicerBoard;
 	wsError = $state<string | undefined>();
 	uiState = $state<'idle' | 'seeking' | 'playing'>('idle');
-	poolLast = new PersistedState<{ clock: number; increment: number } | null>('juicer-pool-last', null);
+	poolLast = new PersistedState<{ clockMs: number; incrementMs: number } | null>('juicer-pool-last', null);
 	gameTimeControl = $state<GameTimeControl | null>(null);
 	gameId = $state<string | undefined>();
 	clientId = $state<string | undefined>();
@@ -40,27 +40,21 @@ class GameManager {
 	reconnectTimeoutMs = $state<number>(RECONNECT_TIMEOUT_MS);
 	firstMoveTimeoutMs = $state<number>(FIRST_MOVE_TIMEOUT_MS);
 
-	seekGame(clockSecs: number, incrementSecs: number): void {
-		this.gameTimeControl = create(GameTimeControlSchema, {
-			clock: { seconds: BigInt(clockSecs), nanos: 0 },
-			increment: { seconds: BigInt(incrementSecs), nanos: 0 }
-		});
+	seekGame(clockMs: number, incrementMs: number): void {
+		this.gameTimeControl = create(GameTimeControlSchema, { clockMs, incrementMs });
 
 		const seekGameMsg = create(MessageSchema, {
 			event: {
 				case: 'seekGame',
 				value: {
-					timeControl: {
-						clock: { seconds: BigInt(clockSecs), nanos: 0 },
-						increment: { seconds: BigInt(incrementSecs), nanos: 0 }
-					}
+					timeControl: { clockMs, incrementMs }
 				}
 			}
 		});
 		ws.send(seekGameMsg);
 
 		this.uiState = 'seeking';
-		this.poolLast.current = { clock: clockSecs, increment: incrementSecs };
+		this.poolLast.current = { clockMs, incrementMs };
 	}
 
 	cancelSeekGame(): void {
@@ -69,21 +63,7 @@ class GameManager {
 		}
 
 		const cancelSeekGameMsg = create(MessageSchema, {
-			event: {
-				case: 'cancelSeekGame',
-				value: {
-					timeControl: {
-						clock: {
-							seconds: this.gameTimeControl.clock?.seconds,
-							nanos: this.gameTimeControl.clock?.nanos
-						},
-						increment: {
-							seconds: this.gameTimeControl.increment?.seconds,
-							nanos: this.gameTimeControl.increment?.nanos
-						}
-					}
-				}
-			}
+			event: { case: 'cancelSeekGame', value: {} }
 		});
 		ws.send(cancelSeekGameMsg);
 
@@ -93,29 +73,29 @@ class GameManager {
 	}
 
 	gameAbort() {
-		const gameAbortMsg = create(MessageSchema, { event: { case: 'gameAbort', value: {} } });
-		ws.send(gameAbortMsg);
+		const abortGameMsg = create(MessageSchema, { event: { case: 'abortGame', value: {} } });
+		ws.send(abortGameMsg);
 	}
 
 	gameResign() {
-		const gameResignMsg = create(MessageSchema, { event: { case: 'gameResign', value: {} } });
-		ws.send(gameResignMsg);
+		const resignGameMsg = create(MessageSchema, { event: { case: 'resignGame', value: {} } });
+		ws.send(resignGameMsg);
 	}
 
 	gameOfferDraw() {
-		const gameOfferDrawMsg = create(MessageSchema, { event: { case: 'gameOfferDraw', value: {} } });
-		ws.send(gameOfferDrawMsg);
+		const offerDrawMsg = create(MessageSchema, { event: { case: 'offerDraw', value: {} } });
+		ws.send(offerDrawMsg);
 	}
 
 	gameDeclineDraw() {
-		const gameDeclineDrawMsg = create(MessageSchema, { event: { case: 'gameDeclineDraw', value: {} } });
-		ws.send(gameDeclineDrawMsg);
+		const declineDrawMsg = create(MessageSchema, { event: { case: 'declineDraw', value: {} } });
+		ws.send(declineDrawMsg);
 		// this.opponenOfferedDraw = false;
 	}
 
 	gameAcceptDraw() {
-		const gameAcceptDrawMsg = create(MessageSchema, { event: { case: 'gameAcceptDraw', value: {} } });
-		ws.send(gameAcceptDrawMsg);
+		const acceptDrawMsg = create(MessageSchema, { event: { case: 'acceptDraw', value: {} } });
+		ws.send(acceptDrawMsg);
 		// this.opponenOfferedDraw = false;
 	}
 

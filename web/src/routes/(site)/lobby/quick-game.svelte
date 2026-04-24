@@ -71,7 +71,7 @@
 
 	function onSeekGame(quickGame: components['schemas']['QuickGame']) {
 		const updater = () => {
-			gameManager.seekGame(quickGame.clock_secs, quickGame.increment_secs);
+			gameManager.seekGame(quickGame.clock_secs * 1000, quickGame.increment_secs * 1000);
 		};
 
 		if (!document.startViewTransition) {

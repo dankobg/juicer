@@ -189,22 +189,22 @@ func (a *ApiHandler) ListRatings(ctx context.Context, request api.ListRatingsReq
 	return resp, nil
 }
 
-func (a *ApiHandler) ListQuickGames(ctx context.Context, request api.ListQuickGamesRequestObject) (api.ListQuickGamesResponseObject, error) {
-	quickGames := []api.QuickGame{
-		{Name: "Hyperbullet", ClockSecs: 30, IncrementSecs: 0},
-		{Name: "Bullet", ClockSecs: 60, IncrementSecs: 0},
-		{Name: "Blitz", ClockSecs: 180, IncrementSecs: 0},
-		{Name: "Blitz", ClockSecs: 180, IncrementSecs: 1},
-		{Name: "Blitz", ClockSecs: 300, IncrementSecs: 0},
-		{Name: "Blitz", ClockSecs: 300, IncrementSecs: 2},
-		{Name: "Rapid", ClockSecs: 600, IncrementSecs: 0},
-		{Name: "Rapid", ClockSecs: 600, IncrementSecs: 5},
-		{Name: "Rapid", ClockSecs: 900, IncrementSecs: 0},
-		{Name: "Rapid", ClockSecs: 900, IncrementSecs: 5},
-		{Name: "Classical", ClockSecs: 1800, IncrementSecs: 0},
-		{Name: "Classical", ClockSecs: 2700, IncrementSecs: 10},
-	}
+var quickGames = []api.QuickGame{
+	{Name: "Hyperbullet", ClockSecs: 30, IncrementSecs: 0},
+	{Name: "Bullet", ClockSecs: 60, IncrementSecs: 0},
+	{Name: "Blitz", ClockSecs: 180, IncrementSecs: 0},
+	{Name: "Blitz", ClockSecs: 180, IncrementSecs: 1},
+	{Name: "Blitz", ClockSecs: 300, IncrementSecs: 0},
+	{Name: "Blitz", ClockSecs: 300, IncrementSecs: 2},
+	{Name: "Rapid", ClockSecs: 600, IncrementSecs: 0},
+	{Name: "Rapid", ClockSecs: 600, IncrementSecs: 5},
+	{Name: "Rapid", ClockSecs: 900, IncrementSecs: 0},
+	{Name: "Rapid", ClockSecs: 900, IncrementSecs: 5},
+	{Name: "Classical", ClockSecs: 1800, IncrementSecs: 0},
+	{Name: "Classical", ClockSecs: 2700, IncrementSecs: 10},
+}
 
+func (a *ApiHandler) ListQuickGames(ctx context.Context, request api.ListQuickGamesRequestObject) (api.ListQuickGamesResponseObject, error) {
 	return api.ListQuickGames200JSONResponse(quickGames), nil
 }
 

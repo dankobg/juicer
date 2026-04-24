@@ -257,9 +257,7 @@ message SeekGame {
 }
 
 // CancelSeekGame cancels the game search
-message CancelSeekGame {
-  GameTimeControl time_control = 1;
-}
+message CancelSeekGame {}
 
 // HubInfo is hub information
 message HubInfo {

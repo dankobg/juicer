@@ -1887,7 +1887,6 @@ func (x *SeekGame) GetTimeControl() *GameTimeControl {
 // CancelSeekGame cancels the game search
 type CancelSeekGame struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	TimeControl   *GameTimeControl       `protobuf:"bytes,1,opt,name=time_control,json=timeControl,proto3" json:"time_control,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1920,13 +1919,6 @@ func (x *CancelSeekGame) ProtoReflect() protoreflect.Message {
 // Deprecated: Use CancelSeekGame.ProtoReflect.Descriptor instead.
 func (*CancelSeekGame) Descriptor() ([]byte, []int) {
 	return file_proto_juicer_juicer_proto_rawDescGZIP(), []int{18}
-}
-
-func (x *CancelSeekGame) GetTimeControl() *GameTimeControl {
-	if x != nil {
-		return x.TimeControl
-	}
-	return nil
 }
 
 // HubInfo is hub information
@@ -2950,9 +2942,8 @@ const file_proto_juicer_juicer_proto_rawDesc = "" +
 	"\x05white\x18\x01 \x01(\v2\x19.google.protobuf.DurationR\x05white\x12/\n" +
 	"\x05black\x18\x02 \x01(\v2\x19.google.protobuf.DurationR\x05black\"B\n" +
 	"\bSeekGame\x126\n" +
-	"\ftime_control\x18\x01 \x01(\v2\x13.pb.GameTimeControlR\vtimeControl\"H\n" +
-	"\x0eCancelSeekGame\x126\n" +
-	"\ftime_control\x18\x01 \x01(\v2\x13.pb.GameTimeControlR\vtimeControl\"9\n" +
+	"\ftime_control\x18\x01 \x01(\v2\x13.pb.GameTimeControlR\vtimeControl\"\x10\n" +
+	"\x0eCancelSeekGame\"9\n" +
 	"\aHubInfo\x12\x14\n" +
 	"\x05lobby\x18\x01 \x01(\x05R\x05lobby\x12\x18\n" +
 	"\aplaying\x18\x02 \x01(\x05R\aplaying\"a\n" +
@@ -3188,29 +3179,28 @@ var file_proto_juicer_juicer_proto_depIdxs = []int32{
 	46, // 29: pb.Clocks.white:type_name -> google.protobuf.Duration
 	46, // 30: pb.Clocks.black:type_name -> google.protobuf.Duration
 	8,  // 31: pb.SeekGame.time_control:type_name -> pb.GameTimeControl
-	8,  // 32: pb.CancelSeekGame.time_control:type_name -> pb.GameTimeControl
-	47, // 33: pb.HistoryMoveInfo.played_at:type_name -> google.protobuf.Timestamp
-	29, // 34: pb.HistoryMoveInfo.move:type_name -> pb.HistoryMove
-	6,  // 35: pb.MatchFound.game_state:type_name -> pb.GameState
-	0,  // 36: pb.MatchFound.color:type_name -> pb.Color
-	24, // 37: pb.MatchFound.clocks:type_name -> pb.Clocks
-	8,  // 38: pb.MatchFound.time_control:type_name -> pb.GameTimeControl
-	28, // 39: pb.MatchFound.opponent_info:type_name -> pb.OpponentInfo
-	30, // 40: pb.MatchFound.history_move_infos:type_name -> pb.HistoryMoveInfo
-	47, // 41: pb.MatchFound.start_time:type_name -> google.protobuf.Timestamp
-	38, // 42: pb.GameChatRetrieve.game_chat:type_name -> pb.GameChatReceive
-	24, // 43: pb.ReceiveMove.clocks:type_name -> pb.Clocks
-	4,  // 44: pb.GameFinished.game_result:type_name -> pb.GameResult
-	5,  // 45: pb.GameFinished.game_result_status:type_name -> pb.GameResultStatus
-	6,  // 46: pb.GameFinished.game_state:type_name -> pb.GameState
-	21, // 47: pb.PresenceState.PresencesEntry.value:type_name -> pb.Presence
-	21, // 48: pb.PresenceDiff.JoinedEntry.value:type_name -> pb.Presence
-	21, // 49: pb.PresenceDiff.LeftEntry.value:type_name -> pb.Presence
-	50, // [50:50] is the sub-list for method output_type
-	50, // [50:50] is the sub-list for method input_type
-	50, // [50:50] is the sub-list for extension type_name
-	50, // [50:50] is the sub-list for extension extendee
-	0,  // [0:50] is the sub-list for field type_name
+	47, // 32: pb.HistoryMoveInfo.played_at:type_name -> google.protobuf.Timestamp
+	29, // 33: pb.HistoryMoveInfo.move:type_name -> pb.HistoryMove
+	6,  // 34: pb.MatchFound.game_state:type_name -> pb.GameState
+	0,  // 35: pb.MatchFound.color:type_name -> pb.Color
+	24, // 36: pb.MatchFound.clocks:type_name -> pb.Clocks
+	8,  // 37: pb.MatchFound.time_control:type_name -> pb.GameTimeControl
+	28, // 38: pb.MatchFound.opponent_info:type_name -> pb.OpponentInfo
+	30, // 39: pb.MatchFound.history_move_infos:type_name -> pb.HistoryMoveInfo
+	47, // 40: pb.MatchFound.start_time:type_name -> google.protobuf.Timestamp
+	38, // 41: pb.GameChatRetrieve.game_chat:type_name -> pb.GameChatReceive
+	24, // 42: pb.ReceiveMove.clocks:type_name -> pb.Clocks
+	4,  // 43: pb.GameFinished.game_result:type_name -> pb.GameResult
+	5,  // 44: pb.GameFinished.game_result_status:type_name -> pb.GameResultStatus
+	6,  // 45: pb.GameFinished.game_state:type_name -> pb.GameState
+	21, // 46: pb.PresenceState.PresencesEntry.value:type_name -> pb.Presence
+	21, // 47: pb.PresenceDiff.JoinedEntry.value:type_name -> pb.Presence
+	21, // 48: pb.PresenceDiff.LeftEntry.value:type_name -> pb.Presence
+	49, // [49:49] is the sub-list for method output_type
+	49, // [49:49] is the sub-list for method input_type
+	49, // [49:49] is the sub-list for extension type_name
+	49, // [49:49] is the sub-list for extension extendee
+	0,  // [0:49] is the sub-list for field type_name
 }
 
 func init() { file_proto_juicer_juicer_proto_init() }

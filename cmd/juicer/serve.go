@@ -126,6 +126,7 @@ func (sc *ServeCommand) Run() error {
 	}()
 
 	go apiHandler.PubsubProcess(rootCtx)
+	go apiHandler.StartMatchmaking(rootCtx)
 
 	go func() {
 		if err := apiHandler.Hub.Run(rootCtx); err != nil {

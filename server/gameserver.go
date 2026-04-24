@@ -8,6 +8,7 @@ import (
 	"math"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/aarondl/opt/omit"
@@ -290,34 +291,22 @@ func (a *ApiHandler) handleWSCSeekGameMsg(authInfo clientAuthInfo, data *pb.Seek
 		return
 	}
 
-	ctx := context.Background()
-
-	if _, err := a.bus.rdb.Pipelined(ctx, func(p redis.Pipeliner) error {
-		key := fmt.Sprintf("seek_game.%d.%d-%d", authInfo.authState, data.GetTimeControl().GetClockMs(), data.GetTimeControl().GetIncrementMs())
-		if err := p.ZAdd(ctx, key, redis.Z{Member: authInfo.userID, Score: float64(time.Now().UnixNano())}).Err(); err != nil {
-			a.Log.Error("SeekGame add to queue", slog.String("user_id", authInfo.userID), slog.String("auth_state", authInfo.authState.String()), slog.Any("error", err))
-		}
-
-		// 	if err := p.HSet(ctx, "clients_seeking", clientID, key).Err(); err != nil {
-		// 		h.log.Error("seek_game add seek key for client", slog.String("user_id", clientID), slog.String("auth_state", authState.String()), slog.Any("error", err))
-		// 		return err
-		// 	}
-
-		if err := p.Publish(ctx, key, authInfo.userID).Err(); err != nil {
-			a.Log.Error("SeekGame publish joined", slog.String("user_id", authInfo.userID), slog.String("auth_state", authInfo.authState.String()), slog.Any("error", err))
-			return err
-		}
-
-		return nil
-	}); err != nil {
-		a.Log.Error("SeekGame pipeline", slog.String("user_id", authInfo.userID), slog.String("auth_state", authInfo.authState.String()), slog.Any("error", err))
+	pool := dbtype.Pool{
+		ClockMS:     data.GetTimeControl().GetClockMs(),
+		IncrementMS: data.GetTimeControl().GetIncrementMs(),
+		Rated:       authInfo.authState == ws.ClientAuth,
 	}
-
-	// h.broadcastHubInfoToClient(uuid.MustParse(clientID))
+	if err := a.persistor.Pool().JoinPool(context.Background(), uuid.MustParse(authInfo.userID), pool); err != nil {
+		a.Log.Error("SeekGame join pool failed", slog.String("pool", pool.Name()), slog.String("user_id", authInfo.userID), slog.String("auth_state", authInfo.authState.String()), slog.Any("error", err))
+		return
+	}
 }
 
 func (a *ApiHandler) handleWSCCancelSeekGameMsg(authInfo clientAuthInfo, data *pb.CancelSeekGame) {
-	fmt.Println(data, "handleWSCCancelSeekGameMsg")
+	if err := a.persistor.Pool().LeavePool(context.Background(), uuid.MustParse(authInfo.userID)); err != nil {
+		a.Log.Error("CancelSeekGame leave pool failed", slog.String("user_id", authInfo.userID), slog.String("auth_state", authInfo.authState.String()), slog.Any("error", err))
+		return
+	}
 }
 
 func (a *ApiHandler) handleWSCAbortGame(authInfo clientAuthInfo, data *pb.AbortGame) {
@@ -772,4 +761,91 @@ func ZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZ
 	fmt.Printf("start_time: %s\n", gs.StartTime)
 	fmt.Printf("last_move: %s\n", gs.LastMove)
 	fmt.Printf("history_moves: %v\n", gs.HistoryMoveInfos)
+}
+
+func (a *ApiHandler) StartMatchmaking(ctx context.Context) {
+	a.Log.Info("gameserver matchmaking started")
+
+	matchmakingInterval := time.Second * 15
+	ticker := time.NewTicker(matchmakingInterval)
+
+loop:
+	for {
+		select {
+		case <-ticker.C:
+			a.tryMatchPoolPlayers(ctx)
+		case <-ctx.Done():
+			break loop
+		}
+	}
+}
+
+func (a *ApiHandler) tryMatchPoolPlayers(ctx context.Context) {
+	a.Log.Debug("matchmaking trying to match pool players")
+
+	for _, quickGame := range quickGames {
+		a.tryMatchPoolPlayersForPool(ctx, quickGame.ClockSecs*1000, quickGame.IncrementSecs*1000, true)
+		a.tryMatchPoolPlayersForPool(ctx, quickGame.ClockSecs*1000, quickGame.IncrementSecs*1000, false)
+	}
+}
+
+func (a *ApiHandler) tryMatchPoolPlayersForPool(ctx context.Context, clockMS, incrementMS int32, rated bool) {
+	pool := dbtype.Pool{ClockMS: clockMS, IncrementMS: incrementMS, Rated: rated}
+
+	res, err := a.persistor.Pool().ListPoolPlayers(ctx, pool)
+	if err != nil {
+		a.Log.Error("tryMatchPoolPlayersForPool listpoolplayers", slog.String("pool", pool.Name()), slog.Any("error", err))
+		return
+	}
+
+	queueSize := len(res)
+	if queueSize < 2 {
+		// a.Log.Debug("pool queue size < 2")
+		return
+	}
+
+	pairs := make(chan [2]string, queueSize/2)
+	var wg sync.WaitGroup
+
+	go func() {
+		for i := 0; i+1 < queueSize; i += 2 {
+			pairs <- [2]string{res[i], res[i+1]}
+		}
+		close(pairs)
+	}()
+
+	workers := queueSize / 2
+
+	for range workers {
+		wg.Go(func() {
+			for pair := range pairs {
+				a.processPoolUsersPair(ctx, pair, clockMS, incrementMS, rated)
+			}
+		})
+	}
+
+	wg.Wait()
+
+	if queueSize%2 != 0 {
+		a.Log.Debug("unmatched player remains in queue", slog.String("pool", pool.Name()), slog.String("user_id", res[queueSize-1]))
+	}
+}
+
+func (a *ApiHandler) processPoolUsersPair(ctx context.Context, pair [2]string, clockMS, incrementMS int32, rated bool) {
+	fmt.Println("----------------- PROCESS PAIR ------------------: ", pair, clockMS, incrementMS, rated)
+
+	// userID1, err1 := uuid.Parse(pair[0])
+	// userID2, err2 := uuid.Parse(pair[1])
+	// if err1 != nil || err2 != nil {
+	// 	a.Log.Error("failed to parse user UUIDs", slog.String("user_id1", pair[0]), slog.String("user_id2", pair[1]))
+	// 	return
+	// }
+
+	// username1, err3 := a.GetUsername(ctx, pair[0])
+	// username2, err4 := a.GetUsername(ctx, pair[1])
+	// if err3 != nil || err4 != nil {
+	// 	a.Log.Error("failed to get pair of usernames", slog.String("user_id1", pair[0]), slog.String("user_id2", pair[1]))
+	// 	return
+	// }
+
 }

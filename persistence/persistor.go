@@ -98,6 +98,36 @@ type GamePersistor interface {
 	GetGameStatsForUser(ctx context.Context, userID uuid.UUID, filters *dbtype.GameStatsForUserFilters) (dbtype.GameStats, error)
 }
 
+type PoolPersistor interface {
+	JoinPool(ctx context.Context, userID uuid.UUID, pool dbtype.Pool) error
+	LeavePool(ctx context.Context, userID uuid.UUID) error
+	ListPoolPlayers(ctx context.Context, pool dbtype.Pool) ([]string, error)
+}
+
+// type GameSeek struct{}
+// type GameSeekSetter struct{}
+
+// type GameSeekPersistor interface {
+// 	CreateGameSeek(ctx context.Context, in GameSeekSetter) (GameSeek, error)
+// 	GetGameSeekByID(ctx context.Context, gameSeekID int64) (GameSeek, error)
+// 	DeleteGameSeekByID(ctx context.Context, gameSeekID int64) error
+
+// 	// 	Get(ctx context.Context, id string) (*entity.SoughtGame, error)
+// 	// 	GetBySeekerConnID(ctx context.Context, connID string) (*entity.SoughtGame, error)
+// 	// 	New(context.Context, *entity.SoughtGame) error
+// 	// 	Delete(ctx context.Context, id string) error
+// 	// 	ListOpenSeeks(ctx context.Context, receiverID, tourneyID string) ([]*entity.SoughtGame, error)
+// 	// 	ListCorrespondenceSeeksForUser(ctx context.Context, userID string) ([]*entity.SoughtGame, error)
+// 	// 	ExistsForUser(ctx context.Context, userID string) (bool, error)
+// 	// 	CanCreateSeek(ctx context.Context, userID string, gameMode pb.GameMode, receiverID string) (bool, string, error)
+// 	// 	DeleteForUser(ctx context.Context, userID string) (*entity.SoughtGame, error)
+// 	// 	UpdateForReceiver(ctx context.Context, userID string) (*entity.SoughtGame, error)
+// 	// 	DeleteForSeekerConnID(ctx context.Context, connID string) (*entity.SoughtGame, error)
+// 	// 	UpdateForReceiverConnID(ctx context.Context, connID string) (*entity.SoughtGame, error)
+// 	// 	UserMatchedBy(ctx context.Context, userID, matcher string) (bool, error)
+// 	// 	ExpireOld(ctx context.Context) error
+// }
+
 type RatingPersistor interface {
 	ListRatings(ctx context.Context, filters dbtype.ListRatingsFilters) (dbtype.PagedResult[models.Rating], error)
 	GetRatingByID(ctx context.Context, ratingID int64) (models.Rating, error)
@@ -143,4 +173,5 @@ type Persistor interface {
 	Game() GamePersistor
 	Rating() RatingPersistor
 	Presence() PresencePersistor
+	Pool() PoolPersistor
 }
