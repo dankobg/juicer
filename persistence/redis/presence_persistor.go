@@ -2,6 +2,7 @@ package redis
 
 import (
 	"context"
+	_ "embed"
 	"fmt"
 	"slices"
 	"strings"
@@ -12,15 +13,31 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
+//go:embed lua-scripts/set_presence.lua
+var setPresenceLuaScript string
+
+//go:embed lua-scripts/refresh_presence.lua
+var refreshPresenceLuaScript string
+
+//go:embed lua-scripts/clear_presence.lua
+var clearPresenceLuaScript string
+
 var _ persistence.PresencePersistor = (*RedisPresencePersistor)(nil)
 
 type RedisPresencePersistor struct {
 	*RedisPersistor
+
+	setPresenceScript     *redis.Script
+	refreshPresenceScript *redis.Script
+	clearPresenceScript   *redis.Script
 }
 
 func NewRedisPresencePersistor(rs *RedisPersistor) *RedisPresencePersistor {
 	return &RedisPresencePersistor{
-		RedisPersistor: rs,
+		RedisPersistor:        rs,
+		setPresenceScript:     redis.NewScript(setPresenceLuaScript),
+		refreshPresenceScript: redis.NewScript(refreshPresenceLuaScript),
+		clearPresenceScript:   redis.NewScript(clearPresenceLuaScript),
 	}
 }
 
