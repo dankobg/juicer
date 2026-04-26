@@ -88,7 +88,7 @@ func (a *ApiHandler) handleIPCHeartbeatMsg(data *pb.Heartbeat) {
 	}
 
 	_, _, err := a.persistor.Presence().RefreshPresence(context.Background(), uuid.MustParse(data.UserId), uuid.MustParse(data.ConnId), username, data.Guest)
-	if err != nil {
+	if err != nil && !errors.Is(err, redis.Nil) {
 		a.Log.Error("RefreshPresence", slog.String("user_id", data.UserId), slog.String("conn_id", data.ConnId), slog.Any("error", err))
 	}
 
@@ -110,8 +110,10 @@ func (a *ApiHandler) handleIPCLeaveTabMsg(data *pb.LeaveTab) {
 		username = uname
 	}
 
+	_ = username
+
 	_, _, _, err := a.persistor.Presence().ClearPresence(context.Background(), uuid.MustParse(data.UserId), uuid.MustParse(data.ConnId), username, data.Guest)
-	if err != nil {
+	if err != nil && !errors.Is(err, redis.Nil) {
 		a.Log.Error("ClearPresence", slog.String("user_id", data.UserId), slog.String("conn_id", data.ConnId), slog.Any("error", err))
 	}
 
@@ -204,16 +206,16 @@ func (a *ApiHandler) handleIPCRequestInitialChannelsInfoMsg(data *pb.RequestInit
 	}
 
 	for _, channel := range data.GetChannels() {
-		oldChannels, newChannels, err := a.persistor.Presence().SetPresence(context.Background(), uuid.MustParse(data.UserId), uuid.MustParse(data.ConnId), username, data.Guest, channel)
-		if err != nil {
+		_, _, err := a.persistor.Presence().SetPresence(context.Background(), uuid.MustParse(data.UserId), uuid.MustParse(data.ConnId), username, data.Guest, channel)
+		if err != nil && !errors.Is(err, redis.Nil) {
 			a.Log.Error("SetPresence", slog.String("user_id", data.UserId), slog.String("conn_id", data.ConnId), slog.String("channel", channel), slog.Any("error", err))
 			return
 		}
 
-		if err := a.broadcastPresenceDiff(context.Background(), oldChannels, newChannels, data.UserId, username); err != nil {
-			a.Log.Error("broadcastPresenceDiff", slog.String("user_id", data.UserId), slog.String("conn_id", data.ConnId), slog.String("channel", channel), slog.Any("error", err))
-			return
-		}
+		// if err := a.broadcastPresenceDiff(context.Background(), oldChannels, newChannels, data.UserId, username); err != nil {
+		// 	a.Log.Error("broadcastPresenceDiff", slog.String("user_id", data.UserId), slog.String("conn_id", data.ConnId), slog.String("channel", channel), slog.Any("error", err))
+		// 	return
+		// }
 
 		if channel == "lobby" {
 			if err := a.sendLobbyInfo(data.UserId, data.ConnId); err != nil {
