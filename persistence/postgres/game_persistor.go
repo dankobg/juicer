@@ -83,54 +83,69 @@ func (pst *PgGamePersistor) ListGames(ctx context.Context, filters dbtype.ListGa
 
 			q.Apply(sm.Where(models.Games.Columns.ID.In(psql.Arg(ids...))))
 		}
+
 		if filters.GameVariantID != nil {
 			gameVariantIDs := make([]any, len(*filters.GameVariantID))
 			for i, id := range *filters.GameVariantID {
 				gameVariantIDs[i] = id
 			}
+
 			q.Apply(sm.Where(models.Games.Columns.GameVariantID.In(psql.Arg(gameVariantIDs...))))
 		}
+
 		if filters.GameTimeKindID != nil {
 			gameTimeKindIDs := make([]any, len(*filters.GameTimeKindID))
 			for i, id := range *filters.GameTimeKindID {
 				gameTimeKindIDs[i] = id
 			}
+
 			q.Apply(sm.Where(models.Games.Columns.GameTimeKindID.In(psql.Arg(gameTimeKindIDs...))))
 		}
+
 		if filters.GameTimeCategoryID != nil {
 			gameTimeCategoryIDs := make([]any, len(*filters.GameTimeCategoryID))
 			for i, id := range *filters.GameTimeCategoryID {
 				gameTimeCategoryIDs[i] = id
 			}
+
 			q.Apply(sm.Where(models.Games.Columns.GameTimeCategoryID.In(psql.Arg(gameTimeCategoryIDs...))))
 		}
+
 		if filters.GameResultID != nil {
 			gameResultIDs := make([]any, len(*filters.GameResultID))
 			for i, id := range *filters.GameResultID {
 				gameResultIDs[i] = id
 			}
+
 			q.Apply(sm.Where(models.Games.Columns.GameResultID.In(psql.Arg(gameResultIDs...))))
 		}
+
 		if filters.GameResultStatusID != nil {
 			gameResultStatusIDs := make([]any, len(*filters.GameResultStatusID))
 			for i, id := range *filters.GameResultStatusID {
 				gameResultStatusIDs[i] = id
 			}
+
 			q.Apply(sm.Where(models.Games.Columns.GameResultStatusID.In(psql.Arg(gameResultStatusIDs...))))
 		}
+
 		if filters.GameStateID != nil {
 			gameStateIDs := make([]any, len(*filters.GameStateID))
 			for i, id := range *filters.GameStateID {
 				gameStateIDs[i] = id
 			}
+
 			q.Apply(sm.Where(models.Games.Columns.GameStateID.In(psql.Arg(gameStateIDs...))))
 		}
+
 		if filters.Rated != nil {
 			q.Apply(sm.Where(models.Games.Columns.Rated.EQ(psql.Arg(*filters.Rated))))
 		}
+
 		if filters.CreatedAtFrom != nil {
 			q.Apply(sm.Where(models.Games.Columns.CreatedAt.GTE(psql.Arg(*filters.CreatedAtFrom))))
 		}
+
 		if filters.CreatedAtTo != nil {
 			q.Apply(sm.Where(models.Games.Columns.CreatedAt.LTE(psql.Arg(*filters.CreatedAtTo))))
 		}

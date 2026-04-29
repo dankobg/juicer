@@ -12,5 +12,6 @@ func channelSafePrint(ch *Channel) string {
 	if ch == nil {
 		return ""
 	}
+
 	return string(*ch)
 }

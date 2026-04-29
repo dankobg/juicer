@@ -91,6 +91,7 @@ func (sc *ServeCommand) Run() error {
 	if err := apiHandler.FetchCategoryThresholds(context.Background()); err != nil {
 		return fmt.Errorf("FetchCategoryThresholds: %w", err)
 	}
+
 	if err := apiHandler.FetchProtoMappingsCacheLookups(context.Background()); err != nil {
 		return fmt.Errorf("FetchProtoMappingsCacheLookups: %w", err)
 	}

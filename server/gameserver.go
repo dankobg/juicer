@@ -84,6 +84,7 @@ func (a *ApiHandler) handleIPCHeartbeatMsg(data *pb.Heartbeat) {
 			a.Log.Error("handleIPCHeartbeatMsg get username", slog.Any("error", err))
 			return
 		}
+
 		username = uname
 	}
 
@@ -107,6 +108,7 @@ func (a *ApiHandler) handleIPCLeaveTabMsg(data *pb.LeaveTab) {
 			a.Log.Error("handleIPCLeaveTabMsg get username", slog.Any("error", err))
 			return
 		}
+
 		username = uname
 	}
 
@@ -120,7 +122,6 @@ func (a *ApiHandler) handleIPCLeaveTabMsg(data *pb.LeaveTab) {
 	// clear presence
 	// broadcast presence change
 	// delete active seeks for connID
-
 }
 
 func (a *ApiHandler) handleIPCLeaveSiteMsg(data *pb.LeaveSite) {
@@ -141,14 +142,17 @@ func (a *ApiHandler) handleIPCInitializeChannelsMsg(data *pb.InitializeChannels)
 				a.Log.Error("gameid parseint", slog.Any("error", err))
 				return
 			}
+
 			gameID = n
 		}
+
 		if gametvIDStr, ok := strings.CutPrefix(data.Path, "/gametv/"); ok {
 			n, err := strconv.ParseInt(gametvIDStr, 10, 64)
 			if err != nil {
 				a.Log.Error("gametvid parseint", slog.Any("error", err))
 				return
 			}
+
 			gameID = n
 		}
 
@@ -201,6 +205,7 @@ func (a *ApiHandler) handleIPCClientConnectedMsg(data *pb.ClientConnected) {
 			a.Log.Error("handleIPCClientConnectedMsg get username", slog.Any("error", err))
 			return
 		}
+
 		username = uname
 	}
 
@@ -221,6 +226,7 @@ func (a *ApiHandler) handleIPCClientConnectedMsg(data *pb.ClientConnected) {
 				a.Log.Error("sendLobbyInfo", slog.Any("error", err))
 			}
 		}
+
 		if channel == "lobby.chat" {
 			if err := a.sendLobbyChatInfo(data.UserId, data.ConnId, data.Guest); err != nil {
 				a.Log.Error("sendLobbyChatInfo", slog.Any("error", err))
@@ -233,6 +239,7 @@ func (a *ApiHandler) handleIPCClientConnectedMsg(data *pb.ClientConnected) {
 				a.Log.Error("gameid parseint", slog.Any("error", err))
 				return
 			}
+
 			if err := a.sendGameInfo(gameID, data.UserId, data.ConnId, data.Guest); err != nil {
 				a.Log.Error("sendGameInfo", slog.Any("error", err))
 			}
@@ -244,25 +251,11 @@ func (a *ApiHandler) handleIPCClientConnectedMsg(data *pb.ClientConnected) {
 				a.Log.Error("gametvid parseint", slog.Any("error", err))
 				return
 			}
+
 			if err := a.sendGameTvInfo(gameID, data.UserId, data.ConnId, data.Guest); err != nil {
 				a.Log.Error("sendGameTvInfo", slog.Any("error", err))
 			}
 		}
-
-		// if strings.HasPrefix(channel, "game.") || strings.HasPrefix(channel, "gametv.") {
-		// 	gameIDStr := strings.Split(channel, ".")
-		// 	if len(gameIDStr) != 3 {
-		// 		return
-		// 	}
-		// 	gameID, err := strconv.ParseInt(gameIDStr[2], 10, 64)
-		// 	if err != nil {
-		// 		a.Log.Error("gameid parseint", slog.Any("error", err))
-		// 		return
-		// 	}
-		// 	if err := a.sendGameInfo(gameID, data.UserId, data.ConnId, data.Guest); err != nil {
-		// 		a.Log.Error("sendGameInfo", slog.Any("error", err))
-		// 	}
-		// }
 	}
 }
 
@@ -394,6 +387,7 @@ func (a *ApiHandler) FetchCategoryThresholds(ctx context.Context) error {
 		if v.UpperTimeLimitSecs.IsValue() {
 			limit = time.Second * time.Duration(v.UpperTimeLimitSecs.MustGet())
 		}
+
 		switch v.Name {
 		case "hyperbullet":
 			a.categoryThresholds = append(a.categoryThresholds, categoryThreshold{timeCategory: pb.GameTimeCategory_GAME_TIME_CATEGORY_HYPERBULLET, upperLimit: limit})
@@ -417,6 +411,7 @@ func (a *ApiHandler) FetchProtoMappingsCacheLookups(ctx context.Context) error {
 	gameTimeCategories, e3 := a.persistor.GameTimeCategory().ListGameTimeCategories(ctx, dbtype.ListGameTimeCategoriesFilters{})
 	gameResults, e4 := a.persistor.GameResult().ListGameResults(ctx, dbtype.ListGameResultsFilters{})
 	gameResultStatuses, e5 := a.persistor.GameResultStatus().ListGameResultStatuses(ctx, dbtype.ListGameResultStatusesFilters{})
+
 	gameStates, e6 := a.persistor.GameState().ListGameStates(ctx, dbtype.ListGameStatesFilters{})
 	if err := errors.Join(e1, e2, e3, e4, e5, e6); err != nil {
 		return err
@@ -661,6 +656,7 @@ func (a *ApiHandler) sendPresenceInfo(ctx context.Context, userID, connID uuid.U
 	if err != nil {
 		return err
 	}
+
 	_ = presMsg
 
 	// if err := a.publishToConnID(ctx, connID, userID, presMsg); err != nil {
@@ -856,12 +852,14 @@ func (a *ApiHandler) tryMatchPoolPlayersForPool(ctx context.Context, clockMS, in
 	}
 
 	pairs := make(chan [2]string, queueSize/2)
+
 	var wg sync.WaitGroup
 
 	go func() {
 		for i := 0; i+1 < queueSize; i += 2 {
 			pairs <- [2]string{res[i], res[i+1]}
 		}
+
 		close(pairs)
 	}()
 
@@ -898,5 +896,4 @@ func (a *ApiHandler) processPoolUsersPair(ctx context.Context, pair [2]string, c
 	// 	a.Log.Error("failed to get pair of usernames", slog.String("user_id1", pair[0]), slog.String("user_id2", pair[1]))
 	// 	return
 	// }
-
 }

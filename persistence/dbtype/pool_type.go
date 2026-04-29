@@ -13,5 +13,6 @@ func (p Pool) Name() string {
 	if p.Rated {
 		rated = "rated"
 	}
+
 	return fmt.Sprintf("%d_%d_%s", p.ClockMS, p.IncrementMS, rated)
 }

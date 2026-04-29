@@ -75,6 +75,7 @@ func (a *ApiHandler) serverWs(w http.ResponseWriter, r *http.Request) {
 			if onPingReceived != nil {
 				return onPingReceived(ctx, payload)
 			}
+
 			return false
 		},
 		OnPongReceived: func(ctx context.Context, payload []byte) {

@@ -113,6 +113,7 @@ func (pst *RedisPresencePersistor) ListUsersInChannel(ctx context.Context, chann
 		for i, connID := range connIDs {
 			cmds[i] = p.HGetAll(ctx, "presence:conn:"+connID)
 		}
+
 		return nil
 	}); err != nil {
 		return nil, fmt.Errorf("ListUsersInChannel pipeline failed: %w", err)
@@ -161,6 +162,7 @@ func (pst *RedisPresencePersistor) ListChannelsForUser(ctx context.Context, user
 		for i, connID := range connIDs {
 			cmds[i] = p.SMembers(ctx, "presence:conn:channels:"+connID)
 		}
+
 		return nil
 	}); err != nil {
 		return nil, fmt.Errorf("ListChannelsForUser pipeline failed: %w", err)
@@ -204,6 +206,7 @@ func (pst *RedisPresencePersistor) UsersCountInChannel(ctx context.Context, chan
 		for i, connID := range connIDs {
 			cmds[i] = p.HGet(ctx, "presence:conn:"+connID, "user_id")
 		}
+
 		return nil
 	}); err != nil {
 		return 0, fmt.Errorf("UsersCountInChannel pipeline failed: %w", err)

@@ -259,6 +259,7 @@ func (h *Hub) removeClient(c *client) {
 	leaveTabMsg := &pb.Message{
 		Event: &pb.Message_LeaveTab{LeaveTab: &pb.LeaveTab{UserId: c.userID.String(), ConnId: c.connID.String(), Guest: c.authState == ClientGuest}},
 	}
+
 	leaveTabMsgBytes, err := protojson.Marshal(leaveTabMsg)
 	if err != nil {
 		h.log.Error("protojson marshal Message_LeaveTab", slog.String("user_id", c.userID.String()), slog.String("conn_id", c.connID.String()), slog.String("auth_state", c.authState.String()), slog.Any("error", err))
@@ -274,6 +275,7 @@ func (h *Hub) removeClient(c *client) {
 		leaveSiteMsg := &pb.Message{
 			Event: &pb.Message_LeaveSite{LeaveSite: &pb.LeaveSite{UserId: c.userID.String(), ConnId: c.connID.String(), Guest: c.authState == ClientGuest}},
 		}
+
 		leaveSiteMsgBytes, err := protojson.Marshal(leaveSiteMsg)
 		if err != nil {
 			h.log.Error("protojson marshal Message_LeaveSite", slog.String("user_id", c.userID.String()), slog.String("conn_id", c.connID.String()), slog.String("auth_state", c.authState.String()), slog.Any("error", err))
@@ -332,6 +334,7 @@ func (h *Hub) InitializeChannels(ctx context.Context, client *client) ([]string,
 	}
 
 	initialChannels := m.GetInitialChannels().GetChannels()
+
 	return initialChannels, nil
 }
 

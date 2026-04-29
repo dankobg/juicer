@@ -78,6 +78,7 @@ func NewClient(id uuid.UUID, hub *Hub, conn *websocket.Conn, authState ClientAut
 	if onPingReceivedRegister != nil {
 		onPingReceivedRegister(client.onPingReceived)
 	}
+
 	if onPongReceivedRegister != nil {
 		onPongReceivedRegister(client.onPongReceived)
 	}
@@ -141,6 +142,7 @@ func (c *client) WriteLoop(ctx context.Context) {
 			c.mu.Lock()
 			c.lastPingSent = time.Now()
 			c.mu.Unlock()
+
 			if err := c.conn.Ping(ctx); err != nil {
 				c.log.Error("failed to ping", slog.Int("pong_count", c.pongCount), slog.Time("last_ping_sent", c.lastPingSent), slog.Any("error", err))
 				return
@@ -172,11 +174,13 @@ func (c *client) onPongReceived(ctx context.Context, payload []byte) {
 	} else {
 		mix = 1 / float64(c.pongCount)
 	}
+
 	c.avgLatency += time.Duration(mix * (float64(curLatency) - float64(c.avgLatency)))
 	c.mu.Unlock()
 
 	// if c.pongCount%10 == 2 {
 	heartbeatMsg := &pb.Message{Event: &pb.Message_Heartbeat{Heartbeat: &pb.Heartbeat{UserId: c.userID.String(), ConnId: c.connID.String(), Guest: c.authState == ClientGuest}}}
+
 	heartbeatMsgBytes, err := protojson.Marshal(heartbeatMsg)
 	if err != nil {
 		c.log.Error("protojson marshal Message_Heartbeat", slog.Any("error", err))

@@ -116,7 +116,9 @@ func NewGameState(gameID int64, players [2]Player, timeControl *pb.GameTimeContr
 	}
 
 	var white, black *Player
+
 	playersByID := make(map[uuid.UUID]*Player)
+
 	for _, p := range players {
 		if p.Color == pb.Color_COLOR_WHITE {
 			white = &Player{ID: p.ID, Name: p.Name, Color: p.Color, Guest: p.Guest}
@@ -174,15 +176,19 @@ func (gs *GameState) Stop() {
 	if gs.activeGameTimer != nil {
 		gs.activeGameTimer.Stop()
 	}
+
 	if gs.whiteFirstMoveTimer != nil {
 		gs.whiteFirstMoveTimer.Stop()
 	}
+
 	if gs.blackFirstMoveTimer != nil {
 		gs.blackFirstMoveTimer.Stop()
 	}
+
 	if gs.whiteReconnectTimer != nil {
 		gs.whiteReconnectTimer.Stop()
 	}
+
 	if gs.blackReconnectTimer != nil {
 		gs.blackReconnectTimer.Stop()
 	}
@@ -193,13 +199,16 @@ func validatePlayers(players [2]Player) error {
 		if p.ID == uuid.Nil {
 			return errors.New("player id can't be empty")
 		}
+
 		if p.Color == pb.Color_COLOR_UNSPECIFIED {
 			return errors.New("player color can't be empty")
 		}
 	}
+
 	if players[0].Color == players[1].Color {
 		return errors.New("player can't have the same color")
 	}
+
 	return nil
 }
 

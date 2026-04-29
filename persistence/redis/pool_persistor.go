@@ -56,6 +56,7 @@ func (pst *RedisPoolPersistor) LeavePool(ctx context.Context, userID uuid.UUID) 
 	if err == redis.Nil {
 		return nil
 	}
+
 	if err != nil {
 		return err
 	}
@@ -79,6 +80,7 @@ func (pst *RedisPoolPersistor) LeavePool(ctx context.Context, userID uuid.UUID) 
 
 func (pst *RedisPoolPersistor) ListPoolPlayers(ctx context.Context, pool dbtype.Pool) ([]string, error) {
 	poolKey := fmt.Sprintf("pool:%s", pool.Name())
+
 	res, err := pst.rdb.ZRangeArgs(ctx, redis.ZRangeArgs{Key: poolKey, ByScore: true, Start: "-inf", Stop: "+inf"}).Result()
 	if err != nil {
 		return nil, fmt.Errorf("ListPoolPlayers failed: %w", err)
