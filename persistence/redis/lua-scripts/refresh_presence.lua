@@ -15,8 +15,11 @@ local expiration_ts = tonumber(ARGV[6])
 local auth_state = guest and "guest" or "auth"
 local expiration_ttl = expiration_ts - now_ts
 
-redis.call("HSET", "presence:user:last-seen", user_id, now_ts)
+-- user last seen
+redis.call("ZADD", "presence:user:last-seen", now_ts, user_id)
 
+-- refresh connection
 redis.call("ZADD", "presence:conns", expiration_ts, conn_id)
 
+-- refresh expiry
 redis.call("EXPIRE", "presence:conn:" .. conn_id, expiration_ttl)
