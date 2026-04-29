@@ -9,7 +9,7 @@
 local user_id = ARGV[1]
 local conn_id = ARGV[2]
 local username = ARGV[3]
-local guest = ARGV[4] == "true"
+local guest = ARGV[4] == "1"
 local channel = ARGV[5]
 local now_ts = tonumber(ARGV[6])
 local expiration_ts = tonumber(ARGV[7])

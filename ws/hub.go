@@ -32,7 +32,6 @@ type Hub struct {
 }
 
 func NewHub(persistor persistence.Persistor, rdb *redis.Client, logger *slog.Logger) *Hub {
-
 	hub := &Hub{
 		ClientConnected:    make(chan *client),
 		ClientDisconnected: make(chan *client),
@@ -118,15 +117,24 @@ func (h *Hub) onClientConnected(client *client) {
 	h.log.Debug("client connected", slog.String("user_id", client.userID.String()), slog.String("conn_id", client.connID.String()), slog.String("auth_state", client.authState.String()), slog.Any("channels", client.channels))
 
 	h.addClient(client)
-	h.requestChannelsInfo(client)
+
+	clientChannels := make([]string, len(client.channels))
+	for i, ch := range client.channels {
+		clientChannels[i] = ch.String()
+	}
 
 	clientConnectedMsg := &pb.Message{
-		Event: &pb.Message_ClientConnected{ClientConnected: &pb.ClientConnected{Id: client.userID.String()}},
+		Event: &pb.Message_ClientConnected{ClientConnected: &pb.ClientConnected{
+			UserId:   client.userID.String(),
+			ConnId:   client.connID.String(),
+			Guest:    client.authState == ClientGuest,
+			Channels: clientChannels,
+		}},
 	}
 
 	clientConnectedMsgBytes, err := protojson.Marshal(clientConnectedMsg)
 	if err != nil {
-		h.log.Error("protojson marshal Message_ClientConnected", slog.String("user_id", client.userID.String()), slog.String("conn_id", client.connID.String()), slog.String("auth_state", client.authState.String()), slog.Any("error", err))
+		h.log.Error("protojson marshal Message_ClientConnected", slog.String("user_id", client.userID.String()), slog.String("conn_id", client.connID.String()), slog.String("auth_state", client.authState.String()), slog.Any("channels", client.channels), slog.Any("error", err))
 	} else {
 		if err := h.bus.rdb.Publish(context.Background(), "ipc", clientConnectedMsgBytes).Err(); err != nil {
 			h.log.Error("hub publish Message_ClientConnected", slog.String("user_id", client.userID.String()), slog.String("conn_id", client.connID.String()), slog.String("auth_state", client.authState.String()), slog.String("topic", "ipc"), slog.Any("error", err))
@@ -139,7 +147,11 @@ func (h *Hub) onClientDisconnected(client *client) {
 	h.removeClient(client)
 
 	clientDisconnectedMsg := &pb.Message{
-		Event: &pb.Message_ClientDisconnected{ClientDisconnected: &pb.ClientDisconnected{Id: client.userID.String()}},
+		Event: &pb.Message_ClientDisconnected{ClientDisconnected: &pb.ClientDisconnected{
+			UserId: client.userID.String(),
+			ConnId: client.connID.String(),
+			Guest:  client.authState == ClientGuest,
+		}},
 	}
 
 	clientDisconnectedMsgBytes, err := protojson.Marshal(clientDisconnectedMsg)
@@ -245,7 +257,7 @@ func (h *Hub) removeClient(c *client) {
 	delete(h.clientsByConnID, c.connID)
 
 	leaveTabMsg := &pb.Message{
-		Event: &pb.Message_LeaveTab{LeaveTab: &pb.LeaveTab{UserId: c.userID.String(), Guest: c.authState == ClientGuest, ConnId: c.connID.String()}},
+		Event: &pb.Message_LeaveTab{LeaveTab: &pb.LeaveTab{UserId: c.userID.String(), ConnId: c.connID.String(), Guest: c.authState == ClientGuest}},
 	}
 	leaveTabMsgBytes, err := protojson.Marshal(leaveTabMsg)
 	if err != nil {
@@ -260,7 +272,7 @@ func (h *Hub) removeClient(c *client) {
 		delete(h.clientsByUserID, c.userID)
 
 		leaveSiteMsg := &pb.Message{
-			Event: &pb.Message_LeaveSite{LeaveSite: &pb.LeaveSite{UserId: c.userID.String(), Guest: c.authState == ClientGuest, ConnId: c.connID.String()}},
+			Event: &pb.Message_LeaveSite{LeaveSite: &pb.LeaveSite{UserId: c.userID.String(), ConnId: c.connID.String(), Guest: c.authState == ClientGuest}},
 		}
 		leaveSiteMsgBytes, err := protojson.Marshal(leaveSiteMsg)
 		if err != nil {
@@ -319,35 +331,8 @@ func (h *Hub) InitializeChannels(ctx context.Context, client *client) ([]string,
 		return nil, fmt.Errorf("protojson.Unmarshal Message_InitialChannels: %w", err)
 	}
 
-	initializedChannels := m.GetInitializedChannels().GetChannels()
-	return initializedChannels, nil
-}
-
-func (h *Hub) requestChannelsInfo(client *client) {
-	channels := make([]string, len(client.channels))
-	for i, channel := range client.channels {
-		channels[i] = channel.String()
-	}
-
-	requestInitialChannelsInfoMsg := &pb.Message{
-		Event: &pb.Message_RequestInitialChannelsInfo{
-			RequestInitialChannelsInfo: &pb.RequestInitialChannelsInfo{
-				UserId:   client.userID.String(),
-				ConnId:   client.connID.String(),
-				Guest:    client.authState == ClientGuest,
-				Channels: channels,
-			},
-		},
-	}
-
-	requestInitialChannelsInfoMsgBytes, err := protojson.Marshal(requestInitialChannelsInfoMsg)
-	if err != nil {
-		h.log.Error("protojson marshal Message_RequestInitialChannelsInfo", slog.String("user_id", client.userID.String()), slog.String("conn_id", client.connID.String()), slog.String("auth_state", client.authState.String()), slog.Any("error", err))
-	} else {
-		if err := h.bus.rdb.Publish(context.Background(), "ipc", requestInitialChannelsInfoMsgBytes).Err(); err != nil {
-			h.log.Error("hub publish Message_RequestInitialChannelsInfo", slog.String("user_id", client.userID.String()), slog.String("conn_id", client.connID.String()), slog.String("auth_state", client.authState.String()), slog.String("topic", "ipc"), slog.Any("error", err))
-		}
-	}
+	initialChannels := m.GetInitialChannels().GetChannels()
+	return initialChannels, nil
 }
 
 func (h *Hub) PubsubProcess(ctx context.Context) {

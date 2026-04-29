@@ -2,6 +2,7 @@ package persistence
 
 import (
 	"context"
+	"time"
 
 	"github.com/dankobg/juicer/db/gen/models"
 	"github.com/dankobg/juicer/persistence/dbtype"
@@ -148,18 +149,12 @@ type PresencePersistor interface {
 	SetPresence(ctx context.Context, userID uuid.UUID, connID uuid.UUID, username string, guest bool, channel string) ([]string, []string, error)
 	ClearPresence(ctx context.Context, userID uuid.UUID, connID uuid.UUID, username string, guest bool) ([]string, []string, []string, error)
 	RefreshPresence(ctx context.Context, userID uuid.UUID, connID uuid.UUID, username string, guest bool) ([]string, []string, error)
-	GetPresence(ctx context.Context, userID uuid.UUID) ([]string, error)
-	CountInChannel(ctx context.Context, channel string) (int64, error)
-	LastSeen(ctx context.Context, userID uuid.UUID) (int64, error) // time.Time probably
-	GetChannelsForUser(ctx context.Context, userID uuid.UUID) ([]string, error)
-	GetUsersInChannel(ctx context.Context, channel string) ([]UserPresenceInfo, error)
-
-	// ##################################################################################################################################
-	// BatchGetPresence(ctx context.Context, users []*entity.User) ([]*entity.User, error)
-	// BatchGetChannels(ctx context.Context, uuids []string) ([][]string, error)
-	// UpdateFollower(ctx context.Context, followee, follower *entity.User, following bool) error
-	// UpdateActiveGame(ctx context.Context, activeGameEntry *pb.ActiveGameEntry) ([][][]string, error)
-	// ##################################################################################################################################
+	UserLastSeen(ctx context.Context, userID uuid.UUID) (time.Time, error)
+	ListUsersInChannel(ctx context.Context, channel string) ([]UserPresenceInfo, error)
+	ListChannelsForUser(ctx context.Context, userID uuid.UUID) ([]string, error)
+	UsersCountInChannel(ctx context.Context, channel string) (int64, error)
+	ConnsCountInChannel(ctx context.Context, channel string) (int64, error)
+	TotalActiveConnsCount(ctx context.Context) (int64, error)
 }
 
 type Persistor interface {

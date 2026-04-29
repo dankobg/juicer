@@ -4,8 +4,7 @@ import (
 	"context"
 	_ "embed"
 	"fmt"
-	"slices"
-	"strings"
+	"strconv"
 	"time"
 
 	"github.com/dankobg/juicer/persistence"
@@ -86,105 +85,162 @@ func (pst *RedisPresencePersistor) RefreshPresence(ctx context.Context, userID u
 	return nil, nil, nil
 }
 
-func (pst *RedisPresencePersistor) GetPresence(ctx context.Context, userID uuid.UUID) ([]string, error) {
-	presenceUserKey := "presence:user:" + userID.String()
+func (pst *RedisPresencePersistor) UserLastSeen(ctx context.Context, userID uuid.UUID) (time.Time, error) {
+	lastSeenPresenceKey := "presence:user:last-seen"
 
-	userPresence, err := pst.rdb.ZRange(ctx, presenceUserKey, 0, -1).Result()
+	ts, err := pst.rdb.ZScore(ctx, lastSeenPresenceKey, userID.String()).Result()
 	if err != nil {
-		return nil, fmt.Errorf("get user presence: %w", err)
+		return time.Time{}, fmt.Errorf("failed to get last seen: %w", err)
 	}
 
-	if userPresence == nil {
-		return []string{}, nil
+	return time.Unix(int64(ts), 0), nil
+}
+
+func (pst *RedisPresencePersistor) ListUsersInChannel(ctx context.Context, channel string) ([]persistence.UserPresenceInfo, error) {
+	connIDs, err := pst.rdb.ZRangeArgs(ctx, redis.ZRangeArgs{
+		ByScore: true,
+		Key:     "presence:channel:conns:" + channel,
+		Start:   time.Now().Unix(),
+		Stop:    "+inf",
+	}).Result()
+	if err != nil {
+		return nil, fmt.Errorf("failed to list conns in channel: %w", err)
 	}
 
-	channels := make([]string, len(userPresence))
-	for i, connChannelKey := range userPresence {
-		channel := strings.Split(connChannelKey, "#")[1]
-		channels[i] = channel
+	cmds := make([]*redis.MapStringStringCmd, len(connIDs))
+
+	if _, err := pst.rdb.Pipelined(ctx, func(p redis.Pipeliner) error {
+		for i, connID := range connIDs {
+			cmds[i] = p.HGetAll(ctx, "presence:conn:"+connID)
+		}
+		return nil
+	}); err != nil {
+		return nil, fmt.Errorf("ListUsersInChannel pipeline failed: %w", err)
+	}
+
+	userPresenceSet := make(map[string]persistence.UserPresenceInfo)
+
+	for _, cmd := range cmds {
+		meta, err := cmd.Result()
+		if err != nil {
+			return nil, err
+		}
+
+		userID := meta["user_id"]
+		username := meta["username"]
+		authState := meta["auth_state"]
+
+		if _, exists := userPresenceSet[userID]; exists {
+			continue
+		}
+
+		userPresenceSet[userID] = persistence.UserPresenceInfo{
+			ID:       userID,
+			Username: username,
+			Guest:    authState == "guest",
+		}
+	}
+
+	userPresenceInfos := make([]persistence.UserPresenceInfo, 0, len(userPresenceSet))
+	for _, info := range userPresenceSet {
+		userPresenceInfos = append(userPresenceInfos, info)
+	}
+
+	return userPresenceInfos, nil
+}
+
+func (pst *RedisPresencePersistor) ListChannelsForUser(ctx context.Context, userID uuid.UUID) ([]string, error) {
+	connIDs, err := pst.rdb.SMembers(ctx, "presence:user:conns:"+userID.String()).Result()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get user conns: %w", err)
+	}
+
+	cmds := make([]*redis.StringSliceCmd, len(connIDs))
+
+	if _, err := pst.rdb.Pipelined(ctx, func(p redis.Pipeliner) error {
+		for i, connID := range connIDs {
+			cmds[i] = p.SMembers(ctx, "presence:conn:channels:"+connID)
+		}
+		return nil
+	}); err != nil {
+		return nil, fmt.Errorf("ListChannelsForUser pipeline failed: %w", err)
+	}
+
+	channelSet := make(map[string]struct{})
+
+	for _, cmd := range cmds {
+		channels, err := cmd.Result()
+		if err != nil {
+			continue
+		}
+
+		for _, ch := range channels {
+			channelSet[ch] = struct{}{}
+		}
+	}
+
+	channels := make([]string, 0, len(channelSet))
+	for ch := range channelSet {
+		channels = append(channels, ch)
 	}
 
 	return channels, nil
 }
 
-func (pst *RedisPresencePersistor) CountInChannel(ctx context.Context, channel string) (int64, error) {
-	presenceChannelKey := "presence:channel:" + channel
-	count, err := pst.rdb.ZCard(ctx, presenceChannelKey).Result()
+func (pst *RedisPresencePersistor) UsersCountInChannel(ctx context.Context, channel string) (int64, error) {
+	connIDs, err := pst.rdb.ZRangeArgs(ctx, redis.ZRangeArgs{
+		ByScore: true,
+		Key:     "presence:channel:conns:" + channel,
+		Start:   time.Now().Unix(),
+		Stop:    "+inf",
+	}).Result()
 	if err != nil {
-		return 0, fmt.Errorf("failed to get count in channel: %w", err)
+		return 0, fmt.Errorf("failed to list conns in channel: %w", err)
+	}
+
+	cmds := make([]*redis.StringCmd, len(connIDs))
+
+	if _, err := pst.rdb.Pipelined(ctx, func(p redis.Pipeliner) error {
+		for i, connID := range connIDs {
+			cmds[i] = p.HGet(ctx, "presence:conn:"+connID, "user_id")
+		}
+		return nil
+	}); err != nil {
+		return 0, fmt.Errorf("UsersCountInChannel pipeline failed: %w", err)
+	}
+
+	userSet := make(map[string]struct{})
+
+	for _, cmd := range cmds {
+		userID, err := cmd.Result()
+		if err != nil {
+			continue
+		}
+
+		if _, exists := userSet[userID]; exists {
+			continue
+		}
+
+		userSet[userID] = struct{}{}
+	}
+
+	return int64(len(userSet)), nil
+}
+
+func (pst *RedisPresencePersistor) ConnsCountInChannel(ctx context.Context, channel string) (int64, error) {
+	count, err := pst.rdb.ZCount(ctx, "presence:channel:conns:"+channel, strconv.FormatInt(time.Now().Unix(), 10), "+inf").Result()
+	if err != nil {
+		return 0, fmt.Errorf("failed to get conns in channel count: %w", err)
 	}
 
 	return count, nil
 }
 
-func (pst *RedisPresencePersistor) LastSeen(ctx context.Context, userID uuid.UUID) (int64, error) {
-	presenceLastSeenKey := "presence:last-seen:" + userID.String()
-
-	ts, err := pst.rdb.ZScore(ctx, presenceLastSeenKey, userID.String()).Result()
+func (pst *RedisPresencePersistor) TotalActiveConnsCount(ctx context.Context) (int64, error) {
+	count, err := pst.rdb.ZCount(ctx, "presence:conns", strconv.FormatInt(time.Now().Unix(), 10), "+inf").Result()
 	if err != nil {
-		return 0, fmt.Errorf("failed to get last seen: %w", err)
+		return 0, fmt.Errorf("failed to get total active conns count: %w", err)
 	}
 
-	return int64(ts), nil
-}
-
-func (pst *RedisPresencePersistor) GetChannelsForUser(ctx context.Context, userID uuid.UUID) ([]string, error) {
-	var (
-		presenceUserKey        = "presence:user:" + userID.String()
-		presenceActiveGamesKey = "presence:active-games:" + userID.String()
-	)
-
-	userPresences, err := pst.rdb.ZRange(ctx, presenceUserKey, 0, -1).Result()
-	if err != nil {
-		return nil, fmt.Errorf("fetch user presences: %w", err)
-	}
-
-	activeUserGamesPresences, err := pst.rdb.ZRange(ctx, presenceActiveGamesKey, 0, -1).Result()
-	if err != nil {
-		return nil, fmt.Errorf("fetch active user game presences: %w", err)
-	}
-
-	channels := make([]string, 0)
-
-	for _, x := range userPresences {
-		channel := strings.Split(x, "#")[1]
-		channels = append(channels, channel)
-	}
-
-	for _, x := range activeUserGamesPresences {
-		gameIDStr := strings.Split(x, "#")[1]
-		activeGameKey := "activegame:" + gameIDStr
-		channels = append(channels, activeGameKey)
-	}
-
-	slices.Sort(channels)
-
-	return channels, nil
-}
-
-func (pst *RedisPresencePersistor) GetUsersInChannel(ctx context.Context, channel string) ([]persistence.UserPresenceInfo, error) {
-	presenceChannelKey := "presence:channel:" + channel
-
-	presenceChannels, err := pst.rdb.ZRange(ctx, presenceChannelKey, 0, -1).Result()
-	if err != nil {
-		return nil, fmt.Errorf("fetch users in channels: %w", err)
-	}
-
-	userPresenceInfos := make([]persistence.UserPresenceInfo, len(presenceChannels))
-
-	for i, userKey := range presenceChannels {
-		parts := strings.Split(userKey, "#")
-
-		guest := true
-		if parts[3] == "auth" {
-			guest = false
-		}
-		userPresenceInfos[i] = persistence.UserPresenceInfo{
-			ID:       parts[0],
-			Username: parts[2],
-			Guest:    guest,
-		}
-	}
-
-	return userPresenceInfos, nil
+	return count, nil
 }

@@ -108,8 +108,7 @@ message Message {
     ClientConnected client_connected = 6;
     ClientDisconnected client_disconnected = 7;
     InitializeChannels initialize_channels = 8;
-    InitializedChannels initialized_channels = 9;
-    RequestInitialChannelsInfo request_initial_channels_info = 10;
+    InitialChannels initial_channels = 9;
 
     // PresenceEntry presence_changed = xxx;
     // UserPresence user_presence = xxx;
@@ -175,12 +174,17 @@ message Problem {
 
 // ClientConnected signals that client connected
 message ClientConnected {
-  string id = 1;
+  string user_id = 1;
+  string conn_id = 2;
+  bool guest = 3;
+  repeated string channels = 4;
 }
 
 // ClientDisconnected signals that client disconnected
 message ClientDisconnected {
-  string id = 1;
+  string user_id = 1;
+  string conn_id = 2;
+  bool guest = 3;
 }
 
 // InitializeChannels requests initial channels that the user belongs to (e.g. ["lobby", "lobby.chat"])
@@ -191,18 +195,9 @@ message InitializeChannels {
   string path = 4;
 }
 
-// InitializedChannels is the user initial channels
-message InitializedChannels {
+// InitialChannels is the user initial channels
+message InitialChannels {
   repeated string channels = 1;
-}
-
-// RequestInitialChannelsInfo requests backend to send some info initial channels
-// e.g. `lobby` users want to see active games, `lobby.chat` users want loby chat history, `game.123` users want gamestate info etc
-message RequestInitialChannelsInfo {
-  string user_id = 1;
-  string conn_id = 2;
-  bool guest = 3;
-  repeated string channels = 4;
 }
 
 // Presence represents user presence

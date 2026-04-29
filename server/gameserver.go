@@ -11,10 +11,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/aarondl/opt/omit"
-	"github.com/aarondl/opt/omitnull"
-	"github.com/dankobg/juicer/db/gen/models"
-	"github.com/dankobg/juicer/gameplay"
 	pb "github.com/dankobg/juicer/pb/proto/juicer"
 	"github.com/dankobg/juicer/persistence/dbtype"
 	"github.com/dankobg/juicer/ws"
@@ -56,6 +52,12 @@ func (a *ApiHandler) onIPCMsg(m *redis.Message) {
 	}
 
 	switch msg.GetEvent().(type) {
+	case *pb.Message_ClientConnected:
+		a.handleIPCClientConnectedMsg(msg.GetClientConnected())
+
+	case *pb.Message_ClientDisconnected:
+		a.handleIPCClientDisconnectedMsg(msg.GetClientDisconnected())
+
 	case *pb.Message_Heartbeat:
 		a.handleIPCHeartbeatMsg(msg.GetHeartbeat())
 
@@ -68,8 +70,6 @@ func (a *ApiHandler) onIPCMsg(m *redis.Message) {
 	case *pb.Message_InitializeChannels:
 		a.handleIPCInitializeChannelsMsg(msg.GetInitializeChannels())
 
-	case *pb.Message_RequestInitialChannelsInfo:
-		a.handleIPCRequestInitialChannelsInfoMsg(msg.GetRequestInitialChannelsInfo())
 	}
 }
 
@@ -169,29 +169,28 @@ func (a *ApiHandler) handleIPCInitializeChannelsMsg(data *pb.InitializeChannels)
 				return
 			}
 		}
-
 	}
 
-	initializedChannelsMsg := &pb.Message{
-		Event: &pb.Message_InitializedChannels{InitializedChannels: &pb.InitializedChannels{
+	initialChannelsMsg := &pb.Message{
+		Event: &pb.Message_InitialChannels{InitialChannels: &pb.InitialChannels{
 			Channels: channels,
 		}},
 	}
 
-	initializedChannelsMsgBytes, err := protojson.Marshal(initializedChannelsMsg)
+	initialChannelsMsgBytes, err := protojson.Marshal(initialChannelsMsg)
 	if err != nil {
-		a.Log.Error("protojson marshal Message_InitializedChannels", slog.String("user_id", data.UserId), slog.Any("error", err))
+		a.Log.Error("protojson marshal Message_InitialChannels", slog.String("user_id", data.UserId), slog.Any("error", err))
 		return
 	}
 
 	topic := "reply-initial-channels." + data.UserId + "." + data.ConnId
-	if err := a.bus.rdb.Publish(context.Background(), topic, initializedChannelsMsgBytes).Err(); err != nil {
-		a.Log.Error("hub publish Message_InitializedChannels", slog.String("user_id", data.UserId), slog.String("topic", "ipc"), slog.Any("error", err))
+	if err := a.bus.rdb.Publish(context.Background(), topic, initialChannelsMsgBytes).Err(); err != nil {
+		a.Log.Error("hub publish Message_InitialChannels", slog.String("user_id", data.UserId), slog.String("topic", "ipc"), slog.Any("error", err))
 		return
 	}
 }
 
-func (a *ApiHandler) handleIPCRequestInitialChannelsInfoMsg(data *pb.RequestInitialChannelsInfo) {
+func (a *ApiHandler) handleIPCClientConnectedMsg(data *pb.ClientConnected) {
 	var username string
 
 	if data.Guest {
@@ -199,7 +198,7 @@ func (a *ApiHandler) handleIPCRequestInitialChannelsInfoMsg(data *pb.RequestInit
 	} else {
 		uname, err := a.GetUsername(context.Background(), data.UserId)
 		if err != nil {
-			a.Log.Error("handleIPCRequestInitialChannelsInfoMsg get username", slog.Any("error", err))
+			a.Log.Error("handleIPCClientConnectedMsg get username", slog.Any("error", err))
 			return
 		}
 		username = uname
@@ -218,12 +217,12 @@ func (a *ApiHandler) handleIPCRequestInitialChannelsInfoMsg(data *pb.RequestInit
 		// }
 
 		if channel == "lobby" {
-			if err := a.sendLobbyInfo(data.UserId, data.ConnId); err != nil {
+			if err := a.sendLobbyInfo(data.UserId, data.ConnId, data.Guest); err != nil {
 				a.Log.Error("sendLobbyInfo", slog.Any("error", err))
 			}
 		}
 		if channel == "lobby.chat" {
-			if err := a.sendLobbyChatInfo(data.UserId, data.ConnId); err != nil {
+			if err := a.sendLobbyChatInfo(data.UserId, data.ConnId, data.Guest); err != nil {
 				a.Log.Error("sendLobbyChatInfo", slog.Any("error", err))
 			}
 		}
@@ -237,12 +236,14 @@ func (a *ApiHandler) handleIPCRequestInitialChannelsInfoMsg(data *pb.RequestInit
 				a.Log.Error("gameid parseint", slog.Any("error", err))
 				return
 			}
-			if err := a.sendGameInfo(gameID, data.UserId, data.ConnId); err != nil {
+			if err := a.sendGameInfo(gameID, data.UserId, data.ConnId, data.Guest); err != nil {
 				a.Log.Error("sendGameInfo", slog.Any("error", err))
 			}
 		}
 	}
 }
+
+func (a *ApiHandler) handleIPCClientDisconnectedMsg(data *pb.ClientDisconnected) {}
 
 func (a *ApiHandler) onWSCMsg(m *redis.Message) {
 	msg := &pb.Message{}
@@ -280,7 +281,7 @@ func (a *ApiHandler) onWSCMsg(m *redis.Message) {
 }
 
 func (a *ApiHandler) handleWSCEchoMsg(authInfo clientAuthInfo, data *pb.Echo) {
-	ZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZ(a)
+	ZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZ(a)
 
 	bb, _ := protojson.Marshal(&pb.Message{Event: &pb.Message_Echo{Echo: &pb.Echo{Message: strings.ToUpper(data.Message)}}})
 	toUser, toConn, toLobby := "user."+authInfo.userID, "conn."+authInfo.connID, "lobby.chat"
@@ -533,15 +534,15 @@ func (a *ApiHandler) protoGameStateToID(x pb.GameState) int64 {
 	return a.protoMappingsCache.states[x]
 }
 
-func (a *ApiHandler) sendLobbyInfo(userID, connID string) error {
+func (a *ApiHandler) sendLobbyInfo(userID, connID string, guest bool) error {
 	return nil
 }
 
-func (a *ApiHandler) sendLobbyChatInfo(userID, connID string) error {
+func (a *ApiHandler) sendLobbyChatInfo(userID, connID string, guest bool) error {
 	return nil
 }
 
-func (a *ApiHandler) sendGameInfo(gameID int64, userID, connID string) error {
+func (a *ApiHandler) sendGameInfo(gameID int64, userID, connID string, guest bool) error {
 	return nil
 }
 
@@ -683,86 +684,107 @@ func (a *ApiHandler) publishToUserID(ctx context.Context, userID string, msg *pb
 // 	return b.natsconn.Publish("connid."+connID, bts)
 // }
 
-func ZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZ(a *ApiHandler) {
-	players := [2]gameplay.Player{
-		{ID: uuid.MustParse("75f751e4-737f-40de-beb8-3964cd4eeb29"), Name: "danko", Color: pb.Color_COLOR_WHITE, Guest: false},
-		{ID: uuid.MustParse("14120b40-aa67-4cde-8a75-fcae8e057278"), Name: "bob", Color: pb.Color_COLOR_BLACK, Guest: false},
+func ZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZ(a *ApiHandler) {
+	ids := []uuid.UUID{uuid.MustParse("6bbe466b-28fe-42df-a8fa-b3525f147630"), uuid.MustParse("d89cc057-9a73-4cae-b3bb-5337e7cab82a")}
+	_ = ids
+
+	v1, e1 := a.persistor.Presence().ListUsersInChannel(context.TODO(), "lobby")
+	v2, e2 := a.persistor.Presence().UsersCountInChannel(context.TODO(), "lobby")
+	v3, e3 := a.persistor.Presence().ConnsCountInChannel(context.TODO(), "lobby")
+	v4, e4 := a.persistor.Presence().ListChannelsForUser(context.TODO(), ids[0])
+	v5, e5 := a.persistor.Presence().TotalActiveConnsCount(context.TODO())
+
+	if e := errors.Join(e1, e2, e3, e4, e5); e != nil {
+		fmt.Println("KURAAAAAAC", e)
 	}
 
-	gtc := &pb.GameTimeControl{ClockMs: 300_000, IncrementMs: 0}
+	godump.DumpJSON(map[string]any{
+		"lobby_users":       v1,
+		"lobby_users_count": v2,
+		"lobby_conns_count": v3,
+		"danko_channels":    v4,
+		"active_conns":      v5,
+	})
 
-	thresholds := []gameplay.CategoryThreshold{}
-	for _, x := range a.categoryThresholds {
-		thresholds = append(thresholds, gameplay.CategoryThreshold{
-			UpperLimit:   x.upperLimit,
-			TimeCategory: x.timeCategory,
-		})
-	}
+	// players := [2]gameplay.Player{
+	// 	{ID: uuid.MustParse("75f751e4-737f-40de-beb8-3964cd4eeb29"), Name: "danko", Color: pb.Color_COLOR_WHITE, Guest: false},
+	// 	{ID: uuid.MustParse("14120b40-aa67-4cde-8a75-fcae8e057278"), Name: "bob", Color: pb.Color_COLOR_BLACK, Guest: false},
+	// }
 
-	gs, err := gameplay.NewGameState(1, players, gtc, true, thresholds)
-	if err != nil {
-		fmt.Println("gameplay.NewGameState: ", err.Error())
-		return
-	}
+	// gtc := &pb.GameTimeControl{ClockMs: 300_000, IncrementMs: 0}
 
-	gs.Start()
+	// thresholds := []gameplay.CategoryThreshold{}
+	// for _, x := range a.categoryThresholds {
+	// 	thresholds = append(thresholds, gameplay.CategoryThreshold{
+	// 		UpperLimit:   x.upperLimit,
+	// 		TimeCategory: x.timeCategory,
+	// 	})
+	// }
 
-	gameSetter := models.GameSetter{
-		// WhiteID:      omitnull.From(gs.White.ID),
-		// BlackID:      omitnull.From(gs.Black.ID),
-		WhiteIsGuest:           omit.From(gs.Guest),
-		BlackIsGuest:           omit.From(gs.Guest),
-		GuestWhiteID:           omitnull.From(gs.White.ID),
-		GuestBlackID:           omitnull.From(gs.Black.ID),
-		GameVariantID:          omit.From(a.protoGameVariantToID(gs.GameVariant)),
-		GameTimeKindID:         omit.From(a.protoGameTimeKindToID(gs.GameTimeKind)),
-		GameTimeCategoryID:     omit.From(a.protoGameTimeCategoryToID(gs.GameTimeCategory)),
-		GameStateID:            omit.From(a.protoGameStateToID(gs.GameState)),
-		TimeControlClockMS:     omit.From(gs.GameTimeControl.ClockMs),
-		TimeControlIncrementMS: omit.From(gs.GameTimeControl.IncrementMs),
-		FirstMoveTimeoutMS:     omit.From(int32(gs.FirstMoveTimeout.Milliseconds())),
-		ReconnectTimeoutMS:     omit.From(int32(gs.ReconnectTimeout.Milliseconds())),
-		WhiteGameClock:         omit.From(gs.GameTimeControl.ClockMs),
-		BlackGameClock:         omit.From(gs.GameTimeControl.ClockMs),
-		Rated:                  omit.From(gs.Rated),
-		StartTime:              omitnull.FromPtr(gs.StartTime),
-		EndTime:                omitnull.FromPtr(gs.EndTime),
-		LastMove:               omitnull.FromPtr(gs.LastMove),
-		Fen:                    omit.From(gs.Chess.Position.Fen()),
-	}
-	if gs.GameResult != pb.GameResult_GAME_RESULT_UNSPECIFIED {
-		gameSetter.GameResultID = omitnull.From(a.protoGameResultToID(gs.GameResult))
-	}
-	if gs.GameResultStatus != pb.GameResultStatus_GAME_RESULT_STATUS_UNSPECIFIED {
-		gameSetter.GameResultStatusID = omitnull.From(a.protoGameResultStatusToID(gs.GameResultStatus))
-	}
+	// gs, err := gameplay.NewGameState(1, players, gtc, true, thresholds)
+	// if err != nil {
+	// 	fmt.Println("gameplay.NewGameState: ", err.Error())
+	// 	return
+	// }
 
-	godump.DumpJSON(gameSetter, "GAME_SETTER")
+	// gs.Start()
 
-	game, err := a.persistor.Game().CreateGame(context.TODO(), gameSetter, nil)
-	if err != nil {
-		fmt.Println("CreateGame err: ", err)
-		return
-	}
-	godump.DumpJSON(game, "GAME_FINAL_RESULT")
+	// gameSetter := models.GameSetter{
+	// 	// WhiteID:      omitnull.From(gs.White.ID),
+	// 	// BlackID:      omitnull.From(gs.Black.ID),
+	// 	WhiteIsGuest:           omit.From(gs.Guest),
+	// 	BlackIsGuest:           omit.From(gs.Guest),
+	// 	GuestWhiteID:           omitnull.From(gs.White.ID),
+	// 	GuestBlackID:           omitnull.From(gs.Black.ID),
+	// 	GameVariantID:          omit.From(a.protoGameVariantToID(gs.GameVariant)),
+	// 	GameTimeKindID:         omit.From(a.protoGameTimeKindToID(gs.GameTimeKind)),
+	// 	GameTimeCategoryID:     omit.From(a.protoGameTimeCategoryToID(gs.GameTimeCategory)),
+	// 	GameStateID:            omit.From(a.protoGameStateToID(gs.GameState)),
+	// 	TimeControlClockMS:     omit.From(gs.GameTimeControl.ClockMs),
+	// 	TimeControlIncrementMS: omit.From(gs.GameTimeControl.IncrementMs),
+	// 	FirstMoveTimeoutMS:     omit.From(int32(gs.FirstMoveTimeout.Milliseconds())),
+	// 	ReconnectTimeoutMS:     omit.From(int32(gs.ReconnectTimeout.Milliseconds())),
+	// 	WhiteGameClock:         omit.From(gs.GameTimeControl.ClockMs),
+	// 	BlackGameClock:         omit.From(gs.GameTimeControl.ClockMs),
+	// 	Rated:                  omit.From(gs.Rated),
+	// 	StartTime:              omitnull.FromPtr(gs.StartTime),
+	// 	EndTime:                omitnull.FromPtr(gs.EndTime),
+	// 	LastMove:               omitnull.FromPtr(gs.LastMove),
+	// 	Fen:                    omit.From(gs.Chess.Position.Fen()),
+	// }
+	// if gs.GameResult != pb.GameResult_GAME_RESULT_UNSPECIFIED {
+	// 	gameSetter.GameResultID = omitnull.From(a.protoGameResultToID(gs.GameResult))
+	// }
+	// if gs.GameResultStatus != pb.GameResultStatus_GAME_RESULT_STATUS_UNSPECIFIED {
+	// 	gameSetter.GameResultStatusID = omitnull.From(a.protoGameResultStatusToID(gs.GameResultStatus))
+	// }
 
-	gs.GameID = game.ID
+	// godump.DumpJSON(gameSetter, "GAME_SETTER")
 
-	fmt.Printf("game_id: %d\n", gs.GameID)
-	fmt.Printf("rated: %v\n", gs.Rated)
-	fmt.Printf("white: %s\n", gs.White.Name)
-	fmt.Printf("black: %s\n", gs.Black.Name)
-	fmt.Printf("variant: %s\n", gs.GameVariant.String())
-	fmt.Printf("time_category: %s\n", gs.GameTimeCategory.String())
-	fmt.Printf("time_kind: %s\n", gs.GameTimeKind.String())
-	fmt.Printf("time_control_clock_ms: %d\n", gs.GameTimeControl.GetClockMs())
-	fmt.Printf("time_control_increment_ms: %d\n", gs.GameTimeControl.GetIncrementMs())
-	fmt.Printf("state: %s\n", gs.GameState.String())
-	fmt.Printf("result: %s\n", gs.GameResult.String())
-	fmt.Printf("result_status: %s\n", gs.GameResultStatus.String())
-	fmt.Printf("start_time: %s\n", gs.StartTime)
-	fmt.Printf("last_move: %s\n", gs.LastMove)
-	fmt.Printf("history_moves: %v\n", gs.HistoryMoveInfos)
+	// game, err := a.persistor.Game().CreateGame(context.TODO(), gameSetter, nil)
+	// if err != nil {
+	// 	fmt.Println("CreateGame err: ", err)
+	// 	return
+	// }
+	// godump.DumpJSON(game, "GAME_FINAL_RESULT")
+
+	// gs.GameID = game.ID
+
+	// fmt.Printf("game_id: %d\n", gs.GameID)
+	// fmt.Printf("rated: %v\n", gs.Rated)
+	// fmt.Printf("white: %s\n", gs.White.Name)
+	// fmt.Printf("black: %s\n", gs.Black.Name)
+	// fmt.Printf("variant: %s\n", gs.GameVariant.String())
+	// fmt.Printf("time_category: %s\n", gs.GameTimeCategory.String())
+	// fmt.Printf("time_kind: %s\n", gs.GameTimeKind.String())
+	// fmt.Printf("time_control_clock_ms: %d\n", gs.GameTimeControl.GetClockMs())
+	// fmt.Printf("time_control_increment_ms: %d\n", gs.GameTimeControl.GetIncrementMs())
+	// fmt.Printf("state: %s\n", gs.GameState.String())
+	// fmt.Printf("result: %s\n", gs.GameResult.String())
+	// fmt.Printf("result_status: %s\n", gs.GameResultStatus.String())
+	// fmt.Printf("start_time: %s\n", gs.StartTime)
+	// fmt.Printf("last_move: %s\n", gs.LastMove)
+	// fmt.Printf("history_moves: %v\n", gs.HistoryMoveInfos)
 }
 
 func (a *ApiHandler) StartMatchmaking(ctx context.Context) {
