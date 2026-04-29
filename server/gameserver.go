@@ -226,12 +226,9 @@ func (a *ApiHandler) handleIPCClientConnectedMsg(data *pb.ClientConnected) {
 				a.Log.Error("sendLobbyChatInfo", slog.Any("error", err))
 			}
 		}
-		if strings.HasPrefix(channel, "game.") || strings.HasPrefix(channel, "gametv.") {
-			gameIDStr := strings.Split(channel, ".")
-			if len(gameIDStr) != 3 {
-				return
-			}
-			gameID, err := strconv.ParseInt(gameIDStr[2], 10, 64)
+
+		if gameIDStr, found := strings.CutPrefix(channel, "game."); found {
+			gameID, err := strconv.ParseInt(gameIDStr, 10, 64)
 			if err != nil {
 				a.Log.Error("gameid parseint", slog.Any("error", err))
 				return
@@ -240,6 +237,32 @@ func (a *ApiHandler) handleIPCClientConnectedMsg(data *pb.ClientConnected) {
 				a.Log.Error("sendGameInfo", slog.Any("error", err))
 			}
 		}
+
+		if gametvIDStr, found := strings.CutPrefix(channel, "gametv."); found {
+			gameID, err := strconv.ParseInt(gametvIDStr, 10, 64)
+			if err != nil {
+				a.Log.Error("gametvid parseint", slog.Any("error", err))
+				return
+			}
+			if err := a.sendGameTvInfo(gameID, data.UserId, data.ConnId, data.Guest); err != nil {
+				a.Log.Error("sendGameTvInfo", slog.Any("error", err))
+			}
+		}
+
+		// if strings.HasPrefix(channel, "game.") || strings.HasPrefix(channel, "gametv.") {
+		// 	gameIDStr := strings.Split(channel, ".")
+		// 	if len(gameIDStr) != 3 {
+		// 		return
+		// 	}
+		// 	gameID, err := strconv.ParseInt(gameIDStr[2], 10, 64)
+		// 	if err != nil {
+		// 		a.Log.Error("gameid parseint", slog.Any("error", err))
+		// 		return
+		// 	}
+		// 	if err := a.sendGameInfo(gameID, data.UserId, data.ConnId, data.Guest); err != nil {
+		// 		a.Log.Error("sendGameInfo", slog.Any("error", err))
+		// 	}
+		// }
 	}
 }
 
@@ -543,6 +566,10 @@ func (a *ApiHandler) sendLobbyChatInfo(userID, connID string, guest bool) error 
 }
 
 func (a *ApiHandler) sendGameInfo(gameID int64, userID, connID string, guest bool) error {
+	return nil
+}
+
+func (a *ApiHandler) sendGameTvInfo(gameID int64, userID, connID string, guest bool) error {
 	return nil
 }
 
