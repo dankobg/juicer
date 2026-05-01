@@ -17,19 +17,46 @@ local expiration_ts = tonumber(ARGV[7])
 local auth_state = guest and "guest" or "auth"
 local expiration_ttl = expiration_ts - now_ts
 
--- connections registry
+local conn_joined = {}
+local user_joined = {}
+
+-- track connections
 redis.call("ZADD", "presence:conns", expiration_ts, conn_id)
 
--- per connection metadata (username, auth_state, maybe in future device_info or country_code etc)
-redis.call("HSET", "presence:conn:" .. conn_id, "user_id", user_id, "username", username, "auth_state", auth_state)
-redis.call("EXPIRE", "presence:conn:" .. conn_id, expiration_ttl)
+-- connection metadata (username, auth_state, maybe in future device_info or country_code etc)
+redis.call("HSET", "presence:conn:meta:" .. conn_id,
+  "user_id", user_id,
+  "username", username,
+  "auth_state", auth_state
+)
+redis.call("EXPIRE", "presence:conn:meta:" .. conn_id, expiration_ttl)
+
+-- user metadata
+redis.call("HSET", "presence:user:meta:" .. user_id,
+  "username", username,
+  "auth_state", auth_state
+)
+redis.call("EXPIRE", "presence:user:meta:" .. user_id, expiration_ttl)
 
 -- user -> connections (which connections belong to which user. user can have multiple ws conns i.e. multiple tabs/devices)
 redis.call("SADD", "presence:user:conns:" .. user_id, conn_id)
 
--- channel -> connections (track which connections are in a channel)
-redis.call("ZADD", "presence:channel:conns:" .. channel, expiration_ts, conn_id)
-redis.call("EXPIRE", "presence:channel:conns:" .. channel, 86400) -- 24hr
-
 -- conn -> channels (which channels this connection is in)
-redis.call("SADD", "presence:conn:channels:" .. conn_id, channel)
+local conn_channel_added = redis.call("SADD", "presence:conn:channels:" .. conn_id, channel)
+if conn_channel_added == 1 then
+  table.insert(conn_joined, channel)
+end
+
+-- user -> channels (which channels this user is in)
+local user_channel_added = redis.call("SADD", "presence:user:channels:" .. user_id, channel)
+if user_channel_added == 1 then
+  table.insert(user_joined, channel)
+end
+
+-- channel -> users (track which users are in a channel)
+if user_channel_added == 1 then
+  redis.call("SADD", "presence:channel:users:" .. channel, user_id)
+  redis.call("EXPIRE", "presence:channel:users:" .. channel, 86400)
+end
+
+return { conn_joined, user_joined }

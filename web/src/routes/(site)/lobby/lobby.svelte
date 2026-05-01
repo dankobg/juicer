@@ -40,6 +40,9 @@
 	});
 </script>
 
+<pre>{JSON.stringify(gameManager.userPresences, null, 2)}</pre>
+<pre>{JSON.stringify(gameManager.channelPresences['lobby']?.values(), null, 2)}</pre>
+
 <div class="lobby mx-auto mt-8 w-full max-w-screen-2xl">
 	<Tabs.Root value="quick-game" class="mx-auto w-full max-w-xl">
 		<Tabs.List class="grid w-full grid-cols-3">

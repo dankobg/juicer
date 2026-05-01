@@ -110,9 +110,8 @@ message Message {
     InitializeChannels initialize_channels = 8;
     InitialChannels initial_channels = 9;
 
-    // PresenceEntry presence_changed = xxx;
-    // UserPresence user_presence = xxx;
-    // UserPresences user_presences = xxx;
+    PresenceState presence_state = 10;
+    PresenceDiff presence_diff = 11;
 
     SeekGame seek_game = 25;
     CancelSeekGame cancel_seek_game = 26;
@@ -205,40 +204,20 @@ message Presence {
   string user_id = 1;
   string username = 2;
   bool guest = 3;
-  repeated string channels = 4;
+  string channel = 4;
 }
 
 // PresenceState is the full snapshot of all presences
 message PresenceState {
-  map<string, Presence> presences = 1;
+  repeated Presence presences = 1;
+  // map<string, Presence> presences = 1;
 }
 
 // PresenceDiff is the incremental presence change event
 message PresenceDiff {
-  map<string, Presence> joined = 1;
-  map<string, Presence> left = 2;
+  repeated Presence joined = 1;
+  repeated Presence left = 2;
 }
-
-// ################################################
-
-// message UserPresence {
-//   string username = 1;
-//   string user_id = 2;
-//   string channel = 3;
-//   bool is_anonymous = 4;
-//   bool deleting = 5;
-// }
-
-// message UserPresences { repeated UserPresence presences = 1; }
-
-// // Only authenticated connections.
-// message PresenceEntry {
-//   string username = 1;
-//   string user_id = 2;
-//   repeated string channel = 3;
-// }
-
-// ################################################
 
 // Clocks is white and black game clock
 message Clocks {

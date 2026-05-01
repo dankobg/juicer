@@ -40,49 +40,118 @@ func NewRedisPresencePersistor(rs *RedisPersistor) *RedisPresencePersistor {
 	}
 }
 
-func (pst *RedisPresencePersistor) SetPresence(ctx context.Context, userID uuid.UUID, connID uuid.UUID, username string, guest bool, channel string) ([]string, []string, error) {
+func (pst *RedisPresencePersistor) SetPresence(ctx context.Context, userID uuid.UUID, connID uuid.UUID, username string, guest bool, channel string) (persistence.PresenceChannelsDiff, error) {
 	now := time.Now()
 	expiration := now.Add(time.Minute * 2)
 
 	keys := []string{}
 	args := []any{userID.String(), connID.String(), username, guest, channel, now.Unix(), expiration.Unix()}
 
-	_, err := pst.setPresenceScript.Run(ctx, pst.rdb, keys, args...).Result()
+	result, err := pst.setPresenceScript.Run(ctx, pst.rdb, keys, args...).Result()
 	if err != nil {
-		return nil, nil, err
+		return persistence.PresenceChannelsDiff{}, err
 	}
 
-	return nil, nil, nil
+	arr, ok := result.([]any)
+	if !ok {
+		return persistence.PresenceChannelsDiff{}, fmt.Errorf("invalid lua result: %T", result)
+	}
+	if len(arr) != 2 {
+		return persistence.PresenceChannelsDiff{}, fmt.Errorf("invalid lua result length: expected 2, got: %d", len(arr))
+	}
+
+	connJoinedArr, ok1 := arr[0].([]any)
+	userJoinedArr, ok2 := arr[1].([]any)
+	if !ok1 || !ok2 {
+		return persistence.PresenceChannelsDiff{}, fmt.Errorf("invalid result sub arrays")
+	}
+
+	presenceDiffInfo := persistence.PresenceChannelsDiff{
+		ConnJoined: make([]string, len(connJoinedArr)),
+		UserJoined: make([]string, len(userJoinedArr)),
+	}
+
+	for i, item := range connJoinedArr {
+		v, ok := item.(string)
+		if !ok {
+			return persistence.PresenceChannelsDiff{}, fmt.Errorf("invalid result sub arrays not string")
+		}
+		presenceDiffInfo.ConnJoined[i] = v
+	}
+
+	for i, item := range userJoinedArr {
+		v, ok := item.(string)
+		if !ok {
+			return persistence.PresenceChannelsDiff{}, fmt.Errorf("invalid result sub arrays not string")
+		}
+		presenceDiffInfo.UserJoined[i] = v
+	}
+
+	return presenceDiffInfo, nil
 }
 
-func (pst *RedisPresencePersistor) ClearPresence(ctx context.Context, userID uuid.UUID, connID uuid.UUID, username string, guest bool) ([]string, []string, []string, error) {
+func (pst *RedisPresencePersistor) ClearPresence(ctx context.Context, userID uuid.UUID, connID uuid.UUID, username string, guest bool) (persistence.PresenceChannelsDiff, error) {
 	now := time.Now()
 	expiration := now.Add(time.Minute * 2)
 
 	keys := []string{}
 	args := []any{userID.String(), connID.String(), username, guest, now.Unix(), expiration.Unix()}
 
-	_, err := pst.clearPresenceScript.Run(ctx, pst.rdb, keys, args...).Result()
+	result, err := pst.clearPresenceScript.Run(ctx, pst.rdb, keys, args...).Result()
 	if err != nil {
-		return nil, nil, nil, err
+		return persistence.PresenceChannelsDiff{}, err
 	}
 
-	return nil, nil, nil, nil
+	arr, ok := result.([]any)
+	if !ok {
+		return persistence.PresenceChannelsDiff{}, fmt.Errorf("invalid lua result: %T", result)
+	}
+	if len(arr) != 2 {
+		return persistence.PresenceChannelsDiff{}, fmt.Errorf("invalid lua result length: expected 2, got: %d", len(arr))
+	}
+
+	connLeftArr, ok1 := arr[0].([]any)
+	userLeftArr, ok2 := arr[1].([]any)
+	if !ok1 || !ok2 {
+		return persistence.PresenceChannelsDiff{}, fmt.Errorf("invalid result sub arrays")
+	}
+
+	presenceDiffInfo := persistence.PresenceChannelsDiff{
+		ConnLeft: make([]string, len(connLeftArr)),
+		UserLeft: make([]string, len(userLeftArr)),
+	}
+
+	for i, item := range connLeftArr {
+		v, ok := item.(string)
+		if !ok {
+			return persistence.PresenceChannelsDiff{}, fmt.Errorf("invalid result sub arrays not string")
+		}
+		presenceDiffInfo.ConnLeft[i] = v
+	}
+
+	for i, item := range userLeftArr {
+		v, ok := item.(string)
+		if !ok {
+			return persistence.PresenceChannelsDiff{}, fmt.Errorf("invalid result sub arrays not string")
+		}
+		presenceDiffInfo.UserLeft[i] = v
+	}
+
+	return presenceDiffInfo, nil
 }
 
-func (pst *RedisPresencePersistor) RefreshPresence(ctx context.Context, userID uuid.UUID, connID uuid.UUID, username string, guest bool) ([]string, []string, error) {
+func (pst *RedisPresencePersistor) RefreshPresence(ctx context.Context, userID uuid.UUID, connID uuid.UUID, username string, guest bool) error {
 	now := time.Now()
 	expiration := now.Add(time.Minute * 2)
 
 	keys := []string{}
 	args := []any{userID.String(), connID.String(), username, guest, now.Unix(), expiration.Unix()}
 
-	_, err := pst.refreshPresenceScript.Run(ctx, pst.rdb, keys, args...).Result()
-	if err != nil {
-		return nil, nil, err
+	if _, err := pst.refreshPresenceScript.Run(ctx, pst.rdb, keys, args...).Result(); err != nil {
+		return err
 	}
 
-	return nil, nil, nil
+	return nil
 }
 
 func (pst *RedisPresencePersistor) UserLastSeen(ctx context.Context, userID uuid.UUID) (time.Time, error) {
@@ -97,143 +166,53 @@ func (pst *RedisPresencePersistor) UserLastSeen(ctx context.Context, userID uuid
 }
 
 func (pst *RedisPresencePersistor) ListUsersInChannel(ctx context.Context, channel string) ([]persistence.UserPresenceInfo, error) {
-	connIDs, err := pst.rdb.ZRangeArgs(ctx, redis.ZRangeArgs{
-		ByScore: true,
-		Key:     "presence:channel:conns:" + channel,
-		Start:   time.Now().Unix(),
-		Stop:    "+inf",
-	}).Result()
+	userIDs, err := pst.rdb.SMembers(ctx, "presence:channel:users:"+channel).Result()
 	if err != nil {
-		return nil, fmt.Errorf("failed to list conns in channel: %w", err)
+		return nil, fmt.Errorf("failed to list users in channel: %w", err)
 	}
 
-	cmds := make([]*redis.MapStringStringCmd, len(connIDs))
+	cmds := make([]*redis.MapStringStringCmd, len(userIDs))
 
 	if _, err := pst.rdb.Pipelined(ctx, func(p redis.Pipeliner) error {
-		for i, connID := range connIDs {
-			cmds[i] = p.HGetAll(ctx, "presence:conn:"+connID)
+		for i, userID := range userIDs {
+			cmds[i] = p.HGetAll(ctx, "presence:user:meta:"+userID)
 		}
-
 		return nil
 	}); err != nil {
-		return nil, fmt.Errorf("ListUsersInChannel pipeline failed: %w", err)
+		return nil, fmt.Errorf("pipeline failed: %w", err)
 	}
 
-	userPresenceSet := make(map[string]persistence.UserPresenceInfo)
+	users := make([]persistence.UserPresenceInfo, 0, len(userIDs))
 
-	for _, cmd := range cmds {
+	for i, cmd := range cmds {
 		meta, err := cmd.Result()
 		if err != nil {
 			return nil, err
 		}
 
-		userID := meta["user_id"]
-		username := meta["username"]
-		authState := meta["auth_state"]
-
-		if _, exists := userPresenceSet[userID]; exists {
-			continue
-		}
-
-		userPresenceSet[userID] = persistence.UserPresenceInfo{
-			ID:       userID,
-			Username: username,
-			Guest:    authState == "guest",
-		}
+		users = append(users, persistence.UserPresenceInfo{
+			ID:       userIDs[i],
+			Username: meta["username"],
+			Guest:    meta["auth_state"] == "guest",
+		})
 	}
 
-	userPresenceInfos := make([]persistence.UserPresenceInfo, 0, len(userPresenceSet))
-	for _, info := range userPresenceSet {
-		userPresenceInfos = append(userPresenceInfos, info)
-	}
-
-	return userPresenceInfos, nil
+	return users, nil
 }
 
 func (pst *RedisPresencePersistor) ListChannelsForUser(ctx context.Context, userID uuid.UUID) ([]string, error) {
-	connIDs, err := pst.rdb.SMembers(ctx, "presence:user:conns:"+userID.String()).Result()
+	channels, err := pst.rdb.SMembers(ctx, "presence:user:channels:"+userID.String()).Result()
 	if err != nil {
-		return nil, fmt.Errorf("failed to get user conns: %w", err)
-	}
-
-	cmds := make([]*redis.StringSliceCmd, len(connIDs))
-
-	if _, err := pst.rdb.Pipelined(ctx, func(p redis.Pipeliner) error {
-		for i, connID := range connIDs {
-			cmds[i] = p.SMembers(ctx, "presence:conn:channels:"+connID)
-		}
-
-		return nil
-	}); err != nil {
-		return nil, fmt.Errorf("ListChannelsForUser pipeline failed: %w", err)
-	}
-
-	channelSet := make(map[string]struct{})
-
-	for _, cmd := range cmds {
-		channels, err := cmd.Result()
-		if err != nil {
-			continue
-		}
-
-		for _, ch := range channels {
-			channelSet[ch] = struct{}{}
-		}
-	}
-
-	channels := make([]string, 0, len(channelSet))
-	for ch := range channelSet {
-		channels = append(channels, ch)
+		return nil, fmt.Errorf("failed to get user channels: %w", err)
 	}
 
 	return channels, nil
 }
 
 func (pst *RedisPresencePersistor) UsersCountInChannel(ctx context.Context, channel string) (int64, error) {
-	connIDs, err := pst.rdb.ZRangeArgs(ctx, redis.ZRangeArgs{
-		ByScore: true,
-		Key:     "presence:channel:conns:" + channel,
-		Start:   time.Now().Unix(),
-		Stop:    "+inf",
-	}).Result()
+	count, err := pst.rdb.SCard(ctx, "presence:channel:users:"+channel).Result()
 	if err != nil {
-		return 0, fmt.Errorf("failed to list conns in channel: %w", err)
-	}
-
-	cmds := make([]*redis.StringCmd, len(connIDs))
-
-	if _, err := pst.rdb.Pipelined(ctx, func(p redis.Pipeliner) error {
-		for i, connID := range connIDs {
-			cmds[i] = p.HGet(ctx, "presence:conn:"+connID, "user_id")
-		}
-
-		return nil
-	}); err != nil {
-		return 0, fmt.Errorf("UsersCountInChannel pipeline failed: %w", err)
-	}
-
-	userSet := make(map[string]struct{})
-
-	for _, cmd := range cmds {
-		userID, err := cmd.Result()
-		if err != nil {
-			continue
-		}
-
-		if _, exists := userSet[userID]; exists {
-			continue
-		}
-
-		userSet[userID] = struct{}{}
-	}
-
-	return int64(len(userSet)), nil
-}
-
-func (pst *RedisPresencePersistor) ConnsCountInChannel(ctx context.Context, channel string) (int64, error) {
-	count, err := pst.rdb.ZCount(ctx, "presence:channel:conns:"+channel, strconv.FormatInt(time.Now().Unix(), 10), "+inf").Result()
-	if err != nil {
-		return 0, fmt.Errorf("failed to get conns in channel count: %w", err)
+		return 0, fmt.Errorf("failed to count users in channel: %w", err)
 	}
 
 	return count, nil

@@ -99,6 +99,8 @@ func (a *ApiHandler) serverWs(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	ctx, cancel := context.WithCancel(r.Context())
+
 	client := ws.NewClient(
 		userID,
 		a.Hub,
@@ -106,6 +108,7 @@ func (a *ApiHandler) serverWs(w http.ResponseWriter, r *http.Request) {
 		authState,
 		a.Log,
 		r.URL.Query(),
+		cancel,
 		func(fn func(ctx context.Context, payload []byte) bool) {
 			onPingReceived = fn
 		},
@@ -129,7 +132,7 @@ func (a *ApiHandler) serverWs(w http.ResponseWriter, r *http.Request) {
 
 	a.Hub.ClientConnected <- client
 
-	go client.ReadLoop(r.Context())
+	go client.ReadLoop(ctx)
 
-	client.WriteLoop(r.Context())
+	client.WriteLoop(ctx)
 }

@@ -145,15 +145,21 @@ type UserPresenceInfo struct {
 	Guest    bool
 }
 
+type PresenceChannelsDiff struct {
+	ConnJoined []string
+	ConnLeft   []string
+	UserJoined []string
+	UserLeft   []string
+}
+
 type PresencePersistor interface {
-	SetPresence(ctx context.Context, userID uuid.UUID, connID uuid.UUID, username string, guest bool, channel string) ([]string, []string, error)
-	ClearPresence(ctx context.Context, userID uuid.UUID, connID uuid.UUID, username string, guest bool) ([]string, []string, []string, error)
-	RefreshPresence(ctx context.Context, userID uuid.UUID, connID uuid.UUID, username string, guest bool) ([]string, []string, error)
+	SetPresence(ctx context.Context, userID uuid.UUID, connID uuid.UUID, username string, guest bool, channel string) (PresenceChannelsDiff, error)
+	ClearPresence(ctx context.Context, userID uuid.UUID, connID uuid.UUID, username string, guest bool) (PresenceChannelsDiff, error)
+	RefreshPresence(ctx context.Context, userID uuid.UUID, connID uuid.UUID, username string, guest bool) error
 	UserLastSeen(ctx context.Context, userID uuid.UUID) (time.Time, error)
 	ListUsersInChannel(ctx context.Context, channel string) ([]UserPresenceInfo, error)
 	ListChannelsForUser(ctx context.Context, userID uuid.UUID) ([]string, error)
 	UsersCountInChannel(ctx context.Context, channel string) (int64, error)
-	ConnsCountInChannel(ctx context.Context, channel string) (int64, error)
 	TotalActiveConnsCount(ctx context.Context) (int64, error)
 }
 

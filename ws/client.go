@@ -48,6 +48,8 @@ type client struct {
 	query     url.Values
 	log       *slog.Logger
 
+	cancel context.CancelFunc
+
 	pongCount    int
 	lastPingSent time.Time
 	avgLatency   time.Duration
@@ -55,6 +57,7 @@ type client struct {
 }
 
 func NewClient(id uuid.UUID, hub *Hub, conn *websocket.Conn, authState ClientAuthState, logger *slog.Logger, query url.Values,
+	cancelFunc context.CancelFunc,
 	onPingReceivedRegister func(func(ctx context.Context, payload []byte) bool),
 	onPongReceivedRegister func(func(ctx context.Context, payload []byte),
 	),
@@ -73,6 +76,7 @@ func NewClient(id uuid.UUID, hub *Hub, conn *websocket.Conn, authState ClientAut
 		log:       clientLogger,
 		query:     query,
 		mu:        &sync.RWMutex{},
+		cancel:    cancelFunc,
 	}
 
 	if onPingReceivedRegister != nil {

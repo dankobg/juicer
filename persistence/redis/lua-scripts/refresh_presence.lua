@@ -18,8 +18,22 @@ local expiration_ttl = expiration_ts - now_ts
 -- refresh connection
 redis.call("ZADD", "presence:conns", expiration_ts, conn_id)
 
--- refresh expiry
-redis.call("EXPIRE", "presence:conn:" .. conn_id, expiration_ttl)
+-- refresh conn metadata expiration
+redis.call("EXPIRE", "presence:conn:meta:" .. conn_id, expiration_ttl)
+
+-- refresh user metadata expiration
+redis.call("EXPIRE", "presence:user:meta:" .. user_id, expiration_ttl)
+
+-- refresh conn -> channels expiration
+redis.call("EXPIRE", "presence:conn:channels:" .. conn_id, expiration_ttl)
+
+-- list channels to refresh channel:user TTLs
+local conn_channels = redis.call("SMEMBERS", "presence:conn:channels:" .. conn_id)
+
+for _, ch in ipairs(conn_channels) do
+  -- refresh channel users TTL (same as set_presence: 86400)
+  redis.call("EXPIRE", "presence:channel:users:" .. ch, 86400)
+end
 
 -- user last seen
 if not guest then

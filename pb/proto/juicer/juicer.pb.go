@@ -574,6 +574,8 @@ type Message struct {
 	//	*Message_ClientDisconnected
 	//	*Message_InitializeChannels
 	//	*Message_InitialChannels
+	//	*Message_PresenceState
+	//	*Message_PresenceDiff
 	//	*Message_SeekGame
 	//	*Message_CancelSeekGame
 	//	*Message_AbortGame
@@ -708,6 +710,24 @@ func (x *Message) GetInitialChannels() *InitialChannels {
 	if x != nil {
 		if x, ok := x.Event.(*Message_InitialChannels); ok {
 			return x.InitialChannels
+		}
+	}
+	return nil
+}
+
+func (x *Message) GetPresenceState() *PresenceState {
+	if x != nil {
+		if x, ok := x.Event.(*Message_PresenceState); ok {
+			return x.PresenceState
+		}
+	}
+	return nil
+}
+
+func (x *Message) GetPresenceDiff() *PresenceDiff {
+	if x != nil {
+		if x, ok := x.Event.(*Message_PresenceDiff); ok {
+			return x.PresenceDiff
 		}
 	}
 	return nil
@@ -897,6 +917,14 @@ type Message_InitialChannels struct {
 	InitialChannels *InitialChannels `protobuf:"bytes,9,opt,name=initial_channels,json=initialChannels,proto3,oneof"`
 }
 
+type Message_PresenceState struct {
+	PresenceState *PresenceState `protobuf:"bytes,10,opt,name=presence_state,json=presenceState,proto3,oneof"`
+}
+
+type Message_PresenceDiff struct {
+	PresenceDiff *PresenceDiff `protobuf:"bytes,11,opt,name=presence_diff,json=presenceDiff,proto3,oneof"`
+}
+
 type Message_SeekGame struct {
 	SeekGame *SeekGame `protobuf:"bytes,25,opt,name=seek_game,json=seekGame,proto3,oneof"`
 }
@@ -978,6 +1006,10 @@ func (*Message_ClientDisconnected) isMessage_Event() {}
 func (*Message_InitializeChannels) isMessage_Event() {}
 
 func (*Message_InitialChannels) isMessage_Event() {}
+
+func (*Message_PresenceState) isMessage_Event() {}
+
+func (*Message_PresenceDiff) isMessage_Event() {}
 
 func (*Message_SeekGame) isMessage_Event() {}
 
@@ -1579,7 +1611,7 @@ type Presence struct {
 	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
 	Username      string                 `protobuf:"bytes,2,opt,name=username,proto3" json:"username,omitempty"`
 	Guest         bool                   `protobuf:"varint,3,opt,name=guest,proto3" json:"guest,omitempty"`
-	Channels      []string               `protobuf:"bytes,4,rep,name=channels,proto3" json:"channels,omitempty"`
+	Channel       string                 `protobuf:"bytes,4,opt,name=channel,proto3" json:"channel,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1635,17 +1667,17 @@ func (x *Presence) GetGuest() bool {
 	return false
 }
 
-func (x *Presence) GetChannels() []string {
+func (x *Presence) GetChannel() string {
 	if x != nil {
-		return x.Channels
+		return x.Channel
 	}
-	return nil
+	return ""
 }
 
 // PresenceState is the full snapshot of all presences
 type PresenceState struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Presences     map[string]*Presence   `protobuf:"bytes,1,rep,name=presences,proto3" json:"presences,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	Presences     []*Presence            `protobuf:"bytes,1,rep,name=presences,proto3" json:"presences,omitempty"` // map<string, Presence> presences = 1;
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1680,7 +1712,7 @@ func (*PresenceState) Descriptor() ([]byte, []int) {
 	return file_proto_juicer_juicer_proto_rawDescGZIP(), []int{13}
 }
 
-func (x *PresenceState) GetPresences() map[string]*Presence {
+func (x *PresenceState) GetPresences() []*Presence {
 	if x != nil {
 		return x.Presences
 	}
@@ -1690,8 +1722,8 @@ func (x *PresenceState) GetPresences() map[string]*Presence {
 // PresenceDiff is the incremental presence change event
 type PresenceDiff struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Joined        map[string]*Presence   `protobuf:"bytes,1,rep,name=joined,proto3" json:"joined,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	Left          map[string]*Presence   `protobuf:"bytes,2,rep,name=left,proto3" json:"left,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	Joined        []*Presence            `protobuf:"bytes,1,rep,name=joined,proto3" json:"joined,omitempty"`
+	Left          []*Presence            `protobuf:"bytes,2,rep,name=left,proto3" json:"left,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1726,14 +1758,14 @@ func (*PresenceDiff) Descriptor() ([]byte, []int) {
 	return file_proto_juicer_juicer_proto_rawDescGZIP(), []int{14}
 }
 
-func (x *PresenceDiff) GetJoined() map[string]*Presence {
+func (x *PresenceDiff) GetJoined() []*Presence {
 	if x != nil {
 		return x.Joined
 	}
 	return nil
 }
 
-func (x *PresenceDiff) GetLeft() map[string]*Presence {
+func (x *PresenceDiff) GetLeft() []*Presence {
 	if x != nil {
 		return x.Left
 	}
@@ -2802,8 +2834,7 @@ const file_proto_juicer_juicer_proto_rawDesc = "" +
 	"\x19proto/juicer/juicer.proto\x12\x02pb\x1a\x1egoogle/protobuf/duration.proto\x1a\x1fgoogle/protobuf/timestamp.proto\"O\n" +
 	"\x0fGameTimeControl\x12\x19\n" +
 	"\bclock_ms\x18\x01 \x01(\x05R\aclockMs\x12!\n" +
-	"\fincrement_ms\x18\x02 \x01(\x05R\vincrementMs\"\xcc\n" +
-	"\n" +
+	"\fincrement_ms\x18\x02 \x01(\x05R\vincrementMs\"\xc1\v\n" +
 	"\aMessage\x12'\n" +
 	"\aproblem\x18\x01 \x01(\v2\v.pb.ProblemH\x00R\aproblem\x12'\n" +
 	"\alatency\x18\x02 \x01(\v2\v.pb.LatencyH\x00R\alatency\x12-\n" +
@@ -2814,7 +2845,10 @@ const file_proto_juicer_juicer_proto_rawDesc = "" +
 	"\x10client_connected\x18\x06 \x01(\v2\x13.pb.ClientConnectedH\x00R\x0fclientConnected\x12I\n" +
 	"\x13client_disconnected\x18\a \x01(\v2\x16.pb.ClientDisconnectedH\x00R\x12clientDisconnected\x12I\n" +
 	"\x13initialize_channels\x18\b \x01(\v2\x16.pb.InitializeChannelsH\x00R\x12initializeChannels\x12@\n" +
-	"\x10initial_channels\x18\t \x01(\v2\x13.pb.InitialChannelsH\x00R\x0finitialChannels\x12+\n" +
+	"\x10initial_channels\x18\t \x01(\v2\x13.pb.InitialChannelsH\x00R\x0finitialChannels\x12:\n" +
+	"\x0epresence_state\x18\n" +
+	" \x01(\v2\x11.pb.PresenceStateH\x00R\rpresenceState\x127\n" +
+	"\rpresence_diff\x18\v \x01(\v2\x10.pb.PresenceDiffH\x00R\fpresenceDiff\x12+\n" +
 	"\tseek_game\x18\x19 \x01(\v2\f.pb.SeekGameH\x00R\bseekGame\x12>\n" +
 	"\x10cancel_seek_game\x18\x1a \x01(\v2\x12.pb.CancelSeekGameH\x00R\x0ecancelSeekGame\x12.\n" +
 	"\n" +
@@ -2871,26 +2905,17 @@ const file_proto_juicer_juicer_proto_rawDesc = "" +
 	"\x05guest\x18\x03 \x01(\bR\x05guest\x12\x12\n" +
 	"\x04path\x18\x04 \x01(\tR\x04path\"-\n" +
 	"\x0fInitialChannels\x12\x1a\n" +
-	"\bchannels\x18\x01 \x03(\tR\bchannels\"q\n" +
+	"\bchannels\x18\x01 \x03(\tR\bchannels\"o\n" +
 	"\bPresence\x12\x17\n" +
 	"\auser_id\x18\x01 \x01(\tR\x06userId\x12\x1a\n" +
 	"\busername\x18\x02 \x01(\tR\busername\x12\x14\n" +
-	"\x05guest\x18\x03 \x01(\bR\x05guest\x12\x1a\n" +
-	"\bchannels\x18\x04 \x03(\tR\bchannels\"\x9b\x01\n" +
-	"\rPresenceState\x12>\n" +
-	"\tpresences\x18\x01 \x03(\v2 .pb.PresenceState.PresencesEntryR\tpresences\x1aJ\n" +
-	"\x0ePresencesEntry\x12\x10\n" +
-	"\x03key\x18\x01 \x01(\tR\x03key\x12\"\n" +
-	"\x05value\x18\x02 \x01(\v2\f.pb.PresenceR\x05value:\x028\x01\"\x84\x02\n" +
-	"\fPresenceDiff\x124\n" +
-	"\x06joined\x18\x01 \x03(\v2\x1c.pb.PresenceDiff.JoinedEntryR\x06joined\x12.\n" +
-	"\x04left\x18\x02 \x03(\v2\x1a.pb.PresenceDiff.LeftEntryR\x04left\x1aG\n" +
-	"\vJoinedEntry\x12\x10\n" +
-	"\x03key\x18\x01 \x01(\tR\x03key\x12\"\n" +
-	"\x05value\x18\x02 \x01(\v2\f.pb.PresenceR\x05value:\x028\x01\x1aE\n" +
-	"\tLeftEntry\x12\x10\n" +
-	"\x03key\x18\x01 \x01(\tR\x03key\x12\"\n" +
-	"\x05value\x18\x02 \x01(\v2\f.pb.PresenceR\x05value:\x028\x01\"j\n" +
+	"\x05guest\x18\x03 \x01(\bR\x05guest\x12\x18\n" +
+	"\achannel\x18\x04 \x01(\tR\achannel\";\n" +
+	"\rPresenceState\x12*\n" +
+	"\tpresences\x18\x01 \x03(\v2\f.pb.PresenceR\tpresences\"V\n" +
+	"\fPresenceDiff\x12$\n" +
+	"\x06joined\x18\x01 \x03(\v2\f.pb.PresenceR\x06joined\x12 \n" +
+	"\x04left\x18\x02 \x03(\v2\f.pb.PresenceR\x04left\"j\n" +
 	"\x06Clocks\x12/\n" +
 	"\x05white\x18\x01 \x01(\v2\x19.google.protobuf.DurationR\x05white\x12/\n" +
 	"\x05black\x18\x02 \x01(\v2\x19.google.protobuf.DurationR\x05black\"B\n" +
@@ -3048,7 +3073,7 @@ func file_proto_juicer_juicer_proto_rawDescGZIP() []byte {
 }
 
 var file_proto_juicer_juicer_proto_enumTypes = make([]protoimpl.EnumInfo, 8)
-var file_proto_juicer_juicer_proto_msgTypes = make([]protoimpl.MessageInfo, 37)
+var file_proto_juicer_juicer_proto_msgTypes = make([]protoimpl.MessageInfo, 34)
 var file_proto_juicer_juicer_proto_goTypes = []any{
 	(Color)(0),                    // 0: pb.Color
 	(GameVariant)(0),              // 1: pb.GameVariant
@@ -3092,11 +3117,8 @@ var file_proto_juicer_juicer_proto_goTypes = []any{
 	(*PlayMoveUCI)(nil),           // 39: pb.PlayMoveUCI
 	(*ReceiveMove)(nil),           // 40: pb.ReceiveMove
 	(*GameFinished)(nil),          // 41: pb.GameFinished
-	nil,                           // 42: pb.PresenceState.PresencesEntry
-	nil,                           // 43: pb.PresenceDiff.JoinedEntry
-	nil,                           // 44: pb.PresenceDiff.LeftEntry
-	(*durationpb.Duration)(nil),   // 45: google.protobuf.Duration
-	(*timestamppb.Timestamp)(nil), // 46: google.protobuf.Timestamp
+	(*durationpb.Duration)(nil),   // 42: google.protobuf.Duration
+	(*timestamppb.Timestamp)(nil), // 43: google.protobuf.Timestamp
 }
 var file_proto_juicer_juicer_proto_depIdxs = []int32{
 	15, // 0: pb.Message.problem:type_name -> pb.Problem
@@ -3108,50 +3130,49 @@ var file_proto_juicer_juicer_proto_depIdxs = []int32{
 	17, // 6: pb.Message.client_disconnected:type_name -> pb.ClientDisconnected
 	18, // 7: pb.Message.initialize_channels:type_name -> pb.InitializeChannels
 	19, // 8: pb.Message.initial_channels:type_name -> pb.InitialChannels
-	24, // 9: pb.Message.seek_game:type_name -> pb.SeekGame
-	25, // 10: pb.Message.cancel_seek_game:type_name -> pb.CancelSeekGame
-	31, // 11: pb.Message.abort_game:type_name -> pb.AbortGame
-	32, // 12: pb.Message.resign_game:type_name -> pb.ResignGame
-	33, // 13: pb.Message.offer_draw:type_name -> pb.OfferDraw
-	35, // 14: pb.Message.accept_draw:type_name -> pb.AcceptDraw
-	34, // 15: pb.Message.decline_draw:type_name -> pb.DeclineDraw
-	39, // 16: pb.Message.play_move_uci:type_name -> pb.PlayMoveUCI
-	36, // 17: pb.Message.game_chat:type_name -> pb.GameChat
-	37, // 18: pb.Message.game_chat_receive:type_name -> pb.GameChatReceive
-	38, // 19: pb.Message.game_chat_retrieve:type_name -> pb.GameChatRetrieve
-	40, // 20: pb.Message.receive_move:type_name -> pb.ReceiveMove
-	41, // 21: pb.Message.game_finished:type_name -> pb.GameFinished
-	26, // 22: pb.Message.hub_info:type_name -> pb.HubInfo
-	30, // 23: pb.Message.match_found:type_name -> pb.MatchFound
-	10, // 24: pb.Message.echo:type_name -> pb.Echo
-	42, // 25: pb.PresenceState.presences:type_name -> pb.PresenceState.PresencesEntry
-	43, // 26: pb.PresenceDiff.joined:type_name -> pb.PresenceDiff.JoinedEntry
-	44, // 27: pb.PresenceDiff.left:type_name -> pb.PresenceDiff.LeftEntry
-	45, // 28: pb.Clocks.white:type_name -> google.protobuf.Duration
-	45, // 29: pb.Clocks.black:type_name -> google.protobuf.Duration
-	8,  // 30: pb.SeekGame.time_control:type_name -> pb.GameTimeControl
-	46, // 31: pb.HistoryMoveInfo.played_at:type_name -> google.protobuf.Timestamp
-	28, // 32: pb.HistoryMoveInfo.move:type_name -> pb.HistoryMove
-	6,  // 33: pb.MatchFound.game_state:type_name -> pb.GameState
-	0,  // 34: pb.MatchFound.color:type_name -> pb.Color
-	23, // 35: pb.MatchFound.clocks:type_name -> pb.Clocks
-	8,  // 36: pb.MatchFound.time_control:type_name -> pb.GameTimeControl
-	27, // 37: pb.MatchFound.opponent_info:type_name -> pb.OpponentInfo
-	29, // 38: pb.MatchFound.history_move_infos:type_name -> pb.HistoryMoveInfo
-	46, // 39: pb.MatchFound.start_time:type_name -> google.protobuf.Timestamp
-	37, // 40: pb.GameChatRetrieve.game_chat:type_name -> pb.GameChatReceive
-	23, // 41: pb.ReceiveMove.clocks:type_name -> pb.Clocks
-	4,  // 42: pb.GameFinished.game_result:type_name -> pb.GameResult
-	5,  // 43: pb.GameFinished.game_result_status:type_name -> pb.GameResultStatus
-	6,  // 44: pb.GameFinished.game_state:type_name -> pb.GameState
-	20, // 45: pb.PresenceState.PresencesEntry.value:type_name -> pb.Presence
-	20, // 46: pb.PresenceDiff.JoinedEntry.value:type_name -> pb.Presence
-	20, // 47: pb.PresenceDiff.LeftEntry.value:type_name -> pb.Presence
-	48, // [48:48] is the sub-list for method output_type
-	48, // [48:48] is the sub-list for method input_type
-	48, // [48:48] is the sub-list for extension type_name
-	48, // [48:48] is the sub-list for extension extendee
-	0,  // [0:48] is the sub-list for field type_name
+	21, // 9: pb.Message.presence_state:type_name -> pb.PresenceState
+	22, // 10: pb.Message.presence_diff:type_name -> pb.PresenceDiff
+	24, // 11: pb.Message.seek_game:type_name -> pb.SeekGame
+	25, // 12: pb.Message.cancel_seek_game:type_name -> pb.CancelSeekGame
+	31, // 13: pb.Message.abort_game:type_name -> pb.AbortGame
+	32, // 14: pb.Message.resign_game:type_name -> pb.ResignGame
+	33, // 15: pb.Message.offer_draw:type_name -> pb.OfferDraw
+	35, // 16: pb.Message.accept_draw:type_name -> pb.AcceptDraw
+	34, // 17: pb.Message.decline_draw:type_name -> pb.DeclineDraw
+	39, // 18: pb.Message.play_move_uci:type_name -> pb.PlayMoveUCI
+	36, // 19: pb.Message.game_chat:type_name -> pb.GameChat
+	37, // 20: pb.Message.game_chat_receive:type_name -> pb.GameChatReceive
+	38, // 21: pb.Message.game_chat_retrieve:type_name -> pb.GameChatRetrieve
+	40, // 22: pb.Message.receive_move:type_name -> pb.ReceiveMove
+	41, // 23: pb.Message.game_finished:type_name -> pb.GameFinished
+	26, // 24: pb.Message.hub_info:type_name -> pb.HubInfo
+	30, // 25: pb.Message.match_found:type_name -> pb.MatchFound
+	10, // 26: pb.Message.echo:type_name -> pb.Echo
+	20, // 27: pb.PresenceState.presences:type_name -> pb.Presence
+	20, // 28: pb.PresenceDiff.joined:type_name -> pb.Presence
+	20, // 29: pb.PresenceDiff.left:type_name -> pb.Presence
+	42, // 30: pb.Clocks.white:type_name -> google.protobuf.Duration
+	42, // 31: pb.Clocks.black:type_name -> google.protobuf.Duration
+	8,  // 32: pb.SeekGame.time_control:type_name -> pb.GameTimeControl
+	43, // 33: pb.HistoryMoveInfo.played_at:type_name -> google.protobuf.Timestamp
+	28, // 34: pb.HistoryMoveInfo.move:type_name -> pb.HistoryMove
+	6,  // 35: pb.MatchFound.game_state:type_name -> pb.GameState
+	0,  // 36: pb.MatchFound.color:type_name -> pb.Color
+	23, // 37: pb.MatchFound.clocks:type_name -> pb.Clocks
+	8,  // 38: pb.MatchFound.time_control:type_name -> pb.GameTimeControl
+	27, // 39: pb.MatchFound.opponent_info:type_name -> pb.OpponentInfo
+	29, // 40: pb.MatchFound.history_move_infos:type_name -> pb.HistoryMoveInfo
+	43, // 41: pb.MatchFound.start_time:type_name -> google.protobuf.Timestamp
+	37, // 42: pb.GameChatRetrieve.game_chat:type_name -> pb.GameChatReceive
+	23, // 43: pb.ReceiveMove.clocks:type_name -> pb.Clocks
+	4,  // 44: pb.GameFinished.game_result:type_name -> pb.GameResult
+	5,  // 45: pb.GameFinished.game_result_status:type_name -> pb.GameResultStatus
+	6,  // 46: pb.GameFinished.game_state:type_name -> pb.GameState
+	47, // [47:47] is the sub-list for method output_type
+	47, // [47:47] is the sub-list for method input_type
+	47, // [47:47] is the sub-list for extension type_name
+	47, // [47:47] is the sub-list for extension extendee
+	0,  // [0:47] is the sub-list for field type_name
 }
 
 func init() { file_proto_juicer_juicer_proto_init() }
@@ -3169,6 +3190,8 @@ func file_proto_juicer_juicer_proto_init() {
 		(*Message_ClientDisconnected)(nil),
 		(*Message_InitializeChannels)(nil),
 		(*Message_InitialChannels)(nil),
+		(*Message_PresenceState)(nil),
+		(*Message_PresenceDiff)(nil),
 		(*Message_SeekGame)(nil),
 		(*Message_CancelSeekGame)(nil),
 		(*Message_AbortGame)(nil),
@@ -3194,7 +3217,7 @@ func file_proto_juicer_juicer_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_proto_juicer_juicer_proto_rawDesc), len(file_proto_juicer_juicer_proto_rawDesc)),
 			NumEnums:      8,
-			NumMessages:   37,
+			NumMessages:   34,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

@@ -12,6 +12,7 @@ import (
 	"time"
 
 	pb "github.com/dankobg/juicer/pb/proto/juicer"
+	"github.com/dankobg/juicer/persistence"
 	"github.com/dankobg/juicer/persistence/dbtype"
 	"github.com/dankobg/juicer/ws"
 	"github.com/goforj/godump"
@@ -88,7 +89,7 @@ func (a *ApiHandler) handleIPCHeartbeatMsg(data *pb.Heartbeat) {
 		username = uname
 	}
 
-	_, _, err := a.persistor.Presence().RefreshPresence(context.Background(), uuid.MustParse(data.UserId), uuid.MustParse(data.ConnId), username, data.Guest)
+	err := a.persistor.Presence().RefreshPresence(context.Background(), uuid.MustParse(data.UserId), uuid.MustParse(data.ConnId), username, data.Guest)
 	if err != nil && !errors.Is(err, redis.Nil) {
 		a.Log.Error("RefreshPresence", slog.String("user_id", data.UserId), slog.String("conn_id", data.ConnId), slog.Any("error", err))
 	}
@@ -112,11 +113,36 @@ func (a *ApiHandler) handleIPCLeaveTabMsg(data *pb.LeaveTab) {
 		username = uname
 	}
 
-	_ = username
-
-	_, _, _, err := a.persistor.Presence().ClearPresence(context.Background(), uuid.MustParse(data.UserId), uuid.MustParse(data.ConnId), username, data.Guest)
+	channelsDiff, err := a.persistor.Presence().ClearPresence(context.Background(), uuid.MustParse(data.UserId), uuid.MustParse(data.ConnId), username, data.Guest)
 	if err != nil && !errors.Is(err, redis.Nil) {
 		a.Log.Error("ClearPresence", slog.String("user_id", data.UserId), slog.String("conn_id", data.ConnId), slog.Any("error", err))
+	}
+
+	userLeft := make([]*pb.Presence, len(channelsDiff.UserLeft))
+
+	for i, leftChannel := range channelsDiff.UserLeft {
+		userLeft[i] = &pb.Presence{
+			UserId:   data.UserId,
+			Username: username,
+			Guest:    data.Guest,
+			Channel:  leftChannel,
+		}
+	}
+
+	// pub to "presence.diff" for followers, and friends later
+
+	presenceDiffMsg := &pb.Message{Event: &pb.Message_PresenceDiff{PresenceDiff: &pb.PresenceDiff{Left: userLeft}}}
+	presenceDiffMsgBytes, err := protojson.Marshal(presenceDiffMsg)
+	if err != nil {
+		a.Log.Error("Message_PresenceDiff protojson marshal", slog.String("user_id", data.UserId), slog.String("conn_id", data.ConnId), slog.Any("error", err))
+		return
+	}
+
+	for _, leftChannel := range channelsDiff.UserLeft {
+		if err := a.bus.rdb.Publish(context.Background(), leftChannel, presenceDiffMsgBytes).Err(); err != nil {
+			a.Log.Error("publish Message_PresenceDiff", slog.String("user_id", data.UserId), slog.String("conn_id", data.ConnId), slog.String("channel", leftChannel), slog.Any("error", err))
+			return
+		}
 	}
 
 	// clear presence
@@ -210,16 +236,14 @@ func (a *ApiHandler) handleIPCClientConnectedMsg(data *pb.ClientConnected) {
 	}
 
 	for _, channel := range data.GetChannels() {
-		_, _, err := a.persistor.Presence().SetPresence(context.Background(), uuid.MustParse(data.UserId), uuid.MustParse(data.ConnId), username, data.Guest, channel)
+		channelsDiff, err := a.persistor.Presence().SetPresence(context.Background(), uuid.MustParse(data.UserId), uuid.MustParse(data.ConnId), username, data.Guest, channel)
 		if err != nil && !errors.Is(err, redis.Nil) {
 			a.Log.Error("SetPresence", slog.String("user_id", data.UserId), slog.String("conn_id", data.ConnId), slog.String("channel", channel), slog.Any("error", err))
 			return
 		}
 
-		// if err := a.broadcastPresenceDiff(context.Background(), oldChannels, newChannels, data.UserId, username); err != nil {
-		// 	a.Log.Error("broadcastPresenceDiff", slog.String("user_id", data.UserId), slog.String("conn_id", data.ConnId), slog.String("channel", channel), slog.Any("error", err))
-		// 	return
-		// }
+		_ = channelsDiff
+		// a.broadcastPresenceDiff()
 
 		if channel == "lobby" {
 			if err := a.sendLobbyInfo(data.UserId, data.ConnId, data.Guest); err != nil {
@@ -583,8 +607,46 @@ func channelsChanged(oldChannels, newChannels []string) bool {
 	return false
 }
 
-func (a *ApiHandler) broadcastPresenceDiff(ctx context.Context, oldChannels, newChannels []string, userID, username string) error {
-	return nil
+func (a *ApiHandler) broadcastPresenceDiff(ctx context.Context, channelsDiff persistence.PresenceChannelsDiff, userID, username string, guest bool) error {
+	panic("TODO")
+
+	// presenceDiff := &pb.PresenceDiff{}
+
+	// userJoined := make([]*pb.Presence, len(channelsDiff.UserJoined))
+	// for i, joinedChannel := range channelsDiff.UserJoined {
+	// 	userJoined[i] = &pb.Presence{
+	// 		UserId:   userID,
+	// 		Username: username,
+	// 		Guest:    guest,
+	// 		Channel:  joinedChannel,
+	// 	}
+	// }
+
+	// userLeft := make([]*pb.Presence, len(channelsDiff.UserLeft))
+	// for i, joinedChannel := range channelsDiff.UserLeft {
+	// 	userLeft[i] = &pb.Presence{
+	// 		UserId:   userID,
+	// 		Username: username,
+	// 		Guest:    guest,
+	// 		Channel:  joinedChannel,
+	// 	}
+	// }
+
+	// presenceDiffMsg := &pb.Message{Event: &pb.Message_PresenceDiff{PresenceDiff: presenceDiff}}
+	// presenceDiffMsgBytes, err := protojson.Marshal(presenceDiffMsg)
+	// if err != nil {
+	// 	a.Log.Error("Message_PresenceDiff protojson marshal", slog.String("user_id", data.UserId), slog.String("conn_id", data.ConnId), slog.Any("error", err))
+	// 	return
+	// }
+	// if err := a.bus.rdb.Publish(context.Background(), "presence.diff."+data.UserId, presenceDiffMsgBytes).Err(); err != nil {
+	// 	a.Log.Error("publish Message_PresenceDiff", slog.String("user_id", data.UserId), slog.String("conn_id", data.ConnId), slog.Any("error", err))
+	// 	return
+	// }
+
+	// if err := a.sendPresenceInfo(context.Background(), uuid.MustParse(data.UserId), uuid.MustParse(data.ConnId), username, data.Guest, channel); err != nil {
+	// 	a.Log.Error("sendPresenceInfo", slog.Any("error", err))
+	// }
+
 	// if !channelsChanged(oldChannels, newChannels) {
 	// 	return nil
 	// }
@@ -631,47 +693,50 @@ func (a *ApiHandler) broadcastPresence(ctx context.Context, userID, username str
 	// return nil
 }
 
-func (a *ApiHandler) getPresence(ctx context.Context, channel string) (*pb.Message, error) {
-	return nil, nil
-	// users, err := a.persistor.Presence().GetUsersInChannel(ctx, channel)
-	// if err != nil {
-	// 	return nil, err
-	// }
-
-	// presenceList := make([]*pb.UserPresence, 0)
-	// for _, u := range users {
-	// 	presenceList = append(presenceList, &pb.UserPresence{
-	// 		UserId:   u.ID,
-	// 		Username: u.Username,
-	// 		Guest:    u.Guest,
-	// 		Channel:  channel,
-	// 	})
-	// }
-	// upsMsg := &pb.Message{Event: &pb.Message_UserPresences{UserPresences: &pb.UserPresences{Presences: presenceList}}}
-	// return upsMsg, nil
-}
-
 func (a *ApiHandler) sendPresenceInfo(ctx context.Context, userID, connID uuid.UUID, username string, guest bool, channel string) error {
-	presMsg, err := a.getPresence(ctx, channel)
+	userPresenceInfos, err := a.persistor.Presence().ListUsersInChannel(ctx, channel)
 	if err != nil {
 		return err
 	}
 
-	_ = presMsg
+	presences := make([]*pb.Presence, len(userPresenceInfos))
 
-	// if err := a.publishToConnID(ctx, connID, userID, presMsg); err != nil {
-	// 	return err
-	// }
+	for i, info := range userPresenceInfos {
+		presences[i] = &pb.Presence{
+			UserId:   info.ID,
+			Username: info.Username,
+			Guest:    info.Guest,
+			Channel:  channel,
+		}
+	}
 
-	// send our presence to users in this channel also
-	if err := a.broadcastPresence(ctx, userID.String(), username, guest, []string{channel}, false); err != nil {
+	presenceStateMsg := &pb.Message{Event: &pb.Message_PresenceState{PresenceState: &pb.PresenceState{Presences: presences}}}
+	presenceStateMsgBytes, err := protojson.Marshal(presenceStateMsg)
+	if err != nil {
 		return err
 	}
+
+	if err := a.Rdb.Publish(ctx, "conn."+connID.String(), presenceStateMsgBytes).Err(); err != nil {
+		return err
+	}
+
+	// // send our presence to users in this channel also
+	// if err := a.broadcastPresence(ctx, userID.String(), username, guest, []string{channel}, false); err != nil {
+	// 	return err
+	// }
 
 	return nil
 }
 
 func (a *ApiHandler) publishToUserID(ctx context.Context, userID string, msg *pb.Message, channel *string) error {
+	return nil
+}
+
+func (a *ApiHandler) publishToConnID(ctx context.Context, connID string, msg *pb.Message) error {
+	return nil
+}
+
+func (a *ApiHandler) publishToChannel(ctx context.Context, channel string, msg *pb.Message) error {
 	return nil
 }
 
@@ -708,25 +773,23 @@ func (a *ApiHandler) publishToUserID(ctx context.Context, userID string, msg *pb
 // }
 
 func ZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZ(a *ApiHandler) {
-	ids := []uuid.UUID{uuid.MustParse("6bbe466b-28fe-42df-a8fa-b3525f147630"), uuid.MustParse("d89cc057-9a73-4cae-b3bb-5337e7cab82a")}
+	ids := []uuid.UUID{uuid.MustParse("cb38c8e1-2fb6-4b4c-bd10-e099953f8ee8"), uuid.MustParse("18a425bd-1325-4f38-81c4-b4fcc5ad9992")}
 	_ = ids
 
 	v1, e1 := a.persistor.Presence().ListUsersInChannel(context.TODO(), "lobby")
 	v2, e2 := a.persistor.Presence().UsersCountInChannel(context.TODO(), "lobby")
-	v3, e3 := a.persistor.Presence().ConnsCountInChannel(context.TODO(), "lobby")
-	v4, e4 := a.persistor.Presence().ListChannelsForUser(context.TODO(), ids[0])
-	v5, e5 := a.persistor.Presence().TotalActiveConnsCount(context.TODO())
+	v3, e3 := a.persistor.Presence().ListChannelsForUser(context.TODO(), ids[0])
+	v4, e4 := a.persistor.Presence().TotalActiveConnsCount(context.TODO())
 
-	if e := errors.Join(e1, e2, e3, e4, e5); e != nil {
-		fmt.Println("KURAAAAAAC", e)
+	if e := errors.Join(e1, e2, e3, e4); e != nil {
+		fmt.Println("--------------------------- KURAAAAAAC", e)
 	}
 
 	godump.DumpJSON(map[string]any{
 		"lobby_users":       v1,
 		"lobby_users_count": v2,
-		"lobby_conns_count": v3,
-		"danko_channels":    v4,
-		"active_conns":      v5,
+		"danko_channels":    v3,
+		"active_conns":      v4,
 	})
 
 	// players := [2]gameplay.Player{

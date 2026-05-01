@@ -55,7 +55,7 @@ func NewHub(persistor persistence.Persistor, rdb *redis.Client, logger *slog.Log
 func (h *Hub) Run(ctx context.Context) error {
 	defer func() {
 		if r := recover(); r != nil {
-			h.log.Info("hub recovered", slog.Any("recover", r))
+			h.log.Error("hub panic recovered", slog.Any("recover", r))
 		}
 	}()
 
@@ -241,7 +241,7 @@ func (h *Hub) addClient(c *client) {
 }
 
 func (h *Hub) removeClient(c *client) {
-	close(c.outMsg)
+	c.cancel()
 
 	h.mu.Lock()
 

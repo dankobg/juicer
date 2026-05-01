@@ -6,13 +6,17 @@ import {
 	type GameTimeControl,
 	type HistoryMoveInfo,
 	type Latency,
-	type OpponentInfo
+	type OpponentInfo,
+	type Presence,
+	type PresenceDiff,
+	type PresenceState
 } from '$lib/gen/juicer_pb';
 import { create, fromJsonString } from '@bufbuild/protobuf';
 import type { JuicerBoard, Coord, PieceFenSymbol } from '@dankop/juicer-board';
 import { PersistedState } from 'runed';
 import { ws } from '$lib/state/ws-state.svelte';
-import { type Timestamp, timestampNow, timestampDate } from '@bufbuild/protobuf/wkt';
+import { type Timestamp } from '@bufbuild/protobuf/wkt';
+import { SvelteSet } from 'svelte/reactivity';
 
 export const RECONNECT_TIMEOUT_MS = 15_000;
 export const FIRST_MOVE_TIMEOUT_MS = 10_000;
@@ -122,10 +126,56 @@ class GameManager {
 		console.log('got latency_ms: ', latencyMsg.latencyMs);
 	}
 
+	userPresences = $state<Record<string, Presence>>({});
+	channelPresences = $state<Record<string, SvelteSet<string>>>({});
+
+	onPresenceState(presenceState: PresenceState) {
+		console.log('snapshot', presenceState.presences);
+
+		for (const presence of presenceState.presences) {
+			this.userPresences[presence.userId] = presence;
+			this.channelPresences[presence.channel] ||= new SvelteSet();
+			this.channelPresences[presence.channel]?.add(presence.userId);
+		}
+	}
+
+	onPresenceDiff(presenceDiff: PresenceDiff) {
+		if (presenceDiff.joined.length > 0) {
+			console.log('joined', presenceDiff.joined);
+		} else {
+			console.log('left', presenceDiff.left);
+		}
+
+		for (const presence of presenceDiff.joined) {
+			this.channelPresences[presence.channel]?.add(presence.userId);
+			this.userPresences[presence.userId] = presence;
+		}
+
+		for (const presence of presenceDiff.left) {
+			this.channelPresences[presence.channel]?.delete(presence.userId);
+
+			if (this.channelPresences[presence.channel]?.size === 0) {
+				delete this.channelPresences[presence.channel];
+			}
+
+			let stillInAnyChannel = false;
+
+			for (const ch of Object.keys(this.channelPresences)) {
+				if (this.channelPresences[ch]?.has(presence.userId)) {
+					stillInAnyChannel = true;
+					break;
+				}
+			}
+
+			if (!stillInAnyChannel) {
+				delete this.userPresences[presence.userId];
+			}
+		}
+	}
+
 	handleWebsocketMessage(event: MessageEvent) {
 		try {
 			const msg = fromJsonString(MessageSchema, event.data);
-			console.debug('ws recv:', msg.event.case, '-', msg.event.value);
 
 			switch (msg.event.case) {
 				case 'echo':
@@ -134,7 +184,12 @@ class GameManager {
 				case 'latency':
 					this.onLatencyMsg(msg.event.value);
 					break;
-				// handle other messages here
+				case 'presenceState':
+					this.onPresenceState(msg.event.value);
+					break;
+				case 'presenceDiff':
+					this.onPresenceDiff(msg.event.value);
+					break;
 				default:
 					console.error('unknown message', msg.event.case, msg.event.value);
 					break;
