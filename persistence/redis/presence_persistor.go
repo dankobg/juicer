@@ -40,12 +40,16 @@ func NewRedisPresencePersistor(rs *RedisPersistor) *RedisPresencePersistor {
 	}
 }
 
-func (pst *RedisPresencePersistor) SetPresence(ctx context.Context, userID uuid.UUID, connID uuid.UUID, username string, guest bool, channel string) (persistence.PresenceChannelsDiff, error) {
+func (pst *RedisPresencePersistor) SetPresence(ctx context.Context, userID uuid.UUID, connID uuid.UUID, username string, guest bool, channels []string) (persistence.PresenceChannelsDiff, error) {
 	now := time.Now()
 	expiration := now.Add(time.Minute * 2)
 
 	keys := []string{}
-	args := []any{userID.String(), connID.String(), username, guest, channel, now.Unix(), expiration.Unix()}
+	args := []any{userID.String(), connID.String(), username, guest, now.Unix(), expiration.Unix(), len(channels)}
+
+	for _, ch := range channels {
+		args = append(args, ch)
+	}
 
 	result, err := pst.setPresenceScript.Run(ctx, pst.rdb, keys, args...).Result()
 	if err != nil {

@@ -129,6 +129,20 @@ class GameManager {
 	userPresences = $state<Record<string, Presence>>({});
 	channelPresences = $state<Record<string, SvelteSet<string>>>({});
 
+	lobbyUserPresence = $derived.by(() => {
+		if (this.channelPresences['lobby']?.size === 0) {
+			return [];
+		}
+
+		return [...(this.channelPresences['lobby']?.values() ?? [])].reduce((acc, userId) => {
+			const presence = this.userPresences[userId];
+			if (presence) {
+				acc.push(presence);
+			}
+			return acc;
+		}, [] as Presence[]);
+	});
+
 	onPresenceState(presenceState: PresenceState) {
 		console.log('snapshot', presenceState.presences);
 

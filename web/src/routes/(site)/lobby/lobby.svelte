@@ -40,8 +40,14 @@
 	});
 </script>
 
-<pre>{JSON.stringify(gameManager.userPresences, null, 2)}</pre>
-<pre>{JSON.stringify(gameManager.channelPresences['lobby']?.values(), null, 2)}</pre>
+<div class="border-2 border-green-600 p-1">
+	<h1 class="text-2xl">Lobby users</h1>
+	<ul>
+		{#each gameManager.lobbyUserPresence as user (user?.userId)}
+			<li class="border-2 border-orange-600 p-1">{user?.username}, {user?.guest ? 'guest' : 'auth'}</li>
+		{/each}
+	</ul>
+</div>
 
 <div class="lobby mx-auto mt-8 w-full max-w-screen-2xl">
 	<Tabs.Root value="quick-game" class="mx-auto w-full max-w-xl">

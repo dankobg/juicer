@@ -1,6 +1,11 @@
 package ws
 
-import "github.com/google/uuid"
+import (
+	pb "github.com/dankobg/juicer/pb/proto/juicer"
+	"github.com/google/uuid"
+	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/proto"
+)
 
 // ConnMessage is message sent to a single ws conn
 type ConnMessage struct {
@@ -19,4 +24,22 @@ type UserMessage struct {
 type ChannelMessage struct {
 	channel Channel
 	msg     []byte
+}
+
+const useBinaryMessageFormat = false
+
+func serializeMsg(msg *pb.Message) ([]byte, error) {
+	if useBinaryMessageFormat {
+		return proto.Marshal(msg)
+	}
+
+	return protojson.Marshal(msg)
+}
+
+func deserializeMsg(bb []byte, msg *pb.Message) error {
+	if useBinaryMessageFormat {
+		return proto.Unmarshal(bb, msg)
+	}
+
+	return protojson.Unmarshal(bb, msg)
 }

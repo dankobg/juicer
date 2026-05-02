@@ -153,7 +153,7 @@ type PresenceChannelsDiff struct {
 }
 
 type PresencePersistor interface {
-	SetPresence(ctx context.Context, userID uuid.UUID, connID uuid.UUID, username string, guest bool, channel string) (PresenceChannelsDiff, error)
+	SetPresence(ctx context.Context, userID uuid.UUID, connID uuid.UUID, username string, guest bool, channels []string) (PresenceChannelsDiff, error)
 	ClearPresence(ctx context.Context, userID uuid.UUID, connID uuid.UUID, username string, guest bool) (PresenceChannelsDiff, error)
 	RefreshPresence(ctx context.Context, userID uuid.UUID, connID uuid.UUID, username string, guest bool) error
 	UserLastSeen(ctx context.Context, userID uuid.UUID) (time.Time, error)

@@ -118,40 +118,18 @@ func (a *ApiHandler) handleIPCLeaveTabMsg(data *pb.LeaveTab) {
 		a.Log.Error("ClearPresence", slog.String("user_id", data.UserId), slog.String("conn_id", data.ConnId), slog.Any("error", err))
 	}
 
-	userLeft := make([]*pb.Presence, len(channelsDiff.UserLeft))
-
-	for i, leftChannel := range channelsDiff.UserLeft {
-		userLeft[i] = &pb.Presence{
-			UserId:   data.UserId,
-			Username: username,
-			Guest:    data.Guest,
-			Channel:  leftChannel,
-		}
-	}
-
-	// pub to "presence.diff" for followers, and friends later
-
-	presenceDiffMsg := &pb.Message{Event: &pb.Message_PresenceDiff{PresenceDiff: &pb.PresenceDiff{Left: userLeft}}}
-	presenceDiffMsgBytes, err := protojson.Marshal(presenceDiffMsg)
-	if err != nil {
-		a.Log.Error("Message_PresenceDiff protojson marshal", slog.String("user_id", data.UserId), slog.String("conn_id", data.ConnId), slog.Any("error", err))
-		return
+	if err := a.publishPresenceDiff(context.Background(), channelsDiff, data.UserId, data.ConnId, username, data.Guest); err != nil {
+		a.Log.Error("broadcastPresenceDiff", slog.String("user_id", data.UserId), slog.String("conn_id", data.ConnId), slog.Any("error", err))
 	}
 
 	for _, leftChannel := range channelsDiff.UserLeft {
-		if err := a.bus.rdb.Publish(context.Background(), leftChannel, presenceDiffMsgBytes).Err(); err != nil {
-			a.Log.Error("publish Message_PresenceDiff", slog.String("user_id", data.UserId), slog.String("conn_id", data.ConnId), slog.String("channel", leftChannel), slog.Any("error", err))
-			return
+		if err := a.sendUserPresenceDiffToChannel(context.Background(), channelsDiff, leftChannel, data.UserId, data.ConnId, username, data.Guest); err != nil {
+			a.Log.Error("sendUserPresenceDiffToChannel", slog.String("user_id", data.UserId), slog.String("conn_id", data.ConnId), slog.Any("error", err))
 		}
 	}
-
-	// clear presence
-	// broadcast presence change
-	// delete active seeks for connID
 }
 
 func (a *ApiHandler) handleIPCLeaveSiteMsg(data *pb.LeaveSite) {
-	// delete active seeks for userID
 }
 
 func (a *ApiHandler) handleIPCInitializeChannelsMsg(data *pb.InitializeChannels) {
@@ -235,15 +213,26 @@ func (a *ApiHandler) handleIPCClientConnectedMsg(data *pb.ClientConnected) {
 		username = uname
 	}
 
-	for _, channel := range data.GetChannels() {
-		channelsDiff, err := a.persistor.Presence().SetPresence(context.Background(), uuid.MustParse(data.UserId), uuid.MustParse(data.ConnId), username, data.Guest, channel)
-		if err != nil && !errors.Is(err, redis.Nil) {
-			a.Log.Error("SetPresence", slog.String("user_id", data.UserId), slog.String("conn_id", data.ConnId), slog.String("channel", channel), slog.Any("error", err))
-			return
+	channels := data.GetChannels()
+
+	channelsDiff, err := a.persistor.Presence().SetPresence(context.Background(), uuid.MustParse(data.UserId), uuid.MustParse(data.ConnId), username, data.Guest, channels)
+	if err != nil && !errors.Is(err, redis.Nil) {
+		a.Log.Error("SetPresence", slog.String("user_id", data.UserId), slog.String("conn_id", data.ConnId), slog.Any("error", err))
+		return
+	}
+
+	if err := a.publishPresenceDiff(context.Background(), channelsDiff, data.UserId, data.ConnId, username, data.Guest); err != nil {
+		a.Log.Error("broadcastPresenceDiff", slog.String("user_id", data.UserId), slog.String("conn_id", data.ConnId), slog.Any("error", err))
+	}
+
+	for _, channel := range channels {
+		if err := a.sendChannelPresenceStateToConn(context.Background(), channel, data.ConnId); err != nil {
+			a.Log.Error("sendChannelPresenceStateToConn", slog.String("user_id", data.UserId), slog.String("conn_id", data.ConnId), slog.Any("error", err))
 		}
 
-		_ = channelsDiff
-		// a.broadcastPresenceDiff()
+		if err := a.sendUserPresenceDiffToChannel(context.Background(), channelsDiff, channel, data.UserId, data.ConnId, username, data.Guest); err != nil {
+			a.Log.Error("sendUserPresenceDiffToChannel", slog.String("user_id", data.UserId), slog.String("conn_id", data.ConnId), slog.Any("error", err))
+		}
 
 		if channel == "lobby" {
 			if err := a.sendLobbyInfo(data.UserId, data.ConnId, data.Guest); err != nil {
@@ -592,116 +581,95 @@ func (a *ApiHandler) sendGameTvInfo(gameID int64, userID, connID string, guest b
 	return nil
 }
 
-func channelsChanged(oldChannels, newChannels []string) bool {
-	// they come sorted already
-	if len(newChannels) != len(oldChannels) {
-		return true
-	}
+func (a *ApiHandler) publishPresenceDiff(ctx context.Context, channelsDiff persistence.PresenceChannelsDiff, userID, connID, username string, guest bool) error {
+	presenceDiff := &pb.PresenceDiff{}
 
-	for i, nc := range newChannels {
-		if nc != oldChannels[i] {
-			return true
+	if len(channelsDiff.UserJoined) > 0 {
+		presenceDiff.Joined = make([]*pb.Presence, len(channelsDiff.UserJoined))
+		for i, joinedChannel := range channelsDiff.UserJoined {
+			presenceDiff.Joined[i] = &pb.Presence{
+				UserId:   userID,
+				Username: username,
+				Guest:    guest,
+				Channel:  joinedChannel,
+			}
 		}
 	}
 
-	return false
-}
+	if len(channelsDiff.UserLeft) > 0 {
+		presenceDiff.Left = make([]*pb.Presence, len(channelsDiff.UserLeft))
+		for i, leftChannel := range channelsDiff.UserLeft {
+			presenceDiff.Left[i] = &pb.Presence{
+				UserId:   userID,
+				Username: username,
+				Guest:    guest,
+				Channel:  leftChannel,
+			}
+		}
+	}
 
-func (a *ApiHandler) broadcastPresenceDiff(ctx context.Context, channelsDiff persistence.PresenceChannelsDiff, userID, username string, guest bool) error {
-	panic("TODO")
+	presenceDiffMsg := &pb.Message{Event: &pb.Message_PresenceDiff{PresenceDiff: presenceDiff}}
+	presenceDiffMsgBytes, err := protojson.Marshal(presenceDiffMsg)
+	if err != nil {
+		a.Log.Error("Message_PresenceDiff protojson marshal", slog.String("user_id", userID), slog.String("conn_id", connID), slog.Any("error", err))
+		return err
+	}
+	if err := a.bus.rdb.Publish(ctx, "presence.diff."+userID, presenceDiffMsgBytes).Err(); err != nil {
+		a.Log.Error("publish Message_PresenceDiff", slog.String("user_id", userID), slog.String("conn_id", connID), slog.Any("error", err))
+		return err
+	}
 
-	// presenceDiff := &pb.PresenceDiff{}
-
-	// userJoined := make([]*pb.Presence, len(channelsDiff.UserJoined))
-	// for i, joinedChannel := range channelsDiff.UserJoined {
-	// 	userJoined[i] = &pb.Presence{
-	// 		UserId:   userID,
-	// 		Username: username,
-	// 		Guest:    guest,
-	// 		Channel:  joinedChannel,
-	// 	}
-	// }
-
-	// userLeft := make([]*pb.Presence, len(channelsDiff.UserLeft))
-	// for i, joinedChannel := range channelsDiff.UserLeft {
-	// 	userLeft[i] = &pb.Presence{
-	// 		UserId:   userID,
-	// 		Username: username,
-	// 		Guest:    guest,
-	// 		Channel:  joinedChannel,
-	// 	}
-	// }
-
-	// presenceDiffMsg := &pb.Message{Event: &pb.Message_PresenceDiff{PresenceDiff: presenceDiff}}
-	// presenceDiffMsgBytes, err := protojson.Marshal(presenceDiffMsg)
-	// if err != nil {
-	// 	a.Log.Error("Message_PresenceDiff protojson marshal", slog.String("user_id", data.UserId), slog.String("conn_id", data.ConnId), slog.Any("error", err))
-	// 	return
-	// }
-	// if err := a.bus.rdb.Publish(context.Background(), "presence.diff."+data.UserId, presenceDiffMsgBytes).Err(); err != nil {
-	// 	a.Log.Error("publish Message_PresenceDiff", slog.String("user_id", data.UserId), slog.String("conn_id", data.ConnId), slog.Any("error", err))
-	// 	return
-	// }
-
-	// if err := a.sendPresenceInfo(context.Background(), uuid.MustParse(data.UserId), uuid.MustParse(data.ConnId), username, data.Guest, channel); err != nil {
-	// 	a.Log.Error("sendPresenceInfo", slog.Any("error", err))
-	// }
-
-	// if !channelsChanged(oldChannels, newChannels) {
-	// 	return nil
-	// }
-
-	// presenceDiffMsg := &pb.Message{Event: &pb.Message_PresenceDiff{PresenceDiff: &pb.PresenceEntry{
-	// 	UserId:   userID,
-	// 	Username: username,
-	// 	Channels: newChannels,
-	// }}}
-
-	// presenceDiffMsgBytes, err := protojson.Marshal(presenceDiffMsg)
-	// if err != nil {
-	// 	return fmt.Errorf("protojson.Marshal Message_PresenceDiff: %w", err)
-	// }
-
-	// topic := "presence.diff." + userID
-	// if err := a.Rdb.Publish(ctx, topic, presenceDiffMsgBytes).Err(); err != nil {
-	// 	return fmt.Errorf("publish Message_PresenceDiff: %w", err)
-	// }
-
-	// return nil
-}
-
-func (a *ApiHandler) broadcastPresence(ctx context.Context, userID, username string, guest bool, channels []string, deleting bool) error {
 	return nil
-	// for _, channel := range channels {
-	// 	toSend := &pb.Message{Event: &pb.Message_UserPresence{UserPresence: &pb.UserPresence{
-	// 		UserId:   userID,
-	// 		Username: username,
-	// 		Guest:    guest,
-	// 		Channel:  channel,
-	// 		Deleting: deleting,
-	// 	}}}
-	// 	bb, err := protojson.Marshal(toSend)
-	// 	if err != nil {
-	// 		return err
-	// 	}
-	// 	fmt.Println("EEEEEEEEEEEEEEEEEEEEEEE", channel)
-	// 	if err := a.bus.rdb.Publish(ctx, channel, bb).Err(); err != nil {
-	// 		return err
-	// 	}
-	// }
-
-	// return nil
 }
 
-func (a *ApiHandler) sendPresenceInfo(ctx context.Context, userID, connID uuid.UUID, username string, guest bool, channel string) error {
-	userPresenceInfos, err := a.persistor.Presence().ListUsersInChannel(ctx, channel)
+func (a *ApiHandler) sendUserPresenceDiffToChannel(ctx context.Context, channelsDiff persistence.PresenceChannelsDiff, channel, userID, connID, username string, guest bool) error {
+	presenceDiff := &pb.PresenceDiff{}
+	if len(channelsDiff.UserJoined) > 0 {
+		presenceDiff.Joined = make([]*pb.Presence, len(channelsDiff.UserJoined))
+		for i, joinedChannel := range channelsDiff.UserJoined {
+			presenceDiff.Joined[i] = &pb.Presence{
+				UserId:   userID,
+				Username: username,
+				Guest:    guest,
+				Channel:  joinedChannel,
+			}
+		}
+	}
+
+	if len(channelsDiff.UserLeft) > 0 {
+		presenceDiff.Left = make([]*pb.Presence, len(channelsDiff.UserLeft))
+		for i, leftChannel := range channelsDiff.UserLeft {
+			presenceDiff.Left[i] = &pb.Presence{
+				UserId:   userID,
+				Username: username,
+				Guest:    guest,
+				Channel:  leftChannel,
+			}
+		}
+	}
+
+	presenceDiffMsg := &pb.Message{Event: &pb.Message_PresenceDiff{PresenceDiff: presenceDiff}}
+	presenceDiffMsgBytes, err := protojson.Marshal(presenceDiffMsg)
 	if err != nil {
 		return err
 	}
 
-	presences := make([]*pb.Presence, len(userPresenceInfos))
+	if err := a.Rdb.Publish(ctx, channel, presenceDiffMsgBytes).Err(); err != nil {
+		return err
+	}
 
-	for i, info := range userPresenceInfos {
+	return nil
+}
+
+func (a *ApiHandler) sendChannelPresenceStateToConn(ctx context.Context, channel, connID string) error {
+	users, err := a.persistor.Presence().ListUsersInChannel(ctx, channel)
+	if err != nil {
+		return err
+	}
+
+	presences := make([]*pb.Presence, len(users))
+
+	for i, info := range users {
 		presences[i] = &pb.Presence{
 			UserId:   info.ID,
 			Username: info.Username,
@@ -716,61 +684,136 @@ func (a *ApiHandler) sendPresenceInfo(ctx context.Context, userID, connID uuid.U
 		return err
 	}
 
-	if err := a.Rdb.Publish(ctx, "conn."+connID.String(), presenceStateMsgBytes).Err(); err != nil {
+	if err := a.Rdb.Publish(ctx, "conn."+connID, presenceStateMsgBytes).Err(); err != nil {
 		return err
 	}
 
-	// // send our presence to users in this channel also
-	// if err := a.broadcastPresence(ctx, userID.String(), username, guest, []string{channel}, false); err != nil {
-	// 	return err
-	// }
-
 	return nil
 }
 
-func (a *ApiHandler) publishToUserID(ctx context.Context, userID string, msg *pb.Message, channel *string) error {
-	return nil
+func (a *ApiHandler) publishToUser(ctx context.Context, userID string, msg *pb.Message, channel *string) error {
+	bb, err := protojson.Marshal(msg)
+	if err != nil {
+		return err
+	}
+
+	topic := "user." + userID
+	if channel != nil && *channel != "" {
+		topic = "user." + userID + "." + *channel
+	}
+	return a.bus.rdb.Publish(ctx, topic, bb).Err()
 }
 
-func (a *ApiHandler) publishToConnID(ctx context.Context, connID string, msg *pb.Message) error {
-	return nil
+func (a *ApiHandler) publishToConn(ctx context.Context, connID string, msg *pb.Message) error {
+	bb, err := protojson.Marshal(msg)
+	if err != nil {
+		return err
+	}
+
+	topic := "conn." + connID
+	return a.bus.rdb.Publish(ctx, topic, bb).Err()
 }
 
 func (a *ApiHandler) publishToChannel(ctx context.Context, channel string, msg *pb.Message) error {
-	return nil
+	bb, err := protojson.Marshal(msg)
+	if err != nil {
+		return err
+	}
+
+	if channel == "" {
+		return errors.New("empty channel")
+	}
+
+	return a.bus.rdb.Publish(ctx, channel, bb).Err()
 }
 
-// func (b *Bus) pubToUser(userID string, evt *entity.EventWrapper, channel string) error {
-// 	// Publish to a user, but pass in a specific channel. Only publish to those user sockets that are in this channel/realm/what-have-you.
-// 	sanitized, err := sanitize(b.stores.UserStore, b.stores.GameStore, b.stores.TournamentStore, evt, userID)
-// 	if err != nil {
-// 		return err
-// 	}
-// 	bts, err := sanitized.Serialize()
-// 	if err != nil {
-// 		return err
-// 	}
-// 	var fullChannel string
-// 	if channel == "" {
-// 		fullChannel = "user." + userID
-// 	} else {
-// 		fullChannel = "user." + userID + "." + channel
-// 	}
+func (a *ApiHandler) StartMatchmaking(ctx context.Context) {
+	a.Log.Info("gameserver matchmaking started")
 
-// 	return b.natsconn.Publish(fullChannel, bts)
-// }
+	matchmakingInterval := time.Second * 15
+	ticker := time.NewTicker(matchmakingInterval)
 
-// func (b *Bus) pubToConnectionID(connID, userID string, evt *entity.EventWrapper) error {
-// 	sanitized, err := sanitize(b.stores.UserStore, b.stores.GameStore, b.stores.TournamentStore, evt, userID)
-// 	if err != nil {
-// 		return err
-// 	}
-// 	bts, err := sanitized.Serialize()
-// 	if err != nil {
-// 		return err
-// 	}
-// 	return b.natsconn.Publish("connid."+connID, bts)
-// }
+loop:
+	for {
+		select {
+		case <-ticker.C:
+			a.tryMatchPoolPlayers(ctx)
+		case <-ctx.Done():
+			break loop
+		}
+	}
+}
+
+func (a *ApiHandler) tryMatchPoolPlayers(ctx context.Context) {
+	a.Log.Debug("matchmaking trying to match pool players")
+
+	for _, quickGame := range quickGames {
+		a.tryMatchPoolPlayersForPool(ctx, quickGame.ClockSecs*1000, quickGame.IncrementSecs*1000, true)
+		a.tryMatchPoolPlayersForPool(ctx, quickGame.ClockSecs*1000, quickGame.IncrementSecs*1000, false)
+	}
+}
+
+func (a *ApiHandler) tryMatchPoolPlayersForPool(ctx context.Context, clockMS, incrementMS int32, rated bool) {
+	pool := dbtype.Pool{ClockMS: clockMS, IncrementMS: incrementMS, Rated: rated}
+
+	res, err := a.persistor.Pool().ListPoolPlayers(ctx, pool)
+	if err != nil {
+		a.Log.Error("tryMatchPoolPlayersForPool listpoolplayers", slog.String("pool", pool.Name()), slog.Any("error", err))
+		return
+	}
+
+	queueSize := len(res)
+	if queueSize < 2 {
+		// a.Log.Debug("pool queue size < 2")
+		return
+	}
+
+	pairs := make(chan [2]string, queueSize/2)
+
+	var wg sync.WaitGroup
+
+	go func() {
+		for i := 0; i+1 < queueSize; i += 2 {
+			pairs <- [2]string{res[i], res[i+1]}
+		}
+
+		close(pairs)
+	}()
+
+	workers := queueSize / 2
+
+	for range workers {
+		wg.Go(func() {
+			for pair := range pairs {
+				a.processPoolUsersPair(ctx, pair, clockMS, incrementMS, rated)
+			}
+		})
+	}
+
+	wg.Wait()
+
+	if queueSize%2 != 0 {
+		a.Log.Debug("unmatched player remains in queue", slog.String("pool", pool.Name()), slog.String("user_id", res[queueSize-1]))
+	}
+}
+
+func (a *ApiHandler) processPoolUsersPair(ctx context.Context, pair [2]string, clockMS, incrementMS int32, rated bool) {
+	fmt.Println("----------------- PROCESS PAIR ------------------: ", pair, clockMS, incrementMS, rated)
+
+	// userID1, err1 := uuid.Parse(pair[0])
+	// userID2, err2 := uuid.Parse(pair[1])
+	// if err1 != nil || err2 != nil {
+	// 	a.Log.Error("failed to parse user UUIDs", slog.String("user_id1", pair[0]), slog.String("user_id2", pair[1]))
+	// 	return
+	// }
+
+	// username1, err3 := a.GetUsername(ctx, pair[0])
+	// username2, err4 := a.GetUsername(ctx, pair[1])
+	// if err3 != nil || err4 != nil {
+	// 	a.Log.Error("failed to get pair of usernames", slog.String("user_id1", pair[0]), slog.String("user_id2", pair[1]))
+	// 	return
+	// }
+}
 
 func ZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZ(a *ApiHandler) {
 	ids := []uuid.UUID{uuid.MustParse("cb38c8e1-2fb6-4b4c-bd10-e099953f8ee8"), uuid.MustParse("18a425bd-1325-4f38-81c4-b4fcc5ad9992")}
@@ -871,92 +914,4 @@ func ZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZ(a *ApiHandler) {
 	// fmt.Printf("start_time: %s\n", gs.StartTime)
 	// fmt.Printf("last_move: %s\n", gs.LastMove)
 	// fmt.Printf("history_moves: %v\n", gs.HistoryMoveInfos)
-}
-
-func (a *ApiHandler) StartMatchmaking(ctx context.Context) {
-	a.Log.Info("gameserver matchmaking started")
-
-	matchmakingInterval := time.Second * 15
-	ticker := time.NewTicker(matchmakingInterval)
-
-loop:
-	for {
-		select {
-		case <-ticker.C:
-			a.tryMatchPoolPlayers(ctx)
-		case <-ctx.Done():
-			break loop
-		}
-	}
-}
-
-func (a *ApiHandler) tryMatchPoolPlayers(ctx context.Context) {
-	a.Log.Debug("matchmaking trying to match pool players")
-
-	for _, quickGame := range quickGames {
-		a.tryMatchPoolPlayersForPool(ctx, quickGame.ClockSecs*1000, quickGame.IncrementSecs*1000, true)
-		a.tryMatchPoolPlayersForPool(ctx, quickGame.ClockSecs*1000, quickGame.IncrementSecs*1000, false)
-	}
-}
-
-func (a *ApiHandler) tryMatchPoolPlayersForPool(ctx context.Context, clockMS, incrementMS int32, rated bool) {
-	pool := dbtype.Pool{ClockMS: clockMS, IncrementMS: incrementMS, Rated: rated}
-
-	res, err := a.persistor.Pool().ListPoolPlayers(ctx, pool)
-	if err != nil {
-		a.Log.Error("tryMatchPoolPlayersForPool listpoolplayers", slog.String("pool", pool.Name()), slog.Any("error", err))
-		return
-	}
-
-	queueSize := len(res)
-	if queueSize < 2 {
-		// a.Log.Debug("pool queue size < 2")
-		return
-	}
-
-	pairs := make(chan [2]string, queueSize/2)
-
-	var wg sync.WaitGroup
-
-	go func() {
-		for i := 0; i+1 < queueSize; i += 2 {
-			pairs <- [2]string{res[i], res[i+1]}
-		}
-
-		close(pairs)
-	}()
-
-	workers := queueSize / 2
-
-	for range workers {
-		wg.Go(func() {
-			for pair := range pairs {
-				a.processPoolUsersPair(ctx, pair, clockMS, incrementMS, rated)
-			}
-		})
-	}
-
-	wg.Wait()
-
-	if queueSize%2 != 0 {
-		a.Log.Debug("unmatched player remains in queue", slog.String("pool", pool.Name()), slog.String("user_id", res[queueSize-1]))
-	}
-}
-
-func (a *ApiHandler) processPoolUsersPair(ctx context.Context, pair [2]string, clockMS, incrementMS int32, rated bool) {
-	fmt.Println("----------------- PROCESS PAIR ------------------: ", pair, clockMS, incrementMS, rated)
-
-	// userID1, err1 := uuid.Parse(pair[0])
-	// userID2, err2 := uuid.Parse(pair[1])
-	// if err1 != nil || err2 != nil {
-	// 	a.Log.Error("failed to parse user UUIDs", slog.String("user_id1", pair[0]), slog.String("user_id2", pair[1]))
-	// 	return
-	// }
-
-	// username1, err3 := a.GetUsername(ctx, pair[0])
-	// username2, err4 := a.GetUsername(ctx, pair[1])
-	// if err3 != nil || err4 != nil {
-	// 	a.Log.Error("failed to get pair of usernames", slog.String("user_id1", pair[0]), slog.String("user_id2", pair[1]))
-	// 	return
-	// }
 }

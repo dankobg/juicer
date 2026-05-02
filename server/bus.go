@@ -3,7 +3,10 @@ package server
 import (
 	"context"
 
+	pb "github.com/dankobg/juicer/pb/proto/juicer"
 	"github.com/redis/go-redis/v9"
+	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/proto"
 )
 
 type bus struct {
@@ -37,4 +40,22 @@ func (b *bus) subscribeToPubsub(ctx context.Context) {
 		b.subs[topic] = pubsub
 		b.subMessages[topic] = pubsub.Channel()
 	}
+}
+
+const useBinaryMessageFormat = false
+
+func serializeMsg(msg *pb.Message) ([]byte, error) {
+	if useBinaryMessageFormat {
+		return proto.Marshal(msg)
+	}
+
+	return protojson.Marshal(msg)
+}
+
+func deserializeMsg(bb []byte, msg *pb.Message) error {
+	if useBinaryMessageFormat {
+		return proto.Unmarshal(bb, msg)
+	}
+
+	return protojson.Unmarshal(bb, msg)
 }
