@@ -6,6 +6,7 @@ import {
 	type GameTimeControl,
 	type HistoryMoveInfo,
 	type Latency,
+	type LobbyChat,
 	type OpponentInfo,
 	type Presence,
 	type PresenceDiff,
@@ -118,6 +119,13 @@ class GameManager {
 		ws.send(echoMsg);
 	}
 
+	sendLobbyChat() {
+		const lobbyChatMsg = create(MessageSchema, {
+			event: { case: 'sendLobbyChat', value: { message: `hello lobby ${Math.floor(Math.random() * 100) + 1}` } }
+		});
+		ws.send(lobbyChatMsg);
+	}
+
 	onEchoMsg(echoMsg: Echo) {
 		console.log('got echo: ', echoMsg.message);
 	}
@@ -187,6 +195,8 @@ class GameManager {
 		}
 	}
 
+	onLobbyChat(lobbyChat: LobbyChat) {}
+
 	handleWebsocketMessage(event: MessageEvent) {
 		try {
 			const msg = fromJsonString(MessageSchema, event.data);
@@ -203,6 +213,9 @@ class GameManager {
 					break;
 				case 'presenceDiff':
 					this.onPresenceDiff(msg.event.value);
+					break;
+				case 'lobbyChat':
+					this.onLobbyChat(msg.event.value);
 					break;
 				default:
 					console.error('unknown message', msg.event.case, msg.event.value);

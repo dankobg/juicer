@@ -123,13 +123,16 @@ message Message {
     DeclineDraw decline_draw = 33;
     PlayMoveUCI play_move_uci = 34;
 
-    GameChat game_chat = 35;
-    GameChatReceive game_chat_receive = 36;
+    SendGameChat send_game_chat = 35;
+    GameChat game_chat = 36;
     GameChatRetrieve game_chat_retrieve = 37;
     ReceiveMove receive_move = 38;
     GameFinished game_finished = 39;
     HubInfo hub_info = 40;
     MatchFound match_found = 41;
+
+    SendLobbyChat send_lobby_chat = 66;
+    LobbyChat lobby_chat = 67;
 
     Echo echo = 69;
   }
@@ -293,21 +296,35 @@ message DeclineDraw {}
 // AcceptDraw is game accept draw message
 message AcceptDraw {}
 
-// GameChat is the game chat
-message GameChat {
+// SendGameChat is the msg sent to game
+message SendGameChat {
   string message = 1;
 }
 
-// GameChatReceive is xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-message GameChatReceive {
-  string user_id = 1;
-  string id = 2;
-  string message = 3;
+// SendLobbyChat is the msg sent to lobby
+message SendLobbyChat {
+  string message = 1;
 }
 
-// GameChatRetrieve is xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+// LobbyChat is the lobby chat msg received
+message LobbyChat {
+  string message_id = 1;
+  string user_id = 2;
+  string message = 3;
+  string posted_at = 4;
+}
+
+// GameChat is the game chat msg received
+message GameChat {
+  string message_id = 1;
+  string user_id = 2;
+  string message = 3;
+  string posted_at = 4;
+}
+
+// GameChatRetrieve is list of game chat messages
 message GameChatRetrieve {
-  repeated GameChatReceive game_chat = 1;
+  repeated GameChat game_chat = 1;
 }
 
 // PlayMoveUCI plays a game move

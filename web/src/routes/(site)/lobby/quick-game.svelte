@@ -135,6 +135,8 @@
 
 <button class="mt-4 bg-red-800 p-2 text-white" onclick={gameManager.echo}>SEND ECHO</button>
 
+<button class="mt-4 bg-green-800 p-2 text-white" onclick={gameManager.sendLobbyChat}>SEND LOBBY CHAT</button>
+
 {#snippet blitzIcon(className: string)}
 	<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" class={className}>
 		<path

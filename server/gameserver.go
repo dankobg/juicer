@@ -306,6 +306,8 @@ func (a *ApiHandler) onWSCMsg(m *redis.Message) {
 		a.handleWSCDeclineDraw(clientAuthInfo, msg.GetDeclineDraw())
 	case *pb.Message_PlayMoveUci:
 		a.handleWSCPlayMoveUCI(clientAuthInfo, msg.GetPlayMoveUci())
+	case *pb.Message_SendLobbyChat:
+		a.handleWSCSendLobbyChat(clientAuthInfo, msg.GetSendLobbyChat())
 	}
 }
 
@@ -363,6 +365,25 @@ func (a *ApiHandler) handleWSCDeclineDraw(authInfo clientAuthInfo, data *pb.Decl
 
 func (a *ApiHandler) handleWSCPlayMoveUCI(authInfo clientAuthInfo, data *pb.PlayMoveUCI) {
 	fmt.Println(data, "handleWSCPlayMoveUCI")
+}
+
+func (a *ApiHandler) handleWSCSendLobbyChat(authInfo clientAuthInfo, data *pb.SendLobbyChat) {
+	fmt.Println(data, "handleWSCSendLobbyChat")
+	lobbyChatReceivedMsg := &pb.Message{Event: &pb.Message_LobbyChat{LobbyChat: &pb.LobbyChat{
+		MessageId: "1",
+		UserId:    authInfo.userID,
+		PostedAt:  time.Now().Format(time.RFC3339),
+		Message:   data.Message,
+	}}}
+	lobbyChatReceivedMsgBytes, err := protojson.Marshal(lobbyChatReceivedMsg)
+	if err != nil {
+
+	} else {
+		if err := a.bus.rdb.Publish(context.Background(), "lobby.chat", lobbyChatReceivedMsgBytes).Err(); err != nil {
+			a.Log.Error("LobbyChat publish", slog.String("user_id", authInfo.userID), slog.String("auth_state", authInfo.authState.String()), slog.Any("error", err))
+			return
+		}
+	}
 }
 
 // extractWSCTopicParts extracts the user_id, conn_id and auth_state
