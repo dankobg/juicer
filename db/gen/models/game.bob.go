@@ -28,8 +28,6 @@ type Game struct {
 	ID                     int64               `db:"id,pk,generated" `
 	WhiteID                null.Val[uuid.UUID] `db:"white_id" `
 	BlackID                null.Val[uuid.UUID] `db:"black_id" `
-	WhiteIsGuest           bool                `db:"white_is_guest" `
-	BlackIsGuest           bool                `db:"black_is_guest" `
 	GuestWhiteID           null.Val[uuid.UUID] `db:"guest_white_id" `
 	GuestBlackID           null.Val[uuid.UUID] `db:"guest_black_id" `
 	GameVariantID          int64               `db:"game_variant_id" `
@@ -50,6 +48,7 @@ type Game struct {
 	LastMove               null.Val[time.Time] `db:"last_move" `
 	Fen                    string              `db:"fen" `
 	PGN                    null.Val[string]    `db:"pgn" `
+	Repetitions            int32               `db:"repetitions" `
 	CreatedAt              time.Time           `db:"created_at" `
 	UpdatedAt              time.Time           `db:"updated_at" `
 
@@ -68,28 +67,27 @@ type GamesQuery = *psql.ViewQuery[*Game, GameSlice]
 
 // gameR is where relationships are stored.
 type gameR struct {
-	BlackUser        *User             // game.fk_game_black_id
-	GameResult       *GameResult       // game.fk_game_result_id
-	GameResultStatus *GameResultStatus // game.fk_game_result_status_id
-	GameState        *GameState        // game.fk_game_state_id
-	GameTimeCategory *GameTimeCategory // game.fk_game_time_category_id
-	GameTimeKind     *GameTimeKind     // game.fk_game_time_kind_id
-	GameVariant      *GameVariant      // game.fk_game_variant_id
-	WhiteUser        *User             // game.fk_game_white_id
-	GameMoves        GameMoveSlice     // game_move.fk_game_move_game_id
+	BlackUser         *User                // game.fk_game_black_id
+	GameResult        *GameResult          // game.fk_game_result_id
+	GameResultStatus  *GameResultStatus    // game.fk_game_result_status_id
+	GameState         *GameState           // game.fk_game_state_id
+	GameTimeCategory  *GameTimeCategory    // game.fk_game_time_category_id
+	GameTimeKind      *GameTimeKind        // game.fk_game_time_kind_id
+	GameVariant       *GameVariant         // game.fk_game_variant_id
+	WhiteUser         *User                // game.fk_game_white_id
+	GameHistoryHashes GameHistoryHashSlice // game_history_hash.fk_game_history_hash_game_id
+	GameMoves         GameMoveSlice        // game_move.fk_game_move_game_id
 }
 
 func buildGameColumns(alias string) gameColumns {
 	return gameColumns{
 		ColumnsExpr: expr.NewColumnsExpr(
-			"id", "white_id", "black_id", "white_is_guest", "black_is_guest", "guest_white_id", "guest_black_id", "game_variant_id", "game_time_kind_id", "game_time_category_id", "game_state_id", "game_result_id", "game_result_status_id", "time_control_clock_ms", "time_control_increment_ms", "reconnect_timeout_ms", "first_move_timeout_ms", "white_game_clock", "black_game_clock", "rated", "start_time", "end_time", "last_move", "fen", "pgn", "created_at", "updated_at",
+			"id", "white_id", "black_id", "guest_white_id", "guest_black_id", "game_variant_id", "game_time_kind_id", "game_time_category_id", "game_state_id", "game_result_id", "game_result_status_id", "time_control_clock_ms", "time_control_increment_ms", "reconnect_timeout_ms", "first_move_timeout_ms", "white_game_clock", "black_game_clock", "rated", "start_time", "end_time", "last_move", "fen", "pgn", "repetitions", "created_at", "updated_at",
 		).WithParent("game"),
 		tableAlias:             alias,
 		ID:                     psql.Quote(alias, "id"),
 		WhiteID:                psql.Quote(alias, "white_id"),
 		BlackID:                psql.Quote(alias, "black_id"),
-		WhiteIsGuest:           psql.Quote(alias, "white_is_guest"),
-		BlackIsGuest:           psql.Quote(alias, "black_is_guest"),
 		GuestWhiteID:           psql.Quote(alias, "guest_white_id"),
 		GuestBlackID:           psql.Quote(alias, "guest_black_id"),
 		GameVariantID:          psql.Quote(alias, "game_variant_id"),
@@ -110,6 +108,7 @@ func buildGameColumns(alias string) gameColumns {
 		LastMove:               psql.Quote(alias, "last_move"),
 		Fen:                    psql.Quote(alias, "fen"),
 		PGN:                    psql.Quote(alias, "pgn"),
+		Repetitions:            psql.Quote(alias, "repetitions"),
 		CreatedAt:              psql.Quote(alias, "created_at"),
 		UpdatedAt:              psql.Quote(alias, "updated_at"),
 	}
@@ -121,8 +120,6 @@ type gameColumns struct {
 	ID                     psql.Expression
 	WhiteID                psql.Expression
 	BlackID                psql.Expression
-	WhiteIsGuest           psql.Expression
-	BlackIsGuest           psql.Expression
 	GuestWhiteID           psql.Expression
 	GuestBlackID           psql.Expression
 	GameVariantID          psql.Expression
@@ -143,6 +140,7 @@ type gameColumns struct {
 	LastMove               psql.Expression
 	Fen                    psql.Expression
 	PGN                    psql.Expression
+	Repetitions            psql.Expression
 	CreatedAt              psql.Expression
 	UpdatedAt              psql.Expression
 }
@@ -161,8 +159,6 @@ func (gameColumns) AliasedAs(alias string) gameColumns {
 type GameSetter struct {
 	WhiteID                omitnull.Val[uuid.UUID] `db:"white_id" `
 	BlackID                omitnull.Val[uuid.UUID] `db:"black_id" `
-	WhiteIsGuest           omit.Val[bool]          `db:"white_is_guest" `
-	BlackIsGuest           omit.Val[bool]          `db:"black_is_guest" `
 	GuestWhiteID           omitnull.Val[uuid.UUID] `db:"guest_white_id" `
 	GuestBlackID           omitnull.Val[uuid.UUID] `db:"guest_black_id" `
 	GameVariantID          omit.Val[int64]         `db:"game_variant_id" `
@@ -183,23 +179,18 @@ type GameSetter struct {
 	LastMove               omitnull.Val[time.Time] `db:"last_move" `
 	Fen                    omit.Val[string]        `db:"fen" `
 	PGN                    omitnull.Val[string]    `db:"pgn" `
+	Repetitions            omit.Val[int32]         `db:"repetitions" `
 	CreatedAt              omit.Val[time.Time]     `db:"created_at" `
 	UpdatedAt              omit.Val[time.Time]     `db:"updated_at" `
 }
 
 func (s GameSetter) SetColumns() []string {
-	vals := make([]string, 0, 26)
+	vals := make([]string, 0, 25)
 	if !s.WhiteID.IsUnset() {
 		vals = append(vals, "white_id")
 	}
 	if !s.BlackID.IsUnset() {
 		vals = append(vals, "black_id")
-	}
-	if s.WhiteIsGuest.IsValue() {
-		vals = append(vals, "white_is_guest")
-	}
-	if s.BlackIsGuest.IsValue() {
-		vals = append(vals, "black_is_guest")
 	}
 	if !s.GuestWhiteID.IsUnset() {
 		vals = append(vals, "guest_white_id")
@@ -261,6 +252,9 @@ func (s GameSetter) SetColumns() []string {
 	if !s.PGN.IsUnset() {
 		vals = append(vals, "pgn")
 	}
+	if s.Repetitions.IsValue() {
+		vals = append(vals, "repetitions")
+	}
 	if s.CreatedAt.IsValue() {
 		vals = append(vals, "created_at")
 	}
@@ -276,12 +270,6 @@ func (s GameSetter) Overwrite(t *Game) {
 	}
 	if !s.BlackID.IsUnset() {
 		t.BlackID = s.BlackID.MustGetNull()
-	}
-	if s.WhiteIsGuest.IsValue() {
-		t.WhiteIsGuest = s.WhiteIsGuest.MustGet()
-	}
-	if s.BlackIsGuest.IsValue() {
-		t.BlackIsGuest = s.BlackIsGuest.MustGet()
 	}
 	if !s.GuestWhiteID.IsUnset() {
 		t.GuestWhiteID = s.GuestWhiteID.MustGetNull()
@@ -343,6 +331,9 @@ func (s GameSetter) Overwrite(t *Game) {
 	if !s.PGN.IsUnset() {
 		t.PGN = s.PGN.MustGetNull()
 	}
+	if s.Repetitions.IsValue() {
+		t.Repetitions = s.Repetitions.MustGet()
+	}
 	if s.CreatedAt.IsValue() {
 		t.CreatedAt = s.CreatedAt.MustGet()
 	}
@@ -357,7 +348,7 @@ func (s *GameSetter) Apply(q *dialect.InsertQuery) {
 	})
 
 	q.AppendValues(bob.ExpressionFunc(func(ctx context.Context, w io.StringWriter, d bob.Dialect, start int) ([]any, error) {
-		vals := make([]bob.Expression, 26)
+		vals := make([]bob.Expression, 25)
 		if !s.WhiteID.IsUnset() {
 			vals[0] = psql.Arg(s.WhiteID.MustGetNull())
 		} else {
@@ -370,148 +361,142 @@ func (s *GameSetter) Apply(q *dialect.InsertQuery) {
 			vals[1] = psql.Raw("DEFAULT")
 		}
 
-		if s.WhiteIsGuest.IsValue() {
-			vals[2] = psql.Arg(s.WhiteIsGuest.MustGet())
+		if !s.GuestWhiteID.IsUnset() {
+			vals[2] = psql.Arg(s.GuestWhiteID.MustGetNull())
 		} else {
 			vals[2] = psql.Raw("DEFAULT")
 		}
 
-		if s.BlackIsGuest.IsValue() {
-			vals[3] = psql.Arg(s.BlackIsGuest.MustGet())
+		if !s.GuestBlackID.IsUnset() {
+			vals[3] = psql.Arg(s.GuestBlackID.MustGetNull())
 		} else {
 			vals[3] = psql.Raw("DEFAULT")
 		}
 
-		if !s.GuestWhiteID.IsUnset() {
-			vals[4] = psql.Arg(s.GuestWhiteID.MustGetNull())
+		if s.GameVariantID.IsValue() {
+			vals[4] = psql.Arg(s.GameVariantID.MustGet())
 		} else {
 			vals[4] = psql.Raw("DEFAULT")
 		}
 
-		if !s.GuestBlackID.IsUnset() {
-			vals[5] = psql.Arg(s.GuestBlackID.MustGetNull())
+		if s.GameTimeKindID.IsValue() {
+			vals[5] = psql.Arg(s.GameTimeKindID.MustGet())
 		} else {
 			vals[5] = psql.Raw("DEFAULT")
 		}
 
-		if s.GameVariantID.IsValue() {
-			vals[6] = psql.Arg(s.GameVariantID.MustGet())
+		if s.GameTimeCategoryID.IsValue() {
+			vals[6] = psql.Arg(s.GameTimeCategoryID.MustGet())
 		} else {
 			vals[6] = psql.Raw("DEFAULT")
 		}
 
-		if s.GameTimeKindID.IsValue() {
-			vals[7] = psql.Arg(s.GameTimeKindID.MustGet())
+		if s.GameStateID.IsValue() {
+			vals[7] = psql.Arg(s.GameStateID.MustGet())
 		} else {
 			vals[7] = psql.Raw("DEFAULT")
 		}
 
-		if s.GameTimeCategoryID.IsValue() {
-			vals[8] = psql.Arg(s.GameTimeCategoryID.MustGet())
+		if !s.GameResultID.IsUnset() {
+			vals[8] = psql.Arg(s.GameResultID.MustGetNull())
 		} else {
 			vals[8] = psql.Raw("DEFAULT")
 		}
 
-		if s.GameStateID.IsValue() {
-			vals[9] = psql.Arg(s.GameStateID.MustGet())
+		if !s.GameResultStatusID.IsUnset() {
+			vals[9] = psql.Arg(s.GameResultStatusID.MustGetNull())
 		} else {
 			vals[9] = psql.Raw("DEFAULT")
 		}
 
-		if !s.GameResultID.IsUnset() {
-			vals[10] = psql.Arg(s.GameResultID.MustGetNull())
+		if s.TimeControlClockMS.IsValue() {
+			vals[10] = psql.Arg(s.TimeControlClockMS.MustGet())
 		} else {
 			vals[10] = psql.Raw("DEFAULT")
 		}
 
-		if !s.GameResultStatusID.IsUnset() {
-			vals[11] = psql.Arg(s.GameResultStatusID.MustGetNull())
+		if s.TimeControlIncrementMS.IsValue() {
+			vals[11] = psql.Arg(s.TimeControlIncrementMS.MustGet())
 		} else {
 			vals[11] = psql.Raw("DEFAULT")
 		}
 
-		if s.TimeControlClockMS.IsValue() {
-			vals[12] = psql.Arg(s.TimeControlClockMS.MustGet())
+		if s.ReconnectTimeoutMS.IsValue() {
+			vals[12] = psql.Arg(s.ReconnectTimeoutMS.MustGet())
 		} else {
 			vals[12] = psql.Raw("DEFAULT")
 		}
 
-		if s.TimeControlIncrementMS.IsValue() {
-			vals[13] = psql.Arg(s.TimeControlIncrementMS.MustGet())
+		if s.FirstMoveTimeoutMS.IsValue() {
+			vals[13] = psql.Arg(s.FirstMoveTimeoutMS.MustGet())
 		} else {
 			vals[13] = psql.Raw("DEFAULT")
 		}
 
-		if s.ReconnectTimeoutMS.IsValue() {
-			vals[14] = psql.Arg(s.ReconnectTimeoutMS.MustGet())
+		if s.WhiteGameClock.IsValue() {
+			vals[14] = psql.Arg(s.WhiteGameClock.MustGet())
 		} else {
 			vals[14] = psql.Raw("DEFAULT")
 		}
 
-		if s.FirstMoveTimeoutMS.IsValue() {
-			vals[15] = psql.Arg(s.FirstMoveTimeoutMS.MustGet())
+		if s.BlackGameClock.IsValue() {
+			vals[15] = psql.Arg(s.BlackGameClock.MustGet())
 		} else {
 			vals[15] = psql.Raw("DEFAULT")
 		}
 
-		if s.WhiteGameClock.IsValue() {
-			vals[16] = psql.Arg(s.WhiteGameClock.MustGet())
+		if s.Rated.IsValue() {
+			vals[16] = psql.Arg(s.Rated.MustGet())
 		} else {
 			vals[16] = psql.Raw("DEFAULT")
 		}
 
-		if s.BlackGameClock.IsValue() {
-			vals[17] = psql.Arg(s.BlackGameClock.MustGet())
+		if !s.StartTime.IsUnset() {
+			vals[17] = psql.Arg(s.StartTime.MustGetNull())
 		} else {
 			vals[17] = psql.Raw("DEFAULT")
 		}
 
-		if s.Rated.IsValue() {
-			vals[18] = psql.Arg(s.Rated.MustGet())
+		if !s.EndTime.IsUnset() {
+			vals[18] = psql.Arg(s.EndTime.MustGetNull())
 		} else {
 			vals[18] = psql.Raw("DEFAULT")
 		}
 
-		if !s.StartTime.IsUnset() {
-			vals[19] = psql.Arg(s.StartTime.MustGetNull())
+		if !s.LastMove.IsUnset() {
+			vals[19] = psql.Arg(s.LastMove.MustGetNull())
 		} else {
 			vals[19] = psql.Raw("DEFAULT")
 		}
 
-		if !s.EndTime.IsUnset() {
-			vals[20] = psql.Arg(s.EndTime.MustGetNull())
+		if s.Fen.IsValue() {
+			vals[20] = psql.Arg(s.Fen.MustGet())
 		} else {
 			vals[20] = psql.Raw("DEFAULT")
 		}
 
-		if !s.LastMove.IsUnset() {
-			vals[21] = psql.Arg(s.LastMove.MustGetNull())
+		if !s.PGN.IsUnset() {
+			vals[21] = psql.Arg(s.PGN.MustGetNull())
 		} else {
 			vals[21] = psql.Raw("DEFAULT")
 		}
 
-		if s.Fen.IsValue() {
-			vals[22] = psql.Arg(s.Fen.MustGet())
+		if s.Repetitions.IsValue() {
+			vals[22] = psql.Arg(s.Repetitions.MustGet())
 		} else {
 			vals[22] = psql.Raw("DEFAULT")
 		}
 
-		if !s.PGN.IsUnset() {
-			vals[23] = psql.Arg(s.PGN.MustGetNull())
+		if s.CreatedAt.IsValue() {
+			vals[23] = psql.Arg(s.CreatedAt.MustGet())
 		} else {
 			vals[23] = psql.Raw("DEFAULT")
 		}
 
-		if s.CreatedAt.IsValue() {
-			vals[24] = psql.Arg(s.CreatedAt.MustGet())
+		if s.UpdatedAt.IsValue() {
+			vals[24] = psql.Arg(s.UpdatedAt.MustGet())
 		} else {
 			vals[24] = psql.Raw("DEFAULT")
-		}
-
-		if s.UpdatedAt.IsValue() {
-			vals[25] = psql.Arg(s.UpdatedAt.MustGet())
-		} else {
-			vals[25] = psql.Raw("DEFAULT")
 		}
 
 		return bob.ExpressSlice(ctx, w, d, start, vals, "", ", ", "")
@@ -523,7 +508,7 @@ func (s GameSetter) UpdateMod() bob.Mod[*dialect.UpdateQuery] {
 }
 
 func (s GameSetter) Expressions(prefix ...string) []bob.Expression {
-	exprs := make([]bob.Expression, 0, 26)
+	exprs := make([]bob.Expression, 0, 25)
 
 	if !s.WhiteID.IsUnset() {
 		exprs = append(exprs, expr.Join{Sep: " = ", Exprs: []bob.Expression{
@@ -536,20 +521,6 @@ func (s GameSetter) Expressions(prefix ...string) []bob.Expression {
 		exprs = append(exprs, expr.Join{Sep: " = ", Exprs: []bob.Expression{
 			psql.Quote(append(prefix, "black_id")...),
 			psql.Arg(s.BlackID),
-		}})
-	}
-
-	if s.WhiteIsGuest.IsValue() {
-		exprs = append(exprs, expr.Join{Sep: " = ", Exprs: []bob.Expression{
-			psql.Quote(append(prefix, "white_is_guest")...),
-			psql.Arg(s.WhiteIsGuest),
-		}})
-	}
-
-	if s.BlackIsGuest.IsValue() {
-		exprs = append(exprs, expr.Join{Sep: " = ", Exprs: []bob.Expression{
-			psql.Quote(append(prefix, "black_is_guest")...),
-			psql.Arg(s.BlackIsGuest),
 		}})
 	}
 
@@ -690,6 +661,13 @@ func (s GameSetter) Expressions(prefix ...string) []bob.Expression {
 		exprs = append(exprs, expr.Join{Sep: " = ", Exprs: []bob.Expression{
 			psql.Quote(append(prefix, "pgn")...),
 			psql.Arg(s.PGN),
+		}})
+	}
+
+	if s.Repetitions.IsValue() {
+		exprs = append(exprs, expr.Join{Sep: " = ", Exprs: []bob.Expression{
+			psql.Quote(append(prefix, "repetitions")...),
+			psql.Arg(s.Repetitions),
 		}})
 	}
 
@@ -1125,6 +1103,30 @@ func (os GameSlice) WhiteUser(mods ...bob.Mod[*dialect.SelectQuery]) UsersQuery 
 	)...)
 }
 
+// GameHistoryHashes starts a query for related objects on game_history_hash
+func (o *Game) GameHistoryHashes(mods ...bob.Mod[*dialect.SelectQuery]) GameHistoryHashesQuery {
+	return GameHistoryHashes.Query(append(mods,
+		sm.Where(GameHistoryHashes.Columns.GameID.EQ(psql.Arg(o.ID))),
+	)...)
+}
+
+func (os GameSlice) GameHistoryHashes(mods ...bob.Mod[*dialect.SelectQuery]) GameHistoryHashesQuery {
+	pkID := make(pgtypes.Array[int64], 0, len(os))
+	for _, o := range os {
+		if o == nil {
+			continue
+		}
+		pkID = append(pkID, o.ID)
+	}
+	PKArgExpr := psql.Select(sm.Columns(
+		psql.F("unnest", psql.Cast(psql.Arg(pkID), "bigint[]")),
+	))
+
+	return GameHistoryHashes.Query(append(mods,
+		sm.Where(psql.Group(GameHistoryHashes.Columns.GameID).OP("IN", PKArgExpr)),
+	)...)
+}
+
 // GameMoves starts a query for related objects on game_move
 func (o *Game) GameMoves(mods ...bob.Mod[*dialect.SelectQuery]) GameMovesQuery {
 	return GameMoves.Query(append(mods,
@@ -1529,6 +1531,74 @@ func (game0 *Game) AttachWhiteUser(ctx context.Context, exec bob.Executor, user1
 	game0.R.WhiteUser = user1
 
 	user1.R.WhiteGames = append(user1.R.WhiteGames, game0)
+
+	return nil
+}
+
+func insertGameGameHistoryHashes0(ctx context.Context, exec bob.Executor, gameHistoryHashes1 []*GameHistoryHashSetter, game0 *Game) (GameHistoryHashSlice, error) {
+	for i := range gameHistoryHashes1 {
+		gameHistoryHashes1[i].GameID = omit.From(game0.ID)
+	}
+
+	ret, err := GameHistoryHashes.Insert(bob.ToMods(gameHistoryHashes1...)).All(ctx, exec)
+	if err != nil {
+		return ret, fmt.Errorf("insertGameGameHistoryHashes0: %w", err)
+	}
+
+	return ret, nil
+}
+
+func attachGameGameHistoryHashes0(ctx context.Context, exec bob.Executor, count int, gameHistoryHashes1 GameHistoryHashSlice, game0 *Game) (GameHistoryHashSlice, error) {
+	setter := &GameHistoryHashSetter{
+		GameID: omit.From(game0.ID),
+	}
+
+	err := gameHistoryHashes1.UpdateAll(ctx, exec, *setter)
+	if err != nil {
+		return nil, fmt.Errorf("attachGameGameHistoryHashes0: %w", err)
+	}
+
+	return gameHistoryHashes1, nil
+}
+
+func (game0 *Game) InsertGameHistoryHashes(ctx context.Context, exec bob.Executor, related ...*GameHistoryHashSetter) error {
+	if len(related) == 0 {
+		return nil
+	}
+
+	var err error
+
+	gameHistoryHashes1, err := insertGameGameHistoryHashes0(ctx, exec, related, game0)
+	if err != nil {
+		return err
+	}
+
+	game0.R.GameHistoryHashes = append(game0.R.GameHistoryHashes, gameHistoryHashes1...)
+
+	for _, rel := range gameHistoryHashes1 {
+		rel.R.Game = game0
+	}
+	return nil
+}
+
+func (game0 *Game) AttachGameHistoryHashes(ctx context.Context, exec bob.Executor, related ...*GameHistoryHash) error {
+	if len(related) == 0 {
+		return nil
+	}
+
+	var err error
+	gameHistoryHashes1 := GameHistoryHashSlice(related)
+
+	_, err = attachGameGameHistoryHashes0(ctx, exec, len(related), gameHistoryHashes1, game0)
+	if err != nil {
+		return err
+	}
+
+	game0.R.GameHistoryHashes = append(game0.R.GameHistoryHashes, gameHistoryHashes1...)
+
+	for _, rel := range related {
+		rel.R.Game = game0
+	}
 
 	return nil
 }

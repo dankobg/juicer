@@ -6,11 +6,17 @@ import (
 	"fmt"
 	"log/slog"
 	"math"
+	"math/rand/v2"
 	"strconv"
 	"strings"
 	"sync"
 	"time"
 
+	"github.com/aarondl/opt/omit"
+	"github.com/aarondl/opt/omitnull"
+	"github.com/dankobg/juicer/db/gen/models"
+	"github.com/dankobg/juicer/engine"
+	"github.com/dankobg/juicer/gameplay"
 	pb "github.com/dankobg/juicer/pb/proto/juicer"
 	"github.com/dankobg/juicer/persistence"
 	"github.com/dankobg/juicer/persistence/dbtype"
@@ -26,6 +32,11 @@ type clientAuthInfo struct {
 	userID    string
 	connID    string
 	authState ws.ClientAuthState
+}
+
+type gamestateCache struct {
+	games map[int64]*gameplay.GameState
+	mu    sync.RWMutex
 }
 
 func (a *ApiHandler) PubsubProcess(ctx context.Context) {
@@ -168,10 +179,10 @@ func (a *ApiHandler) handleIPCInitializeChannelsMsg(data *pb.InitializeChannels)
 
 		if game.ID != 0 {
 			switch game.GameStateID {
-			case a.protoGameStateToID(pb.GameState_GAME_STATE_IN_PROGRESS):
+			case a.gameStateProtoToID(pb.GameState_GAME_STATE_IN_PROGRESS):
 				channels = append(channels, fmt.Sprintf("game.%d", game.ID), fmt.Sprintf("game.%d.chat", game.ID))
-			case a.protoGameStateToID(pb.GameState_GAME_STATE_FINISHED),
-				a.protoGameStateToID(pb.GameState_GAME_STATE_INTERRUPTED):
+			case a.gameStateProtoToID(pb.GameState_GAME_STATE_FINISHED),
+				a.gameStateProtoToID(pb.GameState_GAME_STATE_INTERRUPTED):
 				channels = append(channels, fmt.Sprintf("gametv.%d", game.ID), fmt.Sprintf("gametv.%d.chat", game.ID))
 			default:
 				return
@@ -312,8 +323,6 @@ func (a *ApiHandler) onWSCMsg(m *redis.Message) {
 }
 
 func (a *ApiHandler) handleWSCEchoMsg(authInfo clientAuthInfo, data *pb.Echo) {
-	ZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZ(a)
-
 	bb, _ := protojson.Marshal(&pb.Message{Event: &pb.Message_Echo{Echo: &pb.Echo{Message: strings.ToUpper(data.Message)}}})
 	toUser, toConn, toLobby := "user."+authInfo.userID, "conn."+authInfo.connID, "lobby.chat"
 	_ = []any{toUser, toConn, toLobby}
@@ -445,145 +454,183 @@ func (a *ApiHandler) FetchProtoMappingsCacheLookups(ctx context.Context) error {
 	gameTimeCategories, e3 := a.persistor.GameTimeCategory().ListGameTimeCategories(ctx, dbtype.ListGameTimeCategoriesFilters{})
 	gameResults, e4 := a.persistor.GameResult().ListGameResults(ctx, dbtype.ListGameResultsFilters{})
 	gameResultStatuses, e5 := a.persistor.GameResultStatus().ListGameResultStatuses(ctx, dbtype.ListGameResultStatusesFilters{})
-
 	gameStates, e6 := a.persistor.GameState().ListGameStates(ctx, dbtype.ListGameStatesFilters{})
 	if err := errors.Join(e1, e2, e3, e4, e5, e6); err != nil {
 		return err
 	}
 
+	var gameVariantNameToProto = map[string]pb.GameVariant{
+		"standard":         pb.GameVariant_GAME_VARIANT_STANDARD,
+		"atomic":           pb.GameVariant_GAME_VARIANT_ATOMIC,
+		"crazyhouse":       pb.GameVariant_GAME_VARIANT_CRAZYHOUSE,
+		"chess960":         pb.GameVariant_GAME_VARIANT_CHESS960,
+		"king-of-the-hill": pb.GameVariant_GAME_VARIANT_KING_OF_THE_HILL,
+		"three-check":      pb.GameVariant_GAME_VARIANT_THREE_CHECK,
+		"horde":            pb.GameVariant_GAME_VARIANT_HORDE,
+		"racing-kings":     pb.GameVariant_GAME_VARIANT_RACING_KINGS,
+	}
+
+	var gameTimeKindNameToProto = map[string]pb.GameTimeKind{
+		"realtime":       pb.GameTimeKind_GAME_TIME_KIND_REALTIME,
+		"correspondence": pb.GameTimeKind_GAME_TIME_KIND_CORRESPONDENCE,
+		"unlimited":      pb.GameTimeKind_GAME_TIME_KIND_UNLIMITED,
+	}
+
+	var gameTimeCategoryNameToProto = map[string]pb.GameTimeCategory{
+		"hyperbullet": pb.GameTimeCategory_GAME_TIME_CATEGORY_HYPERBULLET,
+		"bullet":      pb.GameTimeCategory_GAME_TIME_CATEGORY_BULLET,
+		"blitz":       pb.GameTimeCategory_GAME_TIME_CATEGORY_BLITZ,
+		"rapid":       pb.GameTimeCategory_GAME_TIME_CATEGORY_RAPID,
+		"classical":   pb.GameTimeCategory_GAME_TIME_CATEGORY_CLASSICAL,
+	}
+
+	var gameResultNameToProto = map[string]pb.GameResult{
+		"white-won":   pb.GameResult_GAME_RESULT_WHITE_WON,
+		"black-won":   pb.GameResult_GAME_RESULT_BLACK_WON,
+		"draw":        pb.GameResult_GAME_RESULT_DRAW,
+		"interrupted": pb.GameResult_GAME_RESULT_INTERRUPTED,
+	}
+
+	var gameResultStatusNameToProto = map[string]pb.GameResultStatus{
+		"checkmate":             pb.GameResultStatus_GAME_RESULT_STATUS_CHECKMATE,
+		"insufficient-material": pb.GameResultStatus_GAME_RESULT_STATUS_INSUFFICIENT_MATERIAL,
+		"threefold-repetition":  pb.GameResultStatus_GAME_RESULT_STATUS_THREEFOLD_REPETITION,
+		"fivefold-repetition":   pb.GameResultStatus_GAME_RESULT_STATUS_FIVEFOLD_REPETITION,
+		"fifty-move-rule":       pb.GameResultStatus_GAME_RESULT_STATUS_FIFTY_MOVE_RULE,
+		"seventyfive-move-rule": pb.GameResultStatus_GAME_RESULT_STATUS_SEVENTYFIVE_MOVE_RULE,
+		"stalemate":             pb.GameResultStatus_GAME_RESULT_STATUS_STALEMATE,
+		"resignation":           pb.GameResultStatus_GAME_RESULT_STATUS_RESIGNATION,
+		"draw-agreed":           pb.GameResultStatus_GAME_RESULT_STATUS_DRAW_AGREED,
+		"flagged":               pb.GameResultStatus_GAME_RESULT_STATUS_FLAGGED,
+		"adjudication":          pb.GameResultStatus_GAME_RESULT_STATUS_ADJUDICATION,
+		"timed-out":             pb.GameResultStatus_GAME_RESULT_STATUS_TIMED_OUT,
+		"aborted":               pb.GameResultStatus_GAME_RESULT_STATUS_ABORTED,
+		"interrupted":           pb.GameResultStatus_GAME_RESULT_STATUS_INTERRUPTED,
+	}
+
+	var gameStateNameToProto = map[string]pb.GameState{
+		"idle":          pb.GameState_GAME_STATE_IDLE,
+		"waiting-start": pb.GameState_GAME_STATE_WAITING_START,
+		"in-progress":   pb.GameState_GAME_STATE_IN_PROGRESS,
+		"finished":      pb.GameState_GAME_STATE_FINISHED,
+		"interrupted":   pb.GameState_GAME_STATE_INTERRUPTED,
+	}
+
 	for _, v := range gameVariants.Data {
-		switch v.Name {
-		case "standard":
-			a.protoMappingsCache.variants[pb.GameVariant_GAME_VARIANT_STANDARD] = v.ID
-		case "atomic":
-			a.protoMappingsCache.variants[pb.GameVariant_GAME_VARIANT_ATOMIC] = v.ID
-		case "crazyhouse":
-			a.protoMappingsCache.variants[pb.GameVariant_GAME_VARIANT_CRAZYHOUSE] = v.ID
-		case "chess960":
-			a.protoMappingsCache.variants[pb.GameVariant_GAME_VARIANT_CHESS960] = v.ID
-		case "king-of-the-hill":
-			a.protoMappingsCache.variants[pb.GameVariant_GAME_VARIANT_KING_OF_THE_HILL] = v.ID
-		case "three-check":
-			a.protoMappingsCache.variants[pb.GameVariant_GAME_VARIANT_THREE_CHECK] = v.ID
-		case "horde":
-			a.protoMappingsCache.variants[pb.GameVariant_GAME_VARIANT_HORDE] = v.ID
-		case "racing-kings":
-			a.protoMappingsCache.variants[pb.GameVariant_GAME_VARIANT_RACING_KINGS] = v.ID
+		protoEnum, ok := gameVariantNameToProto[v.Name]
+		if !ok {
+			a.Log.Warn("proto mappings cache game_variant not exist", slog.String("name", v.Name))
+			continue
 		}
+
+		a.protoMappingsCache.gameVariantsProtoToDB[protoEnum] = v.ID
+		a.protoMappingsCache.gameVariantsDBToProto[v.ID] = protoEnum
 	}
 
 	for _, v := range gameTimeKinds.Data {
-		switch v.Name {
-		case "realtime":
-			a.protoMappingsCache.timeKinds[pb.GameTimeKind_GAME_TIME_KIND_REALTIME] = v.ID
-		case "correspondance":
-			a.protoMappingsCache.timeKinds[pb.GameTimeKind_GAME_TIME_KIND_CORRESPONDENCE] = v.ID
-		case "unlimited":
-			a.protoMappingsCache.timeKinds[pb.GameTimeKind_GAME_TIME_KIND_UNLIMITED] = v.ID
+		protoEnum, ok := gameTimeKindNameToProto[v.Name]
+		if !ok {
+			a.Log.Warn("proto mappings cache game_time_kind not exist", slog.String("name", v.Name))
+			continue
 		}
+
+		a.protoMappingsCache.gameTimeKindsProtoToDB[protoEnum] = v.ID
+		a.protoMappingsCache.gameTimeKindsDBToProto[v.ID] = protoEnum
 	}
 
 	for _, v := range gameTimeCategories.Data {
-		switch v.Name {
-		case "hyperbullet":
-			a.protoMappingsCache.timeCategories[pb.GameTimeCategory_GAME_TIME_CATEGORY_HYPERBULLET] = v.ID
-		case "bullet":
-			a.protoMappingsCache.timeCategories[pb.GameTimeCategory_GAME_TIME_CATEGORY_BULLET] = v.ID
-		case "blitz":
-			a.protoMappingsCache.timeCategories[pb.GameTimeCategory_GAME_TIME_CATEGORY_BLITZ] = v.ID
-		case "rapid":
-			a.protoMappingsCache.timeCategories[pb.GameTimeCategory_GAME_TIME_CATEGORY_RAPID] = v.ID
-		case "classical":
-			a.protoMappingsCache.timeCategories[pb.GameTimeCategory_GAME_TIME_CATEGORY_CLASSICAL] = v.ID
+		protoEnum, ok := gameTimeCategoryNameToProto[v.Name]
+		if !ok {
+			a.Log.Warn("proto mappings cache game_time_category not exist", slog.String("name", v.Name))
+			continue
 		}
+
+		a.protoMappingsCache.gameTimeCategoriesProtoToDB[protoEnum] = v.ID
+		a.protoMappingsCache.gameTimeCategoriesDBToProto[v.ID] = protoEnum
 	}
 
 	for _, v := range gameResults.Data {
-		switch v.Name {
-		case "white-won":
-			a.protoMappingsCache.results[pb.GameResult_GAME_RESULT_WHITE_WON] = v.ID
-		case "black-won":
-			a.protoMappingsCache.results[pb.GameResult_GAME_RESULT_BLACK_WON] = v.ID
-		case "draw":
-			a.protoMappingsCache.results[pb.GameResult_GAME_RESULT_DRAW] = v.ID
-		case "interrupted":
-			a.protoMappingsCache.results[pb.GameResult_GAME_RESULT_INTERRUPTED] = v.ID
+		protoEnum, ok := gameResultNameToProto[v.Name]
+		if !ok {
+			a.Log.Warn("proto mappings cache game_result not exist", slog.String("name", v.Name))
+			continue
 		}
+
+		a.protoMappingsCache.gameResultsProtoToDB[protoEnum] = v.ID
+		a.protoMappingsCache.gameResultsDBToProto[v.ID] = protoEnum
 	}
 
 	for _, v := range gameResultStatuses.Data {
-		switch v.Name {
-		case "checkmate":
-			a.protoMappingsCache.resultStatuses[pb.GameResultStatus_GAME_RESULT_STATUS_CHECKMATE] = v.ID
-		case "insufficient-material":
-			a.protoMappingsCache.resultStatuses[pb.GameResultStatus_GAME_RESULT_STATUS_INSUFFICIENT_MATERIAL] = v.ID
-		case "threefold-repetition":
-			a.protoMappingsCache.resultStatuses[pb.GameResultStatus_GAME_RESULT_STATUS_THREEFOLD_REPETITION] = v.ID
-		case "fivefold-repetition":
-			a.protoMappingsCache.resultStatuses[pb.GameResultStatus_GAME_RESULT_STATUS_FIVEFOLD_REPETITION] = v.ID
-		case "fifty-move-rule":
-			a.protoMappingsCache.resultStatuses[pb.GameResultStatus_GAME_RESULT_STATUS_FIFTY_MOVE_RULE] = v.ID
-		case "seventyfive-move-rule":
-			a.protoMappingsCache.resultStatuses[pb.GameResultStatus_GAME_RESULT_STATUS_SEVENTYFIVE_MOVE_RULE] = v.ID
-		case "stalemate":
-			a.protoMappingsCache.resultStatuses[pb.GameResultStatus_GAME_RESULT_STATUS_STALEMATE] = v.ID
-		case "resignation":
-			a.protoMappingsCache.resultStatuses[pb.GameResultStatus_GAME_RESULT_STATUS_RESIGNATION] = v.ID
-		case "draw-agreed":
-			a.protoMappingsCache.resultStatuses[pb.GameResultStatus_GAME_RESULT_STATUS_DRAW_AGREED] = v.ID
-		case "flagged":
-			a.protoMappingsCache.resultStatuses[pb.GameResultStatus_GAME_RESULT_STATUS_FLAGGED] = v.ID
-		case "adjudication":
-			a.protoMappingsCache.resultStatuses[pb.GameResultStatus_GAME_RESULT_STATUS_ADJUDICATION] = v.ID
-		case "timed-out":
-			a.protoMappingsCache.resultStatuses[pb.GameResultStatus_GAME_RESULT_STATUS_TIMED_OUT] = v.ID
-		case "aborted":
-			a.protoMappingsCache.resultStatuses[pb.GameResultStatus_GAME_RESULT_STATUS_ABORTED] = v.ID
-		case "interrupted":
-			a.protoMappingsCache.resultStatuses[pb.GameResultStatus_GAME_RESULT_STATUS_INTERRUPTED] = v.ID
+		protoEnum, ok := gameResultStatusNameToProto[v.Name]
+		if !ok {
+			a.Log.Warn("proto mappings cache game_result_status not exist", slog.String("name", v.Name))
+			continue
 		}
+
+		a.protoMappingsCache.gameResultStatusesProtoToDB[protoEnum] = v.ID
+		a.protoMappingsCache.gameResultStatusesDBToProto[v.ID] = protoEnum
 	}
 
 	for _, v := range gameStates.Data {
-		switch v.Name {
-		case "idle":
-			a.protoMappingsCache.states[pb.GameState_GAME_STATE_IDLE] = v.ID
-		case "waiting-start":
-			a.protoMappingsCache.states[pb.GameState_GAME_STATE_WAITING_START] = v.ID
-		case "in-progress":
-			a.protoMappingsCache.states[pb.GameState_GAME_STATE_IN_PROGRESS] = v.ID
-		case "finished":
-			a.protoMappingsCache.states[pb.GameState_GAME_STATE_FINISHED] = v.ID
-		case "interrupted":
-			a.protoMappingsCache.states[pb.GameState_GAME_STATE_INTERRUPTED] = v.ID
+		protoEnum, ok := gameStateNameToProto[v.Name]
+		if !ok {
+			a.Log.Warn("proto mappings cache game_state not exist", slog.String("name", v.Name))
+			continue
 		}
+
+		a.protoMappingsCache.gameStatesProtoToDB[protoEnum] = v.ID
+		a.protoMappingsCache.gameStatesDBToProto[v.ID] = protoEnum
 	}
 
 	return nil
 }
 
-func (a *ApiHandler) protoGameVariantToID(x pb.GameVariant) int64 {
-	return a.protoMappingsCache.variants[x]
+func (a *ApiHandler) gameVariantProtoToID(x pb.GameVariant) int64 {
+	return a.protoMappingsCache.gameVariantsProtoToDB[x]
 }
 
-func (a *ApiHandler) protoGameTimeKindToID(x pb.GameTimeKind) int64 {
-	return a.protoMappingsCache.timeKinds[x]
+func (a *ApiHandler) gameTimeKindProtoToID(x pb.GameTimeKind) int64 {
+	return a.protoMappingsCache.gameTimeKindsProtoToDB[x]
 }
 
-func (a *ApiHandler) protoGameTimeCategoryToID(x pb.GameTimeCategory) int64 {
-	return a.protoMappingsCache.timeCategories[x]
+func (a *ApiHandler) gameTimeCategoryProtoToID(x pb.GameTimeCategory) int64 {
+	return a.protoMappingsCache.gameTimeCategoriesProtoToDB[x]
 }
 
-func (a *ApiHandler) protoGameResultToID(x pb.GameResult) int64 {
-	return a.protoMappingsCache.results[x]
+func (a *ApiHandler) gameResultProtoToID(x pb.GameResult) int64 {
+	return a.protoMappingsCache.gameResultsProtoToDB[x]
 }
 
-func (a *ApiHandler) protoGameResultStatusToID(x pb.GameResultStatus) int64 {
-	return a.protoMappingsCache.resultStatuses[x]
+func (a *ApiHandler) gameResultStatusProtoToID(x pb.GameResultStatus) int64 {
+	return a.protoMappingsCache.gameResultStatusesProtoToDB[x]
 }
 
-func (a *ApiHandler) protoGameStateToID(x pb.GameState) int64 {
-	return a.protoMappingsCache.states[x]
+func (a *ApiHandler) gameStateProtoToID(x pb.GameState) int64 {
+	return a.protoMappingsCache.gameStatesProtoToDB[x]
+}
+
+func (a *ApiHandler) gameVariantIDToProto(id int64) pb.GameVariant {
+	return a.protoMappingsCache.gameVariantsDBToProto[id]
+}
+
+func (a *ApiHandler) gameTimeKindIDToProto(id int64) pb.GameTimeKind {
+	return a.protoMappingsCache.gameTimeKindsDBToProto[id]
+}
+
+func (a *ApiHandler) gameTimeCategoryIDToProto(id int64) pb.GameTimeCategory {
+	return a.protoMappingsCache.gameTimeCategoriesDBToProto[id]
+}
+
+func (a *ApiHandler) gameResultIDToProto(id int64) pb.GameResult {
+	return a.protoMappingsCache.gameResultsDBToProto[id]
+}
+
+func (a *ApiHandler) gameResultStatusIDToProto(id int64) pb.GameResultStatus {
+	return a.protoMappingsCache.gameResultStatusesDBToProto[id]
+}
+
+func (a *ApiHandler) gameStateIDToProto(id int64) pb.GameState {
+	return a.protoMappingsCache.gameStatesDBToProto[id]
 }
 
 func (a *ApiHandler) sendLobbyInfo(userID, connID string, guest bool) error {
@@ -777,162 +824,229 @@ func (a *ApiHandler) tryMatchPoolPlayers(ctx context.Context) {
 func (a *ApiHandler) tryMatchPoolPlayersForPool(ctx context.Context, clockMS, incrementMS int32, rated bool) {
 	pool := dbtype.Pool{ClockMS: clockMS, IncrementMS: incrementMS, Rated: rated}
 
-	res, err := a.persistor.Pool().ListPoolPlayers(ctx, pool)
-	if err != nil {
-		a.Log.Error("tryMatchPoolPlayersForPool listpoolplayers", slog.String("pool", pool.Name()), slog.Any("error", err))
-		return
+	// a.Log.Debug("try match pool", slog.String("pool", pool.Name()))
+
+	matchedPairs := make([][2]string, 0)
+
+	for {
+		res, err := a.persistor.Pool().MatchPair(ctx, pool)
+		if err != nil {
+			break
+		}
+
+		if len(res) < 2 {
+			break
+		}
+
+		matchedPairs = append(matchedPairs, [2]string{res[0], res[1]})
 	}
 
-	queueSize := len(res)
-	if queueSize < 2 {
-		// a.Log.Debug("pool queue size < 2")
+	if len(matchedPairs) == 0 {
 		return
 	}
-
-	pairs := make(chan [2]string, queueSize/2)
 
 	var wg sync.WaitGroup
 
-	go func() {
-		for i := 0; i+1 < queueSize; i += 2 {
-			pairs <- [2]string{res[i], res[i+1]}
-		}
-
-		close(pairs)
-	}()
-
-	workers := queueSize / 2
-
-	for range workers {
+	for _, pair := range matchedPairs {
 		wg.Go(func() {
-			for pair := range pairs {
-				a.processPoolUsersPair(ctx, pair, clockMS, incrementMS, rated)
-			}
+			a.processMatchedPoolPair(ctx, pair, pool)
 		})
 	}
 
 	wg.Wait()
-
-	if queueSize%2 != 0 {
-		a.Log.Debug("unmatched player remains in queue", slog.String("pool", pool.Name()), slog.String("user_id", res[queueSize-1]))
-	}
 }
 
-func (a *ApiHandler) processPoolUsersPair(ctx context.Context, pair [2]string, clockMS, incrementMS int32, rated bool) {
-	fmt.Println("----------------- PROCESS PAIR ------------------: ", pair, clockMS, incrementMS, rated)
+func (a *ApiHandler) processMatchedPoolPair(ctx context.Context, pair [2]string, pool dbtype.Pool) {
+	a.Log.Debug("processing matched pool pair", slog.String("pool", pool.Name()), slog.Any("pair", pair))
 
-	// userID1, err1 := uuid.Parse(pair[0])
-	// userID2, err2 := uuid.Parse(pair[1])
-	// if err1 != nil || err2 != nil {
-	// 	a.Log.Error("failed to parse user UUIDs", slog.String("user_id1", pair[0]), slog.String("user_id2", pair[1]))
-	// 	return
-	// }
+	userID1, err1 := uuid.Parse(pair[0])
+	userID2, err2 := uuid.Parse(pair[1])
+	if err1 != nil || err2 != nil {
+		a.Log.Error("invalid matched pair user id", slog.Any("error", errors.Join(err1, err2)))
+	}
 
-	// username1, err3 := a.GetUsername(ctx, pair[0])
-	// username2, err4 := a.GetUsername(ctx, pair[1])
+	// userMeta1, err3 := a.persistor.Pool().GetPoolUserMeta(ctx, userID1)
+	// userMeta2, err4 := a.persistor.Pool().GetPoolUserMeta(ctx, userID1)
 	// if err3 != nil || err4 != nil {
-	// 	a.Log.Error("failed to get pair of usernames", slog.String("user_id1", pair[0]), slog.String("user_id2", pair[1]))
-	// 	return
+	// 	a.Log.Error("failed to get user meta", slog.Any("error", errors.Join(err3, err4)))
 	// }
-}
 
-func ZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZ(a *ApiHandler) {
-	ids := []uuid.UUID{uuid.MustParse("cb38c8e1-2fb6-4b4c-bd10-e099953f8ee8"), uuid.MustParse("18a425bd-1325-4f38-81c4-b4fcc5ad9992")}
-	_ = ids
-
-	v1, e1 := a.persistor.Presence().ListUsersInChannel(context.TODO(), "lobby")
-	v2, e2 := a.persistor.Presence().UsersCountInChannel(context.TODO(), "lobby")
-	v3, e3 := a.persistor.Presence().ListChannelsForUser(context.TODO(), ids[0])
-	v4, e4 := a.persistor.Presence().TotalActiveConnsCount(context.TODO())
-
-	if e := errors.Join(e1, e2, e3, e4); e != nil {
-		fmt.Println("--------------------------- KURAAAAAAC", e)
+	username1, username2 := "guest", "guest"
+	if pool.Rated {
+		uname1, err5 := a.GetUsername(ctx, userID1.String())
+		uname2, err6 := a.GetUsername(ctx, userID2.String())
+		if err5 != nil || err6 != nil {
+			a.Log.Error("failed to get usernames", slog.Any("error", errors.Join(err5, err6)))
+		}
+		username1, username2 = uname1, uname2
 	}
 
-	godump.DumpJSON(map[string]any{
-		"lobby_users":       v1,
-		"lobby_users_count": v2,
-		"danko_channels":    v3,
-		"active_conns":      v4,
-	})
+	color1, color2 := pb.Color_COLOR_WHITE, pb.Color_COLOR_BLACK
+	if rand.IntN(2) == 1 {
+		color1, color2 = pb.Color_COLOR_BLACK, pb.Color_COLOR_WHITE
+	}
 
-	// players := [2]gameplay.Player{
-	// 	{ID: uuid.MustParse("75f751e4-737f-40de-beb8-3964cd4eeb29"), Name: "danko", Color: pb.Color_COLOR_WHITE, Guest: false},
-	// 	{ID: uuid.MustParse("14120b40-aa67-4cde-8a75-fcae8e057278"), Name: "bob", Color: pb.Color_COLOR_BLACK, Guest: false},
-	// }
+	players := [2]gameplay.Player{
+		{ID: userID1, Name: username1, Color: color1, Guest: !pool.Rated},
+		{ID: userID2, Name: username2, Color: color2, Guest: !pool.Rated},
+	}
 
-	// gtc := &pb.GameTimeControl{ClockMs: 300_000, IncrementMs: 0}
+	gtc := &pb.GameTimeControl{ClockMs: pool.ClockMS, IncrementMs: pool.IncrementMS}
 
-	// thresholds := []gameplay.CategoryThreshold{}
-	// for _, x := range a.categoryThresholds {
-	// 	thresholds = append(thresholds, gameplay.CategoryThreshold{
-	// 		UpperLimit:   x.upperLimit,
-	// 		TimeCategory: x.timeCategory,
-	// 	})
-	// }
+	thresholds := []gameplay.CategoryThreshold{}
+	for _, x := range a.categoryThresholds {
+		thresholds = append(thresholds, gameplay.CategoryThreshold{
+			UpperLimit:   x.upperLimit,
+			TimeCategory: x.timeCategory,
+		})
+	}
 
-	// gs, err := gameplay.NewGameState(1, players, gtc, true, thresholds)
-	// if err != nil {
-	// 	fmt.Println("gameplay.NewGameState: ", err.Error())
-	// 	return
-	// }
+	gs, err := gameplay.NewGameState(-1, players, gtc, true, thresholds, gameplay.WithRated(pool.Rated))
+	if err != nil {
+		fmt.Println("gameplay.NewGameState: ", err.Error())
+		return
+	}
 
-	// gs.Start()
+	gs.WaitingStart()
 
-	// gameSetter := models.GameSetter{
-	// 	// WhiteID:      omitnull.From(gs.White.ID),
-	// 	// BlackID:      omitnull.From(gs.Black.ID),
-	// 	WhiteIsGuest:           omit.From(gs.Guest),
-	// 	BlackIsGuest:           omit.From(gs.Guest),
-	// 	GuestWhiteID:           omitnull.From(gs.White.ID),
-	// 	GuestBlackID:           omitnull.From(gs.Black.ID),
-	// 	GameVariantID:          omit.From(a.protoGameVariantToID(gs.GameVariant)),
-	// 	GameTimeKindID:         omit.From(a.protoGameTimeKindToID(gs.GameTimeKind)),
-	// 	GameTimeCategoryID:     omit.From(a.protoGameTimeCategoryToID(gs.GameTimeCategory)),
-	// 	GameStateID:            omit.From(a.protoGameStateToID(gs.GameState)),
-	// 	TimeControlClockMS:     omit.From(gs.GameTimeControl.ClockMs),
-	// 	TimeControlIncrementMS: omit.From(gs.GameTimeControl.IncrementMs),
-	// 	FirstMoveTimeoutMS:     omit.From(int32(gs.FirstMoveTimeout.Milliseconds())),
-	// 	ReconnectTimeoutMS:     omit.From(int32(gs.ReconnectTimeout.Milliseconds())),
-	// 	WhiteGameClock:         omit.From(gs.GameTimeControl.ClockMs),
-	// 	BlackGameClock:         omit.From(gs.GameTimeControl.ClockMs),
-	// 	Rated:                  omit.From(gs.Rated),
-	// 	StartTime:              omitnull.FromPtr(gs.StartTime),
-	// 	EndTime:                omitnull.FromPtr(gs.EndTime),
-	// 	LastMove:               omitnull.FromPtr(gs.LastMove),
-	// 	Fen:                    omit.From(gs.Chess.Position.Fen()),
-	// }
-	// if gs.GameResult != pb.GameResult_GAME_RESULT_UNSPECIFIED {
-	// 	gameSetter.GameResultID = omitnull.From(a.protoGameResultToID(gs.GameResult))
-	// }
-	// if gs.GameResultStatus != pb.GameResultStatus_GAME_RESULT_STATUS_UNSPECIFIED {
-	// 	gameSetter.GameResultStatusID = omitnull.From(a.protoGameResultStatusToID(gs.GameResultStatus))
-	// }
+	gameSetter := models.GameSetter{
+		GameVariantID:          omit.From(a.gameVariantProtoToID(gs.GameVariant)),
+		GameTimeKindID:         omit.From(a.gameTimeKindProtoToID(gs.GameTimeKind)),
+		GameTimeCategoryID:     omit.From(a.gameTimeCategoryProtoToID(gs.GameTimeCategory)),
+		GameStateID:            omit.From(a.gameStateProtoToID(gs.GameState)),
+		TimeControlClockMS:     omit.From(gs.GameTimeControl.ClockMs),
+		TimeControlIncrementMS: omit.From(gs.GameTimeControl.IncrementMs),
+		FirstMoveTimeoutMS:     omit.From(int32(gs.FirstMoveTimeout.Milliseconds())),
+		ReconnectTimeoutMS:     omit.From(int32(gs.ReconnectTimeout.Milliseconds())),
+		WhiteGameClock:         omit.From(gs.GameTimeControl.ClockMs),
+		BlackGameClock:         omit.From(gs.GameTimeControl.ClockMs),
+		Rated:                  omit.From(gs.Rated),
+		StartTime:              omitnull.FromPtr(gs.StartTime),
+		EndTime:                omitnull.FromPtr(gs.EndTime),
+		LastMove:               omitnull.FromPtr(gs.LastMove),
+		Fen:                    omit.From(gs.Chess.Position.Fen()),
+		Repetitions:            omit.From(int32(gs.Chess.Repetitions)),
+	}
+	if pool.Rated {
+		gameSetter.WhiteID = omitnull.From(gs.White.ID)
+		gameSetter.BlackID = omitnull.From(gs.Black.ID)
+	} else {
+		gameSetter.GuestWhiteID = omitnull.From(gs.White.ID)
+		gameSetter.GuestBlackID = omitnull.From(gs.Black.ID)
+	}
+	if gs.GameResult != pb.GameResult_GAME_RESULT_UNSPECIFIED {
+		gameSetter.GameResultID = omitnull.From(a.gameResultProtoToID(gs.GameResult))
+	}
+	if gs.GameResultStatus != pb.GameResultStatus_GAME_RESULT_STATUS_UNSPECIFIED {
+		gameSetter.GameResultStatusID = omitnull.From(a.gameResultStatusProtoToID(gs.GameResultStatus))
+	}
 
-	// godump.DumpJSON(gameSetter, "GAME_SETTER")
+	// @TODO: persist moves and hashes
+	game, err := a.persistor.Game().CreateGame(ctx, gameSetter, nil)
+	if err != nil {
+		fmt.Println("CreateGame err: ", err)
+		return
+	}
 
-	// game, err := a.persistor.Game().CreateGame(context.TODO(), gameSetter, nil)
-	// if err != nil {
-	// 	fmt.Println("CreateGame err: ", err)
-	// 	return
-	// }
-	// godump.DumpJSON(game, "GAME_FINAL_RESULT")
+	gs.GameID = game.ID
 
-	// gs.GameID = game.ID
+	fmt.Println("--------------- RAW GS ---------------")
+	debug_print_game_info(gs)
 
-	// fmt.Printf("game_id: %d\n", gs.GameID)
-	// fmt.Printf("rated: %v\n", gs.Rated)
-	// fmt.Printf("white: %s\n", gs.White.Name)
-	// fmt.Printf("black: %s\n", gs.Black.Name)
-	// fmt.Printf("variant: %s\n", gs.GameVariant.String())
-	// fmt.Printf("time_category: %s\n", gs.GameTimeCategory.String())
-	// fmt.Printf("time_kind: %s\n", gs.GameTimeKind.String())
-	// fmt.Printf("time_control_clock_ms: %d\n", gs.GameTimeControl.GetClockMs())
-	// fmt.Printf("time_control_increment_ms: %d\n", gs.GameTimeControl.GetIncrementMs())
-	// fmt.Printf("state: %s\n", gs.GameState.String())
-	// fmt.Printf("result: %s\n", gs.GameResult.String())
-	// fmt.Printf("result_status: %s\n", gs.GameResultStatus.String())
-	// fmt.Printf("start_time: %s\n", gs.StartTime)
-	// fmt.Printf("last_move: %s\n", gs.LastMove)
-	// fmt.Printf("history_moves: %v\n", gs.HistoryMoveInfos)
+	if gsFromDB, err := a.gameStateFromPersistence(ctx, game, nil, nil); err != nil {
+		godump.Dump("FAIL RECONSTRUCTION FROM PERSISTENCE", err)
+	} else {
+		fmt.Println("--------------- RECONSTRUCTED GS ---------------")
+		debug_print_game_info(gsFromDB)
+	}
+
+}
+
+func debug_print_game_info(gs *gameplay.GameState) {
+	fmt.Printf("game_id: %d\n", gs.GameID)
+	fmt.Printf("rated: %v\n", gs.Rated)
+	fmt.Printf("white: %s\n", gs.White.Name)
+	fmt.Printf("black: %s\n", gs.Black.Name)
+	fmt.Printf("variant: %s\n", gs.GameVariant.String())
+	fmt.Printf("time_category: %s\n", gs.GameTimeCategory.String())
+	fmt.Printf("time_kind: %s\n", gs.GameTimeKind.String())
+	fmt.Printf("time_control_clock_ms: %d\n", gs.GameTimeControl.GetClockMs())
+	fmt.Printf("time_control_increment_ms: %d\n", gs.GameTimeControl.GetIncrementMs())
+	fmt.Printf("state: %s\n", gs.GameState.String())
+	fmt.Printf("result: %s\n", gs.GameResult.String())
+	fmt.Printf("result_status: %s\n", gs.GameResultStatus.String())
+	fmt.Printf("start_time: %s\n", gs.StartTime)
+	fmt.Printf("last_move: %s\n", gs.LastMove)
+	fmt.Printf("repetitions: %v\n", gs.Chess.Repetitions)
+	fmt.Printf("history_moves: %v\n", gs.HistoryMoveInfos)
+	fmt.Printf("history_hashes: %v\n", gs.Chess.HistoryHashes)
+}
+
+func (a *ApiHandler) gameStateFromPersistence(ctx context.Context, game models.Game, moves []models.GameMove, hashes []models.GameHistoryHash) (*gameplay.GameState, error) {
+	chess, err := engine.NewChess(game.Fen)
+	if err != nil {
+		return nil, err
+	}
+
+	// @TODO: handle load repetitions and history hashes later
+
+	whiteID := game.GuestWhiteID.GetOr(game.WhiteID.MustGet())
+	blackID := game.GuestBlackID.GetOr(game.BlackID.MustGet())
+
+	whiteUsername, blackUsername := "guest", "guest"
+	if game.Rated {
+		uname1, err5 := a.GetUsername(ctx, whiteID.String())
+		uname2, err6 := a.GetUsername(ctx, blackID.String())
+		if err5 != nil || err6 != nil {
+			a.Log.Error("failed to get usernames", slog.Any("error", errors.Join(err5, err6)))
+		}
+		whiteUsername, blackUsername = uname1, uname2
+	}
+
+	white := &gameplay.Player{
+		ID:    whiteID,
+		Name:  whiteUsername,
+		Color: pb.Color_COLOR_WHITE,
+		Guest: !game.Rated,
+	}
+
+	black := &gameplay.Player{
+		ID:    blackID,
+		Name:  blackUsername,
+		Color: pb.Color_COLOR_BLACK,
+		Guest: !game.Rated,
+	}
+
+	players := map[uuid.UUID]*gameplay.Player{whiteID: white, blackID: black}
+
+	gs := &gameplay.GameState{
+		Chess:            chess,
+		GameID:           game.ID,
+		White:            white,
+		Black:            black,
+		Players:          players,
+		Guest:            !game.Rated,
+		GameVariant:      a.gameVariantIDToProto(game.GameVariantID),
+		GameTimeKind:     a.gameTimeKindIDToProto(game.GameTimeKindID),
+		GameTimeCategory: a.gameTimeCategoryIDToProto(game.GameTimeCategoryID),
+		GameTimeControl:  &pb.GameTimeControl{ClockMs: game.TimeControlClockMS, IncrementMs: game.TimeControlIncrementMS},
+		GameState:        a.gameStateIDToProto(game.GameStateID),
+		ReconnectTimeout: time.Duration(game.ReconnectTimeoutMS) * time.Millisecond,
+		FirstMoveTimeout: time.Duration(game.FirstMoveTimeoutMS) * time.Millisecond,
+		LastMove:         game.LastMove.Ptr(),
+		StartTime:        game.StartTime.Ptr(),
+		EndTime:          game.EndTime.Ptr(),
+		Rated:            game.Rated,
+		HistoryMoveInfos: []*pb.HistoryMoveInfo{},
+		// TimerAction:      make(chan gameplay.timerAction),
+	}
+
+	if game.GameResultID.IsValue() {
+		gs.GameResult = a.gameResultIDToProto(game.GameResultID.MustGet())
+	}
+	if game.GameResultStatusID.IsValue() {
+		gs.GameResultStatus = a.gameResultStatusIDToProto(game.GameResultStatusID.MustGet())
+	}
+
+	return gs, nil
 }

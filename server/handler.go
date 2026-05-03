@@ -28,22 +28,36 @@ type categoryThreshold struct {
 
 // for now this does not change, so i keep it static and fetch once
 type protoMappingsCache struct {
-	variants       map[pb.GameVariant]int64
-	timeKinds      map[pb.GameTimeKind]int64
-	timeCategories map[pb.GameTimeCategory]int64
-	results        map[pb.GameResult]int64
-	resultStatuses map[pb.GameResultStatus]int64
-	states         map[pb.GameState]int64
+	gameVariantsProtoToDB       map[pb.GameVariant]int64
+	gameTimeKindsProtoToDB      map[pb.GameTimeKind]int64
+	gameTimeCategoriesProtoToDB map[pb.GameTimeCategory]int64
+	gameResultsProtoToDB        map[pb.GameResult]int64
+	gameResultStatusesProtoToDB map[pb.GameResultStatus]int64
+	gameStatesProtoToDB         map[pb.GameState]int64
+
+	gameVariantsDBToProto       map[int64]pb.GameVariant
+	gameTimeKindsDBToProto      map[int64]pb.GameTimeKind
+	gameTimeCategoriesDBToProto map[int64]pb.GameTimeCategory
+	gameResultsDBToProto        map[int64]pb.GameResult
+	gameResultStatusesDBToProto map[int64]pb.GameResultStatus
+	gameStatesDBToProto         map[int64]pb.GameState
 }
 
 func newProtoMappingsCache() protoMappingsCache {
 	return protoMappingsCache{
-		variants:       make(map[pb.GameVariant]int64),
-		timeKinds:      make(map[pb.GameTimeKind]int64),
-		timeCategories: make(map[pb.GameTimeCategory]int64),
-		results:        make(map[pb.GameResult]int64),
-		resultStatuses: make(map[pb.GameResultStatus]int64),
-		states:         make(map[pb.GameState]int64),
+		gameVariantsProtoToDB:       make(map[pb.GameVariant]int64),
+		gameTimeKindsProtoToDB:      make(map[pb.GameTimeKind]int64),
+		gameTimeCategoriesProtoToDB: make(map[pb.GameTimeCategory]int64),
+		gameResultsProtoToDB:        make(map[pb.GameResult]int64),
+		gameResultStatusesProtoToDB: make(map[pb.GameResultStatus]int64),
+		gameStatesProtoToDB:         make(map[pb.GameState]int64),
+
+		gameVariantsDBToProto:       make(map[int64]pb.GameVariant),
+		gameTimeKindsDBToProto:      make(map[int64]pb.GameTimeKind),
+		gameTimeCategoriesDBToProto: make(map[int64]pb.GameTimeCategory),
+		gameResultsDBToProto:        make(map[int64]pb.GameResult),
+		gameResultStatusesDBToProto: make(map[int64]pb.GameResultStatus),
+		gameStatesDBToProto:         make(map[int64]pb.GameState),
 	}
 }
 

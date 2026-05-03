@@ -26,6 +26,9 @@ var _ bob.HookableType = &Friendship{}
 // Make sure the type Game runs hooks after queries
 var _ bob.HookableType = &Game{}
 
+// Make sure the type GameHistoryHash runs hooks after queries
+var _ bob.HookableType = &GameHistoryHash{}
+
 // Make sure the type GameMove runs hooks after queries
 var _ bob.HookableType = &GameMove{}
 

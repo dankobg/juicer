@@ -6,12 +6,20 @@ import (
 )
 
 func GameToResponse(g models.Game) api.Game {
+	whiteIsGuest, blackIsGuest := true, true
+	if g.WhiteID.IsNull() {
+		whiteIsGuest = false
+	}
+	if g.BlackID.IsNull() {
+		blackIsGuest = false
+	}
+
 	return api.Game{
 		ID:                     g.ID,
 		WhiteID:                g.WhiteID.Ptr(),
 		BlackID:                g.BlackID.Ptr(),
-		WhiteIsGuest:           g.WhiteIsGuest,
-		BlackIsGuest:           g.BlackIsGuest,
+		WhiteIsGuest:           whiteIsGuest,
+		BlackIsGuest:           blackIsGuest,
 		Rated:                  g.Rated,
 		WhiteGuestID:           g.GuestWhiteID.Ptr(),
 		BlackGuestID:           g.GuestBlackID.Ptr(),

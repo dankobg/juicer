@@ -168,8 +168,12 @@ func (gs *GameState) GetPlayerByColor(color pb.Color) *Player {
 	}
 }
 
-func (gs *GameState) Start() {
+func (gs *GameState) WaitingStart() {
 	gs.GameState = pb.GameState_GAME_STATE_WAITING_START
+}
+
+func (gs *GameState) Start() {
+	gs.GameState = pb.GameState_GAME_STATE_IN_PROGRESS
 }
 
 func (gs *GameState) Stop() {

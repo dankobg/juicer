@@ -42,24 +42,6 @@ var Games = Table[
 			Generated: false,
 			AutoIncr:  false,
 		},
-		WhiteIsGuest: column{
-			Name:      "white_is_guest",
-			DBType:    "boolean",
-			Default:   "",
-			Comment:   "",
-			Nullable:  false,
-			Generated: false,
-			AutoIncr:  false,
-		},
-		BlackIsGuest: column{
-			Name:      "black_is_guest",
-			DBType:    "boolean",
-			Default:   "",
-			Comment:   "",
-			Nullable:  false,
-			Generated: false,
-			AutoIncr:  false,
-		},
 		GuestWhiteID: column{
 			Name:      "guest_white_id",
 			DBType:    "uuid",
@@ -240,6 +222,15 @@ var Games = Table[
 			Generated: false,
 			AutoIncr:  false,
 		},
+		Repetitions: column{
+			Name:      "repetitions",
+			DBType:    "integer",
+			Default:   "0",
+			Comment:   "",
+			Nullable:  false,
+			Generated: false,
+			AutoIncr:  false,
+		},
 		CreatedAt: column{
 			Name:      "created_at",
 			DBType:    "timestamp with time zone",
@@ -375,8 +366,6 @@ type gameColumns struct {
 	ID                     column
 	WhiteID                column
 	BlackID                column
-	WhiteIsGuest           column
-	BlackIsGuest           column
 	GuestWhiteID           column
 	GuestBlackID           column
 	GameVariantID          column
@@ -397,13 +386,14 @@ type gameColumns struct {
 	LastMove               column
 	Fen                    column
 	PGN                    column
+	Repetitions            column
 	CreatedAt              column
 	UpdatedAt              column
 }
 
 func (c gameColumns) AsSlice() []column {
 	return []column{
-		c.ID, c.WhiteID, c.BlackID, c.WhiteIsGuest, c.BlackIsGuest, c.GuestWhiteID, c.GuestBlackID, c.GameVariantID, c.GameTimeKindID, c.GameTimeCategoryID, c.GameStateID, c.GameResultID, c.GameResultStatusID, c.TimeControlClockMS, c.TimeControlIncrementMS, c.ReconnectTimeoutMS, c.FirstMoveTimeoutMS, c.WhiteGameClock, c.BlackGameClock, c.Rated, c.StartTime, c.EndTime, c.LastMove, c.Fen, c.PGN, c.CreatedAt, c.UpdatedAt,
+		c.ID, c.WhiteID, c.BlackID, c.GuestWhiteID, c.GuestBlackID, c.GameVariantID, c.GameTimeKindID, c.GameTimeCategoryID, c.GameStateID, c.GameResultID, c.GameResultStatusID, c.TimeControlClockMS, c.TimeControlIncrementMS, c.ReconnectTimeoutMS, c.FirstMoveTimeoutMS, c.WhiteGameClock, c.BlackGameClock, c.Rated, c.StartTime, c.EndTime, c.LastMove, c.Fen, c.PGN, c.Repetitions, c.CreatedAt, c.UpdatedAt,
 	}
 }
 

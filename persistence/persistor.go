@@ -103,6 +103,8 @@ type PoolPersistor interface {
 	JoinPool(ctx context.Context, userID uuid.UUID, pool dbtype.Pool) error
 	LeavePool(ctx context.Context, userID uuid.UUID) error
 	ListPoolPlayers(ctx context.Context, pool dbtype.Pool) ([]string, error)
+	GetPoolUserMeta(ctx context.Context, userID uuid.UUID) (map[string]any, error)
+	MatchPair(ctx context.Context, pool dbtype.Pool) ([2]string, error)
 }
 
 // type GameSeek struct{}

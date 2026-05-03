@@ -106,8 +106,6 @@ create table "game" (
   "id" bigint not null generated always as identity,
   "white_id" uuid,
   "black_id" uuid,
-  "white_is_guest" bool not null,
-  "black_is_guest" bool not null,
   "guest_white_id" uuid,
   "guest_black_id" uuid,
   "game_variant_id" bigint not null,
@@ -128,6 +126,7 @@ create table "game" (
   "last_move" timestamptz,
   "fen" character varying(90) not null,
   "pgn" text,
+  "repetitions" integer not null default 0,
   "created_at" timestamptz not null default current_timestamp,
   "updated_at" timestamptz not null default current_timestamp,
   constraint "pk_game_id" primary key ("id"),
@@ -154,6 +153,14 @@ create table "game_move" (
   "played_at" timestamptz not null default current_timestamp,
   constraint "pk_game_move_id" primary key ("id"),
   constraint "fk_game_move_game_id" foreign key ("game_id") references "game" ("id") on delete cascade
+);
+
+create table "game_history_hash" (
+  "id" bigint generated always as identity,
+  "game_id" bigint not null,
+  "hash" bigint not null,
+  constraint "pk_game_history_hash_id" primary key ("id"),
+  constraint "fk_game_history_hash_game_id" foreign key ("game_id") references "game" ("id") on delete cascade
 );
 
 create table "rating" (
