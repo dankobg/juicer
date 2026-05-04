@@ -81,8 +81,8 @@
 			{#each Array(Math.ceil((gameManager.totalMoves - 1) / 2)) as _, i}
 				{@const w = i * 2 + 1}
 				{@const b = i * 2 + 2}
-				{@const h1 = gameManager.historyMovesInfo[w]}
-				{@const h2 = gameManager.historyMovesInfo[b]}
+				{@const h1 = gameManager.gameMoves[w]}
+				{@const h2 = gameManager.gameMoves[b]}
 				{@const d1 = gameManager.moveDurationsMs[w]}
 				{@const d2 = gameManager.moveDurationsMs[b]}
 				{@const num = i + 1}
@@ -90,13 +90,13 @@
 				<div class="grid grid-cols-[10%_1fr_1fr_15%] items-center justify-between gap-4 border-b border-stone-300/10">
 					<div class="text-start">{num}.</div>
 					<button
-						class={['hover:bg-secondary rounded-sm text-center', gameManager.historyIndex === w && 'bg-secondary']}
+						class={['rounded-sm text-center hover:bg-secondary', gameManager.historyIndex === w && 'bg-secondary']}
 						onclick={() => gameManager.movesJumpTo(w)}
 					>
 						{h1?.move?.san}
 					</button>
 					<button
-						class={['hover:bg-secondary rounded-sm text-center', gameManager.historyIndex === b && 'bg-secondary']}
+						class={['rounded-sm text-center hover:bg-secondary', gameManager.historyIndex === b && 'bg-secondary']}
 						onclick={() => gameManager.movesJumpTo(b)}
 					>
 						{h2?.move?.san}

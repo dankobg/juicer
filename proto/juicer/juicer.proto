@@ -109,31 +109,29 @@ message Message {
     ClientDisconnected client_disconnected = 7;
     InitializeChannels initialize_channels = 8;
     InitialChannels initial_channels = 9;
-
     PresenceState presence_state = 10;
     PresenceDiff presence_diff = 11;
+    SendLobbyChat send_lobby_chat = 12;
+    ListLobbyChats list_lobby_chats = 14;
+    LobbyChat lobby_chat = 13;
+    LobbyChatList lobby_chats = 15;
 
     SeekGame seek_game = 25;
     CancelSeekGame cancel_seek_game = 26;
-
     AbortGame abort_game = 29;
     ResignGame resign_game = 30;
     OfferDraw offer_draw = 31;
     AcceptDraw accept_draw = 32;
     DeclineDraw decline_draw = 33;
     PlayMoveUCI play_move_uci = 34;
-
-    SendGameChat send_game_chat = 35;
-    GameChat game_chat = 36;
-    GameChatRetrieve game_chat_retrieve = 37;
-    ReceiveMove receive_move = 38;
-    GameFinished game_finished = 39;
-    HubInfo hub_info = 40;
-    MatchFound match_found = 41;
-
-    SendLobbyChat send_lobby_chat = 66;
-    LobbyChat lobby_chat = 67;
-
+    ReceiveMove receive_move = 35;
+    GameFinished game_finished = 36;
+    HubInfo hub_info = 37;
+    MatchFound match_found = 38;
+    SendGameChat send_game_chat = 39;
+    ListGameChats list_game_chats = 40;
+    GameChat game_chat = 41;
+    GameChatList game_chats = 42;
     Echo echo = 69;
   }
 }
@@ -249,18 +247,13 @@ message OpponentInfo {
   int32 rating = 11;
 }
 
-// HistoryMove is the move played
-message HistoryMove {
-  string uci = 1;
-  string san = 2;
-}
-
-// HistoryMoveInfo holds info about the move
-message HistoryMoveInfo {
+// GameMove is the game move
+message GameMove {
   string fen = 1;
-  optional google.protobuf.Timestamp played_at = 2;
-  optional HistoryMove move = 3;
+  optional string uci = 2;
+  optional string san = 3;
   bool check = 4;
+  optional google.protobuf.Timestamp played_at = 5;
 }
 
 // MatchFound signals that the game was found
@@ -277,7 +270,7 @@ message MatchFound {
   optional OpponentInfo opponent_info = 10;
   int64 reconnect_timeout_ms = 11;
   int64 first_move_timeout_ms = 12;
-  repeated HistoryMoveInfo history_move_infos = 13;
+  repeated GameMove game_moves = 13;
   google.protobuf.Timestamp start_time = 14;
 }
 
@@ -296,14 +289,15 @@ message DeclineDraw {}
 // AcceptDraw is game accept draw message
 message AcceptDraw {}
 
-// SendGameChat is the msg sent to game
-message SendGameChat {
-  string message = 1;
-}
-
 // SendLobbyChat is the msg sent to lobby
 message SendLobbyChat {
   string message = 1;
+}
+
+// ListLobbyChats fetches the lobby chat messages
+message ListLobbyChats {
+  int32 last_message_id = 1;
+  int32 size = 2;
 }
 
 // LobbyChat is the lobby chat msg received
@@ -314,6 +308,22 @@ message LobbyChat {
   string posted_at = 4;
 }
 
+// LobbyChatList is the list of lobby chat messages
+message LobbyChatList {
+  repeated LobbyChat lobby_chats = 1;
+}
+
+// SendGameChat is the msg sent to game
+message SendGameChat {
+  string message = 1;
+}
+
+// ListGameChats fetches the game chat messages
+message ListGameChats {
+  int32 last_message_id = 1;
+  int32 size = 2;
+}
+
 // GameChat is the game chat msg received
 message GameChat {
   string message_id = 1;
@@ -322,9 +332,9 @@ message GameChat {
   string posted_at = 4;
 }
 
-// GameChatRetrieve is list of game chat messages
-message GameChatRetrieve {
-  repeated GameChat game_chat = 1;
+// GameChatList is the list of game chat messages
+message GameChatList {
+  repeated GameChat game_chats = 1;
 }
 
 // PlayMoveUCI plays a game move

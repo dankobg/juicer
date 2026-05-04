@@ -4,13 +4,14 @@ import {
 	MessageSchema,
 	type Echo,
 	type GameTimeControl,
-	type HistoryMoveInfo,
+	type GameMove,
 	type Latency,
 	type LobbyChat,
 	type OpponentInfo,
 	type Presence,
 	type PresenceDiff,
-	type PresenceState
+	type PresenceState,
+	type MatchFound
 } from '$lib/gen/juicer_pb';
 import { create, fromJsonString } from '@bufbuild/protobuf';
 import type { JuicerBoard, Coord, PieceFenSymbol } from '@dankop/juicer-board';
@@ -18,6 +19,7 @@ import { PersistedState } from 'runed';
 import { ws } from '$lib/state/ws-state.svelte';
 import { type Timestamp } from '@bufbuild/protobuf/wkt';
 import { SvelteSet } from 'svelte/reactivity';
+import { goto } from '$app/navigation';
 
 export const RECONNECT_TIMEOUT_MS = 15_000;
 export const FIRST_MOVE_TIMEOUT_MS = 10_000;
@@ -38,7 +40,7 @@ class GameManager {
 	san = $state<string | undefined>();
 	ply = $state<number>(0);
 	legalMoves = $state<string[]>([]);
-	historyMovesInfo = $state<HistoryMoveInfo[]>([]);
+	gameMoves = $state<GameMove[]>([]);
 	historyIndex = $state<number>(0);
 	opponentInfo = $state<OpponentInfo | null>(null);
 	startTime = $state<Timestamp>();
@@ -197,6 +199,11 @@ class GameManager {
 
 	onLobbyChat(lobbyChat: LobbyChat) {}
 
+	onMatchFound(matchFound: MatchFound) {
+		console.log('matchFound game_id: ', matchFound.gameId);
+		goto(`/game/${matchFound.gameId}`);
+	}
+
 	handleWebsocketMessage(event: MessageEvent) {
 		try {
 			const msg = fromJsonString(MessageSchema, event.data);
@@ -216,6 +223,9 @@ class GameManager {
 					break;
 				case 'lobbyChat':
 					this.onLobbyChat(msg.event.value);
+					break;
+				case 'matchFound':
+					this.onMatchFound(msg.event.value);
 					break;
 				default:
 					console.error('unknown message', msg.event.case, msg.event.value);

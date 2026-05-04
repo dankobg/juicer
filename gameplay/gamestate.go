@@ -73,7 +73,7 @@ type GameState struct {
 	StartTime        *time.Time
 	EndTime          *time.Time
 	Rated            bool
-	HistoryMoveInfos []*pb.HistoryMoveInfo
+	GameMoves        []*pb.GameMove
 
 	// ##########################################
 
@@ -129,7 +129,7 @@ func NewGameState(gameID int64, players [2]Player, timeControl *pb.GameTimeContr
 		}
 	}
 
-	historyMoveInfos := []*pb.HistoryMoveInfo{{Fen: gopts.fen, Check: false, PlayedAt: nil, Move: nil}}
+	gameMoves := []*pb.GameMove{{Fen: gopts.fen, Check: false}}
 
 	gs := &GameState{
 		Chess:            chess,
@@ -146,7 +146,7 @@ func NewGameState(gameID int64, players [2]Player, timeControl *pb.GameTimeContr
 		FirstMoveTimeout: gopts.firstMoveTimeout,
 		ReconnectTimeout: gopts.reconnectTimeout,
 		TimerAction:      make(chan timerAction),
-		HistoryMoveInfos: historyMoveInfos,
+		GameMoves:        gameMoves,
 		Rated:            gopts.rated,
 	}
 

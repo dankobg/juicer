@@ -10,7 +10,7 @@
 		<IconSkipBack />
 	</Button>
 	<div class="flex flex-1 items-start gap-x-2 overflow-x-auto">
-		{#each gameManager.historyMovesInfo.slice(1) as hist, idx}
+		{#each gameManager.gameMoves.slice(1) as hist, idx}
 			{@const num = idx + 1}
 			<Button
 				size="sm"

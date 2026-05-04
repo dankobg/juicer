@@ -153,7 +153,7 @@ func (c *client) WriteLoop(ctx context.Context) {
 			}
 
 		case <-ctx.Done():
-			c.log.Info("WriteLoop ctx.Done")
+			c.log.Debug("WriteLoop ctx.Done")
 			return
 		}
 	}
