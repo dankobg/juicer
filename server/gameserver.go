@@ -14,6 +14,7 @@ import (
 
 	"github.com/aarondl/opt/omit"
 	"github.com/aarondl/opt/omitnull"
+	api "github.com/dankobg/juicer/api/gen"
 	"github.com/dankobg/juicer/db/gen/models"
 	"github.com/dankobg/juicer/engine"
 	"github.com/dankobg/juicer/gameplay"
@@ -21,22 +22,17 @@ import (
 	"github.com/dankobg/juicer/persistence"
 	"github.com/dankobg/juicer/persistence/dbtype"
 	"github.com/dankobg/juicer/ws"
-	"github.com/goforj/godump"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/redis/go-redis/v9"
 	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 type clientAuthInfo struct {
 	userID    string
 	connID    string
 	authState ws.ClientAuthState
-}
-
-type gamestateCache struct {
-	games map[int64]*gameplay.GameState
-	mu    sync.RWMutex
 }
 
 func (a *ApiHandler) PubsubProcess(ctx context.Context) {
@@ -171,7 +167,7 @@ func (a *ApiHandler) handleIPCInitializeChannelsMsg(data *pb.InitializeChannels)
 			gameID = n
 		}
 
-		game, err := a.persistor.Game().GetGameByID(context.Background(), gameID)
+		game, err := a.persistor.Game().GetGameByID(context.Background(), gameID, dbtype.GetGameByIDFilters{})
 		if err != nil && !errors.Is(err, pgx.ErrNoRows) {
 			a.Log.Error("handleIPCRequestInitialChannelsMsg GetGameByID", slog.String("user_id", data.UserId), slog.String("conn_id", data.ConnId), slog.String("path", data.Path), slog.Any("error", err))
 			return
@@ -384,9 +380,9 @@ func (a *ApiHandler) handleWSCSendLobbyChat(authInfo clientAuthInfo, data *pb.Se
 		PostedAt:  time.Now().Format(time.RFC3339),
 		Message:   data.Message,
 	}}}
+
 	lobbyChatReceivedMsgBytes, err := protojson.Marshal(lobbyChatReceivedMsg)
 	if err != nil {
-
 	} else {
 		if err := a.bus.rdb.Publish(context.Background(), "lobby.chat", lobbyChatReceivedMsgBytes).Err(); err != nil {
 			a.Log.Error("LobbyChat publish", slog.String("user_id", authInfo.userID), slog.String("auth_state", authInfo.authState.String()), slog.Any("error", err))
@@ -454,12 +450,13 @@ func (a *ApiHandler) FetchProtoMappingsCacheLookups(ctx context.Context) error {
 	gameTimeCategories, e3 := a.persistor.GameTimeCategory().ListGameTimeCategories(ctx, dbtype.ListGameTimeCategoriesFilters{})
 	gameResults, e4 := a.persistor.GameResult().ListGameResults(ctx, dbtype.ListGameResultsFilters{})
 	gameResultStatuses, e5 := a.persistor.GameResultStatus().ListGameResultStatuses(ctx, dbtype.ListGameResultStatusesFilters{})
+
 	gameStates, e6 := a.persistor.GameState().ListGameStates(ctx, dbtype.ListGameStatesFilters{})
 	if err := errors.Join(e1, e2, e3, e4, e5, e6); err != nil {
 		return err
 	}
 
-	var gameVariantNameToProto = map[string]pb.GameVariant{
+	gameVariantNameToProto := map[string]pb.GameVariant{
 		"standard":         pb.GameVariant_GAME_VARIANT_STANDARD,
 		"atomic":           pb.GameVariant_GAME_VARIANT_ATOMIC,
 		"crazyhouse":       pb.GameVariant_GAME_VARIANT_CRAZYHOUSE,
@@ -470,13 +467,13 @@ func (a *ApiHandler) FetchProtoMappingsCacheLookups(ctx context.Context) error {
 		"racing-kings":     pb.GameVariant_GAME_VARIANT_RACING_KINGS,
 	}
 
-	var gameTimeKindNameToProto = map[string]pb.GameTimeKind{
+	gameTimeKindNameToProto := map[string]pb.GameTimeKind{
 		"realtime":       pb.GameTimeKind_GAME_TIME_KIND_REALTIME,
 		"correspondence": pb.GameTimeKind_GAME_TIME_KIND_CORRESPONDENCE,
 		"unlimited":      pb.GameTimeKind_GAME_TIME_KIND_UNLIMITED,
 	}
 
-	var gameTimeCategoryNameToProto = map[string]pb.GameTimeCategory{
+	gameTimeCategoryNameToProto := map[string]pb.GameTimeCategory{
 		"hyperbullet": pb.GameTimeCategory_GAME_TIME_CATEGORY_HYPERBULLET,
 		"bullet":      pb.GameTimeCategory_GAME_TIME_CATEGORY_BULLET,
 		"blitz":       pb.GameTimeCategory_GAME_TIME_CATEGORY_BLITZ,
@@ -484,14 +481,14 @@ func (a *ApiHandler) FetchProtoMappingsCacheLookups(ctx context.Context) error {
 		"classical":   pb.GameTimeCategory_GAME_TIME_CATEGORY_CLASSICAL,
 	}
 
-	var gameResultNameToProto = map[string]pb.GameResult{
+	gameResultNameToProto := map[string]pb.GameResult{
 		"white-won":   pb.GameResult_GAME_RESULT_WHITE_WON,
 		"black-won":   pb.GameResult_GAME_RESULT_BLACK_WON,
 		"draw":        pb.GameResult_GAME_RESULT_DRAW,
 		"interrupted": pb.GameResult_GAME_RESULT_INTERRUPTED,
 	}
 
-	var gameResultStatusNameToProto = map[string]pb.GameResultStatus{
+	gameResultStatusNameToProto := map[string]pb.GameResultStatus{
 		"checkmate":             pb.GameResultStatus_GAME_RESULT_STATUS_CHECKMATE,
 		"insufficient-material": pb.GameResultStatus_GAME_RESULT_STATUS_INSUFFICIENT_MATERIAL,
 		"threefold-repetition":  pb.GameResultStatus_GAME_RESULT_STATUS_THREEFOLD_REPETITION,
@@ -508,7 +505,7 @@ func (a *ApiHandler) FetchProtoMappingsCacheLookups(ctx context.Context) error {
 		"interrupted":           pb.GameResultStatus_GAME_RESULT_STATUS_INTERRUPTED,
 	}
 
-	var gameStateNameToProto = map[string]pb.GameState{
+	gameStateNameToProto := map[string]pb.GameState{
 		"idle":          pb.GameState_GAME_STATE_IDLE,
 		"waiting-start": pb.GameState_GAME_STATE_WAITING_START,
 		"in-progress":   pb.GameState_GAME_STATE_IN_PROGRESS,
@@ -677,11 +674,13 @@ func (a *ApiHandler) publishPresenceDiff(ctx context.Context, channelsDiff persi
 	}
 
 	presenceDiffMsg := &pb.Message{Event: &pb.Message_PresenceDiff{PresenceDiff: presenceDiff}}
+
 	presenceDiffMsgBytes, err := protojson.Marshal(presenceDiffMsg)
 	if err != nil {
 		a.Log.Error("Message_PresenceDiff protojson marshal", slog.String("user_id", userID), slog.String("conn_id", connID), slog.Any("error", err))
 		return err
 	}
+
 	if err := a.bus.rdb.Publish(ctx, "presence.diff."+userID, presenceDiffMsgBytes).Err(); err != nil {
 		a.Log.Error("publish Message_PresenceDiff", slog.String("user_id", userID), slog.String("conn_id", connID), slog.Any("error", err))
 		return err
@@ -717,6 +716,7 @@ func (a *ApiHandler) sendUserPresenceDiffToChannel(ctx context.Context, channels
 	}
 
 	presenceDiffMsg := &pb.Message{Event: &pb.Message_PresenceDiff{PresenceDiff: presenceDiff}}
+
 	presenceDiffMsgBytes, err := protojson.Marshal(presenceDiffMsg)
 	if err != nil {
 		return err
@@ -747,6 +747,7 @@ func (a *ApiHandler) sendChannelPresenceStateToConn(ctx context.Context, channel
 	}
 
 	presenceStateMsg := &pb.Message{Event: &pb.Message_PresenceState{PresenceState: &pb.PresenceState{Presences: presences}}}
+
 	presenceStateMsgBytes, err := protojson.Marshal(presenceStateMsg)
 	if err != nil {
 		return err
@@ -769,6 +770,7 @@ func (a *ApiHandler) publishToUser(ctx context.Context, userID string, msg *pb.M
 	if channel != nil && *channel != "" {
 		topic = "user." + userID + "." + *channel
 	}
+
 	return a.bus.rdb.Publish(ctx, topic, bb).Err()
 }
 
@@ -779,6 +781,7 @@ func (a *ApiHandler) publishToConn(ctx context.Context, connID string, msg *pb.M
 	}
 
 	topic := "conn." + connID
+
 	return a.bus.rdb.Publish(ctx, topic, bb).Err()
 }
 
@@ -860,6 +863,7 @@ func (a *ApiHandler) processMatchedPoolPair(ctx context.Context, pair [2]string,
 	a.Log.Debug("processing matched pool pair", slog.String("pool", pool.Name()), slog.Any("pair", pair))
 
 	userID1, err1 := uuid.Parse(pair[0])
+
 	userID2, err2 := uuid.Parse(pair[1])
 	if err1 != nil || err2 != nil {
 		a.Log.Error("invalid matched pair user id", slog.Any("error", errors.Join(err1, err2)))
@@ -872,12 +876,15 @@ func (a *ApiHandler) processMatchedPoolPair(ctx context.Context, pair [2]string,
 	// }
 
 	username1, username2 := "guest", "guest"
+
 	if pool.Rated {
 		uname1, err5 := a.GetUsername(ctx, userID1.String())
+
 		uname2, err6 := a.GetUsername(ctx, userID2.String())
 		if err5 != nil || err6 != nil {
 			a.Log.Error("failed to get usernames", slog.Any("error", errors.Join(err5, err6)))
 		}
+
 		username1, username2 = uname1, uname2
 	}
 
@@ -934,15 +941,39 @@ func (a *ApiHandler) processMatchedPoolPair(ctx context.Context, pair [2]string,
 		gameSetter.GuestWhiteID = omitnull.From(gs.White.ID)
 		gameSetter.GuestBlackID = omitnull.From(gs.Black.ID)
 	}
+
 	if gs.GameResult != pb.GameResult_GAME_RESULT_UNSPECIFIED {
 		gameSetter.GameResultID = omitnull.From(a.gameResultProtoToID(gs.GameResult))
 	}
+
 	if gs.GameResultStatus != pb.GameResultStatus_GAME_RESULT_STATUS_UNSPECIFIED {
 		gameSetter.GameResultStatusID = omitnull.From(a.gameResultStatusProtoToID(gs.GameResultStatus))
 	}
 
+	moveSetters := make([]models.GameMoveSetter, len(gs.HistoryMoveInfos))
+	for i, info := range gs.HistoryMoveInfos {
+		moveSetter := models.GameMoveSetter{
+			Fen:   omit.From(info.GetFen()),
+			Uci:   omit.From(info.Move.GetUci()),
+			San:   omit.From(info.Move.GetSan()),
+			Check: omit.From(gs.Chess.Position.Check),
+		}
+		if info.GetPlayedAt() != nil {
+			moveSetter.PlayedAt = omitnull.From(info.GetPlayedAt().AsTime())
+		}
+
+		moveSetters[i] = moveSetter
+	}
+
+	hashSetters := make([]models.GameHistoryHashSetter, len(gs.Chess.HistoryHashes))
+	for i, hash := range gs.Chess.HistoryHashes {
+		hashSetters[i] = models.GameHistoryHashSetter{
+			Hash: omit.From(int64(hash)),
+		}
+	}
+
 	// @TODO: persist moves and hashes
-	game, err := a.persistor.Game().CreateGame(ctx, gameSetter, nil)
+	game, err := a.persistor.Game().CreateGame(ctx, gameSetter, moveSetters, hashSetters)
 	if err != nil {
 		fmt.Println("CreateGame err: ", err)
 		return
@@ -950,16 +981,7 @@ func (a *ApiHandler) processMatchedPoolPair(ctx context.Context, pair [2]string,
 
 	gs.GameID = game.ID
 
-	fmt.Println("--------------- RAW GS ---------------")
-	debug_print_game_info(gs)
-
-	if gsFromDB, err := a.gameStateFromPersistence(ctx, game, nil, nil); err != nil {
-		godump.Dump("FAIL RECONSTRUCTION FROM PERSISTENCE", err)
-	} else {
-		fmt.Println("--------------- RECONSTRUCTED GS ---------------")
-		debug_print_game_info(gsFromDB)
-	}
-
+	a.gamestates[game.ID] = gs
 }
 
 func debug_print_game_info(gs *gameplay.GameState) {
@@ -982,10 +1004,33 @@ func debug_print_game_info(gs *gameplay.GameState) {
 	fmt.Printf("history_hashes: %v\n", gs.Chess.HistoryHashes)
 }
 
-func (a *ApiHandler) gameStateFromPersistence(ctx context.Context, game models.Game, moves []models.GameMove, hashes []models.GameHistoryHash) (*gameplay.GameState, error) {
+func (a *ApiHandler) loadGameState(gameID int64) (*gameplay.GameState, error) {
+	if gs, ok := a.gamestates[gameID]; ok {
+		fmt.Println("FROM MEMORY")
+		return gs, nil
+	}
+
+	filters := dbtype.GetGameByIDFilters{GetGameParams: api.GetGameParams{Embed: &[]api.GetGameParamsEmbed{api.GetGameParamsEmbedMoves}}, WithGameHashes: true}
+
+	game, err := a.persistor.Game().GetGameByID(context.Background(), gameID, filters)
+	if err != nil {
+		return nil, err
+	}
+
+	return a.gameStateFromPersistence(context.Background(), game.Game, game.GameMoves.Val, game.GameHistoryHashes.Val)
+}
+
+func (a *ApiHandler) gameStateFromPersistence(ctx context.Context, game models.Game, moves *[]models.GameMove, hashes *[]models.GameHistoryHash) (*gameplay.GameState, error) {
 	chess, err := engine.NewChess(game.Fen)
 	if err != nil {
 		return nil, err
+	}
+
+	if hashes != nil && len(*hashes) > 0 {
+		chess.HistoryHashes = make([]uint64, len(*hashes))
+		for i, hash := range *hashes {
+			chess.HistoryHashes[i] = uint64(hash.Hash)
+		}
 	}
 
 	// @TODO: handle load repetitions and history hashes later
@@ -994,12 +1039,15 @@ func (a *ApiHandler) gameStateFromPersistence(ctx context.Context, game models.G
 	blackID := game.GuestBlackID.GetOr(game.BlackID.MustGet())
 
 	whiteUsername, blackUsername := "guest", "guest"
+
 	if game.Rated {
 		uname1, err5 := a.GetUsername(ctx, whiteID.String())
+
 		uname2, err6 := a.GetUsername(ctx, blackID.String())
 		if err5 != nil || err6 != nil {
 			a.Log.Error("failed to get usernames", slog.Any("error", errors.Join(err5, err6)))
 		}
+
 		whiteUsername, blackUsername = uname1, uname2
 	}
 
@@ -1019,6 +1067,28 @@ func (a *ApiHandler) gameStateFromPersistence(ctx context.Context, game models.G
 
 	players := map[uuid.UUID]*gameplay.Player{whiteID: white, blackID: black}
 
+	var historyMoveInfos []*pb.HistoryMoveInfo
+
+	if moves != nil && len(*moves) > 0 {
+		historyMoveInfos = make([]*pb.HistoryMoveInfo, len(*moves))
+
+		for i, move := range *moves {
+			info := &pb.HistoryMoveInfo{
+				Fen: move.Fen,
+				Move: &pb.HistoryMove{
+					Uci: move.Uci,
+					San: move.San,
+				},
+				Check: move.Check,
+			}
+			if move.PlayedAt.IsValue() {
+				info.PlayedAt = timestamppb.New(move.PlayedAt.MustGet())
+			}
+
+			historyMoveInfos[i] = info
+		}
+	}
+
 	gs := &gameplay.GameState{
 		Chess:            chess,
 		GameID:           game.ID,
@@ -1037,13 +1107,14 @@ func (a *ApiHandler) gameStateFromPersistence(ctx context.Context, game models.G
 		StartTime:        game.StartTime.Ptr(),
 		EndTime:          game.EndTime.Ptr(),
 		Rated:            game.Rated,
-		HistoryMoveInfos: []*pb.HistoryMoveInfo{},
+		HistoryMoveInfos: historyMoveInfos,
 		// TimerAction:      make(chan gameplay.timerAction),
 	}
 
 	if game.GameResultID.IsValue() {
 		gs.GameResult = a.gameResultIDToProto(game.GameResultID.MustGet())
 	}
+
 	if game.GameResultStatusID.IsValue() {
 		gs.GameResultStatus = a.gameResultStatusIDToProto(game.GameResultStatusID.MustGet())
 	}

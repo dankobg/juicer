@@ -12,6 +12,7 @@ import (
 	"github.com/dankobg/juicer/auth/keto"
 	"github.com/dankobg/juicer/auth/kratos"
 	"github.com/dankobg/juicer/config"
+	"github.com/dankobg/juicer/gameplay"
 	"github.com/dankobg/juicer/mailer"
 	pb "github.com/dankobg/juicer/pb/proto/juicer"
 	"github.com/dankobg/juicer/persistence"
@@ -75,6 +76,8 @@ type ApiHandler struct {
 
 	categoryThresholds []categoryThreshold
 	protoMappingsCache protoMappingsCache
+
+	gamestates map[int64]*gameplay.GameState
 }
 
 func New(
@@ -99,6 +102,7 @@ func New(
 		bus:                newBus(rdb),
 		categoryThresholds: make([]categoryThreshold, 0),
 		protoMappingsCache: newProtoMappingsCache(),
+		gamestates:         make(map[int64]*gameplay.GameState),
 	}
 
 	return apiHandler

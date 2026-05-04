@@ -90,9 +90,9 @@ type GameVariantPersistor interface {
 }
 
 type GamePersistor interface {
-	ListGames(ctx context.Context, filters dbtype.ListGamesFilters) (dbtype.PagedResult[models.Game], error)
-	GetGameByID(ctx context.Context, gameID int64) (models.Game, error)
-	CreateGame(ctx context.Context, in models.GameSetter, inMoves []models.GameMoveSetter) (models.Game, error)
+	GetGameByID(ctx context.Context, gameID int64, filters dbtype.GetGameByIDFilters) (dbtype.GameWithJoinData, error)
+	ListGames(ctx context.Context, filters dbtype.ListGamesFilters) (dbtype.PagedResult[dbtype.GameWithJoinData], error)
+	CreateGame(ctx context.Context, in models.GameSetter, inMoves []models.GameMoveSetter, inHashes []models.GameHistoryHashSetter) (models.Game, error)
 	UpdateGame(ctx context.Context, gameID int64, in models.GameSetter) (models.Game, error)
 	DeleteGameByID(ctx context.Context, gameID int64) (int64, error)
 	BulkDeleteGames(ctx context.Context, gameIDs []int64) error

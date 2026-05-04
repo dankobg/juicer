@@ -395,6 +395,16 @@ paths:
             type: array
             items:
               type: string
+        - name: embed
+          in: query
+          description: Whether to embed nested resources in response
+          required: false
+          schema:
+            type: array
+            items:
+              type: string
+              enum:
+                - moves
       responses:
         "200":
           description: Successful operation
@@ -416,6 +426,46 @@ paths:
           $ref: "#/components/responses/UnauthenticatedErrorResponse"
         "403":
           $ref: "#/components/responses/UnauthorizedErrorResponse"
+        default:
+          $ref: "#/components/responses/UnexpectedErrorResponse"
+  "/games/{id}":
+    get:
+      operationId: getGame
+      summary: Get game
+      description: Get single game
+      tags:
+        - juicer
+      parameters:
+        - description: The game id
+          in: path
+          name: id
+          required: true
+          schema:
+            format: int64
+            type: integer
+        - name: embed
+          in: query
+          description: Whether to embed nested resources in response
+          required: false
+          schema:
+            type: array
+            items:
+              type: string
+              enum:
+                - moves
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Game"
+          description: identitySchema
+        "401":
+          $ref: "#/components/responses/UnauthenticatedErrorResponse"
+        "403":
+          $ref: "#/components/responses/UnauthorizedErrorResponse"
+        "404":
+          $ref: "#/components/responses/NotFoundErrorResponse"
         default:
           $ref: "#/components/responses/UnexpectedErrorResponse"
   "/game-stats/{user_id}":
@@ -2909,6 +2959,43 @@ components:
           format: date-time
           type: string
           description: Updated at timestamp
+        moves:
+          type: array
+          items:
+            $ref: "#/components/schemas/GameMove"
+    GameMove:
+      type: object
+      required:
+        - id
+        - game_id
+        - fen
+        - uci
+        - san
+        - check
+      properties:
+        id:
+          format: int64
+          type: integer
+          description: Game move id
+        game_id:
+          format: int64
+          type: integer
+          description: Game id
+        fen:
+          type: string
+          description: FEN string
+        uci:
+          type: string
+          description: UCI move
+        san:
+          type: string
+          description: SAN move
+        check:
+          type: boolean
+          description: Whether it was a check
+        played_at:
+          format: date-time
+          type: string
     QuickGame:
       type: object
       required:

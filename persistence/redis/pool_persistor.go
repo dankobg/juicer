@@ -48,11 +48,13 @@ func (pst *RedisPoolPersistor) MatchPair(ctx context.Context, pool dbtype.Pool) 
 	}
 
 	out := [2]string{}
+
 	for i, item := range arr {
 		userID, ok := item.(string)
 		if !ok {
 			return [2]string{}, fmt.Errorf("invalid result sub item: %T", item)
 		}
+
 		out[i] = userID
 	}
 

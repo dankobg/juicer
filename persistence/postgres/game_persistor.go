@@ -5,6 +5,8 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/aarondl/opt/omit"
+	api "github.com/dankobg/juicer/api/gen"
 	"github.com/dankobg/juicer/db/gen/models"
 	"github.com/dankobg/juicer/persistence"
 	"github.com/dankobg/juicer/persistence/dbtype"
@@ -17,6 +19,7 @@ import (
 	"github.com/stephenafamo/bob/dialect/psql/im"
 	"github.com/stephenafamo/bob/dialect/psql/sm"
 	"github.com/stephenafamo/bob/dialect/psql/um"
+	"github.com/stephenafamo/bob/orm"
 	"github.com/stephenafamo/scan"
 )
 
@@ -65,7 +68,7 @@ func convertGamePgError(pgErr *pgconn.PgError) error {
 	return pgErr
 }
 
-func (pst *PgGamePersistor) ListGames(ctx context.Context, filters dbtype.ListGamesFilters) (dbtype.PagedResult[models.Game], error) {
+func (pst *PgGamePersistor) ListGames(ctx context.Context, filters dbtype.ListGamesFilters) (dbtype.PagedResult[dbtype.GameWithJoinData], error) {
 	q := psql.Select(
 		sm.Columns(models.Games.Columns),
 		sm.From(models.Games.Name()),
@@ -74,7 +77,56 @@ func (pst *PgGamePersistor) ListGames(ctx context.Context, filters dbtype.ListGa
 	addOrderBy(&q, filters.Sort, models.Games.Columns.Names())
 	addPagination(&q, filters.Page, filters.PageSize)
 
+	if filters.WithGameHashes {
+		q.Apply(sm.Columns(
+			psql.Raw(`(
+  SELECT
+    json_agg(row_to_json(game_hashes_row))
+  FROM
+    (
+      SELECT
+        game_move.id AS "id",
+        game_move.game_id AS "gameID",
+        game_move.hash AS "hash"
+      FROM
+        public.game_hash
+      WHERE
+        game_hash.game_id = game.id
+    ) AS game_hashes_row
+) AS "game_hashes"`),
+		))
+	}
+
 	if hasAnyLogicFilters(&filters.ListGamesParams) {
+		if filters.Embed != nil {
+			for _, embed := range *filters.Embed {
+				switch embed {
+				case api.ListGamesParamsEmbedMoves:
+					q.Apply(sm.Columns(
+						psql.Raw(`(
+  SELECT
+    json_agg(row_to_json(game_moves_row))
+  FROM
+    (
+      SELECT
+        game_move.id AS "id",
+        game_move.game_id AS "gameID",
+        game_move.fen AS "fen",
+        game_move.san AS "san",
+        game_move.uci AS "uci",
+        game_move.check AS "check",
+        game_move.played_at AS "playedAt"
+      FROM
+        public.game_move
+      WHERE
+        game_move.game_id = game.id
+    ) AS game_moves_row
+) AS "game_moves"`),
+					))
+				}
+			}
+		}
+
 		if filters.ID != nil {
 			ids := make([]any, len(*filters.ID))
 			for i, id := range *filters.ID {
@@ -152,20 +204,20 @@ func (pst *PgGamePersistor) ListGames(ctx context.Context, filters dbtype.ListGa
 	}
 
 	type ListGamesRow struct {
-		models.Game
+		dbtype.GameWithJoinData
 		TotalCount int64
 	}
 
-	games, err := bob.All(ctx, pst.exec, q, scan.StructMapper[ListGamesRow]())
+	games, err := bob.All(ctx, pst.exec, q, scan.StructMapper[ListGamesRow](scan.WithTypeConverter(orm.NullTypeConverter{})))
 	if err != nil {
-		return dbtype.PagedResult[models.Game]{}, fmt.Errorf("query games")
+		return dbtype.PagedResult[dbtype.GameWithJoinData]{}, fmt.Errorf("query games")
 	}
 
-	result := dbtype.PagedResult[models.Game]{
-		Data: make([]models.Game, len(games)),
+	result := dbtype.PagedResult[dbtype.GameWithJoinData]{
+		Data: make([]dbtype.GameWithJoinData, len(games)),
 	}
 	for i, row := range games {
-		result.Data[i] = row.Game
+		result.Data[i] = row.GameWithJoinData
 	}
 
 	if len(games) > 0 {
@@ -175,22 +227,73 @@ func (pst *PgGamePersistor) ListGames(ctx context.Context, filters dbtype.ListGa
 	return result, nil
 }
 
-func (pst *PgGamePersistor) GetGameByID(ctx context.Context, gameID int64) (models.Game, error) {
+func (pst *PgGamePersistor) GetGameByID(ctx context.Context, gameID int64, filters dbtype.GetGameByIDFilters) (dbtype.GameWithJoinData, error) {
 	q := psql.Select(
 		sm.Columns(models.Games.Columns),
 		sm.From(models.Games.Name()),
 		sm.Where(models.Games.Columns.ID.EQ(psql.Arg(gameID))),
 	)
 
-	game, err := bob.One(ctx, pst.exec, q, scan.StructMapper[models.Game]())
-	if err != nil {
-		return models.Game{}, fmt.Errorf("query game")
+	if filters.WithGameHashes {
+		q.Apply(sm.Columns(
+			psql.Raw(`(
+  SELECT
+    json_agg(row_to_json(game_hashes_row))
+  FROM
+    (
+      SELECT
+        game_history_hash.id AS "id",
+        game_history_hash.game_id AS "gameID",
+        game_history_hash.hash AS "hash"
+      FROM
+        public.game_history_hash
+      WHERE
+        game_history_hash.game_id = game.id
+    ) AS game_hashes_row
+) AS "game_history_hashes"`),
+		))
 	}
 
-	return game, nil
+	if hasAnyLogicFilters(&filters.GetGameParams) {
+		if filters.Embed != nil {
+			for _, embed := range *filters.Embed {
+				switch embed {
+				case api.GetGameParamsEmbedMoves:
+					q.Apply(sm.Columns(
+						psql.Raw(`(
+  SELECT
+    json_agg(row_to_json(game_moves_row))
+  FROM
+    (
+      SELECT
+        game_move.id AS "id",
+        game_move.game_id AS "gameID",
+        game_move.fen AS "fen",
+        game_move.san AS "san",
+        game_move.uci AS "uci",
+        game_move.check AS "check",
+        game_move.played_at AS "playedAt"
+      FROM
+        public.game_move
+      WHERE
+        game_move.game_id = game.id
+    ) AS game_moves_row
+) AS "game_moves"`),
+					))
+				}
+			}
+		}
+	}
+
+	gameWithJoinData, err := bob.One(ctx, pst.exec, q, scan.StructMapper[dbtype.GameWithJoinData](scan.WithTypeConverter(orm.NullTypeConverter{})))
+	if err != nil {
+		return dbtype.GameWithJoinData{}, fmt.Errorf("query game")
+	}
+
+	return gameWithJoinData, nil
 }
 
-func (pst *PgGamePersistor) CreateGame(ctx context.Context, in models.GameSetter, inMoves []models.GameMoveSetter) (models.Game, error) {
+func (pst *PgGamePersistor) CreateGame(ctx context.Context, in models.GameSetter, inMoves []models.GameMoveSetter, inHashes []models.GameHistoryHashSetter) (models.Game, error) {
 	q := models.Games.Insert(&in, im.Returning(models.Games.Columns))
 
 	game, err := bob.One(ctx, pst.exec, q, scan.StructMapper[models.Game]())
@@ -201,12 +304,26 @@ func (pst *PgGamePersistor) CreateGame(ctx context.Context, in models.GameSetter
 	if len(inMoves) > 0 {
 		moveSetters := make([]*models.GameMoveSetter, len(inMoves))
 		for i, x := range inMoves {
+			x.GameID = omit.From(game.ID)
 			moveSetters[i] = &x
 		}
 
 		q2 := models.GameMoves.Insert(bob.ToMods(moveSetters...), im.Returning(models.GameMoves.Columns))
 		if _, err := bob.Exec(ctx, pst.exec, q2); err != nil {
 			return models.Game{}, fmt.Errorf("insert game moves")
+		}
+	}
+
+	if len(inHashes) > 0 {
+		hashSetters := make([]*models.GameHistoryHashSetter, len(inHashes))
+		for i, x := range inHashes {
+			x.GameID = omit.From(game.ID)
+			hashSetters[i] = &x
+		}
+
+		q2 := models.GameHistoryHashes.Insert(bob.ToMods(hashSetters...), im.Returning(models.GameHistoryHashes.Columns))
+		if _, err := bob.Exec(ctx, pst.exec, q2); err != nil {
+			return models.Game{}, fmt.Errorf("insert game history hashes")
 		}
 	}
 

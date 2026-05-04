@@ -164,6 +164,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/games/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get game
+         * @description Get single game
+         */
+        get: operations["getGame"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/game-stats/{user_id}": {
         parameters: {
             query?: never;
@@ -1207,6 +1227,29 @@ export interface components {
              * @description Updated at timestamp
              */
             updated_at: string;
+            moves?: components["schemas"]["GameMove"][];
+        };
+        GameMove: {
+            /**
+             * Format: int64
+             * @description Game move id
+             */
+            id: number;
+            /**
+             * Format: int64
+             * @description Game id
+             */
+            game_id: number;
+            /** @description FEN string */
+            fen: string;
+            /** @description UCI move */
+            uci: string;
+            /** @description SAN move */
+            san: string;
+            /** @description Whether it was a check */
+            check: boolean;
+            /** Format: date-time */
+            played_at?: string;
         };
         QuickGame: {
             /** @description Quick game name */
@@ -2420,6 +2463,8 @@ export interface operations {
                 created_at_to?: string;
                 /** @description Sort by fields (add prefix `-` for descending e.g. -created_at) */
                 sort?: string[];
+                /** @description Whether to embed nested resources in response */
+                embed?: PathsGamesGetParametersQueryEmbed[];
             };
             header?: never;
             path?: never;
@@ -2441,6 +2486,36 @@ export interface operations {
             };
             401: components["responses"]["UnauthenticatedErrorResponse"];
             403: components["responses"]["UnauthorizedErrorResponse"];
+            default: components["responses"]["UnexpectedErrorResponse"];
+        };
+    };
+    getGame: {
+        parameters: {
+            query?: {
+                /** @description Whether to embed nested resources in response */
+                embed?: PathsGamesIdGetParametersQueryEmbed[];
+            };
+            header?: never;
+            path: {
+                /** @description The game id */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description identitySchema */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Game"];
+                };
+            };
+            401: components["responses"]["UnauthenticatedErrorResponse"];
+            403: components["responses"]["UnauthorizedErrorResponse"];
+            404: components["responses"]["NotFoundErrorResponse"];
             default: components["responses"]["UnexpectedErrorResponse"];
         };
     };
@@ -3603,6 +3678,12 @@ export interface operations {
             default: components["responses"]["UnexpectedErrorResponse"];
         };
     };
+}
+export enum PathsGamesGetParametersQueryEmbed {
+    moves = "moves"
+}
+export enum PathsGamesIdGetParametersQueryEmbed {
+    moves = "moves"
 }
 export enum PathsMeFriendRequestsGetParametersQueryDirection {
     incoming = "incoming",

@@ -60,11 +60,13 @@ func (pst *RedisPresencePersistor) SetPresence(ctx context.Context, userID uuid.
 	if !ok {
 		return persistence.PresenceChannelsDiff{}, fmt.Errorf("invalid lua result: %T", result)
 	}
+
 	if len(arr) != 2 {
 		return persistence.PresenceChannelsDiff{}, fmt.Errorf("invalid lua result length: expected 2, got: %d", len(arr))
 	}
 
 	connJoinedArr, ok1 := arr[0].([]any)
+
 	userJoinedArr, ok2 := arr[1].([]any)
 	if !ok1 || !ok2 {
 		return persistence.PresenceChannelsDiff{}, fmt.Errorf("invalid result sub arrays")
@@ -80,6 +82,7 @@ func (pst *RedisPresencePersistor) SetPresence(ctx context.Context, userID uuid.
 		if !ok {
 			return persistence.PresenceChannelsDiff{}, fmt.Errorf("invalid result sub arrays not string")
 		}
+
 		presenceDiffInfo.ConnJoined[i] = v
 	}
 
@@ -88,6 +91,7 @@ func (pst *RedisPresencePersistor) SetPresence(ctx context.Context, userID uuid.
 		if !ok {
 			return persistence.PresenceChannelsDiff{}, fmt.Errorf("invalid result sub arrays not string")
 		}
+
 		presenceDiffInfo.UserJoined[i] = v
 	}
 
@@ -110,11 +114,13 @@ func (pst *RedisPresencePersistor) ClearPresence(ctx context.Context, userID uui
 	if !ok {
 		return persistence.PresenceChannelsDiff{}, fmt.Errorf("invalid lua result: %T", result)
 	}
+
 	if len(arr) != 2 {
 		return persistence.PresenceChannelsDiff{}, fmt.Errorf("invalid lua result length: expected 2, got: %d", len(arr))
 	}
 
 	connLeftArr, ok1 := arr[0].([]any)
+
 	userLeftArr, ok2 := arr[1].([]any)
 	if !ok1 || !ok2 {
 		return persistence.PresenceChannelsDiff{}, fmt.Errorf("invalid result sub arrays")
@@ -130,6 +136,7 @@ func (pst *RedisPresencePersistor) ClearPresence(ctx context.Context, userID uui
 		if !ok {
 			return persistence.PresenceChannelsDiff{}, fmt.Errorf("invalid result sub arrays not string")
 		}
+
 		presenceDiffInfo.ConnLeft[i] = v
 	}
 
@@ -138,6 +145,7 @@ func (pst *RedisPresencePersistor) ClearPresence(ctx context.Context, userID uui
 		if !ok {
 			return persistence.PresenceChannelsDiff{}, fmt.Errorf("invalid result sub arrays not string")
 		}
+
 		presenceDiffInfo.UserLeft[i] = v
 	}
 
@@ -181,6 +189,7 @@ func (pst *RedisPresencePersistor) ListUsersInChannel(ctx context.Context, chann
 		for i, userID := range userIDs {
 			cmds[i] = p.HGetAll(ctx, "presence:user:meta:"+userID)
 		}
+
 		return nil
 	}); err != nil {
 		return nil, fmt.Errorf("pipeline failed: %w", err)
