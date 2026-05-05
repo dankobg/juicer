@@ -11,7 +11,7 @@ import {
 	type Presence,
 	type PresenceDiff,
 	type PresenceState,
-	type MatchFound
+	type GameFound
 } from '$lib/gen/juicer_pb';
 import { create, fromJsonString } from '@bufbuild/protobuf';
 import type { JuicerBoard, Coord, PieceFenSymbol } from '@dankop/juicer-board';
@@ -199,9 +199,9 @@ class GameManager {
 
 	onLobbyChat(lobbyChat: LobbyChat) {}
 
-	onMatchFound(matchFound: MatchFound) {
-		console.log('matchFound game_id: ', matchFound.gameId);
-		goto(`/game/${matchFound.gameId}`);
+	onGameFound(gameFound: GameFound) {
+		console.log('GameFound game_id: ', gameFound.gameId);
+		goto(`/game/${gameFound.gameId}`);
 	}
 
 	handleWebsocketMessage(event: MessageEvent) {
@@ -224,8 +224,8 @@ class GameManager {
 				case 'lobbyChat':
 					this.onLobbyChat(msg.event.value);
 					break;
-				case 'matchFound':
-					this.onMatchFound(msg.event.value);
+				case 'gameFound':
+					this.onGameFound(msg.event.value);
 					break;
 				default:
 					console.error('unknown message', msg.event.case, msg.event.value);

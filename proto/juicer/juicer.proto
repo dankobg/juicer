@@ -127,7 +127,7 @@ message Message {
     ReceiveMove receive_move = 35;
     GameFinished game_finished = 36;
     HubInfo hub_info = 37;
-    MatchFound match_found = 38;
+    GameFound game_found = 38;
     SendGameChat send_game_chat = 39;
     ListGameChats list_game_chats = 40;
     GameChat game_chat = 41;
@@ -256,8 +256,13 @@ message GameMove {
   optional google.protobuf.Timestamp played_at = 5;
 }
 
-// MatchFound signals that the game was found
-message MatchFound {
+// GameFound signals that the game was found
+message GameFound {
+  int64 game_id = 1;
+}
+
+// MatchFoundHydration
+message MatchFoundHydration {
   int64 game_id = 1;
   string user_id = 2;
   GameState game_state = 3;

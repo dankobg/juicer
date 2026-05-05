@@ -254,33 +254,58 @@ func (a *ApiHandler) handleIPCClientConnectedMsg(data *pb.ClientConnected) {
 			}
 		}
 
-		if after, foundPrefix := strings.CutPrefix(channel, "game."); foundPrefix {
-			if before, foundSuffix := strings.CutSuffix(after, ".chat"); foundSuffix {
-				fmt.Println("SEND GAME CHAT FOR GAME:", before)
-			} else {
-				gameID, err := strconv.ParseInt(after, 10, 64)
+		if afterGameStr, isGame := strings.CutPrefix(channel, "game."); isGame {
+			parts := strings.Split(afterGameStr, ".")
+			var gameIDStr string
+			var isGameChat bool
 
-				if err != nil {
-					a.Log.Error("gameid parseint", slog.Any("error", err))
-					return
+			if len(parts) > 0 {
+				gameIDStr = parts[0]
+			}
+
+			if len(parts) == 2 && parts[1] == "chat" {
+				isGameChat = true
+			}
+
+			gameID, err := strconv.ParseInt(gameIDStr, 10, 64)
+			if err != nil {
+				return
+			}
+
+			if isGameChat {
+				if err := a.sendGameChatInfo(gameID, data.UserId, data.ConnId, data.Guest); err != nil {
+					a.Log.Error("sendGameChatInfo", slog.Any("error", err))
 				}
-
+			} else {
 				if err := a.sendGameInfo(gameID, data.UserId, data.ConnId, data.Guest); err != nil {
 					a.Log.Error("sendGameInfo", slog.Any("error", err))
 				}
 			}
 		}
 
-		if after, foundPrefix := strings.CutPrefix(channel, "gametv."); foundPrefix {
-			if before, foundSuffix := strings.CutSuffix(after, ".chat"); foundSuffix {
-				fmt.Println("SEND GAMETV CHAT FOR GAME:", before)
-			} else {
-				gameID, err := strconv.ParseInt(after, 10, 64)
-				if err != nil {
-					a.Log.Error("gametvid parseint", slog.Any("error", err))
-					return
-				}
+		if afterGameTvStr, isGameTv := strings.CutPrefix(channel, "gametv."); isGameTv {
+			parts := strings.Split(afterGameTvStr, ".")
+			var gameIDStr string
+			var isGameTvChat bool
 
+			if len(parts) > 0 {
+				gameIDStr = parts[0]
+			}
+
+			if len(parts) == 2 && parts[1] == "chat" {
+				isGameTvChat = true
+			}
+
+			gameID, err := strconv.ParseInt(gameIDStr, 10, 64)
+			if err != nil {
+				return
+			}
+
+			if isGameTvChat {
+				if err := a.sendGameTvChatInfo(gameID, data.UserId, data.ConnId, data.Guest); err != nil {
+					a.Log.Error("sendGameTvChatInfo", slog.Any("error", err))
+				}
+			} else {
 				if err := a.sendGameTvInfo(gameID, data.UserId, data.ConnId, data.Guest); err != nil {
 					a.Log.Error("sendGameTvInfo", slog.Any("error", err))
 				}
@@ -648,7 +673,15 @@ func (a *ApiHandler) sendLobbyChatInfo(userID, connID string, guest bool) error 
 	return nil
 }
 
+func (a *ApiHandler) sendGameChatInfo(gameID int64, userID, connID string, guest bool) error {
+	return nil
+}
+
 func (a *ApiHandler) sendGameInfo(gameID int64, userID, connID string, guest bool) error {
+	return nil
+}
+
+func (a *ApiHandler) sendGameTvChatInfo(gameID int64, userID, connID string, guest bool) error {
 	return nil
 }
 
@@ -992,32 +1025,17 @@ func (a *ApiHandler) processMatchedPoolPair(ctx context.Context, pair [2]string,
 
 	a.gamestates[game.ID] = gs
 
-	matchFoundMsg := &pb.Message{Event: &pb.Message_MatchFound{MatchFound: &pb.MatchFound{
-		GameId:             gs.GameID,
-		UserId:             "",
-		GameState:          0,
-		Color:              color1,
-		Fen:                "",
-		Ply:                0,
-		Clocks:             &pb.Clocks{},
-		LegalMoves:         []string{},
-		TimeControl:        &pb.GameTimeControl{},
-		OpponentInfo:       &pb.OpponentInfo{},
-		ReconnectTimeoutMs: 0,
-		FirstMoveTimeoutMs: 0,
-		GameMoves:          []*pb.GameMove{},
-		StartTime:          &timestamppb.Timestamp{},
-	}}}
+	gameFoundMsg := &pb.Message{Event: &pb.Message_GameFound{GameFound: &pb.GameFound{GameId: gs.GameID}}}
 
-	matchFoundMsgBytes, err := protojson.Marshal(matchFoundMsg)
+	gameFoundMsgBytes, err := protojson.Marshal(gameFoundMsg)
 	if err != nil {
-		a.Log.Error("protojson marshal Message_MatchFound", slog.Any("error", err))
+		a.Log.Error("protojson marshal Message_GameFound", slog.Any("error", err))
 	} else {
-		if err := a.bus.rdb.Publish(ctx, "user."+userID1.String(), matchFoundMsgBytes).Err(); err != nil {
-			a.Log.Error("publish Message_MatchFound", slog.Any("error", err))
+		if err := a.bus.rdb.Publish(ctx, "user."+userID1.String(), gameFoundMsgBytes).Err(); err != nil {
+			a.Log.Error("publish Message_GameFound", slog.Any("error", err))
 		}
-		if err := a.bus.rdb.Publish(ctx, "user."+userID2.String(), matchFoundMsgBytes).Err(); err != nil {
-			a.Log.Error("publish Message_MatchFound", slog.Any("error", err))
+		if err := a.bus.rdb.Publish(ctx, "user."+userID2.String(), gameFoundMsgBytes).Err(); err != nil {
+			a.Log.Error("publish Message_GameFound", slog.Any("error", err))
 		}
 	}
 }
