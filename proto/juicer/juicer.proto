@@ -82,11 +82,9 @@ enum GameResultStatus {
 // GameState is a game state
 enum GameState {
   GAME_STATE_UNSPECIFIED = 0;
-  GAME_STATE_IDLE = 1;
-  GAME_STATE_WAITING_START = 2;
-  GAME_STATE_IN_PROGRESS = 3;
-  GAME_STATE_FINISHED = 4;
-  GAME_STATE_INTERRUPTED = 5;
+  GAME_STATE_ACTIVE = 1;
+  GAME_STATE_FINISHED = 2;
+  GAME_STATE_INTERRUPTED = 3;
 }
 
 // GameSideChoice is a choice when playing custom game

@@ -174,9 +174,7 @@ func (a *ApiHandler) handleIPCInitializeChannelsMsg(data *pb.InitializeChannels)
 
 		if game.ID != 0 {
 			switch game.GameStateID {
-			// @TODO: fix later...
-			case a.gameStateProtoToID(pb.GameState_GAME_STATE_WAITING_START),
-				a.gameStateProtoToID(pb.GameState_GAME_STATE_IN_PROGRESS):
+			case a.gameStateProtoToID(pb.GameState_GAME_STATE_ACTIVE):
 				channels = append(channels, fmt.Sprintf("game.%d", game.ID), fmt.Sprintf("game.%d.chat", game.ID))
 			case a.gameStateProtoToID(pb.GameState_GAME_STATE_FINISHED),
 				a.gameStateProtoToID(pb.GameState_GAME_STATE_INTERRUPTED):
@@ -577,11 +575,9 @@ func (a *ApiHandler) FetchProtoMappingsCacheLookups(ctx context.Context) error {
 	}
 
 	gameStateNameToProto := map[string]pb.GameState{
-		"idle":          pb.GameState_GAME_STATE_IDLE,
-		"waiting-start": pb.GameState_GAME_STATE_WAITING_START,
-		"in-progress":   pb.GameState_GAME_STATE_IN_PROGRESS,
-		"finished":      pb.GameState_GAME_STATE_FINISHED,
-		"interrupted":   pb.GameState_GAME_STATE_INTERRUPTED,
+		"active":      pb.GameState_GAME_STATE_ACTIVE,
+		"finished":    pb.GameState_GAME_STATE_FINISHED,
+		"interrupted": pb.GameState_GAME_STATE_INTERRUPTED,
 	}
 
 	for _, v := range gameVariants.Data {
@@ -993,8 +989,6 @@ func (a *ApiHandler) processMatchedPoolPair(ctx context.Context, pair [2]string,
 		return
 	}
 
-	gs.WaitingStart()
-
 	gameSetter := models.GameSetter{
 		GameVariantID:          omit.From(a.gameVariantProtoToID(gs.GameVariant)),
 		GameTimeKindID:         omit.From(a.gameTimeKindProtoToID(gs.GameTimeKind)),
@@ -1050,6 +1044,8 @@ func (a *ApiHandler) processMatchedPoolPair(ctx context.Context, pair [2]string,
 			Hash: omit.From(int64(hash)),
 		}
 	}
+
+	gs.Start()
 
 	game, err := a.persistor.Game().CreateGame(ctx, gameSetter, moveSetters, hashSetters)
 	if err != nil {

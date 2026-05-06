@@ -104,7 +104,6 @@ func NewGameState(gameID int64, players [2]Player, timeControl *pb.GameTimeContr
 		timeCategory:     timeCategory,
 		reconnectTimeout: defaultReconnectTimeout,
 		firstMoveTimeout: defaultFirstMoveTimeout,
-		state:            pb.GameState_GAME_STATE_WAITING_START,
 	}
 	for _, o := range opts {
 		o.apply(gopts)
@@ -142,7 +141,7 @@ func NewGameState(gameID int64, players [2]Player, timeControl *pb.GameTimeContr
 		GameTimeKind:     gopts.timeKind,
 		GameTimeCategory: gopts.timeCategory,
 		GameTimeControl:  timeControl,
-		GameState:        pb.GameState_GAME_STATE_IDLE,
+		GameState:        pb.GameState_GAME_STATE_ACTIVE,
 		FirstMoveTimeout: gopts.firstMoveTimeout,
 		ReconnectTimeout: gopts.reconnectTimeout,
 		TimerAction:      make(chan timerAction),
@@ -168,12 +167,8 @@ func (gs *GameState) GetPlayerByColor(color pb.Color) *Player {
 	}
 }
 
-func (gs *GameState) WaitingStart() {
-	gs.GameState = pb.GameState_GAME_STATE_WAITING_START
-}
-
 func (gs *GameState) Start() {
-	gs.GameState = pb.GameState_GAME_STATE_IN_PROGRESS
+	gs.GameState = pb.GameState_GAME_STATE_ACTIVE
 }
 
 func (gs *GameState) Stop() {

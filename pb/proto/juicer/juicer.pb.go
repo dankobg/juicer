@@ -399,31 +399,25 @@ func (GameResultStatus) EnumDescriptor() ([]byte, []int) {
 type GameState int32
 
 const (
-	GameState_GAME_STATE_UNSPECIFIED   GameState = 0
-	GameState_GAME_STATE_IDLE          GameState = 1
-	GameState_GAME_STATE_WAITING_START GameState = 2
-	GameState_GAME_STATE_IN_PROGRESS   GameState = 3
-	GameState_GAME_STATE_FINISHED      GameState = 4
-	GameState_GAME_STATE_INTERRUPTED   GameState = 5
+	GameState_GAME_STATE_UNSPECIFIED GameState = 0
+	GameState_GAME_STATE_ACTIVE      GameState = 1
+	GameState_GAME_STATE_FINISHED    GameState = 2
+	GameState_GAME_STATE_INTERRUPTED GameState = 3
 )
 
 // Enum value maps for GameState.
 var (
 	GameState_name = map[int32]string{
 		0: "GAME_STATE_UNSPECIFIED",
-		1: "GAME_STATE_IDLE",
-		2: "GAME_STATE_WAITING_START",
-		3: "GAME_STATE_IN_PROGRESS",
-		4: "GAME_STATE_FINISHED",
-		5: "GAME_STATE_INTERRUPTED",
+		1: "GAME_STATE_ACTIVE",
+		2: "GAME_STATE_FINISHED",
+		3: "GAME_STATE_INTERRUPTED",
 	}
 	GameState_value = map[string]int32{
-		"GAME_STATE_UNSPECIFIED":   0,
-		"GAME_STATE_IDLE":          1,
-		"GAME_STATE_WAITING_START": 2,
-		"GAME_STATE_IN_PROGRESS":   3,
-		"GAME_STATE_FINISHED":      4,
-		"GAME_STATE_INTERRUPTED":   5,
+		"GAME_STATE_UNSPECIFIED": 0,
+		"GAME_STATE_ACTIVE":      1,
+		"GAME_STATE_FINISHED":    2,
+		"GAME_STATE_INTERRUPTED": 3,
 	}
 )
 
@@ -3446,14 +3440,12 @@ const file_proto_juicer_juicer_proto_rawDesc = "" +
 	"\x1fGAME_RESULT_STATUS_ADJUDICATION\x10\v\x12 \n" +
 	"\x1cGAME_RESULT_STATUS_TIMED_OUT\x10\f\x12\x1e\n" +
 	"\x1aGAME_RESULT_STATUS_ABORTED\x10\r\x12\"\n" +
-	"\x1eGAME_RESULT_STATUS_INTERRUPTED\x10\x0e*\xab\x01\n" +
+	"\x1eGAME_RESULT_STATUS_INTERRUPTED\x10\x0e*s\n" +
 	"\tGameState\x12\x1a\n" +
-	"\x16GAME_STATE_UNSPECIFIED\x10\x00\x12\x13\n" +
-	"\x0fGAME_STATE_IDLE\x10\x01\x12\x1c\n" +
-	"\x18GAME_STATE_WAITING_START\x10\x02\x12\x1a\n" +
-	"\x16GAME_STATE_IN_PROGRESS\x10\x03\x12\x17\n" +
-	"\x13GAME_STATE_FINISHED\x10\x04\x12\x1a\n" +
-	"\x16GAME_STATE_INTERRUPTED\x10\x05*\x87\x01\n" +
+	"\x16GAME_STATE_UNSPECIFIED\x10\x00\x12\x15\n" +
+	"\x11GAME_STATE_ACTIVE\x10\x01\x12\x17\n" +
+	"\x13GAME_STATE_FINISHED\x10\x02\x12\x1a\n" +
+	"\x16GAME_STATE_INTERRUPTED\x10\x03*\x87\x01\n" +
 	"\x0eGameSideChoice\x12 \n" +
 	"\x1cGAME_SIDE_CHOICE_UNSPECIFIED\x10\x00\x12\x1b\n" +
 	"\x17GAME_SIDE_CHOICE_RANDOM\x10\x01\x12\x1a\n" +
