@@ -47,7 +47,7 @@ func GameToResponse(g models.Game) api.Game {
 	}
 }
 
-func GameWithJoinDataToResponse(g dbtype.GameWithJoinData) api.Game {
+func GameDetailsToResponse(g dbtype.GameDetails) api.Game {
 	whiteIsGuest, blackIsGuest := true, true
 	if g.WhiteID.IsNull() {
 		whiteIsGuest = false

@@ -39,3 +39,5 @@
 <h1>Game page {params.game_id}</h1>
 
 <button class="mt-4 bg-red-800 p-2 text-white" onclick={gameManager.echo}>SEND ECHO</button>
+
+<button class="mt-4 bg-cyan-700 p-2 text-white" onclick={gameManager.sendGameChat}>SEND GAME CHAT</button>

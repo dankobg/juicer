@@ -68,7 +68,7 @@ func convertGamePgError(pgErr *pgconn.PgError) error {
 	return pgErr
 }
 
-func (pst *PgGamePersistor) ListGames(ctx context.Context, filters dbtype.ListGamesFilters) (dbtype.PagedResult[dbtype.GameWithJoinData], error) {
+func (pst *PgGamePersistor) ListGames(ctx context.Context, filters dbtype.ListGamesFilters) (dbtype.PagedResult[dbtype.GameDetails], error) {
 	q := psql.Select(
 		sm.Columns(models.Games.Columns),
 		sm.From(models.Games.Name()),
@@ -204,20 +204,20 @@ func (pst *PgGamePersistor) ListGames(ctx context.Context, filters dbtype.ListGa
 	}
 
 	type ListGamesRow struct {
-		dbtype.GameWithJoinData
+		dbtype.GameDetails
 		TotalCount int64
 	}
 
 	games, err := bob.All(ctx, pst.exec, q, scan.StructMapper[ListGamesRow](scan.WithTypeConverter(orm.NullTypeConverter{})))
 	if err != nil {
-		return dbtype.PagedResult[dbtype.GameWithJoinData]{}, fmt.Errorf("query games")
+		return dbtype.PagedResult[dbtype.GameDetails]{}, fmt.Errorf("query games")
 	}
 
-	result := dbtype.PagedResult[dbtype.GameWithJoinData]{
-		Data: make([]dbtype.GameWithJoinData, len(games)),
+	result := dbtype.PagedResult[dbtype.GameDetails]{
+		Data: make([]dbtype.GameDetails, len(games)),
 	}
 	for i, row := range games {
-		result.Data[i] = row.GameWithJoinData
+		result.Data[i] = row.GameDetails
 	}
 
 	if len(games) > 0 {
@@ -227,7 +227,7 @@ func (pst *PgGamePersistor) ListGames(ctx context.Context, filters dbtype.ListGa
 	return result, nil
 }
 
-func (pst *PgGamePersistor) GetGameByID(ctx context.Context, gameID int64, filters dbtype.GetGameByIDFilters) (dbtype.GameWithJoinData, error) {
+func (pst *PgGamePersistor) GetGameByID(ctx context.Context, gameID int64, filters dbtype.GetGameByIDFilters) (dbtype.GameDetails, error) {
 	q := psql.Select(
 		sm.Columns(models.Games.Columns),
 		sm.From(models.Games.Name()),
@@ -285,12 +285,12 @@ func (pst *PgGamePersistor) GetGameByID(ctx context.Context, gameID int64, filte
 		}
 	}
 
-	gameWithJoinData, err := bob.One(ctx, pst.exec, q, scan.StructMapper[dbtype.GameWithJoinData](scan.WithTypeConverter(orm.NullTypeConverter{})))
+	gameDetails, err := bob.One(ctx, pst.exec, q, scan.StructMapper[dbtype.GameDetails](scan.WithTypeConverter(orm.NullTypeConverter{})))
 	if err != nil {
-		return dbtype.GameWithJoinData{}, fmt.Errorf("query game")
+		return dbtype.GameDetails{}, fmt.Errorf("query game")
 	}
 
-	return gameWithJoinData, nil
+	return gameDetails, nil
 }
 
 func (pst *PgGamePersistor) CreateGame(ctx context.Context, in models.GameSetter, inMoves []models.GameMoveSetter, inHashes []models.GameHistoryHashSetter) (models.Game, error) {
@@ -366,6 +366,22 @@ func (pst *PgGamePersistor) BulkDeleteGames(ctx context.Context, ids []int64) er
 	}
 
 	return nil
+}
+
+func (pst *PgGamePersistor) IsGameActive(ctx context.Context, gameID int64) (bool, error) {
+	// q := psql.Select(
+	// 	sm.Columns(models.Games.Columns),
+	// 	sm.From(models.Games.Name()),
+	// )
+	panic("")
+}
+
+func (pst *PgGamePersistor) IsUserInActiveGame(ctx context.Context, userID uuid.UUID, gameID int64) (bool, error) {
+	// q := psql.Select(
+	// 	sm.Columns(models.Games.Columns),
+	// 	sm.From(models.Games.Name()),
+	// )
+	panic("")
 }
 
 func (pst *PgGamePersistor) GetGameStatsForUser(ctx context.Context, userID uuid.UUID, filters *dbtype.GameStatsForUserFilters) (dbtype.GameStats, error) {

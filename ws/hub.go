@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log/slog"
 	"slices"
+	"strconv"
 	"strings"
 	"sync"
 
@@ -114,7 +115,7 @@ func (h *Hub) processClientWebsocketMessage(client *client, msg []byte) error {
 }
 
 func (h *Hub) onClientConnected(client *client) {
-	h.log.Debug("client connected", slog.String("user_id", client.userID.String()), slog.String("conn_id", client.connID.String()), slog.String("auth_state", client.authState.String()), slog.Any("channels", client.channels))
+	h.log.Debug("hub client connected", slog.String("user_id", client.userID.String()), slog.String("conn_id", client.connID.String()), slog.String("auth_state", client.authState.String()), slog.Any("channels", client.channels))
 
 	h.addClient(client)
 
@@ -143,7 +144,7 @@ func (h *Hub) onClientConnected(client *client) {
 }
 
 func (h *Hub) onClientDisconnected(client *client) {
-	h.log.Debug("client disconnected", slog.String("user_id", client.userID.String()), slog.String("conn_id", client.connID.String()), slog.String("auth_state", client.authState.String()))
+	h.log.Debug("hub client disconnected", slog.String("user_id", client.userID.String()), slog.String("conn_id", client.connID.String()), slog.String("auth_state", client.authState.String()))
 	h.removeClient(client)
 
 	clientDisconnectedMsg := &pb.Message{
@@ -165,7 +166,7 @@ func (h *Hub) onClientDisconnected(client *client) {
 }
 
 func (h *Hub) onBroadcastConn(connMsg ConnMessage) {
-	h.log.Debug("broadcasting to conn", slog.String("conn_id", connMsg.connID.String()), slog.String("msg", string(connMsg.msg)))
+	h.log.Debug("hub broadcasting to conn", slog.String("conn_id", connMsg.connID.String()), slog.String("msg", string(connMsg.msg)))
 
 	c, ok := h.clientsByConnID[connMsg.connID]
 	if !ok {
@@ -181,7 +182,7 @@ func (h *Hub) onBroadcastConn(connMsg ConnMessage) {
 }
 
 func (h *Hub) onBroadcastUser(clientMsg UserMessage) {
-	h.log.Debug("broadcasting to user", slog.String("user_id", clientMsg.userID.String()), slog.String("channel", channelSafePrint(clientMsg.channel)), slog.String("msg", string(clientMsg.msg)))
+	h.log.Debug("hub broadcasting to user", slog.String("user_id", clientMsg.userID.String()), slog.String("channel", channelSafePrint(clientMsg.channel)), slog.String("msg", string(clientMsg.msg)))
 
 	for c := range h.clientsByUserID[clientMsg.userID] {
 		canSend := true
@@ -203,7 +204,7 @@ func (h *Hub) onBroadcastUser(clientMsg UserMessage) {
 }
 
 func (h *Hub) onBroadcastChannel(channelMsg ChannelMessage) {
-	h.log.Debug("broadcasting to channel", slog.String("channel", channelMsg.channel.String()), slog.String("msg", string(channelMsg.msg)))
+	h.log.Debug("hub broadcasting to channel", slog.String("channel", channelMsg.channel.String()), slog.String("msg", string(channelMsg.msg)))
 
 	for c := range h.channels[channelMsg.channel] {
 		select {
@@ -237,7 +238,7 @@ func (h *Hub) addClient(c *client) {
 
 	h.mu.Unlock()
 
-	h.log.Debug("client added", slog.String("user_id", c.userID.String()), slog.String("conn_id", c.connID.String()), slog.String("auth_state", c.authState.String()))
+	h.log.Debug("hub client added", slog.String("user_id", c.userID.String()), slog.String("conn_id", c.connID.String()), slog.String("auth_state", c.authState.String()))
 }
 
 func (h *Hub) removeClient(c *client) {
@@ -290,7 +291,7 @@ func (h *Hub) removeClient(c *client) {
 
 	h.mu.Unlock()
 
-	h.log.Debug("client removed", slog.String("user_id", c.userID.String()), slog.String("conn_id", c.connID.String()), slog.String("auth_state", c.authState.String()))
+	h.log.Debug("hub client removed", slog.String("user_id", c.userID.String()), slog.String("conn_id", c.connID.String()), slog.String("auth_state", c.authState.String()))
 }
 
 func (h *Hub) InitializeChannels(ctx context.Context, client *client) ([]string, error) {
@@ -368,6 +369,7 @@ func (h *Hub) onPresenceDiffMsg(m *redis.Message) {
 
 	// userID, err := extractPresenceDiffTopicParts(m.Channel)
 	// if err != nil {
+	// 	h.log.Error("hub extractPresenceDiffTopicParts", slog.Any("error", err))
 	// 	return
 	// }
 
@@ -379,6 +381,7 @@ func (h *Hub) onLobbyMsg(m *redis.Message) {
 
 	channel, err := extractLobbyTopicParts(m.Channel)
 	if err != nil {
+		h.log.Error("hub extractLobbyTopicParts", slog.Any("error", err))
 		return
 	}
 
@@ -390,6 +393,7 @@ func (h *Hub) onUserMsg(m *redis.Message) {
 
 	userID, channel, err := extractUserTopicParts(m.Channel)
 	if err != nil {
+		h.log.Error("hub extractUserTopicParts", slog.Any("error", err))
 		return
 	}
 
@@ -401,6 +405,7 @@ func (h *Hub) onConnMsg(m *redis.Message) {
 
 	connID, err := extractConnTopicParts(m.Channel)
 	if err != nil {
+		h.log.Error("hub extractConnTopicParts", slog.Any("error", err))
 		return
 	}
 
@@ -409,10 +414,26 @@ func (h *Hub) onConnMsg(m *redis.Message) {
 
 func (h *Hub) onGameMsg(m *redis.Message) {
 	h.log.Debug("hub onGameMsg", slog.Any("msg", m))
+
+	channel, _, _, err := extractGameTopicParts(m.Channel)
+	if err != nil {
+		h.log.Error("hub extractGameTopicParts", slog.Any("error", err))
+		return
+	}
+
+	h.broadcastChannel <- ChannelMessage{channel: Channel(channel), msg: []byte(m.Payload)}
 }
 
 func (h *Hub) onGametvMsg(m *redis.Message) {
 	h.log.Debug("hub onGametvMsg", slog.Any("msg", m))
+
+	channel, _, _, err := extractGameTvTopicParts(m.Channel)
+	if err != nil {
+		h.log.Error("hub extractGameTvTopicParts", slog.Any("error", err))
+		return
+	}
+
+	h.broadcastChannel <- ChannelMessage{channel: Channel(channel), msg: []byte(m.Payload)}
 }
 
 // extractUserTopicParts extracts the user_id and optional channel if it exists
@@ -493,4 +514,46 @@ func extractPresenceDiffTopicParts(topic string) (uuid.UUID, error) {
 	}
 
 	return userID, nil
+}
+
+// extractGameTopicParts extracts the full channel, game_id and whether it is chat channel
+func extractGameTopicParts(topic string) (string, int64, bool, error) {
+	parts := strings.Split(topic, ".")
+	if len(parts) != 2 && len(parts) != 3 {
+		return "", 0, false, fmt.Errorf("invalid parts length, expected 2 or 3, got: %d", len(parts))
+	}
+
+	gameIDStr := parts[1]
+	gameID, err := strconv.ParseInt(gameIDStr, 10, 64)
+	if err != nil {
+		return "", 0, false, err
+	}
+
+	var isChat bool
+	if len(parts) == 3 && parts[2] == "chat" {
+		isChat = true
+	}
+
+	return topic, gameID, isChat, nil
+}
+
+// extractGameTvTopicParts extracts the full channel, game_id and whether it is chat channel
+func extractGameTvTopicParts(topic string) (string, int64, bool, error) {
+	parts := strings.Split(topic, ".")
+	if len(parts) != 2 && len(parts) != 3 {
+		return "", 0, false, fmt.Errorf("invalid parts length, expected 2 or 3, got: %d", len(parts))
+	}
+
+	gameIDStr := parts[1]
+	gameID, err := strconv.ParseInt(gameIDStr, 10, 64)
+	if err != nil {
+		return "", 0, false, err
+	}
+
+	var isChat bool
+	if len(parts) == 3 && parts[2] == "chat" {
+		isChat = true
+	}
+
+	return topic, gameID, isChat, nil
 }

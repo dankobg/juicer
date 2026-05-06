@@ -135,7 +135,7 @@ func (c *client) WriteLoop(ctx context.Context) {
 				return
 			}
 
-			c.log.Debug("send", slog.String("msg_type", websocket.MessageText.String()), slog.Any("msg", string(outMsg)))
+			c.log.Debug("conn.Write", slog.String("msg_type", websocket.MessageText.String()), slog.Any("msg", string(outMsg)))
 
 			if err := c.conn.Write(ctx, websocket.MessageText, outMsg); err != nil {
 				c.log.Error("conn.Write", slog.Any("error", err))

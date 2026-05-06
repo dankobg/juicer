@@ -22,3 +22,7 @@ func (ps *RedisPersistor) Presence() persistence.PresencePersistor {
 func (ps *RedisPersistor) Pool() persistence.PoolPersistor {
 	return NewRedisPoolPersistor(ps)
 }
+
+func (ps *RedisPersistor) ActiveGame() persistence.ActiveGamePersistor {
+	return NewRedisActiveGamePersistor(ps)
+}

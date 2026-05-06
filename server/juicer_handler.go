@@ -122,7 +122,7 @@ func (a *ApiHandler) ListGameTimeKinds(ctx context.Context, request api.ListGame
 func (a *ApiHandler) GetGame(ctx context.Context, request api.GetGameRequestObject) (api.GetGameResponseObject, error) {
 	filters := dbtype.GetGameByIDFilters{GetGameParams: request.Params}
 
-	gameWithJoinData, err := a.persistor.Game().GetGameByID(ctx, request.ID, filters)
+	gameDetails, err := a.persistor.Game().GetGameByID(ctx, request.ID, filters)
 	if err != nil {
 		if errors.Is(err, postgres.ErrGameNotFound) {
 			return api.GetGame404JSONResponse{NotFoundErrorResponseJSONResponse: newNotFoundResp("game_not_found", "game not found")}, nil
@@ -142,7 +142,7 @@ func (a *ApiHandler) GetGame(ctx context.Context, request api.GetGameRequestObje
 	// 	return api.GetGamedefaultJSONResponse{StatusCode: http.StatusUnauthorized, Body: newGenericErr(http.StatusUnauthorized, "game_permission", "permission denied")}, nil
 	// }
 
-	resp := api.GetGame200JSONResponse(dto.GameWithJoinDataToResponse(gameWithJoinData))
+	resp := api.GetGame200JSONResponse(dto.GameDetailsToResponse(gameDetails))
 
 	return resp, nil
 }
@@ -169,8 +169,8 @@ func (a *ApiHandler) ListGames(ctx context.Context, request api.ListGamesRequest
 	}
 
 	gamesData := make([]api.Game, len(games.Data))
-	for i, gameWithJoinData := range games.Data {
-		gamesData[i] = dto.GameWithJoinDataToResponse(gameWithJoinData)
+	for i, gameDetailsData := range games.Data {
+		gamesData[i] = dto.GameDetailsToResponse(gameDetailsData)
 	}
 
 	resp := api.ListGames200JSONResponse{

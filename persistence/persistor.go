@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/dankobg/juicer/db/gen/models"
+	"github.com/dankobg/juicer/gameplay"
 	"github.com/dankobg/juicer/persistence/dbtype"
 	"github.com/google/uuid"
 )
@@ -90,13 +91,24 @@ type GameVariantPersistor interface {
 }
 
 type GamePersistor interface {
-	GetGameByID(ctx context.Context, gameID int64, filters dbtype.GetGameByIDFilters) (dbtype.GameWithJoinData, error)
-	ListGames(ctx context.Context, filters dbtype.ListGamesFilters) (dbtype.PagedResult[dbtype.GameWithJoinData], error)
+	GetGameByID(ctx context.Context, gameID int64, filters dbtype.GetGameByIDFilters) (dbtype.GameDetails, error)
+	ListGames(ctx context.Context, filters dbtype.ListGamesFilters) (dbtype.PagedResult[dbtype.GameDetails], error)
 	CreateGame(ctx context.Context, in models.GameSetter, inMoves []models.GameMoveSetter, inHashes []models.GameHistoryHashSetter) (models.Game, error)
 	UpdateGame(ctx context.Context, gameID int64, in models.GameSetter) (models.Game, error)
 	DeleteGameByID(ctx context.Context, gameID int64) (int64, error)
 	BulkDeleteGames(ctx context.Context, gameIDs []int64) error
 	GetGameStatsForUser(ctx context.Context, userID uuid.UUID, filters *dbtype.GameStatsForUserFilters) (dbtype.GameStats, error)
+}
+
+type ActiveGamePersistor interface {
+	GetActiveGameByID(ctx context.Context, gameID int64, filters dbtype.GetActiveGameFilters) (dbtype.GameDetails, error)
+	ListActiveGames(ctx context.Context, filters dbtype.ListActiveGameFilters) (dbtype.PagedResult[dbtype.GameDetails], error)
+	IsGameActive(ctx context.Context, gameID int64) (bool, error)
+	IsUserInActiveGame(ctx context.Context, userID uuid.UUID, gameID int64) (bool, error)
+	ListActiveGameUsers(ctx context.Context, gameID int64) ([2]uuid.UUID, error)
+	CreateActiveGame(ctx context.Context, gs *gameplay.GameState) error
+	UpdateActiveGame(ctx context.Context, gameID int64, in models.GameSetter) error
+	DeleteActiveGameByID(ctx context.Context, gameID int64) (int64, error)
 }
 
 type PoolPersistor interface {
@@ -177,4 +189,5 @@ type Persistor interface {
 	Rating() RatingPersistor
 	Presence() PresencePersistor
 	Pool() PoolPersistor
+	ActiveGame() ActiveGamePersistor
 }

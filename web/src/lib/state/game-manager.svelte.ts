@@ -11,7 +11,8 @@ import {
 	type Presence,
 	type PresenceDiff,
 	type PresenceState,
-	type GameFound
+	type GameFound,
+	type GameChat
 } from '$lib/gen/juicer_pb';
 import { create, fromJsonString } from '@bufbuild/protobuf';
 import type { JuicerBoard, Coord, PieceFenSymbol } from '@dankop/juicer-board';
@@ -30,7 +31,7 @@ class GameManager {
 	uiState = $state<'idle' | 'seeking' | 'playing'>('idle');
 	poolLast = new PersistedState<{ clockMs: number; incrementMs: number } | null>('juicer-pool-last', null);
 	gameTimeControl = $state<GameTimeControl | null>(null);
-	gameId = $state<string | undefined>();
+	gameId = $state<number | undefined>();
 	clientId = $state<string | undefined>();
 	fen = $state<string | undefined>();
 	color = $state<Color>(Color.UNSPECIFIED);
@@ -122,10 +123,24 @@ class GameManager {
 	}
 
 	sendLobbyChat() {
-		const lobbyChatMsg = create(MessageSchema, {
+		const sendLobbyChatMsg = create(MessageSchema, {
 			event: { case: 'sendLobbyChat', value: { message: `hello lobby ${Math.floor(Math.random() * 100) + 1}` } }
 		});
-		ws.send(lobbyChatMsg);
+		ws.send(sendLobbyChatMsg);
+	}
+
+	sendGameChat() {
+		const sendGameChatMsg = create(MessageSchema, {
+			event: {
+				case: 'sendGameChat',
+				value: {
+					// @TODO: no hardcode
+					gameId: 14,
+					message: `hello game ${Math.floor(Math.random() * 100) + 1}`
+				}
+			}
+		});
+		ws.send(sendGameChatMsg);
 	}
 
 	onEchoMsg(echoMsg: Echo) {
@@ -199,8 +214,11 @@ class GameManager {
 
 	onLobbyChat(lobbyChat: LobbyChat) {}
 
+	onGameChat(gameChat: GameChat) {}
+
 	onGameFound(gameFound: GameFound) {
 		console.log('GameFound game_id: ', gameFound.gameId);
+		this.gameId = Number(gameFound.gameId);
 		goto(`/game/${gameFound.gameId}`);
 	}
 
@@ -223,6 +241,9 @@ class GameManager {
 					break;
 				case 'lobbyChat':
 					this.onLobbyChat(msg.event.value);
+					break;
+				case 'gameChat':
+					this.onGameChat(msg.event.value);
 					break;
 				case 'gameFound':
 					this.onGameFound(msg.event.value);

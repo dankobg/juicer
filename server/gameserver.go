@@ -350,6 +350,8 @@ func (a *ApiHandler) onWSCMsg(m *redis.Message) {
 		a.handleWSCPlayMoveUCI(clientAuthInfo, msg.GetPlayMoveUci())
 	case *pb.Message_SendLobbyChat:
 		a.handleWSCSendLobbyChat(clientAuthInfo, msg.GetSendLobbyChat())
+	case *pb.Message_SendGameChat:
+		a.handleWSCSendGameChat(clientAuthInfo, msg.GetSendGameChat())
 	}
 }
 
@@ -409,17 +411,51 @@ func (a *ApiHandler) handleWSCPlayMoveUCI(authInfo clientAuthInfo, data *pb.Play
 
 func (a *ApiHandler) handleWSCSendLobbyChat(authInfo clientAuthInfo, data *pb.SendLobbyChat) {
 	fmt.Println(data, "handleWSCSendLobbyChat")
-	lobbyChatReceivedMsg := &pb.Message{Event: &pb.Message_LobbyChat{LobbyChat: &pb.LobbyChat{
+
+	lobbyChatMsg := &pb.Message{Event: &pb.Message_LobbyChat{LobbyChat: &pb.LobbyChat{
 		MessageId: "1",
 		UserId:    authInfo.userID,
 		PostedAt:  time.Now().Format(time.RFC3339),
 		Message:   data.Message,
 	}}}
 
-	lobbyChatReceivedMsgBytes, err := protojson.Marshal(lobbyChatReceivedMsg)
+	lobbyChatMsgBytes, err := protojson.Marshal(lobbyChatMsg)
 	if err != nil {
 	} else {
-		if err := a.bus.rdb.Publish(context.Background(), "lobby.chat", lobbyChatReceivedMsgBytes).Err(); err != nil {
+		if err := a.bus.rdb.Publish(context.Background(), "lobby.chat", lobbyChatMsgBytes).Err(); err != nil {
+			a.Log.Error("LobbyChat publish", slog.String("user_id", authInfo.userID), slog.String("auth_state", authInfo.authState.String()), slog.Any("error", err))
+			return
+		}
+	}
+}
+
+func (a *ApiHandler) handleWSCSendGameChat(authInfo clientAuthInfo, data *pb.SendGameChat) {
+	fmt.Println(data, "handleWSCSendGameChat")
+
+	inGame, err := a.persistor.ActiveGame().IsUserInActiveGame(context.Background(), uuid.MustParse(authInfo.userID), int64(data.GameId))
+	if err != nil {
+		fmt.Println("-------------------------- NOT IN GAME ERRRRORRR ---------------------------- ", err)
+		return
+	}
+
+	if !inGame {
+		fmt.Println("-------------------------- NOT IN GAME ---------------------------- ")
+		return
+	}
+
+	gameChatMsg := &pb.Message{Event: &pb.Message_GameChat{GameChat: &pb.GameChat{
+		GameId:    data.GameId,
+		MessageId: int32(rand.IntN(100)),
+		UserId:    authInfo.userID,
+		PostedAt:  time.Now().Format(time.RFC3339),
+		Message:   data.Message,
+	}}}
+
+	gameChatMsgBytes, err := protojson.Marshal(gameChatMsg)
+	if err != nil {
+	} else {
+		topic := fmt.Sprintf("game.%d.chat", data.GameId)
+		if err := a.bus.rdb.Publish(context.Background(), topic, gameChatMsgBytes).Err(); err != nil {
 			a.Log.Error("LobbyChat publish", slog.String("user_id", authInfo.userID), slog.String("auth_state", authInfo.authState.String()), slog.Any("error", err))
 			return
 		}
@@ -1025,7 +1061,11 @@ func (a *ApiHandler) processMatchedPoolPair(ctx context.Context, pair [2]string,
 
 	a.gamestates[game.ID] = gs
 
-	gameFoundMsg := &pb.Message{Event: &pb.Message_GameFound{GameFound: &pb.GameFound{GameId: gs.GameID}}}
+	if err := a.persistor.ActiveGame().CreateActiveGame(ctx, gs); err != nil {
+		a.Log.Error("CreateActiveGame", slog.Any("error", err))
+	}
+
+	gameFoundMsg := &pb.Message{Event: &pb.Message_GameFound{GameFound: &pb.GameFound{GameId: int32(gs.GameID)}}}
 
 	gameFoundMsgBytes, err := protojson.Marshal(gameFoundMsg)
 	if err != nil {
