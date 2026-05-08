@@ -108,7 +108,7 @@ class GameManager {
 	}
 
 	playMoveUci(uci: string) {
-		const playMoveUciMsg = create(MessageSchema, { event: { case: 'playMoveUci', value: { move: uci } } });
+		const playMoveUciMsg = create(MessageSchema, { event: { case: 'playMoveUci', value: { uci } } });
 		ws.send(playMoveUciMsg);
 		// if (this.ply <= 1) {
 		// 	this.clock?.setCurrentTurn(this.clock.currentTurn === 'w' ? 'b' : 'w');
@@ -118,7 +118,9 @@ class GameManager {
 	}
 
 	echo() {
-		const echoMsg = create(MessageSchema, { event: { case: 'echo', value: { message: 'hello bozo' } } });
+		const echoMsg = create(MessageSchema, {
+			event: { case: 'echo', value: { message: 'hello bozo' + window.location.pathname.split('/').at(-1) } }
+		});
 		ws.send(echoMsg);
 	}
 

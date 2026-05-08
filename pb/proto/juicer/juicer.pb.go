@@ -2369,6 +2369,7 @@ func (x *MatchFoundHydration) GetStartTime() *timestamppb.Timestamp {
 // AbortGame is game abort message
 type AbortGame struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
+	GameId        int32                  `protobuf:"varint,1,opt,name=game_id,json=gameId,proto3" json:"game_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2403,9 +2404,17 @@ func (*AbortGame) Descriptor() ([]byte, []int) {
 	return file_proto_juicer_juicer_proto_rawDescGZIP(), []int{23}
 }
 
+func (x *AbortGame) GetGameId() int32 {
+	if x != nil {
+		return x.GameId
+	}
+	return 0
+}
+
 // ResignGame is game resign message
 type ResignGame struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
+	GameId        int32                  `protobuf:"varint,1,opt,name=game_id,json=gameId,proto3" json:"game_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2440,9 +2449,17 @@ func (*ResignGame) Descriptor() ([]byte, []int) {
 	return file_proto_juicer_juicer_proto_rawDescGZIP(), []int{24}
 }
 
+func (x *ResignGame) GetGameId() int32 {
+	if x != nil {
+		return x.GameId
+	}
+	return 0
+}
+
 // OfferDraw is game draw offer message
 type OfferDraw struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
+	GameId        int32                  `protobuf:"varint,1,opt,name=game_id,json=gameId,proto3" json:"game_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2477,9 +2494,17 @@ func (*OfferDraw) Descriptor() ([]byte, []int) {
 	return file_proto_juicer_juicer_proto_rawDescGZIP(), []int{25}
 }
 
+func (x *OfferDraw) GetGameId() int32 {
+	if x != nil {
+		return x.GameId
+	}
+	return 0
+}
+
 // DeclineDraw is game draw decline message
 type DeclineDraw struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
+	GameId        int32                  `protobuf:"varint,1,opt,name=game_id,json=gameId,proto3" json:"game_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2514,9 +2539,17 @@ func (*DeclineDraw) Descriptor() ([]byte, []int) {
 	return file_proto_juicer_juicer_proto_rawDescGZIP(), []int{26}
 }
 
+func (x *DeclineDraw) GetGameId() int32 {
+	if x != nil {
+		return x.GameId
+	}
+	return 0
+}
+
 // AcceptDraw is game accept draw message
 type AcceptDraw struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
+	GameId        int32                  `protobuf:"varint,1,opt,name=game_id,json=gameId,proto3" json:"game_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2549,6 +2582,13 @@ func (x *AcceptDraw) ProtoReflect() protoreflect.Message {
 // Deprecated: Use AcceptDraw.ProtoReflect.Descriptor instead.
 func (*AcceptDraw) Descriptor() ([]byte, []int) {
 	return file_proto_juicer_juicer_proto_rawDescGZIP(), []int{27}
+}
+
+func (x *AcceptDraw) GetGameId() int32 {
+	if x != nil {
+		return x.GameId
+	}
+	return 0
 }
 
 // SendLobbyChat is the msg sent to lobby
@@ -2819,8 +2859,9 @@ func (x *SendGameChat) GetMessage() string {
 // ListGameChats fetches the game chat messages
 type ListGameChats struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	LastMessageId int32                  `protobuf:"varint,1,opt,name=last_message_id,json=lastMessageId,proto3" json:"last_message_id,omitempty"`
-	Size          int32                  `protobuf:"varint,2,opt,name=size,proto3" json:"size,omitempty"`
+	GameId        int32                  `protobuf:"varint,1,opt,name=game_id,json=gameId,proto3" json:"game_id,omitempty"`
+	LastMessageId int32                  `protobuf:"varint,2,opt,name=last_message_id,json=lastMessageId,proto3" json:"last_message_id,omitempty"`
+	Size          int32                  `protobuf:"varint,3,opt,name=size,proto3" json:"size,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2853,6 +2894,13 @@ func (x *ListGameChats) ProtoReflect() protoreflect.Message {
 // Deprecated: Use ListGameChats.ProtoReflect.Descriptor instead.
 func (*ListGameChats) Descriptor() ([]byte, []int) {
 	return file_proto_juicer_juicer_proto_rawDescGZIP(), []int{33}
+}
+
+func (x *ListGameChats) GetGameId() int32 {
+	if x != nil {
+		return x.GameId
+	}
+	return 0
 }
 
 func (x *ListGameChats) GetLastMessageId() int32 {
@@ -2994,7 +3042,8 @@ func (x *GameChatList) GetGameChats() []*GameChat {
 // PlayMoveUCI plays a game move
 type PlayMoveUCI struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Move          string                 `protobuf:"bytes,1,opt,name=move,proto3" json:"move,omitempty"`
+	GameId        int32                  `protobuf:"varint,1,opt,name=game_id,json=gameId,proto3" json:"game_id,omitempty"`
+	Uci           string                 `protobuf:"bytes,2,opt,name=uci,proto3" json:"uci,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -3029,9 +3078,16 @@ func (*PlayMoveUCI) Descriptor() ([]byte, []int) {
 	return file_proto_juicer_juicer_proto_rawDescGZIP(), []int{36}
 }
 
-func (x *PlayMoveUCI) GetMove() string {
+func (x *PlayMoveUCI) GetGameId() int32 {
 	if x != nil {
-		return x.Move
+		return x.GameId
+	}
+	return 0
+}
+
+func (x *PlayMoveUCI) GetUci() string {
+	if x != nil {
+		return x.Uci
 	}
 	return ""
 }
@@ -3132,9 +3188,10 @@ func (x *ReceiveMove) GetLegalMoves() []string {
 // GameFinished signals the game is over
 type GameFinished struct {
 	state            protoimpl.MessageState `protogen:"open.v1"`
-	GameResult       GameResult             `protobuf:"varint,1,opt,name=game_result,json=gameResult,proto3,enum=pb.GameResult" json:"game_result,omitempty"`
-	GameResultStatus GameResultStatus       `protobuf:"varint,2,opt,name=game_result_status,json=gameResultStatus,proto3,enum=pb.GameResultStatus" json:"game_result_status,omitempty"`
-	GameState        GameState              `protobuf:"varint,3,opt,name=game_state,json=gameState,proto3,enum=pb.GameState" json:"game_state,omitempty"`
+	GameId           int32                  `protobuf:"varint,1,opt,name=game_id,json=gameId,proto3" json:"game_id,omitempty"`
+	GameResult       GameResult             `protobuf:"varint,2,opt,name=game_result,json=gameResult,proto3,enum=pb.GameResult" json:"game_result,omitempty"`
+	GameResultStatus GameResultStatus       `protobuf:"varint,3,opt,name=game_result_status,json=gameResultStatus,proto3,enum=pb.GameResultStatus" json:"game_result_status,omitempty"`
+	GameState        GameState              `protobuf:"varint,4,opt,name=game_state,json=gameState,proto3,enum=pb.GameState" json:"game_state,omitempty"`
 	unknownFields    protoimpl.UnknownFields
 	sizeCache        protoimpl.SizeCache
 }
@@ -3167,6 +3224,13 @@ func (x *GameFinished) ProtoReflect() protoreflect.Message {
 // Deprecated: Use GameFinished.ProtoReflect.Descriptor instead.
 func (*GameFinished) Descriptor() ([]byte, []int) {
 	return file_proto_juicer_juicer_proto_rawDescGZIP(), []int{38}
+}
+
+func (x *GameFinished) GetGameId() int32 {
+	if x != nil {
+		return x.GameId
+	}
+	return 0
 }
 
 func (x *GameFinished) GetGameResult() GameResult {
@@ -3335,14 +3399,19 @@ const file_proto_juicer_juicer_proto_rawDesc = "" +
 	"game_moves\x18\r \x03(\v2\f.pb.GameMoveR\tgameMoves\x129\n" +
 	"\n" +
 	"start_time\x18\x0e \x01(\v2\x1a.google.protobuf.TimestampR\tstartTimeB\x10\n" +
-	"\x0e_opponent_info\"\v\n" +
-	"\tAbortGame\"\f\n" +
+	"\x0e_opponent_info\"$\n" +
+	"\tAbortGame\x12\x17\n" +
+	"\agame_id\x18\x01 \x01(\x05R\x06gameId\"%\n" +
 	"\n" +
-	"ResignGame\"\v\n" +
-	"\tOfferDraw\"\r\n" +
-	"\vDeclineDraw\"\f\n" +
+	"ResignGame\x12\x17\n" +
+	"\agame_id\x18\x01 \x01(\x05R\x06gameId\"$\n" +
+	"\tOfferDraw\x12\x17\n" +
+	"\agame_id\x18\x01 \x01(\x05R\x06gameId\"&\n" +
+	"\vDeclineDraw\x12\x17\n" +
+	"\agame_id\x18\x01 \x01(\x05R\x06gameId\"%\n" +
 	"\n" +
-	"AcceptDraw\")\n" +
+	"AcceptDraw\x12\x17\n" +
+	"\agame_id\x18\x01 \x01(\x05R\x06gameId\")\n" +
 	"\rSendLobbyChat\x12\x18\n" +
 	"\amessage\x18\x01 \x01(\tR\amessage\"L\n" +
 	"\x0eListLobbyChats\x12&\n" +
@@ -3359,10 +3428,11 @@ const file_proto_juicer_juicer_proto_rawDesc = "" +
 	"lobbyChats\"A\n" +
 	"\fSendGameChat\x12\x17\n" +
 	"\agame_id\x18\x01 \x01(\x05R\x06gameId\x12\x18\n" +
-	"\amessage\x18\x02 \x01(\tR\amessage\"K\n" +
-	"\rListGameChats\x12&\n" +
-	"\x0flast_message_id\x18\x01 \x01(\x05R\rlastMessageId\x12\x12\n" +
-	"\x04size\x18\x02 \x01(\x05R\x04size\"\x92\x01\n" +
+	"\amessage\x18\x02 \x01(\tR\amessage\"d\n" +
+	"\rListGameChats\x12\x17\n" +
+	"\agame_id\x18\x01 \x01(\x05R\x06gameId\x12&\n" +
+	"\x0flast_message_id\x18\x02 \x01(\x05R\rlastMessageId\x12\x12\n" +
+	"\x04size\x18\x03 \x01(\x05R\x04size\"\x92\x01\n" +
 	"\bGameChat\x12\x17\n" +
 	"\agame_id\x18\x01 \x01(\x05R\x06gameId\x12\x1d\n" +
 	"\n" +
@@ -3372,9 +3442,10 @@ const file_proto_juicer_juicer_proto_rawDesc = "" +
 	"\tposted_at\x18\x05 \x01(\tR\bpostedAt\";\n" +
 	"\fGameChatList\x12+\n" +
 	"\n" +
-	"game_chats\x18\x01 \x03(\v2\f.pb.GameChatR\tgameChats\"!\n" +
-	"\vPlayMoveUCI\x12\x12\n" +
-	"\x04move\x18\x01 \x01(\tR\x04move\"\xac\x01\n" +
+	"game_chats\x18\x01 \x03(\v2\f.pb.GameChatR\tgameChats\"8\n" +
+	"\vPlayMoveUCI\x12\x17\n" +
+	"\agame_id\x18\x01 \x01(\x05R\x06gameId\x12\x10\n" +
+	"\x03uci\x18\x02 \x01(\tR\x03uci\"\xac\x01\n" +
 	"\vReceiveMove\x12\x10\n" +
 	"\x03uci\x18\x01 \x01(\tR\x03uci\x12\x10\n" +
 	"\x03lan\x18\x02 \x01(\tR\x03lan\x12\x10\n" +
@@ -3384,13 +3455,14 @@ const file_proto_juicer_juicer_proto_rawDesc = "" +
 	"\x06clocks\x18\x06 \x01(\v2\n" +
 	".pb.ClocksR\x06clocks\x12\x1f\n" +
 	"\vlegal_moves\x18\a \x03(\tR\n" +
-	"legalMoves\"\xb1\x01\n" +
-	"\fGameFinished\x12/\n" +
-	"\vgame_result\x18\x01 \x01(\x0e2\x0e.pb.GameResultR\n" +
+	"legalMoves\"\xca\x01\n" +
+	"\fGameFinished\x12\x17\n" +
+	"\agame_id\x18\x01 \x01(\x05R\x06gameId\x12/\n" +
+	"\vgame_result\x18\x02 \x01(\x0e2\x0e.pb.GameResultR\n" +
 	"gameResult\x12B\n" +
-	"\x12game_result_status\x18\x02 \x01(\x0e2\x14.pb.GameResultStatusR\x10gameResultStatus\x12,\n" +
+	"\x12game_result_status\x18\x03 \x01(\x0e2\x14.pb.GameResultStatusR\x10gameResultStatus\x12,\n" +
 	"\n" +
-	"game_state\x18\x03 \x01(\x0e2\r.pb.GameStateR\tgameState*@\n" +
+	"game_state\x18\x04 \x01(\x0e2\r.pb.GameStateR\tgameState*@\n" +
 	"\x05Color\x12\x15\n" +
 	"\x11COLOR_UNSPECIFIED\x10\x00\x12\x0f\n" +
 	"\vCOLOR_WHITE\x10\x01\x12\x0f\n" +

@@ -278,19 +278,29 @@ message MatchFoundHydration {
 }
 
 // AbortGame is game abort message
-message AbortGame {}
+message AbortGame {
+  int32 game_id = 1;
+}
 
 // ResignGame is game resign message
-message ResignGame {}
+message ResignGame {
+  int32 game_id = 1;
+}
 
 // OfferDraw is game draw offer message
-message OfferDraw {}
+message OfferDraw {
+  int32 game_id = 1;
+}
 
 // DeclineDraw is game draw decline message
-message DeclineDraw {}
+message DeclineDraw {
+  int32 game_id = 1;
+}
 
 // AcceptDraw is game accept draw message
-message AcceptDraw {}
+message AcceptDraw {
+  int32 game_id = 1;
+}
 
 // SendLobbyChat is the msg sent to lobby
 message SendLobbyChat {
@@ -324,8 +334,9 @@ message SendGameChat {
 
 // ListGameChats fetches the game chat messages
 message ListGameChats {
-  int32 last_message_id = 1;
-  int32 size = 2;
+  int32 game_id = 1;
+  int32 last_message_id = 2;
+  int32 size = 3;
 }
 
 // GameChat is the game chat msg received
@@ -344,7 +355,8 @@ message GameChatList {
 
 // PlayMoveUCI plays a game move
 message PlayMoveUCI {
-  string move = 1;
+  int32 game_id = 1;
+  string uci = 2;
 }
 
 // ReceiveMove receives the game move
@@ -360,7 +372,8 @@ message ReceiveMove {
 
 // GameFinished signals the game is over
 message GameFinished {
-  GameResult game_result = 1;
-  GameResultStatus game_result_status = 2;
-  GameState game_state = 3;
+  int32 game_id = 1;
+  GameResult game_result = 2;
+  GameResultStatus game_result_status = 3;
+  GameState game_state = 4;
 }

@@ -16,12 +16,12 @@ import (
 	"github.com/aarondl/opt/omitnull"
 	api "github.com/dankobg/juicer/api/gen"
 	"github.com/dankobg/juicer/db/gen/models"
-	"github.com/dankobg/juicer/engine"
 	"github.com/dankobg/juicer/gameplay"
 	pb "github.com/dankobg/juicer/pb/proto/juicer"
 	"github.com/dankobg/juicer/persistence"
 	"github.com/dankobg/juicer/persistence/dbtype"
 	"github.com/dankobg/juicer/ws"
+	"github.com/goforj/godump"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/redis/go-redis/v9"
@@ -40,8 +40,12 @@ func (a *ApiHandler) PubsubProcess(ctx context.Context) {
 
 	for {
 		select {
+		case event := <-a.gameEvent:
+			a.onGameEvent(event)
+
 		case msg := <-a.bus.subMessages["ipc"]:
 			a.onIPCMsg(msg)
+
 		case msg := <-a.bus.subMessages["wsc.*"]:
 			a.onWSCMsg(msg)
 
@@ -49,6 +53,155 @@ func (a *ApiHandler) PubsubProcess(ctx context.Context) {
 			a.Log.Debug("gameserver pubsub ctx done")
 			return
 		}
+	}
+}
+
+func (a *ApiHandler) onGameEvent(event gameplay.GameEvent) {
+	switch ev := event.(type) {
+	case gameplay.PlayMoveUCIEvent:
+		a.handlePlayMoveUCIEvent(ev)
+
+	case gameplay.PlayMoveUCIErrorEvent:
+		a.handlePlayMoveUCIErrorEvent(ev)
+
+	case gameplay.AbortEvent:
+		a.handleAbortGameEvent(ev)
+
+	case gameplay.AbortErrorEvent:
+		a.handleAbortGameErrorEvent(ev)
+
+	case gameplay.ResignEvent:
+		a.handleResignGameEvent(ev)
+
+	case gameplay.ResignErrorEvent:
+		a.handleResignGameErrorEvent(ev)
+
+	case gameplay.OfferDrawEvent:
+		a.handleOfferDrawEvent(ev)
+
+	case gameplay.OfferDrawErrorEvent:
+		a.handleOfferDrawErrorEvent(ev)
+
+	case gameplay.AcceptDrawEvent:
+		a.handleAcceptDrawEvent(ev)
+
+	case gameplay.AcceptDrawErrorEvent:
+		a.handleAcceptDrawErrorEvent(ev)
+
+	case gameplay.DeclineDrawEvent:
+		a.handleDeclineDrawEvent(ev)
+
+	case gameplay.DeclineDrawErrorEvent:
+		a.handleDeclineDrawErrorEvent(ev)
+	}
+}
+
+func (a *ApiHandler) handlePlayMoveUCIEvent(event gameplay.PlayMoveUCIEvent) {
+	gameSetter := models.GameSetter{
+		LastMove:    omitnull.FromPtr(event.LastMove),
+		EndTime:     omitnull.FromPtr(event.EndTime),
+		Repetitions: omit.From(int32(event.Repetitions)),
+	}
+
+	moveSetter := &models.GameMoveSetter{
+		GameID:   omit.From(event.GameID),
+		Fen:      omit.From(event.Position.Fen()),
+		Uci:      omit.From(event.Uci),
+		San:      omit.From(event.San),
+		Check:    omit.From(event.Position.Check),
+		PlayedAt: omitnull.FromPtr(event.LastMove),
+	}
+
+	hashSetter := &models.GameHistoryHashSetter{
+		GameID: omit.From(event.GameID),
+		Hash:   omit.From(int64(event.Position.Hash)),
+	}
+
+	var terminated bool
+
+	if event.GameResult != pb.GameResult_GAME_RESULT_UNSPECIFIED {
+		gameSetter.GameResultID.Set(a.gameResultProtoToID(event.GameResult))
+		gameSetter.GameResultStatusID.Set(a.gameResultStatusProtoToID(event.GameResultStatus))
+		gameSetter.GameStateID.Set(a.gameStateProtoToID(event.GameState))
+		terminated = true
+	}
+
+	if _, err := a.persistor.Game().UpdateGame(context.Background(), event.GameID, gameSetter, moveSetter, hashSetter); err != nil {
+		a.Log.Error("UpdateGame", slog.Int64("game_id", event.GameID), slog.Any("error", err))
+	}
+
+	if terminated {
+		gameFinishedMsg := &pb.Message{Event: &pb.Message_GameFinished{GameFinished: &pb.GameFinished{
+			GameId:           int32(event.GameID),
+			GameResult:       event.GameResult,
+			GameResultStatus: event.GameResultStatus,
+			GameState:        event.GameState,
+		}}}
+		gameFinishedMsgBytes, err := protojson.Marshal(gameFinishedMsg)
+		if err != nil {
+			a.Log.Error("protojson.Marshal Message_GameFinished", slog.Int64("game_id", event.GameID), slog.Any("error", err))
+		} else {
+			topic := fmt.Sprintf("game.%d", event.GameID)
+			if err := a.bus.rdb.Publish(context.Background(), topic, gameFinishedMsgBytes); err != nil {
+				a.Log.Error("publish Message_GameFinished", slog.Int64("game_id", event.GameID), slog.Any("error", err))
+			}
+		}
+
+		// if err := a.persistor.ActiveGame().DeleteActiveGameByID(context.Background(), event.GameID); err != nil {
+		// 	a.Log.Error("DeleteActiveGameByID", slog.Int64("game_id", event.GameID), slog.Any("error", err))
+		// }
+	}
+}
+
+func (a *ApiHandler) handlePlayMoveUCIErrorEvent(event gameplay.PlayMoveUCIErrorEvent) {
+	if event.Err != nil {
+		fmt.Println("--------------- handlePlayMoveUCIErrorEvent", event.Err)
+		return
+	}
+}
+
+func (a *ApiHandler) handleAbortGameEvent(event gameplay.AbortEvent) {}
+
+func (a *ApiHandler) handleAbortGameErrorEvent(event gameplay.AbortErrorEvent) {
+	if event.Err != nil {
+		fmt.Println("--------------- handleAbortGameErrorEvent", event.Err)
+		return
+	}
+}
+
+func (a *ApiHandler) handleResignGameEvent(event gameplay.ResignEvent) {}
+
+func (a *ApiHandler) handleResignGameErrorEvent(event gameplay.ResignErrorEvent) {
+	if event.Err != nil {
+		fmt.Println("--------------- handleResignGameErrorEvent", event.Err)
+		return
+	}
+}
+
+func (a *ApiHandler) handleOfferDrawEvent(event gameplay.OfferDrawEvent) {}
+
+func (a *ApiHandler) handleOfferDrawErrorEvent(event gameplay.OfferDrawErrorEvent) {
+	if event.Err != nil {
+		fmt.Println("--------------- handleOfferDrawErrorEvent", event.Err)
+		return
+	}
+}
+
+func (a *ApiHandler) handleAcceptDrawEvent(event gameplay.AcceptDrawEvent) {}
+
+func (a *ApiHandler) handleAcceptDrawErrorEvent(event gameplay.AcceptDrawErrorEvent) {
+	if event.Err != nil {
+		fmt.Println("--------------- handleAcceptDrawErrorEvent", event.Err)
+		return
+	}
+}
+
+func (a *ApiHandler) handleDeclineDrawEvent(event gameplay.DeclineDrawEvent) {}
+
+func (a *ApiHandler) handleDeclineDrawErrorEvent(event gameplay.DeclineDrawErrorEvent) {
+	if event.Err != nil {
+		fmt.Println("--------------- handleDeclineDrawErrorEvent", event.Err)
+		return
 	}
 }
 
@@ -83,10 +236,10 @@ func (a *ApiHandler) onIPCMsg(m *redis.Message) {
 func (a *ApiHandler) handleIPCHeartbeatMsg(data *pb.Heartbeat) {
 	var username string
 
-	if data.Guest {
-		username = "guest-" + data.UserId
+	if data.GetGuest() {
+		username = "guest-" + data.GetUserId()
 	} else {
-		uname, err := a.GetUsername(context.Background(), data.UserId)
+		uname, err := a.GetUsername(context.Background(), data.GetUserId())
 		if err != nil {
 			a.Log.Error("handleIPCHeartbeatMsg get username", slog.Any("error", err))
 			return
@@ -95,9 +248,9 @@ func (a *ApiHandler) handleIPCHeartbeatMsg(data *pb.Heartbeat) {
 		username = uname
 	}
 
-	err := a.persistor.Presence().RefreshPresence(context.Background(), uuid.MustParse(data.UserId), uuid.MustParse(data.ConnId), username, data.Guest)
+	err := a.persistor.Presence().RefreshPresence(context.Background(), uuid.MustParse(data.GetUserId()), uuid.MustParse(data.GetConnId()), username, data.GetGuest())
 	if err != nil && !errors.Is(err, redis.Nil) {
-		a.Log.Error("RefreshPresence", slog.String("user_id", data.UserId), slog.String("conn_id", data.ConnId), slog.Any("error", err))
+		a.Log.Error("RefreshPresence", slog.String("user_id", data.GetUserId()), slog.String("conn_id", data.GetConnId()), slog.Any("error", err))
 	}
 
 	// refresh presence
@@ -107,10 +260,10 @@ func (a *ApiHandler) handleIPCHeartbeatMsg(data *pb.Heartbeat) {
 func (a *ApiHandler) handleIPCLeaveTabMsg(data *pb.LeaveTab) {
 	var username string
 
-	if data.Guest {
-		username = "guest-" + data.UserId
+	if data.GetGuest() {
+		username = "guest-" + data.GetUserId()
 	} else {
-		uname, err := a.GetUsername(context.Background(), data.UserId)
+		uname, err := a.GetUsername(context.Background(), data.GetUserId())
 		if err != nil {
 			a.Log.Error("handleIPCLeaveTabMsg get username", slog.Any("error", err))
 			return
@@ -119,18 +272,18 @@ func (a *ApiHandler) handleIPCLeaveTabMsg(data *pb.LeaveTab) {
 		username = uname
 	}
 
-	channelsDiff, err := a.persistor.Presence().ClearPresence(context.Background(), uuid.MustParse(data.UserId), uuid.MustParse(data.ConnId), username, data.Guest)
+	channelsDiff, err := a.persistor.Presence().ClearPresence(context.Background(), uuid.MustParse(data.GetUserId()), uuid.MustParse(data.GetConnId()), username, data.GetGuest())
 	if err != nil && !errors.Is(err, redis.Nil) {
-		a.Log.Error("ClearPresence", slog.String("user_id", data.UserId), slog.String("conn_id", data.ConnId), slog.Any("error", err))
+		a.Log.Error("ClearPresence", slog.String("user_id", data.GetUserId()), slog.String("conn_id", data.GetConnId()), slog.Any("error", err))
 	}
 
-	if err := a.publishPresenceDiff(context.Background(), channelsDiff, data.UserId, data.ConnId, username, data.Guest); err != nil {
-		a.Log.Error("broadcastPresenceDiff", slog.String("user_id", data.UserId), slog.String("conn_id", data.ConnId), slog.Any("error", err))
+	if err := a.publishPresenceDiff(context.Background(), channelsDiff, data.GetUserId(), data.GetConnId(), username, data.GetGuest()); err != nil {
+		a.Log.Error("broadcastPresenceDiff", slog.String("user_id", data.GetUserId()), slog.String("conn_id", data.GetConnId()), slog.Any("error", err))
 	}
 
 	for _, leftChannel := range channelsDiff.UserLeft {
-		if err := a.sendUserPresenceDiffToChannel(context.Background(), channelsDiff, leftChannel, data.UserId, data.ConnId, username, data.Guest); err != nil {
-			a.Log.Error("sendUserPresenceDiffToChannel", slog.String("user_id", data.UserId), slog.String("conn_id", data.ConnId), slog.Any("error", err))
+		if err := a.sendUserPresenceDiffToChannel(context.Background(), channelsDiff, leftChannel, data.GetUserId(), data.GetConnId(), username, data.GetGuest()); err != nil {
+			a.Log.Error("sendUserPresenceDiffToChannel", slog.String("user_id", data.GetUserId()), slog.String("conn_id", data.GetConnId()), slog.Any("error", err))
 		}
 	}
 }
@@ -141,12 +294,12 @@ func (a *ApiHandler) handleIPCLeaveSiteMsg(data *pb.LeaveSite) {
 func (a *ApiHandler) handleIPCInitializeChannelsMsg(data *pb.InitializeChannels) {
 	channels := make([]string, 0)
 
-	if data.Path == "" || data.Path == "/" {
+	if data.GetPath() == "" || data.GetPath() == "/" {
 		channels = append(channels, "lobby", "lobby.chat")
 	} else {
 		var gameID int64
 
-		if gameIDStr, ok := strings.CutPrefix(data.Path, "/game/"); ok {
+		if gameIDStr, ok := strings.CutPrefix(data.GetPath(), "/game/"); ok {
 			n, err := strconv.ParseInt(gameIDStr, 10, 64)
 			if err != nil {
 				a.Log.Error("gameid parseint", slog.Any("error", err))
@@ -156,7 +309,7 @@ func (a *ApiHandler) handleIPCInitializeChannelsMsg(data *pb.InitializeChannels)
 			gameID = n
 		}
 
-		if gametvIDStr, ok := strings.CutPrefix(data.Path, "/gametv/"); ok {
+		if gametvIDStr, ok := strings.CutPrefix(data.GetPath(), "/gametv/"); ok {
 			n, err := strconv.ParseInt(gametvIDStr, 10, 64)
 			if err != nil {
 				a.Log.Error("gametvid parseint", slog.Any("error", err))
@@ -168,7 +321,7 @@ func (a *ApiHandler) handleIPCInitializeChannelsMsg(data *pb.InitializeChannels)
 
 		game, err := a.persistor.Game().GetGameByID(context.Background(), gameID, dbtype.GetGameByIDFilters{})
 		if err != nil && !errors.Is(err, pgx.ErrNoRows) {
-			a.Log.Error("handleIPCRequestInitialChannelsMsg GetGameByID", slog.String("user_id", data.UserId), slog.String("conn_id", data.ConnId), slog.String("path", data.Path), slog.Any("error", err))
+			a.Log.Error("handleIPCRequestInitialChannelsMsg GetGameByID", slog.String("user_id", data.GetUserId()), slog.String("conn_id", data.GetConnId()), slog.String("path", data.GetPath()), slog.Any("error", err))
 			return
 		}
 
@@ -193,13 +346,13 @@ func (a *ApiHandler) handleIPCInitializeChannelsMsg(data *pb.InitializeChannels)
 
 	initialChannelsMsgBytes, err := protojson.Marshal(initialChannelsMsg)
 	if err != nil {
-		a.Log.Error("protojson marshal Message_InitialChannels", slog.String("user_id", data.UserId), slog.Any("error", err))
+		a.Log.Error("protojson marshal Message_InitialChannels", slog.String("user_id", data.GetUserId()), slog.Any("error", err))
 		return
 	}
 
-	topic := "reply-initial-channels." + data.UserId + "." + data.ConnId
+	topic := "reply-initial-channels." + data.GetUserId() + "." + data.GetConnId()
 	if err := a.bus.rdb.Publish(context.Background(), topic, initialChannelsMsgBytes).Err(); err != nil {
-		a.Log.Error("hub publish Message_InitialChannels", slog.String("user_id", data.UserId), slog.String("topic", "ipc"), slog.Any("error", err))
+		a.Log.Error("hub publish Message_InitialChannels", slog.String("user_id", data.GetUserId()), slog.String("topic", "ipc"), slog.Any("error", err))
 		return
 	}
 }
@@ -207,10 +360,10 @@ func (a *ApiHandler) handleIPCInitializeChannelsMsg(data *pb.InitializeChannels)
 func (a *ApiHandler) handleIPCClientConnectedMsg(data *pb.ClientConnected) {
 	var username string
 
-	if data.Guest {
-		username = "guest-" + data.UserId
+	if data.GetGuest() {
+		username = "guest-" + data.GetUserId()
 	} else {
-		uname, err := a.GetUsername(context.Background(), data.UserId)
+		uname, err := a.GetUsername(context.Background(), data.GetUserId())
 		if err != nil {
 			a.Log.Error("handleIPCClientConnectedMsg get username", slog.Any("error", err))
 			return
@@ -219,35 +372,33 @@ func (a *ApiHandler) handleIPCClientConnectedMsg(data *pb.ClientConnected) {
 		username = uname
 	}
 
-	channels := data.GetChannels()
-
-	channelsDiff, err := a.persistor.Presence().SetPresence(context.Background(), uuid.MustParse(data.UserId), uuid.MustParse(data.ConnId), username, data.Guest, channels)
+	channelsDiff, err := a.persistor.Presence().SetPresence(context.Background(), uuid.MustParse(data.GetUserId()), uuid.MustParse(data.GetConnId()), username, data.GetGuest(), data.GetChannels())
 	if err != nil && !errors.Is(err, redis.Nil) {
-		a.Log.Error("SetPresence", slog.String("user_id", data.UserId), slog.String("conn_id", data.ConnId), slog.Any("error", err))
+		a.Log.Error("SetPresence", slog.String("user_id", data.GetUserId()), slog.String("conn_id", data.GetConnId()), slog.Any("error", err))
 		return
 	}
 
-	if err := a.publishPresenceDiff(context.Background(), channelsDiff, data.UserId, data.ConnId, username, data.Guest); err != nil {
-		a.Log.Error("broadcastPresenceDiff", slog.String("user_id", data.UserId), slog.String("conn_id", data.ConnId), slog.Any("error", err))
+	if err := a.publishPresenceDiff(context.Background(), channelsDiff, data.GetUserId(), data.GetConnId(), username, data.GetGuest()); err != nil {
+		a.Log.Error("broadcastPresenceDiff", slog.String("user_id", data.GetUserId()), slog.String("conn_id", data.GetConnId()), slog.Any("error", err))
 	}
 
-	for _, channel := range channels {
-		if err := a.sendChannelPresenceStateToConn(context.Background(), channel, data.ConnId); err != nil {
-			a.Log.Error("sendChannelPresenceStateToConn", slog.String("user_id", data.UserId), slog.String("conn_id", data.ConnId), slog.Any("error", err))
+	for _, channel := range data.GetChannels() {
+		if err := a.sendChannelPresenceStateToConn(context.Background(), channel, data.GetConnId()); err != nil {
+			a.Log.Error("sendChannelPresenceStateToConn", slog.String("user_id", data.GetUserId()), slog.String("conn_id", data.GetConnId()), slog.Any("error", err))
 		}
 
-		if err := a.sendUserPresenceDiffToChannel(context.Background(), channelsDiff, channel, data.UserId, data.ConnId, username, data.Guest); err != nil {
-			a.Log.Error("sendUserPresenceDiffToChannel", slog.String("user_id", data.UserId), slog.String("conn_id", data.ConnId), slog.Any("error", err))
+		if err := a.sendUserPresenceDiffToChannel(context.Background(), channelsDiff, channel, data.GetUserId(), data.GetConnId(), username, data.GetGuest()); err != nil {
+			a.Log.Error("sendUserPresenceDiffToChannel", slog.String("user_id", data.GetUserId()), slog.String("conn_id", data.GetConnId()), slog.Any("error", err))
 		}
 
 		if channel == "lobby" {
-			if err := a.sendLobbyInfo(data.UserId, data.ConnId, data.Guest); err != nil {
+			if err := a.sendLobbyInfo(data.GetUserId(), data.GetConnId(), data.GetGuest()); err != nil {
 				a.Log.Error("sendLobbyInfo", slog.Any("error", err))
 			}
 		}
 
 		if channel == "lobby.chat" {
-			if err := a.sendLobbyChatInfo(data.UserId, data.ConnId, data.Guest); err != nil {
+			if err := a.sendLobbyChatInfo(data.GetUserId(), data.GetConnId(), data.GetGuest()); err != nil {
 				a.Log.Error("sendLobbyChatInfo", slog.Any("error", err))
 			}
 		}
@@ -271,11 +422,11 @@ func (a *ApiHandler) handleIPCClientConnectedMsg(data *pb.ClientConnected) {
 			}
 
 			if isGameChat {
-				if err := a.sendGameChatInfo(gameID, data.UserId, data.ConnId, data.Guest); err != nil {
+				if err := a.sendGameChatInfo(gameID, data.GetUserId(), data.GetConnId(), data.GetGuest()); err != nil {
 					a.Log.Error("sendGameChatInfo", slog.Any("error", err))
 				}
 			} else {
-				if err := a.sendGameInfo(gameID, data.UserId, data.ConnId, data.Guest); err != nil {
+				if err := a.sendGameInfo(gameID, data.GetUserId(), data.GetConnId(), data.GetGuest()); err != nil {
 					a.Log.Error("sendGameInfo", slog.Any("error", err))
 				}
 			}
@@ -300,11 +451,11 @@ func (a *ApiHandler) handleIPCClientConnectedMsg(data *pb.ClientConnected) {
 			}
 
 			if isGameTvChat {
-				if err := a.sendGameTvChatInfo(gameID, data.UserId, data.ConnId, data.Guest); err != nil {
+				if err := a.sendGameTvChatInfo(gameID, data.GetUserId(), data.GetConnId(), data.GetGuest()); err != nil {
 					a.Log.Error("sendGameTvChatInfo", slog.Any("error", err))
 				}
 			} else {
-				if err := a.sendGameTvInfo(gameID, data.UserId, data.ConnId, data.Guest); err != nil {
+				if err := a.sendGameTvInfo(gameID, data.GetUserId(), data.GetConnId(), data.GetGuest()); err != nil {
 					a.Log.Error("sendGameTvInfo", slog.Any("error", err))
 				}
 			}
@@ -354,7 +505,7 @@ func (a *ApiHandler) onWSCMsg(m *redis.Message) {
 }
 
 func (a *ApiHandler) handleWSCEchoMsg(authInfo clientAuthInfo, data *pb.Echo) {
-	bb, _ := protojson.Marshal(&pb.Message{Event: &pb.Message_Echo{Echo: &pb.Echo{Message: strings.ToUpper(data.Message)}}})
+	bb, _ := protojson.Marshal(&pb.Message{Event: &pb.Message_Echo{Echo: &pb.Echo{Message: strings.ToUpper(data.GetMessage())}}})
 	toUser, toConn, toLobby := "user."+authInfo.userID, "conn."+authInfo.connID, "lobby.chat"
 	_ = []any{toUser, toConn, toLobby}
 	a.bus.rdb.Publish(context.Background(), toUser, bb)
@@ -384,27 +535,154 @@ func (a *ApiHandler) handleWSCCancelSeekGameMsg(authInfo clientAuthInfo, data *p
 }
 
 func (a *ApiHandler) handleWSCAbortGame(authInfo clientAuthInfo, data *pb.AbortGame) {
-	fmt.Println(data, "handleWSCAbortGame")
+	userID := uuid.MustParse(authInfo.userID)
+
+	// @TODO: remove later, gs has player ids anyway
+	isInActiveGame, err := a.persistor.ActiveGame().IsUserInActiveGame(context.Background(), userID, int64(data.GetGameId()))
+	if err != nil {
+		a.Log.Error("IsUserInActiveGame", slog.Any("error", err))
+		return
+	}
+
+	if !isInActiveGame {
+		return
+	}
+
+	gs, err := a.loadGameState(int64(data.GetGameId()))
+	if err != nil {
+		a.Log.Error("loadGameState", slog.Any("error", err))
+		return
+	}
+
+	gs.GameCommand <- gameplay.AbortGameCmd{
+		UserID: userID,
+	}
 }
 
 func (a *ApiHandler) handleWSCResignGame(authInfo clientAuthInfo, data *pb.ResignGame) {
-	fmt.Println(data, "handleWSCResignGame")
+	userID := uuid.MustParse(authInfo.userID)
+
+	// @TODO: remove later, gs has player ids anyway
+	isInActiveGame, err := a.persistor.ActiveGame().IsUserInActiveGame(context.Background(), userID, int64(data.GetGameId()))
+	if err != nil {
+		a.Log.Error("IsUserInActiveGame", slog.Any("error", err))
+		return
+	}
+
+	if !isInActiveGame {
+		return
+	}
+
+	gs, err := a.loadGameState(int64(data.GetGameId()))
+	if err != nil {
+		a.Log.Error("loadGameState", slog.Any("error", err))
+		return
+	}
+
+	gs.GameCommand <- gameplay.ResignGameCmd{
+		UserID: userID,
+	}
 }
 
 func (a *ApiHandler) handleWSCOfferDraw(authInfo clientAuthInfo, data *pb.OfferDraw) {
-	fmt.Println(data, "handleWSCOfferDraw")
+	userID := uuid.MustParse(authInfo.userID)
+
+	// @TODO: remove later, gs has player ids anyway
+	isInActiveGame, err := a.persistor.ActiveGame().IsUserInActiveGame(context.Background(), userID, int64(data.GetGameId()))
+	if err != nil {
+		a.Log.Error("IsUserInActiveGame", slog.Any("error", err))
+		return
+	}
+
+	if !isInActiveGame {
+		return
+	}
+
+	gs, err := a.loadGameState(int64(data.GetGameId()))
+	if err != nil {
+		a.Log.Error("loadGameState", slog.Any("error", err))
+		return
+	}
+
+	gs.GameCommand <- gameplay.OfferDrawCmd{
+		UserID: userID,
+	}
 }
 
 func (a *ApiHandler) handleWSCAcceptDraw(authInfo clientAuthInfo, data *pb.AcceptDraw) {
-	fmt.Println(data, "handleWSCAcceptDraw")
+	userID := uuid.MustParse(authInfo.userID)
+
+	// @TODO: remove later, gs has player ids anyway
+	isInActiveGame, err := a.persistor.ActiveGame().IsUserInActiveGame(context.Background(), userID, int64(data.GetGameId()))
+	if err != nil {
+		a.Log.Error("IsUserInActiveGame", slog.Any("error", err))
+		return
+	}
+
+	if !isInActiveGame {
+		return
+	}
+
+	gs, err := a.loadGameState(int64(data.GetGameId()))
+	if err != nil {
+		a.Log.Error("loadGameState", slog.Any("error", err))
+		return
+	}
+
+	gs.GameCommand <- gameplay.AcceptDrawCmd{
+		UserID: userID,
+	}
 }
 
 func (a *ApiHandler) handleWSCDeclineDraw(authInfo clientAuthInfo, data *pb.DeclineDraw) {
-	fmt.Println(data, "handleWSCDeclineDraw")
+	userID := uuid.MustParse(authInfo.userID)
+
+	// @TODO: remove later, gs has player ids anyway
+	isInActiveGame, err := a.persistor.ActiveGame().IsUserInActiveGame(context.Background(), userID, int64(data.GetGameId()))
+	if err != nil {
+		a.Log.Error("IsUserInActiveGame", slog.Any("error", err))
+		return
+	}
+
+	if !isInActiveGame {
+		return
+	}
+
+	gs, err := a.loadGameState(int64(data.GetGameId()))
+	if err != nil {
+		a.Log.Error("loadGameState", slog.Any("error", err))
+		return
+	}
+
+	gs.GameCommand <- gameplay.DeclineDrawCmd{
+		UserID: userID,
+	}
 }
 
 func (a *ApiHandler) handleWSCPlayMoveUCI(authInfo clientAuthInfo, data *pb.PlayMoveUCI) {
-	fmt.Println(data, "handleWSCPlayMoveUCI")
+	userID := uuid.MustParse(authInfo.userID)
+
+	// @TODO: remove later, gs has player ids anyway
+	isInActiveGame, err := a.persistor.ActiveGame().IsUserInActiveGame(context.Background(), userID, int64(data.GetGameId()))
+	if err != nil {
+		a.Log.Error("IsUserInActiveGame", slog.Any("error", err))
+		return
+	}
+
+	if !isInActiveGame {
+		return
+	}
+
+	gs, err := a.loadGameState(int64(data.GetGameId()))
+	if err != nil {
+		a.Log.Error("loadGameState", slog.Any("error", err))
+		return
+	}
+
+	gs.GameCommand <- gameplay.PlayMoveUCICmd{
+		UserID: userID,
+		UCI:    data.GetUci(),
+	}
 }
 
 func (a *ApiHandler) handleWSCSendLobbyChat(authInfo clientAuthInfo, data *pb.SendLobbyChat) {
@@ -414,7 +692,7 @@ func (a *ApiHandler) handleWSCSendLobbyChat(authInfo clientAuthInfo, data *pb.Se
 		MessageId: "1",
 		UserId:    authInfo.userID,
 		PostedAt:  time.Now().Format(time.RFC3339),
-		Message:   data.Message,
+		Message:   data.GetMessage(),
 	}}}
 
 	lobbyChatMsgBytes, err := protojson.Marshal(lobbyChatMsg)
@@ -430,7 +708,7 @@ func (a *ApiHandler) handleWSCSendLobbyChat(authInfo clientAuthInfo, data *pb.Se
 func (a *ApiHandler) handleWSCSendGameChat(authInfo clientAuthInfo, data *pb.SendGameChat) {
 	fmt.Println(data, "handleWSCSendGameChat")
 
-	inGame, err := a.persistor.ActiveGame().IsUserInActiveGame(context.Background(), uuid.MustParse(authInfo.userID), int64(data.GameId))
+	inGame, err := a.persistor.ActiveGame().IsUserInActiveGame(context.Background(), uuid.MustParse(authInfo.userID), int64(data.GetGameId()))
 	if err != nil {
 		fmt.Println("-------------------------- NOT IN GAME ERRRRORRR ---------------------------- ", err)
 		return
@@ -442,17 +720,17 @@ func (a *ApiHandler) handleWSCSendGameChat(authInfo clientAuthInfo, data *pb.Sen
 	}
 
 	gameChatMsg := &pb.Message{Event: &pb.Message_GameChat{GameChat: &pb.GameChat{
-		GameId:    data.GameId,
+		GameId:    data.GetGameId(),
 		MessageId: int32(rand.IntN(100)),
 		UserId:    authInfo.userID,
 		PostedAt:  time.Now().Format(time.RFC3339),
-		Message:   data.Message,
+		Message:   data.GetMessage(),
 	}}}
 
 	gameChatMsgBytes, err := protojson.Marshal(gameChatMsg)
 	if err != nil {
 	} else {
-		topic := fmt.Sprintf("game.%d.chat", data.GameId)
+		topic := fmt.Sprintf("game.%d.chat", data.GetGameId())
 		if err := a.bus.rdb.Publish(context.Background(), topic, gameChatMsgBytes).Err(); err != nil {
 			a.Log.Error("LobbyChat publish", slog.String("user_id", authInfo.userID), slog.String("auth_state", authInfo.authState.String()), slog.Any("error", err))
 			return
@@ -944,12 +1222,6 @@ func (a *ApiHandler) processMatchedPoolPair(ctx context.Context, pair [2]string,
 		a.Log.Error("invalid matched pair user id", slog.Any("error", errors.Join(err1, err2)))
 	}
 
-	// userMeta1, err3 := a.persistor.Pool().GetPoolUserMeta(ctx, userID1)
-	// userMeta2, err4 := a.persistor.Pool().GetPoolUserMeta(ctx, userID1)
-	// if err3 != nil || err4 != nil {
-	// 	a.Log.Error("failed to get user meta", slog.Any("error", errors.Join(err3, err4)))
-	// }
-
 	username1, username2 := "guest", "guest"
 
 	if pool.Rated {
@@ -983,7 +1255,7 @@ func (a *ApiHandler) processMatchedPoolPair(ctx context.Context, pair [2]string,
 		})
 	}
 
-	gs, err := gameplay.NewGameState(-1, players, gtc, true, thresholds, gameplay.WithRated(pool.Rated))
+	gs, err := gameplay.NewGameState(-1, players, gtc, thresholds, a.gameEvent, gameplay.WithRated(pool.Rated))
 	if err != nil {
 		a.Log.Error("gameplay.NewGameState", slog.Any("error", err))
 		return
@@ -1045,7 +1317,9 @@ func (a *ApiHandler) processMatchedPoolPair(ctx context.Context, pair [2]string,
 		}
 	}
 
-	gs.Start()
+	// @TODO: fix states better later
+	gs.Start(ctx)
+	// start white first move timer
 
 	game, err := a.persistor.Game().CreateGame(ctx, gameSetter, moveSetters, hashSetters)
 	if err != nil {
@@ -1078,6 +1352,7 @@ func (a *ApiHandler) processMatchedPoolPair(ctx context.Context, pair [2]string,
 
 func (a *ApiHandler) loadGameState(gameID int64) (*gameplay.GameState, error) {
 	if gs, ok := a.gamestates[gameID]; ok {
+		a.Log.Debug("loadGameState success", slog.String("from", "memory"))
 		return gs, nil
 	}
 
@@ -1085,58 +1360,85 @@ func (a *ApiHandler) loadGameState(gameID int64) (*gameplay.GameState, error) {
 
 	game, err := a.persistor.Game().GetGameByID(context.Background(), gameID, filters)
 	if err != nil {
+		a.Log.Error("loadGameState GetGameByID", slog.Int64("game_id", gameID), slog.Any("error", err))
 		return nil, err
 	}
 
-	return a.gameStateFromPersistence(context.Background(), game.Game, game.GameMoves.Val, game.GameHistoryHashes.Val)
+	gs, err := a.gameStateFromPersistence(context.Background(), game.Game, game.GameMoves.Val, game.GameHistoryHashes.Val)
+	if err != nil {
+		a.Log.Error("loadGameState gameStateFromPersistence", slog.Int64("game_id", gameID), slog.Any("error", err))
+		return nil, err
+	}
+
+	a.Log.Debug("loadGameState success", slog.String("from", "persistence"))
+	gs.Start(context.Background())
+
+	a.gamestates[gameID] = gs
+
+	return gs, nil
 }
 
 func (a *ApiHandler) gameStateFromPersistence(ctx context.Context, game models.Game, moves *[]models.GameMove, hashes *[]models.GameHistoryHash) (*gameplay.GameState, error) {
-	chess, err := engine.NewChess(game.Fen)
-	if err != nil {
-		return nil, err
-	}
-
-	chess.Repetitions = uint16(game.Repetitions)
-
-	if hashes != nil && len(*hashes) > 0 {
-		chess.HistoryHashes = make([]uint64, len(*hashes))
-		for i, hash := range *hashes {
-			chess.HistoryHashes[i] = uint64(hash.Hash)
-		}
-	}
-
 	whiteID := game.GuestWhiteID.GetOr(game.WhiteID.MustGet())
 	blackID := game.GuestBlackID.GetOr(game.BlackID.MustGet())
 
 	whiteUsername, blackUsername := "guest", "guest"
 
 	if game.Rated {
-		uname1, err5 := a.GetUsername(ctx, whiteID.String())
-
-		uname2, err6 := a.GetUsername(ctx, blackID.String())
+		wn, err5 := a.GetUsername(ctx, whiteID.String())
+		bn, err6 := a.GetUsername(ctx, blackID.String())
 		if err5 != nil || err6 != nil {
 			a.Log.Error("failed to get usernames", slog.Any("error", errors.Join(err5, err6)))
 		}
 
-		whiteUsername, blackUsername = uname1, uname2
+		whiteUsername, blackUsername = wn, bn
 	}
 
-	white := &gameplay.Player{
-		ID:    whiteID,
-		Name:  whiteUsername,
-		Color: pb.Color_COLOR_WHITE,
-		Guest: !game.Rated,
+	players := [2]gameplay.Player{
+		{ID: whiteID, Name: whiteUsername, Color: pb.Color_COLOR_WHITE, Guest: !game.Rated},
+		{ID: blackID, Name: blackUsername, Color: pb.Color_COLOR_BLACK, Guest: !game.Rated},
 	}
 
-	black := &gameplay.Player{
-		ID:    blackID,
-		Name:  blackUsername,
-		Color: pb.Color_COLOR_BLACK,
-		Guest: !game.Rated,
+	gtc := &pb.GameTimeControl{ClockMs: game.TimeControlClockMS, IncrementMs: game.TimeControlIncrementMS}
+
+	thresholds := []gameplay.CategoryThreshold{}
+	for _, x := range a.categoryThresholds {
+		thresholds = append(thresholds, gameplay.CategoryThreshold{
+			UpperLimit:   x.upperLimit,
+			TimeCategory: x.timeCategory,
+		})
 	}
 
-	players := map[uuid.UUID]*gameplay.Player{whiteID: white, blackID: black}
+	gs, err := gameplay.NewGameState(
+		game.ID,
+		players,
+		gtc,
+		thresholds,
+		a.gameEvent,
+		gameplay.WithFEN(game.Fen),
+		gameplay.WithRated(game.Rated),
+		gameplay.WithGameVariant(a.gameVariantIDToProto(game.GameVariantID)),
+		gameplay.WithGameTimeKind(a.gameTimeKindIDToProto(game.GameTimeKindID)),
+		gameplay.WithGameTimeCategory(a.gameTimeCategoryIDToProto(game.GameTimeCategoryID)),
+		gameplay.WithGameState(a.gameStateIDToProto(game.GameStateID)),
+		gameplay.WithReconnectTimeout(time.Duration(game.ReconnectTimeoutMS)*time.Millisecond),
+		gameplay.WithFirstMoveTimeoutOpt(time.Duration(game.FirstMoveTimeoutMS)*time.Millisecond),
+		gameplay.WithLastMove(game.LastMove.Ptr()),
+		gameplay.WithStartTime(game.StartTime.Ptr()),
+		gameplay.WithEndTime(game.EndTime.Ptr()),
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	gs.Chess.Repetitions = uint16(game.Repetitions)
+
+	if hashes != nil && len(*hashes) > 0 {
+		gs.Chess.HistoryHashes = make([]uint64, len(*hashes))
+		for i, hash := range *hashes {
+			gs.Chess.HistoryHashes[i] = uint64(hash.Hash)
+		}
+	}
 
 	var gameMoves []*pb.GameMove
 
@@ -1162,27 +1464,7 @@ func (a *ApiHandler) gameStateFromPersistence(ctx context.Context, game models.G
 		}
 	}
 
-	gs := &gameplay.GameState{
-		Chess:            chess,
-		GameID:           game.ID,
-		White:            white,
-		Black:            black,
-		Players:          players,
-		Guest:            !game.Rated,
-		GameVariant:      a.gameVariantIDToProto(game.GameVariantID),
-		GameTimeKind:     a.gameTimeKindIDToProto(game.GameTimeKindID),
-		GameTimeCategory: a.gameTimeCategoryIDToProto(game.GameTimeCategoryID),
-		GameTimeControl:  &pb.GameTimeControl{ClockMs: game.TimeControlClockMS, IncrementMs: game.TimeControlIncrementMS},
-		GameState:        a.gameStateIDToProto(game.GameStateID),
-		ReconnectTimeout: time.Duration(game.ReconnectTimeoutMS) * time.Millisecond,
-		FirstMoveTimeout: time.Duration(game.FirstMoveTimeoutMS) * time.Millisecond,
-		LastMove:         game.LastMove.Ptr(),
-		StartTime:        game.StartTime.Ptr(),
-		EndTime:          game.EndTime.Ptr(),
-		Rated:            game.Rated,
-		GameMoves:        gameMoves,
-		// TimerAction:      make(chan gameplay.timerAction),
-	}
+	gs.GameMoves = gameMoves
 
 	if game.GameResultID.IsValue() {
 		gs.GameResult = a.gameResultIDToProto(game.GameResultID.MustGet())
@@ -1213,4 +1495,12 @@ func debug_print_game_info(gs *gameplay.GameState) {
 	fmt.Printf("game_moves: %v\n", gs.GameMoves)
 	fmt.Printf("repetitions: %v\n", gs.Chess.Repetitions)
 	fmt.Printf("history_hashes: %v\n", gs.Chess.HistoryHashes)
+
+	fmt.Println(gs.Chess.Position.PrintBoard())
+	fmt.Println("LEGAL MOVES")
+	legals := []string{}
+	for _, x := range gs.Chess.LegalMoves {
+		legals = append(legals, x.String())
+	}
+	godump.DumpJSON("legal moves", legals)
 }

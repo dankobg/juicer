@@ -1,0 +1,93 @@
+package gameplay
+
+import (
+	"time"
+
+	"github.com/dankobg/juicer/engine"
+	pb "github.com/dankobg/juicer/pb/proto/juicer"
+	"github.com/google/uuid"
+)
+
+type GameEvent interface {
+	isGameEvent()
+}
+
+type PlayMoveUCIEvent struct {
+	GameID                int64
+	PlayedBy              uuid.UUID
+	Players               map[uuid.UUID]*Player
+	Uci                   string
+	San                   string
+	Lan                   string
+	WhiteClockRemainingMs int64
+	BlackClockRemainingMs int64
+	Position              *engine.Position
+	GameResult            pb.GameResult
+	GameResultStatus      pb.GameResultStatus
+	GameState             pb.GameState
+	LastMove              *time.Time
+	StartTime             *time.Time
+	EndTime               *time.Time
+	Repetitions           uint16
+	LegalMoves            []string
+	// History []engine.History
+	// Hashes []engine.HistoryHash
+}
+
+func (PlayMoveUCIEvent) isGameEvent() {}
+
+type PlayMoveUCIErrorEvent struct {
+	Err error
+}
+
+func (PlayMoveUCIErrorEvent) isGameEvent() {}
+
+type AbortEvent struct{}
+
+func (AbortEvent) isGameEvent() {}
+
+type AbortErrorEvent struct {
+	Err error
+}
+
+func (AbortErrorEvent) isGameEvent()
+
+type ResignEvent struct{}
+
+func (ResignEvent) isGameEvent() {}
+
+type ResignErrorEvent struct {
+	Err error
+}
+
+func (ResignErrorEvent) isGameEvent()
+
+type OfferDrawEvent struct{}
+
+func (OfferDrawEvent) isGameEvent() {}
+
+type OfferDrawErrorEvent struct {
+	Err error
+}
+
+func (OfferDrawErrorEvent) isGameEvent()
+
+type AcceptDrawEvent struct{}
+
+func (AcceptDrawEvent) isGameEvent() {}
+
+type AcceptDrawErrorEvent struct {
+	Err error
+}
+
+func (AcceptDrawErrorEvent) isGameEvent()
+
+type DeclineDrawEvent struct{}
+
+func (DeclineDrawEvent) isGameEvent() {}
+
+type DeclineDrawErrorEvent struct {
+	Err error
+}
+
+func (DeclineDrawErrorEvent) isGameEvent()

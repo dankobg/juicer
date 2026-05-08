@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/aarondl/opt/omit"
 	api "github.com/dankobg/juicer/api/gen"
 	"github.com/dankobg/juicer/db/gen/models"
 	"github.com/dankobg/juicer/persistence"
@@ -304,7 +303,7 @@ func (pst *PgGamePersistor) CreateGame(ctx context.Context, in models.GameSetter
 	if len(inMoves) > 0 {
 		moveSetters := make([]*models.GameMoveSetter, len(inMoves))
 		for i, x := range inMoves {
-			x.GameID = omit.From(game.ID)
+			x.GameID.Set(game.ID)
 			moveSetters[i] = &x
 		}
 
@@ -317,7 +316,7 @@ func (pst *PgGamePersistor) CreateGame(ctx context.Context, in models.GameSetter
 	if len(inHashes) > 0 {
 		hashSetters := make([]*models.GameHistoryHashSetter, len(inHashes))
 		for i, x := range inHashes {
-			x.GameID = omit.From(game.ID)
+			x.GameID.Set(game.ID)
 			hashSetters[i] = &x
 		}
 
@@ -330,7 +329,7 @@ func (pst *PgGamePersistor) CreateGame(ctx context.Context, in models.GameSetter
 	return game, nil
 }
 
-func (pst *PgGamePersistor) UpdateGame(ctx context.Context, gameID int64, in models.GameSetter) (models.Game, error) {
+func (pst *PgGamePersistor) UpdateGame(ctx context.Context, gameID int64, in models.GameSetter, newMove *models.GameMoveSetter, newHash *models.GameHistoryHashSetter) (models.Game, error) {
 	q := models.Games.Update(
 		in.UpdateMod(),
 		um.Where(models.Games.Columns.ID.EQ(psql.Arg(gameID))),
@@ -340,6 +339,22 @@ func (pst *PgGamePersistor) UpdateGame(ctx context.Context, gameID int64, in mod
 	game, err := bob.One(ctx, pst.exec, q, scan.StructMapper[models.Game]())
 	if err != nil {
 		return models.Game{}, fmt.Errorf("update game")
+	}
+
+	if newMove != nil {
+		newMove.GameID.Set(gameID)
+		q2 := models.GameMoves.Insert(newMove)
+		if _, err := bob.Exec(ctx, pst.exec, q2); err != nil {
+			return models.Game{}, fmt.Errorf("update game move")
+		}
+	}
+
+	if newHash != nil {
+		newHash.GameID.Set(gameID)
+		q2 := models.GameHistoryHashes.Insert(newHash)
+		if _, err := bob.Exec(ctx, pst.exec, q2); err != nil {
+			return models.Game{}, fmt.Errorf("update game history hash")
+		}
 	}
 
 	return game, nil
@@ -366,22 +381,6 @@ func (pst *PgGamePersistor) BulkDeleteGames(ctx context.Context, ids []int64) er
 	}
 
 	return nil
-}
-
-func (pst *PgGamePersistor) IsGameActive(ctx context.Context, gameID int64) (bool, error) {
-	// q := psql.Select(
-	// 	sm.Columns(models.Games.Columns),
-	// 	sm.From(models.Games.Name()),
-	// )
-	panic("")
-}
-
-func (pst *PgGamePersistor) IsUserInActiveGame(ctx context.Context, userID uuid.UUID, gameID int64) (bool, error) {
-	// q := psql.Select(
-	// 	sm.Columns(models.Games.Columns),
-	// 	sm.From(models.Games.Name()),
-	// )
-	panic("")
 }
 
 func (pst *PgGamePersistor) GetGameStatsForUser(ctx context.Context, userID uuid.UUID, filters *dbtype.GameStatsForUserFilters) (dbtype.GameStats, error) {

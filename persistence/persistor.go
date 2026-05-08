@@ -94,7 +94,7 @@ type GamePersistor interface {
 	GetGameByID(ctx context.Context, gameID int64, filters dbtype.GetGameByIDFilters) (dbtype.GameDetails, error)
 	ListGames(ctx context.Context, filters dbtype.ListGamesFilters) (dbtype.PagedResult[dbtype.GameDetails], error)
 	CreateGame(ctx context.Context, in models.GameSetter, inMoves []models.GameMoveSetter, inHashes []models.GameHistoryHashSetter) (models.Game, error)
-	UpdateGame(ctx context.Context, gameID int64, in models.GameSetter) (models.Game, error)
+	UpdateGame(ctx context.Context, gameID int64, in models.GameSetter, newMove *models.GameMoveSetter, newHash *models.GameHistoryHashSetter) (models.Game, error)
 	DeleteGameByID(ctx context.Context, gameID int64) (int64, error)
 	BulkDeleteGames(ctx context.Context, gameIDs []int64) error
 	GetGameStatsForUser(ctx context.Context, userID uuid.UUID, filters *dbtype.GameStatsForUserFilters) (dbtype.GameStats, error)
@@ -108,7 +108,7 @@ type ActiveGamePersistor interface {
 	ListActiveGameUsers(ctx context.Context, gameID int64) ([2]uuid.UUID, error)
 	CreateActiveGame(ctx context.Context, gs *gameplay.GameState) error
 	UpdateActiveGame(ctx context.Context, gameID int64, in models.GameSetter) error
-	DeleteActiveGameByID(ctx context.Context, gameID int64) (int64, error)
+	DeleteActiveGameByID(ctx context.Context, gameID int64) error
 }
 
 type PoolPersistor interface {

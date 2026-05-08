@@ -110,7 +110,7 @@ func (c *client) ReadLoop(ctx context.Context) {
 			return
 		}
 
-		c.log.Debug("recv", slog.String("msg_type", msgType.String()), slog.String("msg", string(msg)))
+		c.log.Debug("conn.Read", slog.String("msg_type", msgType.String()), slog.String("msg", string(msg)))
 
 		if err := c.hub.processClientWebsocketMessage(c, msg); err != nil {
 			c.log.Error("processClientWebsocketMessage", slog.String("msg_type", msgType.String()), slog.String("msg", string(msg)), slog.Any("error", err))
@@ -135,12 +135,12 @@ func (c *client) WriteLoop(ctx context.Context) {
 				return
 			}
 
-			c.log.Debug("conn.Write", slog.String("msg_type", websocket.MessageText.String()), slog.Any("msg", string(outMsg)))
-
 			if err := c.conn.Write(ctx, websocket.MessageText, outMsg); err != nil {
 				c.log.Error("conn.Write", slog.Any("error", err))
 				return
 			}
+
+			c.log.Debug("conn.Write", slog.String("msg_type", websocket.MessageText.String()), slog.Any("msg", string(outMsg)))
 
 		case <-pingTicker.C:
 			c.mu.Lock()

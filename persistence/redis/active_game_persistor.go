@@ -94,7 +94,6 @@ func (pst *RedisActiveGamePersistor) CreateActiveGame(ctx context.Context, gs *g
 		GameID:                 gs.GameID,
 		WhiteID:                gs.White.ID.String(),
 		BlackID:                gs.Black.ID.String(),
-		Guest:                  gs.Guest,
 		GameVariant:            gs.GameVariant,
 		GameTimeKind:           gs.GameTimeKind,
 		GameTimeCategory:       gs.GameTimeCategory,
@@ -145,6 +144,6 @@ func (pst *RedisActiveGamePersistor) UpdateActiveGame(ctx context.Context, gameI
 	panic("")
 }
 
-func (pst *RedisActiveGamePersistor) DeleteActiveGameByID(ctx context.Context, gameID int64) (int64, error) {
+func (pst *RedisActiveGamePersistor) DeleteActiveGameByID(ctx context.Context, gameID int64) error {
 	panic("")
 }

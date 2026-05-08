@@ -4,20 +4,30 @@ import (
 	"time"
 
 	pb "github.com/dankobg/juicer/pb/proto/juicer"
+	"github.com/google/uuid"
 )
 
 type gameOpts struct {
+	gameID           int64
 	fen              string
-	variant          pb.GameVariant
-	timeKind         pb.GameTimeKind
-	timeCategory     pb.GameTimeCategory
-	timeControl      *pb.GameTimeControl
-	result           pb.GameResult
-	resultStatus     pb.GameResultStatus
-	state            pb.GameState
+	white            *Player
+	black            *Player
+	players          map[uuid.UUID]*Player
+	gameVariant      pb.GameVariant
+	gameTimeKind     pb.GameTimeKind
+	gameTimeCategory pb.GameTimeCategory
+	gameTimeControl  *pb.GameTimeControl
+	gameResult       pb.GameResult
+	gameResultStatus pb.GameResultStatus
+	gameState        pb.GameState
 	reconnectTimeout time.Duration
 	firstMoveTimeout time.Duration
 	rated            bool
+	lastMove         *time.Time
+	startTime        *time.Time
+	endTime          *time.Time
+
+	gameMoves []*pb.GameMove
 }
 
 type GameOption interface {
@@ -32,54 +42,59 @@ func (o GameOptions) apply(g *gameOpts) {
 	}
 }
 
+type gameIDOpt int64
+
+func (o gameIDOpt) apply(g *gameOpts)    { g.gameID = int64(o) }
+func WithGameID(gameID int64) GameOption { return gameIDOpt(gameID) }
+
 type fenOpt string
 
 func (o fenOpt) apply(g *gameOpts)  { g.fen = string(o) }
 func WithFEN(fen string) GameOption { return fenOpt(fen) }
 
-type variantOpt pb.GameVariant
+type gameVariantOpt pb.GameVariant
 
-func (o variantOpt) apply(g *gameOpts)              { g.variant = pb.GameVariant(o) }
-func WithVariant(variant pb.GameVariant) GameOption { return variantOpt(variant) }
+func (o gameVariantOpt) apply(g *gameOpts)              { g.gameVariant = pb.GameVariant(o) }
+func WithGameVariant(variant pb.GameVariant) GameOption { return gameVariantOpt(variant) }
 
-type timeKindOpt pb.GameTimeKind
+type gameTimeKindOpt pb.GameTimeKind
 
-func (o timeKindOpt) apply(g *gameOpts)                { g.timeKind = pb.GameTimeKind(o) }
-func WithTimeKind(timeKind pb.GameTimeKind) GameOption { return timeKindOpt(timeKind) }
+func (o gameTimeKindOpt) apply(g *gameOpts)                { g.gameTimeKind = pb.GameTimeKind(o) }
+func WithGameTimeKind(timeKind pb.GameTimeKind) GameOption { return gameTimeKindOpt(timeKind) }
 
-type timeCategoryOpt pb.GameTimeCategory
+type gameTimeCategoryOpt pb.GameTimeCategory
 
-func (o timeCategoryOpt) apply(g *gameOpts) { g.timeCategory = pb.GameTimeCategory(o) }
-func WithTimeCategory(timeCategory pb.GameTimeCategory) GameOption {
-	return timeCategoryOpt(timeCategory)
+func (o gameTimeCategoryOpt) apply(g *gameOpts) { g.gameTimeCategory = pb.GameTimeCategory(o) }
+func WithGameTimeCategory(timeCategory pb.GameTimeCategory) GameOption {
+	return gameTimeCategoryOpt(timeCategory)
 }
 
-type timeControlOpt struct{ tc *pb.GameTimeControl }
+type gameTimeControlOpt struct{ tc *pb.GameTimeControl }
 
-func (o timeControlOpt) apply(g *gameOpts) { g.timeControl = o.tc }
-func WithTimeControl(timeControl *pb.GameTimeControl) GameOption {
-	return timeControlOpt{tc: timeControl}
+func (o gameTimeControlOpt) apply(g *gameOpts) { g.gameTimeControl = o.tc }
+func WithGameTimeControl(timeControl *pb.GameTimeControl) GameOption {
+	return gameTimeControlOpt{tc: timeControl}
 }
 
-type resultOpt pb.GameResult
+type gameResultOpt pb.GameResult
 
-func (o resultOpt) apply(g *gameOpts) { g.result = pb.GameResult(o) }
+func (o gameResultOpt) apply(g *gameOpts) { g.gameResult = pb.GameResult(o) }
 func WithGameResult(result pb.GameResult) GameOption {
-	return resultOpt(result)
+	return gameResultOpt(result)
 }
 
-type resultStatusOpt pb.GameResultStatus
+type gameResultStatusOpt pb.GameResultStatus
 
-func (o resultStatusOpt) apply(g *gameOpts) { g.resultStatus = pb.GameResultStatus(o) }
+func (o gameResultStatusOpt) apply(g *gameOpts) { g.gameResultStatus = pb.GameResultStatus(o) }
 func WithGameResultStatus(resultStatus pb.GameResultStatus) GameOption {
-	return resultStatusOpt(resultStatus)
+	return gameResultStatusOpt(resultStatus)
 }
 
-type stateOpt pb.GameState
+type gameStateOpt pb.GameState
 
-func (o stateOpt) apply(g *gameOpts) { g.state = pb.GameState(o) }
+func (o gameStateOpt) apply(g *gameOpts) { g.gameState = pb.GameState(o) }
 func WithGameState(state pb.GameState) GameOption {
-	return stateOpt(state)
+	return gameStateOpt(state)
 }
 
 type reconnectTimeoutOpt time.Duration
@@ -100,3 +115,38 @@ type ratedOpt bool
 
 func (o ratedOpt) apply(g *gameOpts)  { g.rated = bool(o) }
 func WithRated(rated bool) GameOption { return ratedOpt(rated) }
+
+type lastMoveOpt struct{ t *time.Time }
+
+func (o lastMoveOpt) apply(g *gameOpts)           { g.lastMove = o.t }
+func WithLastMove(lastMove *time.Time) GameOption { return lastMoveOpt{t: lastMove} }
+
+type startTimeOpt struct{ t *time.Time }
+
+func (o startTimeOpt) apply(g *gameOpts)            { g.startTime = o.t }
+func WithStartTime(startTime *time.Time) GameOption { return startTimeOpt{t: startTime} }
+
+type endTimeOpt struct{ t *time.Time }
+
+func (o endTimeOpt) apply(g *gameOpts)          { g.startTime = o.t }
+func WithEndTime(endTime *time.Time) GameOption { return endTimeOpt{t: endTime} }
+
+type gameMovesOpt struct{ moves []*pb.GameMove }
+
+func (o gameMovesOpt) apply(g *gameOpts)            { g.gameMoves = o.moves }
+func WithGameMoves(moves []*pb.GameMove) GameOption { return gameMovesOpt{moves: moves} }
+
+type whitePlayerOpt struct{ p *Player }
+
+func (o whitePlayerOpt) apply(g *gameOpts) { g.white = o.p }
+func WithWhitePlayer(p *Player) GameOption { return whitePlayerOpt{p: p} }
+
+type blackPlayerOpt struct{ p *Player }
+
+func (o blackPlayerOpt) apply(g *gameOpts) { g.white = o.p }
+func WithBlackPlayer(p *Player) GameOption { return blackPlayerOpt{p: p} }
+
+type playersOpt struct{ players map[uuid.UUID]*Player }
+
+func (o playersOpt) apply(g *gameOpts)                     { g.players = o.players }
+func WithPlayers(players map[uuid.UUID]*Player) GameOption { return playersOpt{players: players} }

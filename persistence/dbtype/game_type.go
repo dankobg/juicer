@@ -48,7 +48,6 @@ type ActiveGame struct {
 	// BlackID                *uuid.UUID          `json:"black_id"`
 	// GuestWhiteID           *uuid.UUID          `json:"guest_white_id"`
 	// GuestBlackID           *uuid.UUID          `json:"guest_black_id"`
-	Guest                  bool                `json:"guest"`
 	GameVariant            pb.GameVariant      `json:"game_variant"`
 	GameTimeKind           pb.GameTimeKind     `json:"game_time_kind"`
 	GameTimeCategory       pb.GameTimeCategory `json:"game_time_category"`

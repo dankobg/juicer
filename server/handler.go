@@ -78,6 +78,7 @@ type ApiHandler struct {
 	protoMappingsCache protoMappingsCache
 
 	gamestates map[int64]*gameplay.GameState
+	gameEvent  chan gameplay.GameEvent
 }
 
 func New(
@@ -103,6 +104,7 @@ func New(
 		categoryThresholds: make([]categoryThreshold, 0),
 		protoMappingsCache: newProtoMappingsCache(),
 		gamestates:         make(map[int64]*gameplay.GameState),
+		gameEvent:          make(chan gameplay.GameEvent, 32),
 	}
 
 	return apiHandler
