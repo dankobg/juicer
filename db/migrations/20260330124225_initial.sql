@@ -127,6 +127,7 @@ create table "game" (
   "fen" character varying(90) not null,
   "pgn" text,
   "repetitions" integer not null default 0,
+  "version" integer not null default 0,
   "created_at" timestamptz not null default current_timestamp,
   "updated_at" timestamptz not null default current_timestamp,
   constraint "pk_game_id" primary key ("id"),

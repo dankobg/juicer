@@ -30,6 +30,7 @@ type PlayMoveUCIEvent struct {
 	EndTime               *time.Time
 	Repetitions           uint16
 	LegalMoves            []string
+	Version               int
 	// History []engine.History
 	// Hashes []engine.HistoryHash
 }

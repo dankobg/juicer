@@ -231,6 +231,15 @@ var Games = Table[
 			Generated: false,
 			AutoIncr:  false,
 		},
+		Version: column{
+			Name:      "version",
+			DBType:    "integer",
+			Default:   "0",
+			Comment:   "",
+			Nullable:  false,
+			Generated: false,
+			AutoIncr:  false,
+		},
 		CreatedAt: column{
 			Name:      "created_at",
 			DBType:    "timestamp with time zone",
@@ -387,13 +396,14 @@ type gameColumns struct {
 	Fen                    column
 	PGN                    column
 	Repetitions            column
+	Version                column
 	CreatedAt              column
 	UpdatedAt              column
 }
 
 func (c gameColumns) AsSlice() []column {
 	return []column{
-		c.ID, c.WhiteID, c.BlackID, c.GuestWhiteID, c.GuestBlackID, c.GameVariantID, c.GameTimeKindID, c.GameTimeCategoryID, c.GameStateID, c.GameResultID, c.GameResultStatusID, c.TimeControlClockMS, c.TimeControlIncrementMS, c.ReconnectTimeoutMS, c.FirstMoveTimeoutMS, c.WhiteGameClock, c.BlackGameClock, c.Rated, c.StartTime, c.EndTime, c.LastMove, c.Fen, c.PGN, c.Repetitions, c.CreatedAt, c.UpdatedAt,
+		c.ID, c.WhiteID, c.BlackID, c.GuestWhiteID, c.GuestBlackID, c.GameVariantID, c.GameTimeKindID, c.GameTimeCategoryID, c.GameStateID, c.GameResultID, c.GameResultStatusID, c.TimeControlClockMS, c.TimeControlIncrementMS, c.ReconnectTimeoutMS, c.FirstMoveTimeoutMS, c.WhiteGameClock, c.BlackGameClock, c.Rated, c.StartTime, c.EndTime, c.LastMove, c.Fen, c.PGN, c.Repetitions, c.Version, c.CreatedAt, c.UpdatedAt,
 	}
 }
 

@@ -26,6 +26,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/redis/go-redis/v9"
 	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -59,39 +60,51 @@ func (a *ApiHandler) PubsubProcess(ctx context.Context) {
 func (a *ApiHandler) onGameEvent(event gameplay.GameEvent) {
 	switch ev := event.(type) {
 	case gameplay.PlayMoveUCIEvent:
+		fmt.Println("---------------------------------------------- GOT EVENT: PlayMoveUCIEvent")
 		a.handlePlayMoveUCIEvent(ev)
 
 	case gameplay.PlayMoveUCIErrorEvent:
+		fmt.Println("---------------------------------------------- GOT EVENT: PlayMoveUCIErrorEvent")
 		a.handlePlayMoveUCIErrorEvent(ev)
 
 	case gameplay.AbortEvent:
+		fmt.Println("---------------------------------------------- GOT EVENT: AbortEvent")
 		a.handleAbortGameEvent(ev)
 
 	case gameplay.AbortErrorEvent:
+		fmt.Println("---------------------------------------------- GOT EVENT: AbortErrorEvent")
 		a.handleAbortGameErrorEvent(ev)
 
 	case gameplay.ResignEvent:
+		fmt.Println("---------------------------------------------- GOT EVENT: ResignEvent")
 		a.handleResignGameEvent(ev)
 
 	case gameplay.ResignErrorEvent:
+		fmt.Println("---------------------------------------------- GOT EVENT: ResignErrorEvent")
 		a.handleResignGameErrorEvent(ev)
 
 	case gameplay.OfferDrawEvent:
+		fmt.Println("---------------------------------------------- GOT EVENT: OfferDrawEvent")
 		a.handleOfferDrawEvent(ev)
 
 	case gameplay.OfferDrawErrorEvent:
+		fmt.Println("---------------------------------------------- GOT EVENT: OfferDrawErrorEvent")
 		a.handleOfferDrawErrorEvent(ev)
 
 	case gameplay.AcceptDrawEvent:
+		fmt.Println("---------------------------------------------- GOT EVENT: AcceptDrawEvent")
 		a.handleAcceptDrawEvent(ev)
 
 	case gameplay.AcceptDrawErrorEvent:
+		fmt.Println("---------------------------------------------- GOT EVENT: AcceptDrawErrorEvent")
 		a.handleAcceptDrawErrorEvent(ev)
 
 	case gameplay.DeclineDrawEvent:
+		fmt.Println("---------------------------------------------- GOT EVENT: DeclineDrawEvent")
 		a.handleDeclineDrawEvent(ev)
 
 	case gameplay.DeclineDrawErrorEvent:
+		fmt.Println("---------------------------------------------- GOT EVENT: DeclineDrawErrorEvent")
 		a.handleDeclineDrawErrorEvent(ev)
 	}
 }
@@ -131,6 +144,43 @@ func (a *ApiHandler) handlePlayMoveUCIEvent(event gameplay.PlayMoveUCIEvent) {
 		a.Log.Error("UpdateGame", slog.Int64("game_id", event.GameID), slog.Any("error", err))
 	}
 
+	moveAckMsg := &pb.Message{Event: &pb.Message_MoveAck{MoveAck: &pb.MoveAck{
+		GameId:  int32(event.GameID),
+		Version: 42,
+	}}}
+	moveAckMsgBytes, err := protojson.Marshal(moveAckMsg)
+	if err != nil {
+		a.Log.Error("protojson.Marshal Message_MoveAck", slog.Any("error", err))
+	} else {
+		topic := fmt.Sprintf("user.%s.game.%d", event.UserID.String(), event.GameID)
+		if err := a.bus.rdb.Publish(context.Background(), topic, moveAckMsgBytes).Err(); err != nil {
+			a.Log.Error("publish Message_MoveAck", slog.Int64("game_id", event.GameID), slog.Any("error", err))
+		}
+	}
+
+	moveSyncMsg := &pb.Message{Event: &pb.Message_MoveSync{MoveSync: &pb.MoveSync{
+		Uci: event.Uci,
+		San: event.San,
+		Lan: event.Lan,
+		Fen: event.Position.Fen(),
+		Ply: uint32(event.Position.Ply),
+		Clocks: &pb.Clocks{
+			White: durationpb.New(time.Duration(event.WhiteClockRemainingMs) * time.Millisecond),
+			Black: durationpb.New(time.Duration(event.BlackClockRemainingMs) * time.Millisecond),
+		},
+		LegalMoves: event.LegalMoves,
+		Version:    42,
+	}}}
+	moveSyncMsgBytes, err := protojson.Marshal(moveSyncMsg)
+	if err != nil {
+		a.Log.Error("protojson.Marshal Message_MoveSync", slog.Any("error", err))
+	} else {
+		topic := fmt.Sprintf("game.%d", event.GameID)
+		if err := a.bus.rdb.Publish(context.Background(), topic, moveSyncMsgBytes).Err(); err != nil {
+			a.Log.Error("publish Message_MoveSync", slog.Int64("game_id", event.GameID), slog.Any("error", err))
+		}
+	}
+
 	if terminated {
 		gameFinishedMsg := &pb.Message{Event: &pb.Message_GameFinished{GameFinished: &pb.GameFinished{
 			GameId:           int32(event.GameID),
@@ -144,7 +194,7 @@ func (a *ApiHandler) handlePlayMoveUCIEvent(event gameplay.PlayMoveUCIEvent) {
 			a.Log.Error("protojson.Marshal Message_GameFinished", slog.Int64("game_id", event.GameID), slog.Any("error", err))
 		} else {
 			topic := fmt.Sprintf("game.%d", event.GameID)
-			if err := a.bus.rdb.Publish(context.Background(), topic, gameFinishedMsgBytes); err != nil {
+			if err := a.bus.rdb.Publish(context.Background(), topic, gameFinishedMsgBytes).Err(); err != nil {
 				a.Log.Error("publish Message_GameFinished", slog.Int64("game_id", event.GameID), slog.Any("error", err))
 			}
 		}
@@ -153,6 +203,8 @@ func (a *ApiHandler) handlePlayMoveUCIEvent(event gameplay.PlayMoveUCIEvent) {
 			a.Log.Error("DeleteActiveGameByID", slog.Int64("game_id", event.GameID), slog.Any("error", err))
 		}
 	}
+
+	fmt.Println(event.Position.PrintBoard()) // EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE
 }
 
 func (a *ApiHandler) handlePlayMoveUCIErrorEvent(event gameplay.PlayMoveUCIErrorEvent) {
@@ -1499,6 +1551,7 @@ func (a *ApiHandler) gameStateFromPersistence(ctx context.Context, game models.G
 		gameplay.WithLastMove(game.LastMove.Ptr()),
 		gameplay.WithStartTime(game.StartTime.Ptr()),
 		gameplay.WithEndTime(game.EndTime.Ptr()),
+		gameplay.WithVersion(int(game.Version)),
 	)
 	if err != nil {
 		return nil, err

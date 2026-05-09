@@ -13,7 +13,9 @@ import {
 	type PresenceState,
 	type GameFound,
 	type GameChat,
-	type GameInfo
+	type GameInfo,
+	type MoveSync,
+	type MoveAck
 } from '$lib/gen/juicer_pb';
 import { create, fromJsonString } from '@bufbuild/protobuf';
 import type { JuicerBoard, Coord, PieceFenSymbol } from '@dankop/juicer-board';
@@ -227,6 +229,14 @@ class GameManager {
 		console.log('GameInfo: ', gameInfo);
 	}
 
+	onMoveSync(moveSync: MoveSync) {
+		console.log('MoveSync: ', moveSync);
+	}
+
+	onMoveAck(moveAck: MoveAck) {
+		console.log('MoveAck: ', moveAck);
+	}
+
 	handleWebsocketMessage(event: MessageEvent) {
 		try {
 			const msg = fromJsonString(MessageSchema, event.data);
@@ -255,6 +265,12 @@ class GameManager {
 					break;
 				case 'gameInfo':
 					this.onGameInfo(msg.event.value);
+					break;
+				case 'moveSync':
+					this.onMoveSync(msg.event.value);
+					break;
+				case 'moveAck':
+					this.onMoveAck(msg.event.value);
 					break;
 				default:
 					console.error('unknown message', msg.event.case, msg.event.value);

@@ -26,8 +26,8 @@ type gameOpts struct {
 	lastMove         *time.Time
 	startTime        *time.Time
 	endTime          *time.Time
-
-	gameMoves []*pb.GameMove
+	version          int
+	gameMoves        []*pb.GameMove
 }
 
 type GameOption interface {
@@ -150,3 +150,8 @@ type playersOpt struct{ players map[uuid.UUID]*Player }
 
 func (o playersOpt) apply(g *gameOpts)                     { g.players = o.players }
 func WithPlayers(players map[uuid.UUID]*Player) GameOption { return playersOpt{players: players} }
+
+type versionOpt int
+
+func (o versionOpt) apply(g *gameOpts) { g.version = int(o) }
+func WithVersion(rated int) GameOption { return versionOpt(rated) }

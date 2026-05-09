@@ -48,22 +48,23 @@ type ActiveGame struct {
 	// BlackID                *uuid.UUID          `json:"black_id"`
 	// GuestWhiteID           *uuid.UUID          `json:"guest_white_id"`
 	// GuestBlackID           *uuid.UUID          `json:"guest_black_id"`
-	GameVariant            pb.GameVariant      `json:"game_variant"`
-	GameTimeKind           pb.GameTimeKind     `json:"game_time_kind"`
-	GameTimeCategory       pb.GameTimeCategory `json:"game_time_category"`
-	TimeControlClockMs     int32               `json:"time_control_clock_ms"`
-	TimeControlIncrementMs int32               `json:"time_control_increment_ms"`
-	GameResult             pb.GameResult       `json:"game_result"`
-	GameResultStatus       pb.GameResultStatus `json:"game_result_status"`
-	GameState              pb.GameState        `json:"game_state"`
-	ReconnectTimeoutMs     int32               `json:"reconnect_timeout_ms"`
-	FirstMoveTimeoutMs     int32               `json:"first_move_timeout_ms"`
-	LastMove               *time.Time          `json:"last_move"`
-	StartTime              *time.Time          `json:"start_time"`
-	EndTime                *time.Time          `json:"end_time"`
-	Rated                  bool                `json:"rated"`
-	GameMoves              []ActiveGameMove
-	GameHistoryHashes      []ActiveGameHistoryHash
+	GameVariant            pb.GameVariant          `json:"game_variant"`
+	GameTimeKind           pb.GameTimeKind         `json:"game_time_kind"`
+	GameTimeCategory       pb.GameTimeCategory     `json:"game_time_category"`
+	TimeControlClockMs     int32                   `json:"time_control_clock_ms"`
+	TimeControlIncrementMs int32                   `json:"time_control_increment_ms"`
+	GameResult             pb.GameResult           `json:"game_result"`
+	GameResultStatus       pb.GameResultStatus     `json:"game_result_status"`
+	GameState              pb.GameState            `json:"game_state"`
+	ReconnectTimeoutMs     int32                   `json:"reconnect_timeout_ms"`
+	FirstMoveTimeoutMs     int32                   `json:"first_move_timeout_ms"`
+	LastMove               *time.Time              `json:"last_move"`
+	StartTime              *time.Time              `json:"start_time"`
+	EndTime                *time.Time              `json:"end_time"`
+	Rated                  bool                    `json:"rated"`
+	GameMoves              []ActiveGameMove        `json:"game_moves"`
+	GameHistoryHashes      []ActiveGameHistoryHash `json:"game_history_hashes"`
+	Version                int32                   `json:"version"`
 }
 
 type ActiveGameMove struct {

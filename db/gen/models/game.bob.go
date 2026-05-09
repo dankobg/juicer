@@ -49,6 +49,7 @@ type Game struct {
 	Fen                    string              `db:"fen" `
 	PGN                    null.Val[string]    `db:"pgn" `
 	Repetitions            int32               `db:"repetitions" `
+	Version                int32               `db:"version" `
 	CreatedAt              time.Time           `db:"created_at" `
 	UpdatedAt              time.Time           `db:"updated_at" `
 
@@ -82,7 +83,7 @@ type gameR struct {
 func buildGameColumns(alias string) gameColumns {
 	return gameColumns{
 		ColumnsExpr: expr.NewColumnsExpr(
-			"id", "white_id", "black_id", "guest_white_id", "guest_black_id", "game_variant_id", "game_time_kind_id", "game_time_category_id", "game_state_id", "game_result_id", "game_result_status_id", "time_control_clock_ms", "time_control_increment_ms", "reconnect_timeout_ms", "first_move_timeout_ms", "white_game_clock", "black_game_clock", "rated", "start_time", "end_time", "last_move", "fen", "pgn", "repetitions", "created_at", "updated_at",
+			"id", "white_id", "black_id", "guest_white_id", "guest_black_id", "game_variant_id", "game_time_kind_id", "game_time_category_id", "game_state_id", "game_result_id", "game_result_status_id", "time_control_clock_ms", "time_control_increment_ms", "reconnect_timeout_ms", "first_move_timeout_ms", "white_game_clock", "black_game_clock", "rated", "start_time", "end_time", "last_move", "fen", "pgn", "repetitions", "version", "created_at", "updated_at",
 		).WithParent("game"),
 		tableAlias:             alias,
 		ID:                     psql.Quote(alias, "id"),
@@ -109,6 +110,7 @@ func buildGameColumns(alias string) gameColumns {
 		Fen:                    psql.Quote(alias, "fen"),
 		PGN:                    psql.Quote(alias, "pgn"),
 		Repetitions:            psql.Quote(alias, "repetitions"),
+		Version:                psql.Quote(alias, "version"),
 		CreatedAt:              psql.Quote(alias, "created_at"),
 		UpdatedAt:              psql.Quote(alias, "updated_at"),
 	}
@@ -141,6 +143,7 @@ type gameColumns struct {
 	Fen                    psql.Expression
 	PGN                    psql.Expression
 	Repetitions            psql.Expression
+	Version                psql.Expression
 	CreatedAt              psql.Expression
 	UpdatedAt              psql.Expression
 }
@@ -180,12 +183,13 @@ type GameSetter struct {
 	Fen                    omit.Val[string]        `db:"fen" `
 	PGN                    omitnull.Val[string]    `db:"pgn" `
 	Repetitions            omit.Val[int32]         `db:"repetitions" `
+	Version                omit.Val[int32]         `db:"version" `
 	CreatedAt              omit.Val[time.Time]     `db:"created_at" `
 	UpdatedAt              omit.Val[time.Time]     `db:"updated_at" `
 }
 
 func (s GameSetter) SetColumns() []string {
-	vals := make([]string, 0, 25)
+	vals := make([]string, 0, 26)
 	if !s.WhiteID.IsUnset() {
 		vals = append(vals, "white_id")
 	}
@@ -254,6 +258,9 @@ func (s GameSetter) SetColumns() []string {
 	}
 	if s.Repetitions.IsValue() {
 		vals = append(vals, "repetitions")
+	}
+	if s.Version.IsValue() {
+		vals = append(vals, "version")
 	}
 	if s.CreatedAt.IsValue() {
 		vals = append(vals, "created_at")
@@ -334,6 +341,9 @@ func (s GameSetter) Overwrite(t *Game) {
 	if s.Repetitions.IsValue() {
 		t.Repetitions = s.Repetitions.MustGet()
 	}
+	if s.Version.IsValue() {
+		t.Version = s.Version.MustGet()
+	}
 	if s.CreatedAt.IsValue() {
 		t.CreatedAt = s.CreatedAt.MustGet()
 	}
@@ -348,7 +358,7 @@ func (s *GameSetter) Apply(q *dialect.InsertQuery) {
 	})
 
 	q.AppendValues(bob.ExpressionFunc(func(ctx context.Context, w io.StringWriter, d bob.Dialect, start int) ([]any, error) {
-		vals := make([]bob.Expression, 25)
+		vals := make([]bob.Expression, 26)
 		if !s.WhiteID.IsUnset() {
 			vals[0] = psql.Arg(s.WhiteID.MustGetNull())
 		} else {
@@ -487,16 +497,22 @@ func (s *GameSetter) Apply(q *dialect.InsertQuery) {
 			vals[22] = psql.Raw("DEFAULT")
 		}
 
-		if s.CreatedAt.IsValue() {
-			vals[23] = psql.Arg(s.CreatedAt.MustGet())
+		if s.Version.IsValue() {
+			vals[23] = psql.Arg(s.Version.MustGet())
 		} else {
 			vals[23] = psql.Raw("DEFAULT")
 		}
 
-		if s.UpdatedAt.IsValue() {
-			vals[24] = psql.Arg(s.UpdatedAt.MustGet())
+		if s.CreatedAt.IsValue() {
+			vals[24] = psql.Arg(s.CreatedAt.MustGet())
 		} else {
 			vals[24] = psql.Raw("DEFAULT")
+		}
+
+		if s.UpdatedAt.IsValue() {
+			vals[25] = psql.Arg(s.UpdatedAt.MustGet())
+		} else {
+			vals[25] = psql.Raw("DEFAULT")
 		}
 
 		return bob.ExpressSlice(ctx, w, d, start, vals, "", ", ", "")
@@ -508,7 +524,7 @@ func (s GameSetter) UpdateMod() bob.Mod[*dialect.UpdateQuery] {
 }
 
 func (s GameSetter) Expressions(prefix ...string) []bob.Expression {
-	exprs := make([]bob.Expression, 0, 25)
+	exprs := make([]bob.Expression, 0, 26)
 
 	if !s.WhiteID.IsUnset() {
 		exprs = append(exprs, expr.Join{Sep: " = ", Exprs: []bob.Expression{
@@ -668,6 +684,13 @@ func (s GameSetter) Expressions(prefix ...string) []bob.Expression {
 		exprs = append(exprs, expr.Join{Sep: " = ", Exprs: []bob.Expression{
 			psql.Quote(append(prefix, "repetitions")...),
 			psql.Arg(s.Repetitions),
+		}})
+	}
+
+	if s.Version.IsValue() {
+		exprs = append(exprs, expr.Join{Sep: " = ", Exprs: []bob.Expression{
+			psql.Quote(append(prefix, "version")...),
+			psql.Arg(s.Version),
 		}})
 	}
 

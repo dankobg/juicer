@@ -70,6 +70,7 @@ type GameState struct {
 	EndTime          *time.Time
 	Rated            bool
 	GameMoves        []*pb.GameMove
+	Version          int
 	running          atomic.Bool
 
 	GameCommand         chan GameCommand
@@ -184,45 +185,54 @@ func (gs *GameState) Start(ctx context.Context) {
 		return
 	}
 
+	// start white first move timer
+
 	go func() {
 		for {
 			select {
 			case cmd := <-gs.GameCommand:
 				switch c := cmd.(type) {
 				case AbortGameCmd:
-					err := gs.abortGame(c)
-					if err != nil {
-						fmt.Println("------------------- abortGame err: ", err)
+					if err := gs.abortGame(c); err != nil {
+						gs.GameEvent <- AbortErrorEvent{Err: err}
+					} else {
+						gs.GameEvent <- AbortEvent{}
 					}
+
 				case ResignGameCmd:
-					err := gs.resignGame(c)
-					if err != nil {
-						fmt.Println("------------------- resignGame err: ", err)
+					if err := gs.resignGame(c); err != nil {
+						gs.GameEvent <- ResignErrorEvent{Err: err}
+					} else {
+						gs.GameEvent <- ResignEvent{}
 					}
+
 				case OfferDrawCmd:
-					err := gs.offerDraw(c)
-					if err != nil {
-						fmt.Println("------------------- offerDraw err: ", err)
+					if err := gs.offerDraw(c); err != nil {
+						gs.GameEvent <- OfferDrawErrorEvent{Err: err}
+					} else {
+						gs.GameEvent <- OfferDrawEvent{}
 					}
+
 				case AcceptDrawCmd:
-					err := gs.acceptDraw(c)
-					if err != nil {
-						fmt.Println("------------------- acceptDraw err: ", err)
+					if err := gs.acceptDraw(c); err != nil {
+						gs.GameEvent <- AcceptDrawErrorEvent{Err: err}
+					} else {
+						gs.GameEvent <- AcceptDrawEvent{}
 					}
+
 				case DeclineDrawCmd:
-					err := gs.declineDraw(c)
-					if err != nil {
-						fmt.Println("------------------- declineDraw err: ", err)
+					if err := gs.declineDraw(c); err != nil {
+						gs.GameEvent <- DeclineDrawErrorEvent{Err: err}
+					} else {
+						gs.GameEvent <- DeclineDrawEvent{}
 					}
+
 				case PlayMoveUCICmd:
-					res, err := gs.playMoveUCI(c)
-					if err != nil {
-						fmt.Println("------------------- playMoveUCI err: ", err)
-
+					if res, err := gs.playMoveUCI(c); err != nil {
 						gs.GameEvent <- PlayMoveUCIErrorEvent{Err: err}
+					} else {
+						gs.GameEvent <- res
 					}
-
-					gs.GameEvent <- res
 				}
 
 			case <-ctx.Done():
@@ -361,13 +371,12 @@ func (gs *GameState) playMoveUCI(c PlayMoveUCICmd) (PlayMoveUCIEvent, error) {
 			gs.GameResultStatus = pb.GameResultStatus_GAME_RESULT_STATUS_SEVENTYFIVE_MOVE_RULE
 		case engine.StatusCheckmate:
 			gs.GameState = pb.GameState_GAME_STATE_FINISHED
+			gs.GameResultStatus = pb.GameResultStatus_GAME_RESULT_STATUS_CHECKMATE
 			if player.Color == pb.Color_COLOR_WHITE {
 				gs.GameResult = pb.GameResult_GAME_RESULT_WHITE_WON
 			} else {
 				gs.GameResult = pb.GameResult_GAME_RESULT_BLACK_WON
 			}
-
-			gs.GameResultStatus = pb.GameResultStatus_GAME_RESULT_STATUS_CHECKMATE
 		case engine.StatusStalemate:
 			gs.GameState = pb.GameState_GAME_STATE_FINISHED
 			gs.GameResult = pb.GameResult_GAME_RESULT_DRAW
@@ -393,6 +402,7 @@ func (gs *GameState) playMoveUCI(c PlayMoveUCICmd) (PlayMoveUCIEvent, error) {
 		EndTime:               gs.EndTime,
 		Repetitions:           gs.Chess.Repetitions,
 		LegalMoves:            legalMoves,
+		Version:               gs.Version,
 	}
 
 	return res, nil
