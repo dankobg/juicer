@@ -123,6 +123,7 @@ func (a *ApiHandler) handlePlayMoveUCIEvent(event gameplay.PlayMoveUCIEvent) {
 		gameSetter.GameResultID.Set(a.gameResultProtoToID(event.GameResult))
 		gameSetter.GameResultStatusID.Set(a.gameResultStatusProtoToID(event.GameResultStatus))
 		gameSetter.GameStateID.Set(a.gameStateProtoToID(event.GameState))
+
 		terminated = true
 	}
 
@@ -137,6 +138,7 @@ func (a *ApiHandler) handlePlayMoveUCIEvent(event gameplay.PlayMoveUCIEvent) {
 			GameResultStatus: event.GameResultStatus,
 			GameState:        event.GameState,
 		}}}
+
 		gameFinishedMsgBytes, err := protojson.Marshal(gameFinishedMsg)
 		if err != nil {
 			a.Log.Error("protojson.Marshal Message_GameFinished", slog.Int64("game_id", event.GameID), slog.Any("error", err))
@@ -147,9 +149,9 @@ func (a *ApiHandler) handlePlayMoveUCIEvent(event gameplay.PlayMoveUCIEvent) {
 			}
 		}
 
-		// if err := a.persistor.ActiveGame().DeleteActiveGameByID(context.Background(), event.GameID); err != nil {
-		// 	a.Log.Error("DeleteActiveGameByID", slog.Int64("game_id", event.GameID), slog.Any("error", err))
-		// }
+		if err := a.persistor.ActiveGame().DeleteActiveGameByID(context.Background(), event.GameID); err != nil {
+			a.Log.Error("DeleteActiveGameByID", slog.Int64("game_id", event.GameID), slog.Any("error", err))
+		}
 	}
 }
 
@@ -405,8 +407,11 @@ func (a *ApiHandler) handleIPCClientConnectedMsg(data *pb.ClientConnected) {
 
 		if afterGameStr, isGame := strings.CutPrefix(channel, "game."); isGame {
 			parts := strings.Split(afterGameStr, ".")
-			var gameIDStr string
-			var isGameChat bool
+
+			var (
+				gameIDStr  string
+				isGameChat bool
+			)
 
 			if len(parts) > 0 {
 				gameIDStr = parts[0]
@@ -434,8 +439,11 @@ func (a *ApiHandler) handleIPCClientConnectedMsg(data *pb.ClientConnected) {
 
 		if afterGameTvStr, isGameTv := strings.CutPrefix(channel, "gametv."); isGameTv {
 			parts := strings.Split(afterGameTvStr, ".")
-			var gameIDStr string
-			var isGameTvChat bool
+
+			var (
+				gameIDStr    string
+				isGameTvChat bool
+			)
 
 			if len(parts) > 0 {
 				gameIDStr = parts[0]
@@ -988,6 +996,69 @@ func (a *ApiHandler) sendGameChatInfo(gameID int64, userID, connID string, guest
 }
 
 func (a *ApiHandler) sendGameInfo(gameID int64, userID, connID string, guest bool) error {
+	gs, err := a.loadGameState(int64(gameID))
+	if err != nil {
+		a.Log.Error("loadGameState", slog.Any("error", err))
+		return err
+	}
+
+	uid := uuid.MustParse(userID)
+
+	player := gs.GetPlayerByID(uid)
+
+	clocks := &pb.Clocks{}
+
+	legalMoves := make([]string, len(gs.Chess.LegalMoves))
+	for i, legalMove := range gs.Chess.LegalMoves {
+		legalMoves[i] = fmt.Sprint(legalMove.String())
+	}
+
+	opponentColor := pb.Color_COLOR_BLACK
+	if player.Color == pb.Color_COLOR_BLACK {
+		opponentColor = pb.Color_COLOR_WHITE
+	}
+
+	opponent := gs.GetPlayerByColor(opponentColor)
+	opponentInfo := &pb.OpponentInfo{
+		UserId:    opponent.ID.String(),
+		Username:  opponent.Username,
+		AvatarUrl: "",
+		Rating:    1500,
+	}
+
+	gameInfo := &pb.GameInfo{
+		GameId:             int32(gameID),
+		UserId:             userID,
+		GameVariant:        gs.GameVariant,
+		GameTimeKind:       gs.GameTimeKind,
+		GameTimeCategory:   gs.GameTimeCategory,
+		GameState:          gs.GameState,
+		TimeControl:        gs.GameTimeControl,
+		Color:              player.Color,
+		Fen:                gs.Chess.Position.Fen(),
+		Ply:                uint32(gs.Chess.Position.Ply),
+		Clocks:             clocks,
+		Rated:              gs.Rated,
+		LegalMoves:         legalMoves,
+		OpponentInfo:       opponentInfo,
+		ReconnectTimeoutMs: int32(gs.ReconnectTimeout.Milliseconds()),
+		FirstMoveTimeoutMs: int32(gs.FirstMoveTimeout.Milliseconds()),
+		GameMoves:          gs.GameMoves,
+		StartTime:          timestamppb.New(*gs.StartTime),
+	}
+
+	gameInfoMsg := &pb.Message{Event: &pb.Message_GameInfo{GameInfo: gameInfo}}
+
+	gameInfoMsgBytes, err := protojson.Marshal(gameInfoMsg)
+	if err != nil {
+		return err
+	}
+
+	topic := fmt.Sprintf("user.%s.game.%d", userID, gameID)
+	if err := a.bus.rdb.Publish(context.Background(), topic, gameInfoMsgBytes).Err(); err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -1241,8 +1312,8 @@ func (a *ApiHandler) processMatchedPoolPair(ctx context.Context, pair [2]string,
 	}
 
 	players := [2]gameplay.Player{
-		{ID: userID1, Name: username1, Color: color1, Guest: !pool.Rated},
-		{ID: userID2, Name: username2, Color: color2, Guest: !pool.Rated},
+		{ID: userID1, Username: username1, Color: color1, Guest: !pool.Rated},
+		{ID: userID2, Username: username2, Color: color2, Guest: !pool.Rated},
 	}
 
 	gtc := &pb.GameTimeControl{ClockMs: pool.ClockMS, IncrementMs: pool.IncrementMS}
@@ -1344,6 +1415,7 @@ func (a *ApiHandler) processMatchedPoolPair(ctx context.Context, pair [2]string,
 		if err := a.bus.rdb.Publish(ctx, "user."+userID1.String(), gameFoundMsgBytes).Err(); err != nil {
 			a.Log.Error("publish Message_GameFound", slog.Any("error", err))
 		}
+
 		if err := a.bus.rdb.Publish(ctx, "user."+userID2.String(), gameFoundMsgBytes).Err(); err != nil {
 			a.Log.Error("publish Message_GameFound", slog.Any("error", err))
 		}
@@ -1386,6 +1458,7 @@ func (a *ApiHandler) gameStateFromPersistence(ctx context.Context, game models.G
 
 	if game.Rated {
 		wn, err5 := a.GetUsername(ctx, whiteID.String())
+
 		bn, err6 := a.GetUsername(ctx, blackID.String())
 		if err5 != nil || err6 != nil {
 			a.Log.Error("failed to get usernames", slog.Any("error", errors.Join(err5, err6)))
@@ -1395,8 +1468,8 @@ func (a *ApiHandler) gameStateFromPersistence(ctx context.Context, game models.G
 	}
 
 	players := [2]gameplay.Player{
-		{ID: whiteID, Name: whiteUsername, Color: pb.Color_COLOR_WHITE, Guest: !game.Rated},
-		{ID: blackID, Name: blackUsername, Color: pb.Color_COLOR_BLACK, Guest: !game.Rated},
+		{ID: whiteID, Username: whiteUsername, Color: pb.Color_COLOR_WHITE, Guest: !game.Rated},
+		{ID: blackID, Username: blackUsername, Color: pb.Color_COLOR_BLACK, Guest: !game.Rated},
 	}
 
 	gtc := &pb.GameTimeControl{ClockMs: game.TimeControlClockMS, IncrementMs: game.TimeControlIncrementMS}
@@ -1453,9 +1526,11 @@ func (a *ApiHandler) gameStateFromPersistence(ctx context.Context, game models.G
 			if m.Uci != "" {
 				move.Uci = &m.Uci
 			}
+
 			if m.San != "" {
 				move.San = &m.San
 			}
+
 			if m.PlayedAt.IsValue() {
 				move.PlayedAt = timestamppb.New(m.PlayedAt.MustGet())
 			}
@@ -1480,8 +1555,8 @@ func (a *ApiHandler) gameStateFromPersistence(ctx context.Context, game models.G
 func debug_print_game_info(gs *gameplay.GameState) {
 	fmt.Printf("game_id: %d\n", gs.GameID)
 	fmt.Printf("rated: %v\n", gs.Rated)
-	fmt.Printf("white: %s\n", gs.White.Name)
-	fmt.Printf("black: %s\n", gs.Black.Name)
+	fmt.Printf("white: %s\n", gs.White.Username)
+	fmt.Printf("black: %s\n", gs.Black.Username)
 	fmt.Printf("variant: %s\n", gs.GameVariant.String())
 	fmt.Printf("time_category: %s\n", gs.GameTimeCategory.String())
 	fmt.Printf("time_kind: %s\n", gs.GameTimeKind.String())
@@ -1498,9 +1573,11 @@ func debug_print_game_info(gs *gameplay.GameState) {
 
 	fmt.Println(gs.Chess.Position.PrintBoard())
 	fmt.Println("LEGAL MOVES")
+
 	legals := []string{}
 	for _, x := range gs.Chess.LegalMoves {
 		legals = append(legals, x.String())
 	}
+
 	godump.DumpJSON("legal moves", legals)
 }

@@ -12,7 +12,8 @@ import {
 	type PresenceDiff,
 	type PresenceState,
 	type GameFound,
-	type GameChat
+	type GameChat,
+	type GameInfo
 } from '$lib/gen/juicer_pb';
 import { create, fromJsonString } from '@bufbuild/protobuf';
 import type { JuicerBoard, Coord, PieceFenSymbol } from '@dankop/juicer-board';
@@ -118,15 +119,13 @@ class GameManager {
 	}
 
 	echo() {
-		const echoMsg = create(MessageSchema, {
-			event: { case: 'echo', value: { message: 'hello bozo' + window.location.pathname.split('/').at(-1) } }
-		});
+		const echoMsg = create(MessageSchema, { event: { case: 'echo', value: { message: 'hello bozo' } } });
 		ws.send(echoMsg);
 	}
 
 	sendLobbyChat() {
 		const sendLobbyChatMsg = create(MessageSchema, {
-			event: { case: 'sendLobbyChat', value: { message: `hello lobby ${Math.floor(Math.random() * 100) + 1}` } }
+			event: { case: 'sendLobbyChat', value: { message: 'hello lobby' } }
 		});
 		ws.send(sendLobbyChatMsg);
 	}
@@ -224,6 +223,10 @@ class GameManager {
 		goto(`/game/${gameFound.gameId}`);
 	}
 
+	onGameInfo(gameInfo: GameInfo) {
+		console.log('GameInfo: ', gameInfo);
+	}
+
 	handleWebsocketMessage(event: MessageEvent) {
 		try {
 			const msg = fromJsonString(MessageSchema, event.data);
@@ -249,6 +252,9 @@ class GameManager {
 					break;
 				case 'gameFound':
 					this.onGameFound(msg.event.value);
+					break;
+				case 'gameInfo':
+					this.onGameInfo(msg.event.value);
 					break;
 				default:
 					console.error('unknown message', msg.event.case, msg.event.value);

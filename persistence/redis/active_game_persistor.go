@@ -33,6 +33,10 @@ func (pst *RedisActiveGamePersistor) ListActiveGames(ctx context.Context, filter
 	panic("")
 }
 
+func (pst *RedisActiveGamePersistor) ListUserActiveGames(ctx context.Context, userID uuid.UUID, filters dbtype.ListActiveGameFilters) (dbtype.PagedResult[dbtype.GameDetails], error) {
+	panic("")
+}
+
 func (pst *RedisActiveGamePersistor) IsGameActive(ctx context.Context, gameID int64) (bool, error) {
 	activeGameKey := fmt.Sprintf("active-game:%d", gameID)
 
@@ -74,12 +78,15 @@ func (pst *RedisActiveGamePersistor) CreateActiveGame(ctx context.Context, gs *g
 		if move.Uci != nil {
 			agm.Uci = *move.Uci
 		}
+
 		if move.San != nil {
 			agm.San = *move.San
 		}
+
 		if move.PlayedAt != nil {
 			agm.PlayedAt = new(move.PlayedAt.AsTime())
 		}
+
 		moves[i] = agm
 	}
 
@@ -145,5 +152,50 @@ func (pst *RedisActiveGamePersistor) UpdateActiveGame(ctx context.Context, gameI
 }
 
 func (pst *RedisActiveGamePersistor) DeleteActiveGameByID(ctx context.Context, gameID int64) error {
-	panic("")
+	activeGameKey := fmt.Sprintf("active-game:%d", gameID)
+
+	var activeGame dbtype.ActiveGame
+
+	activeGameJSON, err := pst.rdb.JSONGet(ctx, activeGameKey, "$").Result()
+	if err != nil {
+		return fmt.Errorf("DeleteActiveGameByID jsonget: %w", err)
+	}
+
+	if activeGameJSON == "" {
+		return redis.Nil
+	}
+
+	var wrapped []dbtype.ActiveGame
+
+	if err := json.Unmarshal([]byte(activeGameJSON), &wrapped); err != nil {
+		return fmt.Errorf("DeleteActiveGameByID unmarshal: %w", err)
+	}
+
+	if len(wrapped) == 0 {
+		return redis.Nil
+	}
+
+	activeGame = wrapped[0]
+
+	if _, err := pst.rdb.Pipelined(ctx, func(p redis.Pipeliner) error {
+		userIDs := [2]string{activeGame.WhiteID, activeGame.BlackID}
+
+		for _, userID := range userIDs {
+			activeGamesUserKey := "active-games:user:" + userID
+
+			if err := p.SRem(ctx, activeGamesUserKey, gameID).Err(); err != nil {
+				return fmt.Errorf("DeleteActiveGameByID srem: %w", err)
+			}
+		}
+
+		if err := p.Del(ctx, activeGameKey).Err(); err != nil {
+			return fmt.Errorf("DeleteActiveGameByID del: %w", err)
+		}
+
+		return nil
+	}); err != nil {
+		return fmt.Errorf("DeleteActiveGameByID pipeline failed: %w", err)
+	}
+
+	return nil
 }

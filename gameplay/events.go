@@ -14,7 +14,7 @@ type GameEvent interface {
 
 type PlayMoveUCIEvent struct {
 	GameID                int64
-	PlayedBy              uuid.UUID
+	UserID                uuid.UUID
 	Players               map[uuid.UUID]*Player
 	Uci                   string
 	San                   string
@@ -37,7 +37,8 @@ type PlayMoveUCIEvent struct {
 func (PlayMoveUCIEvent) isGameEvent() {}
 
 type PlayMoveUCIErrorEvent struct {
-	Err error
+	UserID uuid.UUID
+	Err    error
 }
 
 func (PlayMoveUCIErrorEvent) isGameEvent() {}
@@ -47,47 +48,52 @@ type AbortEvent struct{}
 func (AbortEvent) isGameEvent() {}
 
 type AbortErrorEvent struct {
-	Err error
+	UserID uuid.UUID
+	Err    error
 }
 
-func (AbortErrorEvent) isGameEvent()
+func (AbortErrorEvent) isGameEvent() {}
 
 type ResignEvent struct{}
 
 func (ResignEvent) isGameEvent() {}
 
 type ResignErrorEvent struct {
-	Err error
+	UserID uuid.UUID
+	Err    error
 }
 
-func (ResignErrorEvent) isGameEvent()
+func (ResignErrorEvent) isGameEvent() {}
 
 type OfferDrawEvent struct{}
 
 func (OfferDrawEvent) isGameEvent() {}
 
 type OfferDrawErrorEvent struct {
-	Err error
+	UserID uuid.UUID
+	Err    error
 }
 
-func (OfferDrawErrorEvent) isGameEvent()
+func (OfferDrawErrorEvent) isGameEvent() {}
 
 type AcceptDrawEvent struct{}
 
 func (AcceptDrawEvent) isGameEvent() {}
 
 type AcceptDrawErrorEvent struct {
-	Err error
+	UserID uuid.UUID
+	Err    error
 }
 
-func (AcceptDrawErrorEvent) isGameEvent()
+func (AcceptDrawErrorEvent) isGameEvent() {}
 
 type DeclineDrawEvent struct{}
 
 func (DeclineDrawEvent) isGameEvent() {}
 
 type DeclineDrawErrorEvent struct {
-	Err error
+	UserID uuid.UUID
+	Err    error
 }
 
-func (DeclineDrawErrorEvent) isGameEvent()
+func (DeclineDrawErrorEvent) isGameEvent() {}

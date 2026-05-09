@@ -343,6 +343,7 @@ func (pst *PgGamePersistor) UpdateGame(ctx context.Context, gameID int64, in mod
 
 	if newMove != nil {
 		newMove.GameID.Set(gameID)
+
 		q2 := models.GameMoves.Insert(newMove)
 		if _, err := bob.Exec(ctx, pst.exec, q2); err != nil {
 			return models.Game{}, fmt.Errorf("update game move")
@@ -351,6 +352,7 @@ func (pst *PgGamePersistor) UpdateGame(ctx context.Context, gameID int64, in mod
 
 	if newHash != nil {
 		newHash.GameID.Set(gameID)
+
 		q2 := models.GameHistoryHashes.Insert(newHash)
 		if _, err := bob.Exec(ctx, pst.exec, q2); err != nil {
 			return models.Game{}, fmt.Errorf("update game history hash")

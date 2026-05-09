@@ -113,23 +113,23 @@ message Message {
     ListLobbyChats list_lobby_chats = 14;
     LobbyChat lobby_chat = 13;
     LobbyChatList lobby_chats = 15;
+    SeekGame seek_game = 16;
+    CancelSeekGame cancel_seek_game = 17;
+    GameFound game_found = 18;
+    AbortGame abort_game = 19;
+    ResignGame resign_game = 20;
+    OfferDraw offer_draw = 21;
+    AcceptDraw accept_draw = 22;
+    DeclineDraw decline_draw = 23;
+    PlayMoveUCI play_move_uci = 24;
+    OpponentMove opponent_move = 25;
+    GameFinished game_finished = 26;
+    SendGameChat send_game_chat = 27;
+    ListGameChats list_game_chats = 28;
+    GameChat game_chat = 29;
+    GameChatList game_chats = 30;
 
-    SeekGame seek_game = 25;
-    CancelSeekGame cancel_seek_game = 26;
-    AbortGame abort_game = 29;
-    ResignGame resign_game = 30;
-    OfferDraw offer_draw = 31;
-    AcceptDraw accept_draw = 32;
-    DeclineDraw decline_draw = 33;
-    PlayMoveUCI play_move_uci = 34;
-    ReceiveMove receive_move = 35;
-    GameFinished game_finished = 36;
-    HubInfo hub_info = 37;
-    GameFound game_found = 38;
-    SendGameChat send_game_chat = 39;
-    ListGameChats list_game_chats = 40;
-    GameChat game_chat = 41;
-    GameChatList game_chats = 42;
+    GameInfo game_info = 67;
     Echo echo = 69;
   }
 }
@@ -232,17 +232,12 @@ message SeekGame {
 // CancelSeekGame cancels the game search
 message CancelSeekGame {}
 
-// HubInfo is hub information
-message HubInfo {
-  int32 lobby = 1;
-  int32 playing = 2;
-}
-
 // OpponentInfo is info about opponent
 message OpponentInfo {
-  string username = 9;
-  string avatar_url = 10;
-  int32 rating = 11;
+  string user_id = 1;
+  string username = 2;
+  string avatar_url = 3;
+  int32 rating = 4;
 }
 
 // GameMove is the game move
@@ -259,22 +254,30 @@ message GameFound {
   int32 game_id = 1;
 }
 
-// MatchFoundHydration
-message MatchFoundHydration {
+// GameInfo holds game info
+message GameInfo {
   int32 game_id = 1;
   string user_id = 2;
-  GameState game_state = 3;
-  Color color = 4;
-  string fen = 5;
-  uint32 ply = 6;
-  Clocks clocks = 7;
-  repeated string legal_moves = 8;
-  GameTimeControl time_control = 9;
-  optional OpponentInfo opponent_info = 10;
-  int32 reconnect_timeout_ms = 11;
-  int32 first_move_timeout_ms = 12;
-  repeated GameMove game_moves = 13;
-  google.protobuf.Timestamp start_time = 14;
+  GameVariant game_variant = 3;
+  GameTimeKind game_time_kind = 4;
+  GameTimeCategory game_time_category = 5;
+  GameState game_state = 6;
+  GameTimeControl time_control = 7;
+  Color color = 8;
+  string fen = 9;
+  uint32 ply = 10;
+  Clocks clocks = 11;
+  bool rated = 12;
+  repeated string legal_moves = 13;
+  OpponentInfo opponent_info = 14;
+  int32 reconnect_timeout_ms = 15;
+  int32 first_move_timeout_ms = 16;
+  repeated GameMove game_moves = 17;
+  google.protobuf.Timestamp start_time = 18;
+
+  // google.protobuf.Timestamp end_time = 19;
+  // GameResult game_result = 20;
+  // GameResultStatus game_result_status = 21;
 }
 
 // AbortGame is game abort message
@@ -359,11 +362,11 @@ message PlayMoveUCI {
   string uci = 2;
 }
 
-// ReceiveMove receives the game move
-message ReceiveMove {
+// OpponentMove receives the opponent move to sync it
+message OpponentMove {
   string uci = 1;
-  string lan = 2;
-  string san = 3;
+  string san = 2;
+  string lan = 3;
   string fen = 4;
   uint32 ply = 5;
   Clocks clocks = 6;

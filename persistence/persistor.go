@@ -103,6 +103,7 @@ type GamePersistor interface {
 type ActiveGamePersistor interface {
 	GetActiveGameByID(ctx context.Context, gameID int64, filters dbtype.GetActiveGameFilters) (dbtype.GameDetails, error)
 	ListActiveGames(ctx context.Context, filters dbtype.ListActiveGameFilters) (dbtype.PagedResult[dbtype.GameDetails], error)
+	ListUserActiveGames(ctx context.Context, userID uuid.UUID, filters dbtype.ListActiveGameFilters) (dbtype.PagedResult[dbtype.GameDetails], error)
 	IsGameActive(ctx context.Context, gameID int64) (bool, error)
 	IsUserInActiveGame(ctx context.Context, userID uuid.UUID, gameID int64) (bool, error)
 	ListActiveGameUsers(ctx context.Context, gameID int64) ([2]uuid.UUID, error)

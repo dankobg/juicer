@@ -524,6 +524,7 @@ func extractGameTopicParts(topic string) (string, int64, bool, error) {
 	}
 
 	gameIDStr := parts[1]
+
 	gameID, err := strconv.ParseInt(gameIDStr, 10, 64)
 	if err != nil {
 		return "", 0, false, err
@@ -545,6 +546,7 @@ func extractGameTvTopicParts(topic string) (string, int64, bool, error) {
 	}
 
 	gameIDStr := parts[1]
+
 	gameID, err := strconv.ParseInt(gameIDStr, 10, 64)
 	if err != nil {
 		return "", 0, false, err

@@ -43,34 +43,10 @@ type CategoryThreshold struct {
 }
 
 type Player struct {
-	ID    uuid.UUID
-	Name  string
-	Color pb.Color
-	Guest bool
-}
-
-type timerEvent = uint
-
-const (
-	startGameTimer timerEvent = iota
-	pauseGameTimer
-	stopGameTimer
-	toggleGameTimer
-	incrementWhiteGameTimer
-	incrementBlackGameTimer
-	startWhiteReconnectTimer
-	startBlackReconnectTimer
-	stopWhiteReconnectTimer
-	stopBlackReconnectTimer
-	startWhiteFirstMoveTimer
-	startBlackFirstMoveTimer
-	stopWhiteFirstMoveTimer
-	stopBlackFirstMoveTimer
-)
-
-type timerAction struct {
-	timerEvent timerEvent
-	increment  *time.Duration
+	ID       uuid.UUID
+	Username string
+	Color    pb.Color
+	Guest    bool
 }
 
 type GameState struct {
@@ -141,10 +117,10 @@ func NewGameState(gameID int64, players [2]Player, timeControl *pb.GameTimeContr
 
 	for _, p := range players {
 		if p.Color == pb.Color_COLOR_WHITE {
-			white = &Player{ID: p.ID, Name: p.Name, Color: p.Color, Guest: p.Guest}
+			white = &Player{ID: p.ID, Username: p.Username, Color: p.Color, Guest: p.Guest}
 			playersByID[p.ID] = white
 		} else {
-			black = &Player{ID: p.ID, Name: p.Name, Color: p.Color, Guest: p.Guest}
+			black = &Player{ID: p.ID, Username: p.Username, Color: p.Color, Guest: p.Guest}
 			playersByID[p.ID] = black
 		}
 	}
@@ -162,10 +138,14 @@ func NewGameState(gameID int64, players [2]Player, timeControl *pb.GameTimeContr
 		GameTimeCategory: gopts.gameTimeCategory,
 		GameTimeControl:  gopts.gameTimeControl,
 		GameState:        gopts.gameState,
+		GameResult:       gopts.gameResult,
+		GameResultStatus: gopts.gameResultStatus,
 		FirstMoveTimeout: gopts.firstMoveTimeout,
 		ReconnectTimeout: gopts.reconnectTimeout,
 		Rated:            gopts.rated,
 		StartTime:        gopts.startTime,
+		LastMove:         gopts.lastMove,
+		EndTime:          gopts.endTime,
 		GameMoves:        gameMoves,
 		running:          atomic.Bool{},
 
@@ -180,15 +160,15 @@ func NewGameState(gameID int64, players [2]Player, timeControl *pb.GameTimeContr
 	return gs, nil
 }
 
-func (gs *GameState) getPlayerByID(id uuid.UUID) *Player {
+func (gs *GameState) GetPlayerByID(id uuid.UUID) *Player {
 	return gs.Players[id]
 }
 
-func (gs *GameState) hasGamePlayer(id uuid.UUID) bool {
+func (gs *GameState) HasGamePlayer(id uuid.UUID) bool {
 	return gs.White.ID == id || gs.Black.ID == id
 }
 
-func (gs *GameState) getPlayerByColor(color pb.Color) *Player {
+func (gs *GameState) GetPlayerByColor(color pb.Color) *Player {
 	switch color {
 	case pb.Color_COLOR_WHITE:
 		return gs.White
@@ -238,8 +218,10 @@ func (gs *GameState) Start(ctx context.Context) {
 					res, err := gs.playMoveUCI(c)
 					if err != nil {
 						fmt.Println("------------------- playMoveUCI err: ", err)
+
 						gs.GameEvent <- PlayMoveUCIErrorEvent{Err: err}
 					}
+
 					gs.GameEvent <- res
 				}
 
@@ -303,7 +285,7 @@ func (gs *GameState) declineDraw(c DeclineDrawCmd) error {
 func (gs *GameState) playMoveUCI(c PlayMoveUCICmd) (PlayMoveUCIEvent, error) {
 	godump.Dump("-------------------------- playMoveUCI: ", c)
 
-	if !gs.hasGamePlayer(c.UserID) {
+	if !gs.HasGamePlayer(c.UserID) {
 		return PlayMoveUCIEvent{}, ErrPlayerNotInGame
 	}
 
@@ -311,7 +293,7 @@ func (gs *GameState) playMoveUCI(c PlayMoveUCICmd) (PlayMoveUCIEvent, error) {
 		return PlayMoveUCIEvent{}, ErrGameAlreadyConcluded
 	}
 
-	player := gs.getPlayerByID(c.UserID)
+	player := gs.GetPlayerByID(c.UserID)
 	if player.Color == pb.Color_COLOR_WHITE && gs.Chess.Position.Turn.IsBlack() || player.Color == pb.Color_COLOR_BLACK && gs.Chess.Position.Turn.IsWhite() {
 		return PlayMoveUCIEvent{}, ErrNotYourTurn
 	}
@@ -341,9 +323,11 @@ func (gs *GameState) playMoveUCI(c PlayMoveUCICmd) (PlayMoveUCIEvent, error) {
 		// stop white first move timer
 		// start black first move timer
 	}
+
 	if gs.Chess.Position.Ply == 2 {
 		// stop black first move timer
 	}
+
 	if gs.Chess.Position.Ply >= 2 {
 		// gs.toggleClockAfterMove()
 	}
@@ -382,6 +366,7 @@ func (gs *GameState) playMoveUCI(c PlayMoveUCICmd) (PlayMoveUCIEvent, error) {
 			} else {
 				gs.GameResult = pb.GameResult_GAME_RESULT_BLACK_WON
 			}
+
 			gs.GameResultStatus = pb.GameResultStatus_GAME_RESULT_STATUS_CHECKMATE
 		case engine.StatusStalemate:
 			gs.GameState = pb.GameState_GAME_STATE_FINISHED
@@ -392,7 +377,7 @@ func (gs *GameState) playMoveUCI(c PlayMoveUCICmd) (PlayMoveUCIEvent, error) {
 
 	res := PlayMoveUCIEvent{
 		GameID:                gs.GameID,
-		PlayedBy:              c.UserID,
+		UserID:                c.UserID,
 		Players:               gs.Players,
 		Uci:                   uci,
 		San:                   san,

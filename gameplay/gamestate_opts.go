@@ -128,7 +128,7 @@ func WithStartTime(startTime *time.Time) GameOption { return startTimeOpt{t: sta
 
 type endTimeOpt struct{ t *time.Time }
 
-func (o endTimeOpt) apply(g *gameOpts)          { g.startTime = o.t }
+func (o endTimeOpt) apply(g *gameOpts)          { g.endTime = o.t }
 func WithEndTime(endTime *time.Time) GameOption { return endTimeOpt{t: endTime} }
 
 type gameMovesOpt struct{ moves []*pb.GameMove }
