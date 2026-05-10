@@ -9,7 +9,6 @@ import (
 
 	"github.com/dankobg/juicer/engine"
 	pb "github.com/dankobg/juicer/pb/proto/juicer"
-	"github.com/goforj/godump"
 	"github.com/google/uuid"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
@@ -49,6 +48,12 @@ type Player struct {
 	Guest    bool
 }
 
+type DrawOffer struct {
+	OfferedBy uuid.UUID
+	OfferedAt time.Time
+	Ply       int
+}
+
 type GameState struct {
 	Chess            *engine.Chess
 	GameID           int64
@@ -71,6 +76,7 @@ type GameState struct {
 	Rated            bool
 	GameMoves        []*pb.GameMove
 	Version          int
+	PendingDrawOffer *DrawOffer
 	running          atomic.Bool
 
 	GameCommand         chan GameCommand
@@ -193,38 +199,38 @@ func (gs *GameState) Start(ctx context.Context) {
 			case cmd := <-gs.GameCommand:
 				switch c := cmd.(type) {
 				case AbortGameCmd:
-					if err := gs.abortGame(c); err != nil {
+					if res, err := gs.abortGame(c); err != nil {
 						gs.GameEvent <- AbortErrorEvent{Err: err}
 					} else {
-						gs.GameEvent <- AbortEvent{}
+						gs.GameEvent <- res
 					}
 
 				case ResignGameCmd:
-					if err := gs.resignGame(c); err != nil {
+					if res, err := gs.resignGame(c); err != nil {
 						gs.GameEvent <- ResignErrorEvent{Err: err}
 					} else {
-						gs.GameEvent <- ResignEvent{}
+						gs.GameEvent <- res
 					}
 
 				case OfferDrawCmd:
-					if err := gs.offerDraw(c); err != nil {
+					if res, err := gs.offerDraw(c); err != nil {
 						gs.GameEvent <- OfferDrawErrorEvent{Err: err}
 					} else {
-						gs.GameEvent <- OfferDrawEvent{}
+						gs.GameEvent <- res
 					}
 
 				case AcceptDrawCmd:
-					if err := gs.acceptDraw(c); err != nil {
+					if res, err := gs.acceptDraw(c); err != nil {
 						gs.GameEvent <- AcceptDrawErrorEvent{Err: err}
 					} else {
-						gs.GameEvent <- AcceptDrawEvent{}
+						gs.GameEvent <- res
 					}
 
 				case DeclineDrawCmd:
-					if err := gs.declineDraw(c); err != nil {
+					if res, err := gs.declineDraw(c); err != nil {
 						gs.GameEvent <- DeclineDrawErrorEvent{Err: err}
 					} else {
-						gs.GameEvent <- DeclineDrawEvent{}
+						gs.GameEvent <- res
 					}
 
 				case PlayMoveUCICmd:
@@ -242,59 +248,150 @@ func (gs *GameState) Start(ctx context.Context) {
 	}()
 }
 
-func (gs *GameState) abortGame(c AbortGameCmd) error {
-	godump.Dump("-------------------------- abortGame: ", c)
-
-	if gs.GameResult != pb.GameResult_GAME_RESULT_UNSPECIFIED {
-		return ErrGameAlreadyConcluded
+func (gs *GameState) abortGame(c AbortGameCmd) (AbortEvent, error) {
+	if !gs.HasGamePlayer(c.UserID) {
+		return AbortEvent{}, ErrPlayerNotInGame
 	}
 
-	return nil
+	if gs.GameResult != pb.GameResult_GAME_RESULT_UNSPECIFIED {
+		return AbortEvent{}, ErrGameAlreadyConcluded
+	}
+
+	// var gameResult pb.GameResult
+	// var gameResultStatus pb.GameResultStatus
+	// var gameState pb.GameState
+
+	player := gs.GetPlayerByID(c.UserID)
+
+	if player.Color == pb.Color_COLOR_WHITE {
+		if gs.Chess.Position.Ply <= 1 {
+			gs.GameResult = pb.GameResult_GAME_RESULT_INTERRUPTED
+			gs.GameResultStatus = pb.GameResultStatus_GAME_RESULT_STATUS_ABORTED
+			gs.GameState = pb.GameState_GAME_STATE_INTERRUPTED
+		} else {
+			gs.GameResult = pb.GameResult_GAME_RESULT_BLACK_WON
+			gs.GameResultStatus = pb.GameResultStatus_GAME_RESULT_STATUS_ABORTED
+			gs.GameState = pb.GameState_GAME_STATE_FINISHED
+		}
+	} else {
+		if gs.Chess.Position.Ply <= 2 {
+			gs.GameResult = pb.GameResult_GAME_RESULT_INTERRUPTED
+			gs.GameResultStatus = pb.GameResultStatus_GAME_RESULT_STATUS_ABORTED
+			gs.GameState = pb.GameState_GAME_STATE_INTERRUPTED
+		} else {
+			gs.GameResult = pb.GameResult_GAME_RESULT_WHITE_WON
+			gs.GameResultStatus = pb.GameResultStatus_GAME_RESULT_STATUS_ABORTED
+			gs.GameState = pb.GameState_GAME_STATE_FINISHED
+		}
+	}
+
+	gs.EndTime = new(time.Now())
+
+	res := AbortEvent{
+		GameID:           gs.GameID,
+		GameResult:       gs.GameResult,
+		GameResultStatus: gs.GameResultStatus,
+		GameState:        gs.GameState,
+		EndTime:          *gs.EndTime,
+	}
+
+	return res, nil
 }
 
-func (gs *GameState) resignGame(c ResignGameCmd) error {
-	godump.Dump("-------------------------- resignGame: ", c)
-
-	if gs.GameResult != pb.GameResult_GAME_RESULT_UNSPECIFIED {
-		return ErrGameAlreadyConcluded
+func (gs *GameState) resignGame(c ResignGameCmd) (ResignEvent, error) {
+	if !gs.HasGamePlayer(c.UserID) {
+		return ResignEvent{}, ErrPlayerNotInGame
 	}
 
-	return nil
+	if gs.GameResult != pb.GameResult_GAME_RESULT_UNSPECIFIED {
+		return ResignEvent{}, ErrGameAlreadyConcluded
+	}
+
+	player := gs.GetPlayerByID(c.UserID)
+
+	if player.Color == pb.Color_COLOR_WHITE {
+		if gs.Chess.Position.Ply <= 1 {
+			gs.GameResult = pb.GameResult_GAME_RESULT_INTERRUPTED
+			gs.GameResultStatus = pb.GameResultStatus_GAME_RESULT_STATUS_ABORTED
+			gs.GameState = pb.GameState_GAME_STATE_INTERRUPTED
+		} else {
+			gs.GameResult = pb.GameResult_GAME_RESULT_BLACK_WON
+			gs.GameResultStatus = pb.GameResultStatus_GAME_RESULT_STATUS_RESIGNATION
+			gs.GameState = pb.GameState_GAME_STATE_FINISHED
+		}
+	}
+	if player.Color == pb.Color_COLOR_BLACK {
+		if gs.Chess.Position.Ply < 2 {
+			gs.GameResult = pb.GameResult_GAME_RESULT_INTERRUPTED
+			gs.GameResultStatus = pb.GameResultStatus_GAME_RESULT_STATUS_ABORTED
+			gs.GameState = pb.GameState_GAME_STATE_INTERRUPTED
+		} else {
+			gs.GameResult = pb.GameResult_GAME_RESULT_WHITE_WON
+			gs.GameResultStatus = pb.GameResultStatus_GAME_RESULT_STATUS_RESIGNATION
+			gs.GameState = pb.GameState_GAME_STATE_FINISHED
+		}
+	}
+
+	gs.EndTime = new(time.Now())
+
+	res := ResignEvent{
+		GameID:           gs.GameID,
+		GameResult:       gs.GameResult,
+		GameResultStatus: gs.GameResultStatus,
+		GameState:        gs.GameState,
+		EndTime:          *gs.EndTime,
+	}
+
+	return res, nil
 }
 
-func (gs *GameState) offerDraw(c OfferDrawCmd) error {
-	godump.Dump("-------------------------- offerDraw: ", c)
-
+func (gs *GameState) offerDraw(c OfferDrawCmd) (OfferDrawEvent, error) {
 	if gs.GameResult != pb.GameResult_GAME_RESULT_UNSPECIFIED {
-		return ErrGameAlreadyConcluded
+		return OfferDrawEvent{}, ErrGameAlreadyConcluded
 	}
 
-	return nil
+	res := OfferDrawEvent{}
+
+	return res, nil
 }
 
-func (gs *GameState) acceptDraw(c AcceptDrawCmd) error {
-	godump.Dump("-------------------------- acceptDraw: ", c)
-
+func (gs *GameState) acceptDraw(c AcceptDrawCmd) (AcceptDrawEvent, error) {
 	if gs.GameResult != pb.GameResult_GAME_RESULT_UNSPECIFIED {
-		return ErrGameAlreadyConcluded
+		return AcceptDrawEvent{}, ErrGameAlreadyConcluded
 	}
 
-	return nil
+	if !gs.HasGamePlayer(c.UserID) {
+		return AcceptDrawEvent{}, ErrPlayerNotInGame
+	}
+
+	gs.GameResult = pb.GameResult_GAME_RESULT_DRAW
+	gs.GameResultStatus = pb.GameResultStatus_GAME_RESULT_STATUS_DRAW_AGREED
+	gs.GameState = pb.GameState_GAME_STATE_FINISHED
+
+	gs.EndTime = new(time.Now())
+
+	res := AcceptDrawEvent{
+		GameID:           gs.GameID,
+		GameResult:       gs.GameResult,
+		GameResultStatus: gs.GameResultStatus,
+		GameState:        gs.GameState,
+		EndTime:          *gs.EndTime,
+	}
+
+	return res, nil
 }
 
-func (gs *GameState) declineDraw(c DeclineDrawCmd) error {
-	godump.Dump("-------------------------- declineDraw: ", c)
-
+func (gs *GameState) declineDraw(c DeclineDrawCmd) (DeclineDrawEvent, error) {
 	if gs.GameResult != pb.GameResult_GAME_RESULT_UNSPECIFIED {
-		return ErrGameAlreadyConcluded
+		return DeclineDrawEvent{}, ErrGameAlreadyConcluded
 	}
 
-	return nil
+	res := DeclineDrawEvent{}
+
+	return res, nil
 }
 
 func (gs *GameState) playMoveUCI(c PlayMoveUCICmd) (PlayMoveUCIEvent, error) {
-	godump.Dump("-------------------------- playMoveUCI: ", c)
-
 	if !gs.HasGamePlayer(c.UserID) {
 		return PlayMoveUCIEvent{}, ErrPlayerNotInGame
 	}

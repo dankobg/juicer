@@ -44,7 +44,13 @@ type PlayMoveUCIErrorEvent struct {
 
 func (PlayMoveUCIErrorEvent) isGameEvent() {}
 
-type AbortEvent struct{}
+type AbortEvent struct {
+	GameID           int64
+	GameResult       pb.GameResult
+	GameResultStatus pb.GameResultStatus
+	GameState        pb.GameState
+	EndTime          time.Time
+}
 
 func (AbortEvent) isGameEvent() {}
 
@@ -55,7 +61,13 @@ type AbortErrorEvent struct {
 
 func (AbortErrorEvent) isGameEvent() {}
 
-type ResignEvent struct{}
+type ResignEvent struct {
+	GameID           int64
+	GameResult       pb.GameResult
+	GameResultStatus pb.GameResultStatus
+	GameState        pb.GameState
+	EndTime          time.Time
+}
 
 func (ResignEvent) isGameEvent() {}
 
@@ -77,7 +89,13 @@ type OfferDrawErrorEvent struct {
 
 func (OfferDrawErrorEvent) isGameEvent() {}
 
-type AcceptDrawEvent struct{}
+type AcceptDrawEvent struct {
+	GameID           int64
+	GameResult       pb.GameResult
+	GameResultStatus pb.GameResultStatus
+	GameState        pb.GameState
+	EndTime          time.Time
+}
 
 func (AcceptDrawEvent) isGameEvent() {}
 

@@ -111,6 +111,7 @@ func (a *ApiHandler) onGameEvent(event gameplay.GameEvent) {
 
 func (a *ApiHandler) handlePlayMoveUCIEvent(event gameplay.PlayMoveUCIEvent) {
 	gameSetter := models.GameSetter{
+		Fen:         omit.From(event.Position.Fen()),
 		LastMove:    omitnull.FromPtr(event.LastMove),
 		EndTime:     omitnull.FromPtr(event.EndTime),
 		Repetitions: omit.From(int32(event.Repetitions)),
@@ -203,8 +204,6 @@ func (a *ApiHandler) handlePlayMoveUCIEvent(event gameplay.PlayMoveUCIEvent) {
 			a.Log.Error("DeleteActiveGameByID", slog.Int64("game_id", event.GameID), slog.Any("error", err))
 		}
 	}
-
-	fmt.Println(event.Position.PrintBoard()) // EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE
 }
 
 func (a *ApiHandler) handlePlayMoveUCIErrorEvent(event gameplay.PlayMoveUCIErrorEvent) {
@@ -214,7 +213,36 @@ func (a *ApiHandler) handlePlayMoveUCIErrorEvent(event gameplay.PlayMoveUCIError
 	}
 }
 
-func (a *ApiHandler) handleAbortGameEvent(event gameplay.AbortEvent) {}
+func (a *ApiHandler) handleAbortGameEvent(event gameplay.AbortEvent) {
+	gameSetter := models.GameSetter{
+		EndTime: omitnull.From(event.EndTime),
+	}
+
+	if _, err := a.persistor.Game().UpdateGame(context.Background(), event.GameID, gameSetter, nil, nil); err != nil {
+		a.Log.Error("UpdateGame", slog.Int64("game_id", event.GameID), slog.Any("error", err))
+	}
+
+	gameFinishedMsg := &pb.Message{Event: &pb.Message_GameFinished{GameFinished: &pb.GameFinished{
+		GameId:           int32(event.GameID),
+		GameResult:       event.GameResult,
+		GameResultStatus: event.GameResultStatus,
+		GameState:        event.GameState,
+	}}}
+
+	gameFinishedMsgBytes, err := protojson.Marshal(gameFinishedMsg)
+	if err != nil {
+		a.Log.Error("protojson.Marshal Message_GameFinished", slog.Int64("game_id", event.GameID), slog.Any("error", err))
+	} else {
+		topic := fmt.Sprintf("game.%d", event.GameID)
+		if err := a.bus.rdb.Publish(context.Background(), topic, gameFinishedMsgBytes).Err(); err != nil {
+			a.Log.Error("publish Message_GameFinished", slog.Int64("game_id", event.GameID), slog.Any("error", err))
+		}
+	}
+
+	if err := a.persistor.ActiveGame().DeleteActiveGameByID(context.Background(), event.GameID); err != nil {
+		a.Log.Error("DeleteActiveGameByID", slog.Int64("game_id", event.GameID), slog.Any("error", err))
+	}
+}
 
 func (a *ApiHandler) handleAbortGameErrorEvent(event gameplay.AbortErrorEvent) {
 	if event.Err != nil {
@@ -223,7 +251,36 @@ func (a *ApiHandler) handleAbortGameErrorEvent(event gameplay.AbortErrorEvent) {
 	}
 }
 
-func (a *ApiHandler) handleResignGameEvent(event gameplay.ResignEvent) {}
+func (a *ApiHandler) handleResignGameEvent(event gameplay.ResignEvent) {
+	gameSetter := models.GameSetter{
+		EndTime: omitnull.From(event.EndTime),
+	}
+
+	if _, err := a.persistor.Game().UpdateGame(context.Background(), event.GameID, gameSetter, nil, nil); err != nil {
+		a.Log.Error("UpdateGame", slog.Int64("game_id", event.GameID), slog.Any("error", err))
+	}
+
+	gameFinishedMsg := &pb.Message{Event: &pb.Message_GameFinished{GameFinished: &pb.GameFinished{
+		GameId:           int32(event.GameID),
+		GameResult:       event.GameResult,
+		GameResultStatus: event.GameResultStatus,
+		GameState:        event.GameState,
+	}}}
+
+	gameFinishedMsgBytes, err := protojson.Marshal(gameFinishedMsg)
+	if err != nil {
+		a.Log.Error("protojson.Marshal Message_GameFinished", slog.Int64("game_id", event.GameID), slog.Any("error", err))
+	} else {
+		topic := fmt.Sprintf("game.%d", event.GameID)
+		if err := a.bus.rdb.Publish(context.Background(), topic, gameFinishedMsgBytes).Err(); err != nil {
+			a.Log.Error("publish Message_GameFinished", slog.Int64("game_id", event.GameID), slog.Any("error", err))
+		}
+	}
+
+	if err := a.persistor.ActiveGame().DeleteActiveGameByID(context.Background(), event.GameID); err != nil {
+		a.Log.Error("DeleteActiveGameByID", slog.Int64("game_id", event.GameID), slog.Any("error", err))
+	}
+}
 
 func (a *ApiHandler) handleResignGameErrorEvent(event gameplay.ResignErrorEvent) {
 	if event.Err != nil {
@@ -241,7 +298,36 @@ func (a *ApiHandler) handleOfferDrawErrorEvent(event gameplay.OfferDrawErrorEven
 	}
 }
 
-func (a *ApiHandler) handleAcceptDrawEvent(event gameplay.AcceptDrawEvent) {}
+func (a *ApiHandler) handleAcceptDrawEvent(event gameplay.AcceptDrawEvent) {
+	gameSetter := models.GameSetter{
+		EndTime: omitnull.From(event.EndTime),
+	}
+
+	if _, err := a.persistor.Game().UpdateGame(context.Background(), event.GameID, gameSetter, nil, nil); err != nil {
+		a.Log.Error("UpdateGame", slog.Int64("game_id", event.GameID), slog.Any("error", err))
+	}
+
+	gameFinishedMsg := &pb.Message{Event: &pb.Message_GameFinished{GameFinished: &pb.GameFinished{
+		GameId:           int32(event.GameID),
+		GameResult:       event.GameResult,
+		GameResultStatus: event.GameResultStatus,
+		GameState:        event.GameState,
+	}}}
+
+	gameFinishedMsgBytes, err := protojson.Marshal(gameFinishedMsg)
+	if err != nil {
+		a.Log.Error("protojson.Marshal Message_GameFinished", slog.Int64("game_id", event.GameID), slog.Any("error", err))
+	} else {
+		topic := fmt.Sprintf("game.%d", event.GameID)
+		if err := a.bus.rdb.Publish(context.Background(), topic, gameFinishedMsgBytes).Err(); err != nil {
+			a.Log.Error("publish Message_GameFinished", slog.Int64("game_id", event.GameID), slog.Any("error", err))
+		}
+	}
+
+	if err := a.persistor.ActiveGame().DeleteActiveGameByID(context.Background(), event.GameID); err != nil {
+		a.Log.Error("DeleteActiveGameByID", slog.Int64("game_id", event.GameID), slog.Any("error", err))
+	}
+}
 
 func (a *ApiHandler) handleAcceptDrawErrorEvent(event gameplay.AcceptDrawErrorEvent) {
 	if event.Err != nil {
@@ -1495,6 +1581,7 @@ func (a *ApiHandler) loadGameState(gameID int64) (*gameplay.GameState, error) {
 	}
 
 	a.Log.Debug("loadGameState success", slog.String("from", "persistence"))
+
 	gs.Start(context.Background())
 
 	a.gamestates[gameID] = gs
@@ -1625,12 +1712,10 @@ func debug_print_game_info(gs *gameplay.GameState) {
 	fmt.Printf("history_hashes: %v\n", gs.Chess.HistoryHashes)
 
 	fmt.Println(gs.Chess.Position.PrintBoard())
-	fmt.Println("LEGAL MOVES")
 
 	legals := []string{}
 	for _, x := range gs.Chess.LegalMoves {
 		legals = append(legals, x.String())
 	}
-
 	godump.DumpJSON("legal moves", legals)
 }

@@ -5,6 +5,7 @@ import (
 
 	api "github.com/dankobg/juicer/api/gen"
 	"github.com/dankobg/juicer/db/gen/models"
+	"github.com/dankobg/juicer/gameplay"
 	pb "github.com/dankobg/juicer/pb/proto/juicer"
 	"github.com/stephenafamo/bob/types"
 )
@@ -65,6 +66,7 @@ type ActiveGame struct {
 	GameMoves              []ActiveGameMove        `json:"game_moves"`
 	GameHistoryHashes      []ActiveGameHistoryHash `json:"game_history_hashes"`
 	Version                int32                   `json:"version"`
+	PendingDrawOffer       *gameplay.DrawOffer     `json:"pending_draw_offer"`
 }
 
 type ActiveGameMove struct {
