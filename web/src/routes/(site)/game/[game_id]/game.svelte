@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { page } from '$app/state';
 	import { gameManager } from '$lib/state/game-manager.svelte';
 	import { ws } from '$lib/state/ws-state.svelte';
 	import { create } from '@bufbuild/protobuf';
@@ -11,7 +10,7 @@
 	$effect(() => {
 		if (ws.readyState !== WebSocket.OPEN) {
 			const params = new URLSearchParams();
-			params.set('path', page.url.pathname);
+			params.set('path', window.location.pathname);
 			ws.connect(params);
 		}
 

@@ -64,3 +64,7 @@ export function capitalize(s: string) {
 	if (!s) return '';
 	return s[0]?.toUpperCase() + s.slice(1);
 }
+
+export function assertUnreachable(value: never): never {
+	throw new Error(`Unexpected value: ${value}`);
+}

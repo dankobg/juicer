@@ -1,11 +1,5 @@
 <script lang="ts">
 	import type { components } from '$lib/gen/juicer_openapi';
-	import * as Card from '$lib/components/ui/card';
-	import { Button } from '$lib/components/ui/button';
-	import { cn } from '$lib/utils';
-	import { create } from '@bufbuild/protobuf';
-	import { MessageSchema } from '$lib/gen/juicer_pb';
-	import { ws } from '$lib/state/ws-state.svelte';
 	import { gameManager } from '$lib/state/game-manager.svelte';
 
 	let {

@@ -426,6 +426,10 @@ func (a *ApiHandler) handleIPCLeaveTabMsg(data *pb.LeaveTab) {
 			a.Log.Error("sendUserPresenceDiffToChannel", slog.String("user_id", data.GetUserId()), slog.String("conn_id", data.GetConnId()), slog.Any("error", err))
 		}
 	}
+
+	if err := a.persistor.Pool().LeavePool(context.Background(), uuid.MustParse(data.GetUserId())); err != nil {
+		a.Log.Error("tableave LeavePool", slog.String("user_id", data.GetUserId()), slog.String("conn_id", data.GetConnId()), slog.Any("error", err))
+	}
 }
 
 func (a *ApiHandler) handleIPCLeaveSiteMsg(data *pb.LeaveSite) {

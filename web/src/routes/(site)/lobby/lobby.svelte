@@ -2,7 +2,6 @@
 	import { ws } from '$lib/state/ws-state.svelte';
 	import * as Tabs from '$lib/components/ui/tabs';
 	import type { PageProps } from '../$types';
-	import { page } from '$app/state';
 	import QuickGame from './quick-game.svelte';
 	import CustomGame from './custom-game.svelte';
 	import PlayFriend from './play-friend.svelte';
@@ -13,7 +12,7 @@
 	$effect(() => {
 		if (ws.readyState !== WebSocket.OPEN) {
 			const params = new URLSearchParams();
-			params.set('path', page.url.pathname);
+			params.set('path', window.location.pathname);
 			ws.connect(params);
 		}
 
