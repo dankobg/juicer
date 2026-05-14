@@ -122,6 +122,7 @@ func (a *ApiHandler) handlePlayMoveUCIEvent(event gameplay.PlayMoveUCIEvent) {
 		Fen:      omit.From(event.Position.Fen()),
 		Uci:      omit.From(event.Uci),
 		San:      omit.From(event.San),
+		Lan:      omit.From(event.Lan),
 		Check:    omit.From(event.Position.Check),
 		PlayedAt: omitnull.FromPtr(event.LastMove),
 	}
@@ -149,6 +150,7 @@ func (a *ApiHandler) handlePlayMoveUCIEvent(event gameplay.PlayMoveUCIEvent) {
 		GameId:  int32(event.GameID),
 		Version: 42,
 	}}}
+
 	moveAckMsgBytes, err := protojson.Marshal(moveAckMsg)
 	if err != nil {
 		a.Log.Error("protojson.Marshal Message_MoveAck", slog.Any("error", err))
@@ -172,6 +174,7 @@ func (a *ApiHandler) handlePlayMoveUCIEvent(event gameplay.PlayMoveUCIEvent) {
 		LegalMoves: event.LegalMoves,
 		Version:    42,
 	}}}
+
 	moveSyncMsgBytes, err := protojson.Marshal(moveSyncMsg)
 	if err != nil {
 		a.Log.Error("protojson.Marshal Message_MoveSync", slog.Any("error", err))
@@ -1145,8 +1148,24 @@ func (a *ApiHandler) sendGameInfo(gameID int64, userID, connID string, guest boo
 	}
 
 	uid := uuid.MustParse(userID)
-
 	player := gs.GetPlayerByID(uid)
+
+	whitePlayerInfo := &pb.PlayerInfo{}
+	blackPlayerInfo := &pb.PlayerInfo{}
+
+	for _, p := range gs.Players {
+		if p.Color == pb.Color_COLOR_WHITE {
+			whitePlayerInfo.UserId = p.ID.String()
+			whitePlayerInfo.Username = p.Username
+			whitePlayerInfo.Guest = p.Guest
+			whitePlayerInfo.Rating = 1500
+		} else {
+			blackPlayerInfo.UserId = p.ID.String()
+			blackPlayerInfo.Username = p.Username
+			blackPlayerInfo.Guest = p.Guest
+			blackPlayerInfo.Rating = 1500
+		}
+	}
 
 	clocks := &pb.Clocks{}
 
@@ -1155,22 +1174,8 @@ func (a *ApiHandler) sendGameInfo(gameID int64, userID, connID string, guest boo
 		legalMoves[i] = fmt.Sprint(legalMove.String())
 	}
 
-	opponentColor := pb.Color_COLOR_BLACK
-	if player.Color == pb.Color_COLOR_BLACK {
-		opponentColor = pb.Color_COLOR_WHITE
-	}
-
-	opponent := gs.GetPlayerByColor(opponentColor)
-	opponentInfo := &pb.OpponentInfo{
-		UserId:    opponent.ID.String(),
-		Username:  opponent.Username,
-		AvatarUrl: "",
-		Rating:    1500,
-	}
-
 	gameInfo := &pb.GameInfo{
 		GameId:             int32(gameID),
-		UserId:             userID,
 		GameVariant:        gs.GameVariant,
 		GameTimeKind:       gs.GameTimeKind,
 		GameTimeCategory:   gs.GameTimeCategory,
@@ -1182,7 +1187,8 @@ func (a *ApiHandler) sendGameInfo(gameID int64, userID, connID string, guest boo
 		Clocks:             clocks,
 		Rated:              gs.Rated,
 		LegalMoves:         legalMoves,
-		OpponentInfo:       opponentInfo,
+		White:              whitePlayerInfo,
+		Black:              blackPlayerInfo,
 		ReconnectTimeoutMs: int32(gs.ReconnectTimeout.Milliseconds()),
 		FirstMoveTimeoutMs: int32(gs.FirstMoveTimeout.Milliseconds()),
 		GameMoves:          gs.GameMoves,
@@ -1514,6 +1520,7 @@ func (a *ApiHandler) processMatchedPoolPair(ctx context.Context, pair [2]string,
 			Fen:   omit.From(move.GetFen()),
 			Uci:   omit.From(move.GetUci()),
 			San:   omit.From(move.GetSan()),
+			Lan:   omit.From(move.GetLan()),
 			Check: omit.From(gs.Chess.Position.Check),
 		}
 		if move.GetPlayedAt() != nil {
@@ -1594,6 +1601,7 @@ func (a *ApiHandler) loadGameState(gameID int64) (*gameplay.GameState, error) {
 }
 
 func (a *ApiHandler) gameStateFromPersistence(ctx context.Context, game models.Game, moves *[]models.GameMove, hashes *[]models.GameHistoryHash) (*gameplay.GameState, error) {
+	// @TODO: fix panic later... im lazy now
 	whiteID := game.GuestWhiteID.GetOr(game.WhiteID.MustGet())
 	blackID := game.GuestBlackID.GetOr(game.BlackID.MustGet())
 
@@ -1675,6 +1683,10 @@ func (a *ApiHandler) gameStateFromPersistence(ctx context.Context, game models.G
 				move.San = &m.San
 			}
 
+			if m.Lan != "" {
+				move.Lan = &m.Lan
+			}
+
 			if m.PlayedAt.IsValue() {
 				move.PlayedAt = timestamppb.New(m.PlayedAt.MustGet())
 			}
@@ -1721,5 +1733,6 @@ func debug_print_game_info(gs *gameplay.GameState) {
 	for _, x := range gs.Chess.LegalMoves {
 		legals = append(legals, x.String())
 	}
+
 	godump.DumpJSON("legal moves", legals)
 }

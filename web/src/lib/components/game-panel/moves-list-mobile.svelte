@@ -1,5 +1,5 @@
-<script lang="ts">
-	import { gameManager } from '$lib/state/game-manager.svelte';
+<!-- <script lang="ts">
+	import { gameManager } from '$lib/gameplay/game-manager.svelte';
 	import IconSkipBack from '@lucide/svelte/icons/skip-back';
 	import IconSkipForward from '@lucide/svelte/icons/skip-forward';
 	import Button from '$lib/components/ui/button/button.svelte';
@@ -24,4 +24,4 @@
 	<Button variant="outline" size="icon" onclick={() => gameManager.movesSkipToEnd()}>
 		<IconSkipForward />
 	</Button>
-</div>
+</div> -->

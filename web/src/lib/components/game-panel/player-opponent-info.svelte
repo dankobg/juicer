@@ -1,5 +1,5 @@
-<script lang="ts">
-	import { gameManager } from '$lib/state/game-manager.svelte';
+<!-- <script lang="ts">
+	import { gameManager } from '$lib/gameplay/game-manager.svelte';
 	import PlayerInfo from './player-info.svelte';
 
 	type Props = {
@@ -23,4 +23,4 @@
 	clock={gameManager.opponentGameTimer?.time.formatted}
 	progressMax={gameManager.gameTimeControl?.clock && Number(gameManager.gameTimeControl.clock.seconds) * 1000}
 	progressValue={gameManager.opponentGameTimer && gameManager.opponentGameTimer.timeMs}
-/>
+/> -->

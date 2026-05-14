@@ -1,52 +1,29 @@
 <script lang="ts">
-	import { ws } from '$lib/state/ws-state.svelte';
+	import { ws } from '$lib/ws/juicer-ws.svelte';
 	import * as Tabs from '$lib/components/ui/tabs';
 	import type { PageProps } from '../$types';
 	import QuickGame from './quick-game.svelte';
 	import CustomGame from './custom-game.svelte';
 	import PlayFriend from './play-friend.svelte';
-	import { gameManager } from '$lib/state/game-manager.svelte';
+	import { onWsClose, onWsError, onWsMessage, onWsOpen } from '$lib/ws/ws-message-handler';
 
 	let { data }: PageProps = $props();
 
 	$effect(() => {
-		if (ws.readyState !== WebSocket.OPEN) {
-			const params = new URLSearchParams();
-			params.set('path', window.location.pathname);
-			ws.connect(params);
-		}
+		const params = new URLSearchParams();
+		params.set('path', window.location.pathname);
+		ws.connect(params);
 
-		ws.onOpen = (event: Event) => {
-			console.debug('ws open:', event);
-		};
-
-		ws.onClose = (event: CloseEvent) => {
-			console.debug(`ws closed: code: ${event.code}, reason: ${event.reason}, wasClean: ${event.wasClean}`);
-		};
-
-		ws.onError = (event: Event) => {
-			console.debug('ws error:', event);
-		};
-
-		ws.onMessage = (event: MessageEvent) => {
-			gameManager.handleWebsocketMessage(event);
-		};
+		ws.onOpen = onWsOpen;
+		ws.onError = onWsError;
+		ws.onClose = onWsClose;
+		ws.onMessage = onWsMessage;
 
 		return () => {
 			ws.close();
-			gameManager.cancelSeekGame();
 		};
 	});
 </script>
-
-<div class="border-2 border-green-600 p-1">
-	<h1 class="text-2xl">Lobby users</h1>
-	<ul>
-		{#each gameManager.lobbyUserPresence as user (user?.userId)}
-			<li class="border-2 border-orange-600 p-1">{user?.username}, {user?.guest ? 'guest' : 'auth'}</li>
-		{/each}
-	</ul>
-</div>
 
 <div class="lobby mx-auto mt-8 w-full max-w-screen-2xl">
 	<Tabs.Root value="quick-game" class="mx-auto w-full max-w-xl">

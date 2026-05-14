@@ -1,4 +1,4 @@
-<script lang="ts">
+<!-- <script lang="ts">
 	import Progress from '$lib/components/ui/progress/progress.svelte';
 
 	type Props = {
@@ -63,4 +63,4 @@
 			</span>
 		</div>
 	</div>
-</div>
+</div> -->

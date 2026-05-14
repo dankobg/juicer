@@ -151,6 +151,7 @@ create table "game_move" (
   "fen" character varying(100) not null,
   "uci" character varying(5) not null,
   "san" character varying(10) not null,
+  "lan" character varying(10) not null,
   "check" boolean not null default false,
   "played_at" timestamptz,
   constraint "pk_game_move_id" primary key ("id"),

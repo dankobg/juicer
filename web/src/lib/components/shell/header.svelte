@@ -9,11 +9,14 @@
 	import IconUserIcon from '@lucide/svelte/icons/user';
 	import IconGauge from '@lucide/svelte/icons/gauge';
 	import IconSidebar from '@lucide/svelte/icons/sidebar';
+	import IconSettings from '@lucide/svelte/icons/settings';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import { Separator } from '$lib/components/ui/separator/index.js';
 	import * as Sidebar from '$lib/components/ui/sidebar/index.js';
 	import type { User } from '$lib/kratos/service';
 	import { getInitials } from '$lib/utils';
+	import UiSettings from '../ui-settings/ui-settings.svelte';
+	import { uiSettings } from '../ui-settings/ui-settings-state.svelte';
 
 	type Props = {
 		logoutUrl?: string;
@@ -51,6 +54,14 @@
 			<ModeSwitcher />
 		</div>
 
+		<UiSettings />
+
+		{#if !user}
+			<Button variant="outline" size="icon" onclick={() => uiSettings.open()}>
+				<IconSettings />
+			</Button>
+		{/if}
+
 		{#if user}
 			<DropdownMenu.Root>
 				<DropdownMenu.Trigger class="hidden sm:block">
@@ -67,6 +78,10 @@
 						<DropdownMenu.GroupHeading>{user.fullName ?? user.email}</DropdownMenu.GroupHeading>
 						<DropdownMenu.Separator />
 						<DropdownMenu.Group>
+							<DropdownMenu.Item onclick={() => uiSettings.open()}>
+								<IconSettings class="mr-2 size-4" />
+								<span>UI Settings</span>
+							</DropdownMenu.Item>
 							<a href="/dashboard">
 								<DropdownMenu.Item class="cursor-pointer">
 									<IconGauge class="mr-2 size-4" />

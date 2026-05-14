@@ -1997,31 +1997,32 @@ func (*CancelSeekGame) Descriptor() ([]byte, []int) {
 	return file_proto_juicer_juicer_proto_rawDescGZIP(), []int{17}
 }
 
-// OpponentInfo is info about opponent
-type OpponentInfo struct {
+// PlayerInfo is info about player
+type PlayerInfo struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
 	Username      string                 `protobuf:"bytes,2,opt,name=username,proto3" json:"username,omitempty"`
-	AvatarUrl     string                 `protobuf:"bytes,3,opt,name=avatar_url,json=avatarUrl,proto3" json:"avatar_url,omitempty"`
-	Rating        int32                  `protobuf:"varint,4,opt,name=rating,proto3" json:"rating,omitempty"`
+	Guest         bool                   `protobuf:"varint,3,opt,name=guest,proto3" json:"guest,omitempty"`
+	AvatarUrl     string                 `protobuf:"bytes,4,opt,name=avatar_url,json=avatarUrl,proto3" json:"avatar_url,omitempty"`
+	Rating        int32                  `protobuf:"varint,5,opt,name=rating,proto3" json:"rating,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *OpponentInfo) Reset() {
-	*x = OpponentInfo{}
+func (x *PlayerInfo) Reset() {
+	*x = PlayerInfo{}
 	mi := &file_proto_juicer_juicer_proto_msgTypes[18]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *OpponentInfo) String() string {
+func (x *PlayerInfo) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*OpponentInfo) ProtoMessage() {}
+func (*PlayerInfo) ProtoMessage() {}
 
-func (x *OpponentInfo) ProtoReflect() protoreflect.Message {
+func (x *PlayerInfo) ProtoReflect() protoreflect.Message {
 	mi := &file_proto_juicer_juicer_proto_msgTypes[18]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -2033,33 +2034,40 @@ func (x *OpponentInfo) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use OpponentInfo.ProtoReflect.Descriptor instead.
-func (*OpponentInfo) Descriptor() ([]byte, []int) {
+// Deprecated: Use PlayerInfo.ProtoReflect.Descriptor instead.
+func (*PlayerInfo) Descriptor() ([]byte, []int) {
 	return file_proto_juicer_juicer_proto_rawDescGZIP(), []int{18}
 }
 
-func (x *OpponentInfo) GetUserId() string {
+func (x *PlayerInfo) GetUserId() string {
 	if x != nil {
 		return x.UserId
 	}
 	return ""
 }
 
-func (x *OpponentInfo) GetUsername() string {
+func (x *PlayerInfo) GetUsername() string {
 	if x != nil {
 		return x.Username
 	}
 	return ""
 }
 
-func (x *OpponentInfo) GetAvatarUrl() string {
+func (x *PlayerInfo) GetGuest() bool {
+	if x != nil {
+		return x.Guest
+	}
+	return false
+}
+
+func (x *PlayerInfo) GetAvatarUrl() string {
 	if x != nil {
 		return x.AvatarUrl
 	}
 	return ""
 }
 
-func (x *OpponentInfo) GetRating() int32 {
+func (x *PlayerInfo) GetRating() int32 {
 	if x != nil {
 		return x.Rating
 	}
@@ -2072,8 +2080,9 @@ type GameMove struct {
 	Fen           string                 `protobuf:"bytes,1,opt,name=fen,proto3" json:"fen,omitempty"`
 	Uci           *string                `protobuf:"bytes,2,opt,name=uci,proto3,oneof" json:"uci,omitempty"`
 	San           *string                `protobuf:"bytes,3,opt,name=san,proto3,oneof" json:"san,omitempty"`
-	Check         bool                   `protobuf:"varint,4,opt,name=check,proto3" json:"check,omitempty"`
-	PlayedAt      *timestamppb.Timestamp `protobuf:"bytes,5,opt,name=played_at,json=playedAt,proto3,oneof" json:"played_at,omitempty"`
+	Lan           *string                `protobuf:"bytes,4,opt,name=lan,proto3,oneof" json:"lan,omitempty"`
+	Check         bool                   `protobuf:"varint,5,opt,name=check,proto3" json:"check,omitempty"`
+	PlayedAt      *timestamppb.Timestamp `protobuf:"bytes,6,opt,name=played_at,json=playedAt,proto3,oneof" json:"played_at,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2125,6 +2134,13 @@ func (x *GameMove) GetUci() string {
 func (x *GameMove) GetSan() string {
 	if x != nil && x.San != nil {
 		return *x.San
+	}
+	return ""
+}
+
+func (x *GameMove) GetLan() string {
+	if x != nil && x.Lan != nil {
+		return *x.Lan
 	}
 	return ""
 }
@@ -2192,19 +2208,19 @@ func (x *GameFound) GetGameId() int32 {
 type GameInfo struct {
 	state              protoimpl.MessageState `protogen:"open.v1"`
 	GameId             int32                  `protobuf:"varint,1,opt,name=game_id,json=gameId,proto3" json:"game_id,omitempty"`
-	UserId             string                 `protobuf:"bytes,2,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
-	GameVariant        GameVariant            `protobuf:"varint,3,opt,name=game_variant,json=gameVariant,proto3,enum=pb.GameVariant" json:"game_variant,omitempty"`
-	GameTimeKind       GameTimeKind           `protobuf:"varint,4,opt,name=game_time_kind,json=gameTimeKind,proto3,enum=pb.GameTimeKind" json:"game_time_kind,omitempty"`
-	GameTimeCategory   GameTimeCategory       `protobuf:"varint,5,opt,name=game_time_category,json=gameTimeCategory,proto3,enum=pb.GameTimeCategory" json:"game_time_category,omitempty"`
-	GameState          GameState              `protobuf:"varint,6,opt,name=game_state,json=gameState,proto3,enum=pb.GameState" json:"game_state,omitempty"`
-	TimeControl        *GameTimeControl       `protobuf:"bytes,7,opt,name=time_control,json=timeControl,proto3" json:"time_control,omitempty"`
-	Color              Color                  `protobuf:"varint,8,opt,name=color,proto3,enum=pb.Color" json:"color,omitempty"`
-	Fen                string                 `protobuf:"bytes,9,opt,name=fen,proto3" json:"fen,omitempty"`
-	Ply                uint32                 `protobuf:"varint,10,opt,name=ply,proto3" json:"ply,omitempty"`
-	Clocks             *Clocks                `protobuf:"bytes,11,opt,name=clocks,proto3" json:"clocks,omitempty"`
-	Rated              bool                   `protobuf:"varint,12,opt,name=rated,proto3" json:"rated,omitempty"`
-	LegalMoves         []string               `protobuf:"bytes,13,rep,name=legal_moves,json=legalMoves,proto3" json:"legal_moves,omitempty"`
-	OpponentInfo       *OpponentInfo          `protobuf:"bytes,14,opt,name=opponent_info,json=opponentInfo,proto3" json:"opponent_info,omitempty"`
+	GameVariant        GameVariant            `protobuf:"varint,2,opt,name=game_variant,json=gameVariant,proto3,enum=pb.GameVariant" json:"game_variant,omitempty"`
+	GameTimeKind       GameTimeKind           `protobuf:"varint,3,opt,name=game_time_kind,json=gameTimeKind,proto3,enum=pb.GameTimeKind" json:"game_time_kind,omitempty"`
+	GameTimeCategory   GameTimeCategory       `protobuf:"varint,4,opt,name=game_time_category,json=gameTimeCategory,proto3,enum=pb.GameTimeCategory" json:"game_time_category,omitempty"`
+	GameState          GameState              `protobuf:"varint,5,opt,name=game_state,json=gameState,proto3,enum=pb.GameState" json:"game_state,omitempty"`
+	TimeControl        *GameTimeControl       `protobuf:"bytes,6,opt,name=time_control,json=timeControl,proto3" json:"time_control,omitempty"`
+	Color              Color                  `protobuf:"varint,7,opt,name=color,proto3,enum=pb.Color" json:"color,omitempty"`
+	Fen                string                 `protobuf:"bytes,8,opt,name=fen,proto3" json:"fen,omitempty"`
+	Ply                uint32                 `protobuf:"varint,9,opt,name=ply,proto3" json:"ply,omitempty"`
+	Clocks             *Clocks                `protobuf:"bytes,10,opt,name=clocks,proto3" json:"clocks,omitempty"`
+	Rated              bool                   `protobuf:"varint,11,opt,name=rated,proto3" json:"rated,omitempty"`
+	LegalMoves         []string               `protobuf:"bytes,12,rep,name=legal_moves,json=legalMoves,proto3" json:"legal_moves,omitempty"`
+	White              *PlayerInfo            `protobuf:"bytes,13,opt,name=white,proto3" json:"white,omitempty"`
+	Black              *PlayerInfo            `protobuf:"bytes,14,opt,name=black,proto3" json:"black,omitempty"`
 	ReconnectTimeoutMs int32                  `protobuf:"varint,15,opt,name=reconnect_timeout_ms,json=reconnectTimeoutMs,proto3" json:"reconnect_timeout_ms,omitempty"`
 	FirstMoveTimeoutMs int32                  `protobuf:"varint,16,opt,name=first_move_timeout_ms,json=firstMoveTimeoutMs,proto3" json:"first_move_timeout_ms,omitempty"`
 	GameMoves          []*GameMove            `protobuf:"bytes,17,rep,name=game_moves,json=gameMoves,proto3" json:"game_moves,omitempty"`
@@ -2248,13 +2264,6 @@ func (x *GameInfo) GetGameId() int32 {
 		return x.GameId
 	}
 	return 0
-}
-
-func (x *GameInfo) GetUserId() string {
-	if x != nil {
-		return x.UserId
-	}
-	return ""
 }
 
 func (x *GameInfo) GetGameVariant() GameVariant {
@@ -2334,9 +2343,16 @@ func (x *GameInfo) GetLegalMoves() []string {
 	return nil
 }
 
-func (x *GameInfo) GetOpponentInfo() *OpponentInfo {
+func (x *GameInfo) GetWhite() *PlayerInfo {
 	if x != nil {
-		return x.OpponentInfo
+		return x.White
+	}
+	return nil
+}
+
+func (x *GameInfo) GetBlack() *PlayerInfo {
+	if x != nil {
+		return x.Black
 	}
 	return nil
 }
@@ -3429,44 +3445,48 @@ const file_proto_juicer_juicer_proto_rawDesc = "" +
 	"\x05black\x18\x02 \x01(\v2\x19.google.protobuf.DurationR\x05black\"B\n" +
 	"\bSeekGame\x126\n" +
 	"\ftime_control\x18\x01 \x01(\v2\x13.pb.GameTimeControlR\vtimeControl\"\x10\n" +
-	"\x0eCancelSeekGame\"z\n" +
-	"\fOpponentInfo\x12\x17\n" +
-	"\auser_id\x18\x01 \x01(\tR\x06userId\x12\x1a\n" +
-	"\busername\x18\x02 \x01(\tR\busername\x12\x1d\n" +
+	"\x0eCancelSeekGame\"\x8e\x01\n" +
 	"\n" +
-	"avatar_url\x18\x03 \x01(\tR\tavatarUrl\x12\x16\n" +
-	"\x06rating\x18\x04 \x01(\x05R\x06rating\"\xbc\x01\n" +
+	"PlayerInfo\x12\x17\n" +
+	"\auser_id\x18\x01 \x01(\tR\x06userId\x12\x1a\n" +
+	"\busername\x18\x02 \x01(\tR\busername\x12\x14\n" +
+	"\x05guest\x18\x03 \x01(\bR\x05guest\x12\x1d\n" +
+	"\n" +
+	"avatar_url\x18\x04 \x01(\tR\tavatarUrl\x12\x16\n" +
+	"\x06rating\x18\x05 \x01(\x05R\x06rating\"\xdb\x01\n" +
 	"\bGameMove\x12\x10\n" +
 	"\x03fen\x18\x01 \x01(\tR\x03fen\x12\x15\n" +
 	"\x03uci\x18\x02 \x01(\tH\x00R\x03uci\x88\x01\x01\x12\x15\n" +
-	"\x03san\x18\x03 \x01(\tH\x01R\x03san\x88\x01\x01\x12\x14\n" +
-	"\x05check\x18\x04 \x01(\bR\x05check\x12<\n" +
-	"\tplayed_at\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampH\x02R\bplayedAt\x88\x01\x01B\x06\n" +
+	"\x03san\x18\x03 \x01(\tH\x01R\x03san\x88\x01\x01\x12\x15\n" +
+	"\x03lan\x18\x04 \x01(\tH\x02R\x03lan\x88\x01\x01\x12\x14\n" +
+	"\x05check\x18\x05 \x01(\bR\x05check\x12<\n" +
+	"\tplayed_at\x18\x06 \x01(\v2\x1a.google.protobuf.TimestampH\x03R\bplayedAt\x88\x01\x01B\x06\n" +
 	"\x04_uciB\x06\n" +
-	"\x04_sanB\f\n" +
+	"\x04_sanB\x06\n" +
+	"\x04_lanB\f\n" +
 	"\n" +
 	"_played_at\"$\n" +
 	"\tGameFound\x12\x17\n" +
-	"\agame_id\x18\x01 \x01(\x05R\x06gameId\"\xf6\x05\n" +
+	"\agame_id\x18\x01 \x01(\x05R\x06gameId\"\xf2\x05\n" +
 	"\bGameInfo\x12\x17\n" +
-	"\agame_id\x18\x01 \x01(\x05R\x06gameId\x12\x17\n" +
-	"\auser_id\x18\x02 \x01(\tR\x06userId\x122\n" +
-	"\fgame_variant\x18\x03 \x01(\x0e2\x0f.pb.GameVariantR\vgameVariant\x126\n" +
-	"\x0egame_time_kind\x18\x04 \x01(\x0e2\x10.pb.GameTimeKindR\fgameTimeKind\x12B\n" +
-	"\x12game_time_category\x18\x05 \x01(\x0e2\x14.pb.GameTimeCategoryR\x10gameTimeCategory\x12,\n" +
+	"\agame_id\x18\x01 \x01(\x05R\x06gameId\x122\n" +
+	"\fgame_variant\x18\x02 \x01(\x0e2\x0f.pb.GameVariantR\vgameVariant\x126\n" +
+	"\x0egame_time_kind\x18\x03 \x01(\x0e2\x10.pb.GameTimeKindR\fgameTimeKind\x12B\n" +
+	"\x12game_time_category\x18\x04 \x01(\x0e2\x14.pb.GameTimeCategoryR\x10gameTimeCategory\x12,\n" +
 	"\n" +
-	"game_state\x18\x06 \x01(\x0e2\r.pb.GameStateR\tgameState\x126\n" +
-	"\ftime_control\x18\a \x01(\v2\x13.pb.GameTimeControlR\vtimeControl\x12\x1f\n" +
-	"\x05color\x18\b \x01(\x0e2\t.pb.ColorR\x05color\x12\x10\n" +
-	"\x03fen\x18\t \x01(\tR\x03fen\x12\x10\n" +
-	"\x03ply\x18\n" +
-	" \x01(\rR\x03ply\x12\"\n" +
-	"\x06clocks\x18\v \x01(\v2\n" +
+	"game_state\x18\x05 \x01(\x0e2\r.pb.GameStateR\tgameState\x126\n" +
+	"\ftime_control\x18\x06 \x01(\v2\x13.pb.GameTimeControlR\vtimeControl\x12\x1f\n" +
+	"\x05color\x18\a \x01(\x0e2\t.pb.ColorR\x05color\x12\x10\n" +
+	"\x03fen\x18\b \x01(\tR\x03fen\x12\x10\n" +
+	"\x03ply\x18\t \x01(\rR\x03ply\x12\"\n" +
+	"\x06clocks\x18\n" +
+	" \x01(\v2\n" +
 	".pb.ClocksR\x06clocks\x12\x14\n" +
-	"\x05rated\x18\f \x01(\bR\x05rated\x12\x1f\n" +
-	"\vlegal_moves\x18\r \x03(\tR\n" +
-	"legalMoves\x125\n" +
-	"\ropponent_info\x18\x0e \x01(\v2\x10.pb.OpponentInfoR\fopponentInfo\x120\n" +
+	"\x05rated\x18\v \x01(\bR\x05rated\x12\x1f\n" +
+	"\vlegal_moves\x18\f \x03(\tR\n" +
+	"legalMoves\x12$\n" +
+	"\x05white\x18\r \x01(\v2\x0e.pb.PlayerInfoR\x05white\x12$\n" +
+	"\x05black\x18\x0e \x01(\v2\x0e.pb.PlayerInfoR\x05black\x120\n" +
 	"\x14reconnect_timeout_ms\x18\x0f \x01(\x05R\x12reconnectTimeoutMs\x121\n" +
 	"\x15first_move_timeout_ms\x18\x10 \x01(\x05R\x12firstMoveTimeoutMs\x12+\n" +
 	"\n" +
@@ -3643,7 +3663,7 @@ var file_proto_juicer_juicer_proto_goTypes = []any{
 	(*Clocks)(nil),                // 23: pb.Clocks
 	(*SeekGame)(nil),              // 24: pb.SeekGame
 	(*CancelSeekGame)(nil),        // 25: pb.CancelSeekGame
-	(*OpponentInfo)(nil),          // 26: pb.OpponentInfo
+	(*PlayerInfo)(nil),            // 26: pb.PlayerInfo
 	(*GameMove)(nil),              // 27: pb.GameMove
 	(*GameFound)(nil),             // 28: pb.GameFound
 	(*GameInfo)(nil),              // 29: pb.GameInfo
@@ -3715,20 +3735,21 @@ var file_proto_juicer_juicer_proto_depIdxs = []int32{
 	8,  // 44: pb.GameInfo.time_control:type_name -> pb.GameTimeControl
 	0,  // 45: pb.GameInfo.color:type_name -> pb.Color
 	23, // 46: pb.GameInfo.clocks:type_name -> pb.Clocks
-	26, // 47: pb.GameInfo.opponent_info:type_name -> pb.OpponentInfo
-	27, // 48: pb.GameInfo.game_moves:type_name -> pb.GameMove
-	48, // 49: pb.GameInfo.start_time:type_name -> google.protobuf.Timestamp
-	37, // 50: pb.LobbyChatList.lobby_chats:type_name -> pb.LobbyChat
-	41, // 51: pb.GameChatList.game_chats:type_name -> pb.GameChat
-	23, // 52: pb.MoveSync.clocks:type_name -> pb.Clocks
-	4,  // 53: pb.GameFinished.game_result:type_name -> pb.GameResult
-	5,  // 54: pb.GameFinished.game_result_status:type_name -> pb.GameResultStatus
-	6,  // 55: pb.GameFinished.game_state:type_name -> pb.GameState
-	56, // [56:56] is the sub-list for method output_type
-	56, // [56:56] is the sub-list for method input_type
-	56, // [56:56] is the sub-list for extension type_name
-	56, // [56:56] is the sub-list for extension extendee
-	0,  // [0:56] is the sub-list for field type_name
+	26, // 47: pb.GameInfo.white:type_name -> pb.PlayerInfo
+	26, // 48: pb.GameInfo.black:type_name -> pb.PlayerInfo
+	27, // 49: pb.GameInfo.game_moves:type_name -> pb.GameMove
+	48, // 50: pb.GameInfo.start_time:type_name -> google.protobuf.Timestamp
+	37, // 51: pb.LobbyChatList.lobby_chats:type_name -> pb.LobbyChat
+	41, // 52: pb.GameChatList.game_chats:type_name -> pb.GameChat
+	23, // 53: pb.MoveSync.clocks:type_name -> pb.Clocks
+	4,  // 54: pb.GameFinished.game_result:type_name -> pb.GameResult
+	5,  // 55: pb.GameFinished.game_result_status:type_name -> pb.GameResultStatus
+	6,  // 56: pb.GameFinished.game_state:type_name -> pb.GameState
+	57, // [57:57] is the sub-list for method output_type
+	57, // [57:57] is the sub-list for method input_type
+	57, // [57:57] is the sub-list for extension type_name
+	57, // [57:57] is the sub-list for extension extendee
+	0,  // [0:57] is the sub-list for field type_name
 }
 
 func init() { file_proto_juicer_juicer_proto_init() }

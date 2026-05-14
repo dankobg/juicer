@@ -1,8 +1,8 @@
-<script lang="ts">
+<!-- <script lang="ts">
 	import type { User } from '$lib/kratos/service';
 	import MovesList from './moves-list.svelte';
 	import ActionButtons from './action-buttons.svelte';
-	import { gameManager } from '$lib/state/game-manager.svelte';
+	import { gameManager } from '$lib/gameplay/game-manager.svelte';
 	import GameResultMessage from './game-result-message.svelte';
 	import PlayerOpponentInfo from './player-opponent-info.svelte';
 	import PlayerMeInfo from './player-me-info.svelte';
@@ -18,4 +18,4 @@
 	<MovesList />
 	<ActionButtons />
 	<PlayerMeInfo username={authenticated ? (user?.username ?? '') : 'Me (Guest)'} avatar={user?.avatarUrl} />
-</div>
+</div> -->

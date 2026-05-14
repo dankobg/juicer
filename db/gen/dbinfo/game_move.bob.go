@@ -60,6 +60,15 @@ var GameMoves = Table[
 			Generated: false,
 			AutoIncr:  false,
 		},
+		Lan: column{
+			Name:      "lan",
+			DBType:    "character varying",
+			Default:   "",
+			Comment:   "",
+			Nullable:  false,
+			Generated: false,
+			AutoIncr:  false,
+		},
 		Check: column{
 			Name:      "check",
 			DBType:    "boolean",
@@ -124,13 +133,14 @@ type gameMoveColumns struct {
 	Fen      column
 	Uci      column
 	San      column
+	Lan      column
 	Check    column
 	PlayedAt column
 }
 
 func (c gameMoveColumns) AsSlice() []column {
 	return []column{
-		c.ID, c.GameID, c.Fen, c.Uci, c.San, c.Check, c.PlayedAt,
+		c.ID, c.GameID, c.Fen, c.Uci, c.San, c.Lan, c.Check, c.PlayedAt,
 	}
 }
 

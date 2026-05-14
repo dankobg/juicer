@@ -1,6 +1,6 @@
-<script lang="ts">
+<!-- <script lang="ts">
 	import { online } from 'svelte/reactivity/window';
-	import { gameManager } from '$lib/state/game-manager.svelte';
+	import { gameManager } from '$lib/gameplay/game-manager.svelte';
 	import PlayerInfoMobile from './player-info-mobile.svelte';
 
 	type Props = {
@@ -22,4 +22,4 @@
 	showReconnectTimer={gameManager.showOpponentReconnectTimer}
 	reconnectTimerText="{gameManager.opponentReconnectTimer.time.seconds} seconds to reconnect"
 	clock={gameManager.ownGameTimer?.time.formatted}
-/>
+/> -->

@@ -1,10 +1,10 @@
-<script lang="ts">
+<!-- <script lang="ts">
 	import { tick } from 'svelte';
 	import { Button } from '$lib/components/ui/button/index';
 	import { Input } from '$lib/components/ui/input';
 	import IconArrowDown from '@lucide/svelte/icons/arrow-down';
 	import IconX from '@lucide/svelte/icons/x';
-	import { gameManager } from '$lib/state/game-manager.svelte';
+	import { gameManager } from '$lib/gameplay/game-manager.svelte';
 
 	type Props = {
 		gameId: string;
@@ -122,4 +122,4 @@
 			</div>
 		</div>
 	</div>
-</dialog>
+</dialog> -->

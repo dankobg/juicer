@@ -1,6 +1,6 @@
 import { PersistedState } from 'runed';
 
-class Settings {
+class UiSettings {
 	boardThemes = [
 		{ name: 'blue-marble', src: 'blue-marble.jpg' },
 		{ name: 'blue-marble-orig', src: 'blue-marble.orig.jpg' },
@@ -104,4 +104,4 @@ class Settings {
 	}
 }
 
-export const settings = new Settings();
+export const uiSettings = new UiSettings();

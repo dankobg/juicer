@@ -171,6 +171,16 @@ func (gs *GameState) GetPlayerByID(id uuid.UUID) *Player {
 	return gs.Players[id]
 }
 
+func (gs *GameState) GetOtherPlayer(id uuid.UUID) *Player {
+	for playerID, player := range gs.Players {
+		if playerID != id {
+			return player
+		}
+	}
+
+	return nil
+}
+
 func (gs *GameState) HasGamePlayer(id uuid.UUID) bool {
 	return gs.White.ID == id || gs.Black.ID == id
 }
@@ -320,6 +330,7 @@ func (gs *GameState) resignGame(c ResignGameCmd) (ResignEvent, error) {
 			gs.GameState = pb.GameState_GAME_STATE_FINISHED
 		}
 	}
+
 	if player.Color == pb.Color_COLOR_BLACK {
 		if gs.Chess.Position.Ply < 2 {
 			gs.GameResult = pb.GameResult_GAME_RESULT_INTERRUPTED
@@ -422,6 +433,7 @@ func (gs *GameState) playMoveUCI(c PlayMoveUCICmd) (PlayMoveUCIEvent, error) {
 		Fen:      fen,
 		Uci:      new(uci),
 		San:      new(san),
+		Lan:      new(lan),
 		Check:    gs.Chess.Position.Check,
 		PlayedAt: timestamppb.New(playedAt),
 	})
@@ -468,6 +480,7 @@ func (gs *GameState) playMoveUCI(c PlayMoveUCICmd) (PlayMoveUCIEvent, error) {
 			gs.GameResultStatus = pb.GameResultStatus_GAME_RESULT_STATUS_SEVENTYFIVE_MOVE_RULE
 		case engine.StatusCheckmate:
 			gs.GameState = pb.GameState_GAME_STATE_FINISHED
+
 			gs.GameResultStatus = pb.GameResultStatus_GAME_RESULT_STATUS_CHECKMATE
 			if player.Color == pb.Color_COLOR_WHITE {
 				gs.GameResult = pb.GameResult_GAME_RESULT_WHITE_WON

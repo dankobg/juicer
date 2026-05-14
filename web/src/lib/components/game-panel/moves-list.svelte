@@ -1,5 +1,5 @@
-<script lang="ts">
-	import { gameManager } from '$lib/state/game-manager.svelte';
+<!-- <script lang="ts">
+	import { gameManager } from '$lib/gameplay/game-manager.svelte';
 	import IconStepBack from '@lucide/svelte/icons/step-back';
 	import IconStepForward from '@lucide/svelte/icons/step-forward';
 	import IconSkipBack from '@lucide/svelte/icons/skip-back';
@@ -126,4 +126,4 @@
 			<div bind:this={scrollPointElm}></div>
 		</div>
 	</div>
-</div>
+</div> -->

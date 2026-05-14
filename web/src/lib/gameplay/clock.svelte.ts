@@ -1,4 +1,4 @@
-import { Timer, type TimerOptions } from '$lib/state/timer.svelte';
+import { Timer, type TimerOptions } from '$lib/gameplay/timer.svelte';
 
 export type ClockOptions = {
 	whiteTimeMs: number;

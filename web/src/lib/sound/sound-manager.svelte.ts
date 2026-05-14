@@ -1,5 +1,5 @@
-import { settings } from './../components/settings/settings-state.svelte';
 import { browser } from '$app/environment';
+import { uiSettings } from '$lib/components/ui-settings/ui-settings-state.svelte';
 import { SvelteMap } from 'svelte/reactivity';
 
 export type SoundName =
@@ -22,7 +22,7 @@ class SoundManager {
 	audioCtx?: AudioContext = browser ? new AudioContext() : undefined;
 	audioBuffers: Record<string, AudioBuffer> = {};
 	sounds = $derived.by(() => {
-		const theme = settings.sounds.current.theme;
+		const theme = uiSettings.sounds.current.theme;
 		const newChatMsgUrl =
 			theme === 'futuristic'
 				? '/sounds/futuristic/NewChatMessage.ogg'
@@ -77,10 +77,10 @@ class SoundManager {
 	}
 
 	async play(name: SoundName) {
-		if (!settings.sounds.current.enabled) {
+		if (!uiSettings.sounds.current.enabled) {
 			return;
 		}
-		this.playSound(name, settings.sounds.current.volume);
+		this.playSound(name, uiSettings.sounds.current.volume);
 	}
 }
 

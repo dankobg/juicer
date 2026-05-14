@@ -1,6 +1,6 @@
 <script lang="ts">
+	import { lobbyManager } from '$lib/gameplay/lobby-manager.svelte';
 	import type { components } from '$lib/gen/juicer_openapi';
-	import { gameManager } from '$lib/state/game-manager.svelte';
 
 	let {
 		gameTimeCategories,
@@ -65,7 +65,7 @@
 
 	function onSeekGame(quickGame: components['schemas']['QuickGame']) {
 		const updater = () => {
-			gameManager.seekGame(quickGame.clock_secs * 1000, quickGame.increment_secs * 1000);
+			lobbyManager.seekGame(quickGame.clock_secs * 1000, quickGame.increment_secs * 1000);
 		};
 
 		if (!document.startViewTransition) {
@@ -78,7 +78,7 @@
 
 	function onCancelSeekGame() {
 		const updater = () => {
-			gameManager.cancelSeekGame();
+			lobbyManager.cancelSeekGame();
 		};
 
 		if (!document.startViewTransition) {
@@ -91,9 +91,9 @@
 </script>
 
 <div class="rounded-xl border border-yellow-400/20">
-	<div class={['quick-game', { seeking: gameManager.uiState === 'seeking' }]}>
+	<div class={['quick-game', { seeking: lobbyManager.seekingQuickGame }]}>
 		<div class="[view-transition-name:quick-game-content]">
-			{#if gameManager.uiState === 'seeking'}
+			{#if lobbyManager.seekingQuickGame}
 				<div class="grid gap-4 p-4">
 					<p>Searching for game...</p>
 					<p>Blitz</p>
@@ -126,10 +126,6 @@
 		</div>
 	</div>
 </div>
-
-<button class="mt-4 bg-red-800 p-2 text-white" onclick={gameManager.echo}>SEND ECHO</button>
-
-<button class="mt-4 bg-green-800 p-2 text-white" onclick={gameManager.sendLobbyChat}>SEND LOBBY CHAT</button>
 
 {#snippet blitzIcon(className: string)}
 	<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" class={className}>

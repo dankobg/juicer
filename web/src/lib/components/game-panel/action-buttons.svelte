@@ -1,7 +1,7 @@
-<script lang="ts">
+<!-- <script lang="ts">
 	import * as Tooltip from '$lib/components/ui/tooltip';
 	import { Button, buttonVariants } from '$lib/components/ui/button';
-	import { gameManager } from '$lib/state/game-manager.svelte';
+	import { gameManager } from '$lib/gameplay/game-manager.svelte';
 	import IconFlag from '@lucide/svelte/icons/flag';
 	import IconHandshake from '@lucide/svelte/icons/handshake';
 	import IconArrowUpDown from '@lucide/svelte/icons/arrow-up-down';
@@ -81,4 +81,4 @@
 			New Game ({(gameManager.poolLast.current.val?.clock || 0) / 60}+{gameManager.poolLast.current.val?.increment})
 		</Button>
 	{/if}
-</div>
+</div> -->

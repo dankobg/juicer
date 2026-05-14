@@ -2,7 +2,7 @@ import { MessageSchema, type Message } from '$lib/gen/juicer_pb';
 import { toJsonString } from '@bufbuild/protobuf';
 const wsEndpoint = import.meta.env['VITE_PUBLIC_WS_ENDPOINT'] as string;
 
-export class ReconnectingWs {
+class JuicerWs {
 	baseUrl = wsEndpoint;
 	#ws: WebSocket | null = null;
 	#reconnectAttempts: number = 0;
@@ -19,12 +19,13 @@ export class ReconnectingWs {
 	onError: (event: Event) => void = () => {};
 
 	connect(params?: URLSearchParams): void {
-		const url = `${this.baseUrl}${params ? '?' + params.toString() : ''}`;
-
 		if (this.readyState === WebSocket.OPEN) {
-			console.log('websocket is already open');
+			console.debug('websocket connection already open');
 			return;
 		}
+
+		const url = `${this.baseUrl}${params ? '?' + params.toString() : ''}`;
+
 		this.#ws = new WebSocket(url);
 		this.#ws.onopen = (event: Event) => {
 			this.#reconnectAttempts = 0;
@@ -93,3 +94,5 @@ export class ReconnectingWs {
 		return Math.min(this.#baseReconnectDelayMs * Math.pow(2, attempt) + jitter, this.#maxReconnectDelayMs);
 	}
 }
+
+export const ws = $state(new JuicerWs());

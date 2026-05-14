@@ -233,12 +233,13 @@ message SeekGame {
 // CancelSeekGame cancels the game search
 message CancelSeekGame {}
 
-// OpponentInfo is info about opponent
-message OpponentInfo {
+// PlayerInfo is info about player
+message PlayerInfo {
   string user_id = 1;
   string username = 2;
-  string avatar_url = 3;
-  int32 rating = 4;
+  bool guest = 3;
+  string avatar_url = 4;
+  int32 rating = 5;
 }
 
 // GameMove is the game move
@@ -246,8 +247,9 @@ message GameMove {
   string fen = 1;
   optional string uci = 2;
   optional string san = 3;
-  bool check = 4;
-  optional google.protobuf.Timestamp played_at = 5;
+  optional string lan = 4;
+  bool check = 5;
+  optional google.protobuf.Timestamp played_at = 6;
 }
 
 // GameFound signals that the game was found
@@ -258,19 +260,19 @@ message GameFound {
 // GameInfo holds game info
 message GameInfo {
   int32 game_id = 1;
-  string user_id = 2;
-  GameVariant game_variant = 3;
-  GameTimeKind game_time_kind = 4;
-  GameTimeCategory game_time_category = 5;
-  GameState game_state = 6;
-  GameTimeControl time_control = 7;
-  Color color = 8;
-  string fen = 9;
-  uint32 ply = 10;
-  Clocks clocks = 11;
-  bool rated = 12;
-  repeated string legal_moves = 13;
-  OpponentInfo opponent_info = 14;
+  GameVariant game_variant = 2;
+  GameTimeKind game_time_kind = 3;
+  GameTimeCategory game_time_category = 4;
+  GameState game_state = 5;
+  GameTimeControl time_control = 6;
+  Color color = 7;
+  string fen = 8;
+  uint32 ply = 9;
+  Clocks clocks = 10;
+  bool rated = 11;
+  repeated string legal_moves = 12;
+  PlayerInfo white = 13;
+  PlayerInfo black = 14;
   int32 reconnect_timeout_ms = 15;
   int32 first_move_timeout_ms = 16;
   repeated GameMove game_moves = 17;

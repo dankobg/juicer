@@ -1,6 +1,6 @@
-<script lang="ts">
+<!-- <script lang="ts">
 	import { online } from 'svelte/reactivity/window';
-	import { gameManager } from '$lib/state/game-manager.svelte';
+	import { gameManager } from '$lib/gameplay/game-manager.svelte';
 	import PlayerInfo from './player-info.svelte';
 
 	type Props = {
@@ -22,4 +22,4 @@
 	clock={gameManager.ownGameTimer?.time.formatted}
 	progressMax={gameManager.gameTimeControl?.clock && Number(gameManager.gameTimeControl.clock.seconds) * 1000}
 	progressValue={gameManager.ownGameTimer && gameManager.ownGameTimer.timeMs}
-/>
+/> -->

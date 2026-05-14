@@ -1,4 +1,4 @@
-<script lang="ts">
+<!-- <script lang="ts">
 	import Progress from '$lib/components/ui/progress/progress.svelte';
 
 	type Props = {
@@ -75,4 +75,4 @@
 		value={progressValue}
 		class="h-2 rounded-full [&>[data-slot='progress-indicator']]:bg-green-400"
 	/>
-</div>
+</div> -->
