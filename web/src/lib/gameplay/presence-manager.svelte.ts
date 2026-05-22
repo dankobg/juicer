@@ -8,18 +8,17 @@ class PresenceManager {
 	lobbyPresence = $derived(this.getPresenceInChannel('lobby'));
 	lobbyChatPresence = $derived(this.getPresenceInChannel('lobby.chat'));
 
-	getPresenceInChannel(channel: string): Presence[] {
-		const lobbyPresence = this.channelPresences.get(channel);
-		if (lobbyPresence?.size === 0) {
-			return [];
+	getPresenceInChannel(channel: string): SvelteMap<string, Presence> {
+		const presenceSet = this.channelPresences.get(channel);
+		const result = new SvelteMap<string, Presence>();
+		if (!presenceSet) {
+			return result;
 		}
-		return [...(lobbyPresence?.values() ?? [])].reduce((presenceList, userId) => {
+		for (const userId of presenceSet) {
 			const presence = this.userPresences.get(userId);
-			if (presence) {
-				presenceList.push(presence);
-			}
-			return presenceList;
-		}, [] as Presence[]);
+			if (presence) result.set(userId, presence);
+		}
+		return result;
 	}
 
 	onEcho(echoMsg: Echo): void {

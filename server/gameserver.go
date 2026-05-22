@@ -842,7 +842,7 @@ func (a *ApiHandler) handleWSCSendLobbyChat(authInfo clientAuthInfo, data *pb.Se
 	fmt.Println(data, "handleWSCSendLobbyChat")
 
 	lobbyChatMsg := &pb.Message{Event: &pb.Message_LobbyChat{LobbyChat: &pb.LobbyChat{
-		MessageId: "1",
+		MessageId: int32(rand.IntN(1_000_000)),
 		UserId:    authInfo.userID,
 		PostedAt:  time.Now().Format(time.RFC3339),
 		Message:   data.GetMessage(),
@@ -1193,6 +1193,11 @@ func (a *ApiHandler) sendGameInfo(gameID int64, userID, connID string, guest boo
 		FirstMoveTimeoutMs: int32(gs.FirstMoveTimeout.Milliseconds()),
 		GameMoves:          gs.GameMoves,
 		StartTime:          timestamppb.New(*gs.StartTime),
+		GameResult:         gs.GameResult,
+		GameResultStatus:   gs.GameResultStatus,
+	}
+	if gs.EndTime != nil {
+		gameInfo.EndTime = timestamppb.New(*gs.EndTime)
 	}
 
 	gameInfoMsg := &pb.Message{Event: &pb.Message_GameInfo{GameInfo: gameInfo}}

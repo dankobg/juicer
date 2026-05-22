@@ -277,10 +277,10 @@ message GameInfo {
   int32 first_move_timeout_ms = 16;
   repeated GameMove game_moves = 17;
   google.protobuf.Timestamp start_time = 18;
-
-  // google.protobuf.Timestamp end_time = 19;
-  // GameResult game_result = 20;
-  // GameResultStatus game_result_status = 21;
+  google.protobuf.Timestamp end_time = 19;
+  GameResult game_result = 20;
+  GameResultStatus game_result_status = 21;
+  int32 version = 22;
 }
 
 // AbortGame is game abort message
@@ -321,7 +321,7 @@ message ListLobbyChats {
 
 // LobbyChat is the lobby chat msg received
 message LobbyChat {
-  string message_id = 1;
+  int32 message_id = 1;
   string user_id = 2;
   string message = 3;
   string posted_at = 4;

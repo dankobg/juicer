@@ -2225,6 +2225,10 @@ type GameInfo struct {
 	FirstMoveTimeoutMs int32                  `protobuf:"varint,16,opt,name=first_move_timeout_ms,json=firstMoveTimeoutMs,proto3" json:"first_move_timeout_ms,omitempty"`
 	GameMoves          []*GameMove            `protobuf:"bytes,17,rep,name=game_moves,json=gameMoves,proto3" json:"game_moves,omitempty"`
 	StartTime          *timestamppb.Timestamp `protobuf:"bytes,18,opt,name=start_time,json=startTime,proto3" json:"start_time,omitempty"`
+	EndTime            *timestamppb.Timestamp `protobuf:"bytes,19,opt,name=end_time,json=endTime,proto3" json:"end_time,omitempty"`
+	GameResult         GameResult             `protobuf:"varint,20,opt,name=game_result,json=gameResult,proto3,enum=pb.GameResult" json:"game_result,omitempty"`
+	GameResultStatus   GameResultStatus       `protobuf:"varint,21,opt,name=game_result_status,json=gameResultStatus,proto3,enum=pb.GameResultStatus" json:"game_result_status,omitempty"`
+	Version            int32                  `protobuf:"varint,22,opt,name=version,proto3" json:"version,omitempty"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
 }
@@ -2383,6 +2387,34 @@ func (x *GameInfo) GetStartTime() *timestamppb.Timestamp {
 		return x.StartTime
 	}
 	return nil
+}
+
+func (x *GameInfo) GetEndTime() *timestamppb.Timestamp {
+	if x != nil {
+		return x.EndTime
+	}
+	return nil
+}
+
+func (x *GameInfo) GetGameResult() GameResult {
+	if x != nil {
+		return x.GameResult
+	}
+	return GameResult_GAME_RESULT_UNSPECIFIED
+}
+
+func (x *GameInfo) GetGameResultStatus() GameResultStatus {
+	if x != nil {
+		return x.GameResultStatus
+	}
+	return GameResultStatus_GAME_RESULT_STATUS_UNSPECIFIED
+}
+
+func (x *GameInfo) GetVersion() int32 {
+	if x != nil {
+		return x.Version
+	}
+	return 0
 }
 
 // AbortGame is game abort message
@@ -2711,7 +2743,7 @@ func (x *ListLobbyChats) GetSize() int32 {
 // LobbyChat is the lobby chat msg received
 type LobbyChat struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	MessageId     string                 `protobuf:"bytes,1,opt,name=message_id,json=messageId,proto3" json:"message_id,omitempty"`
+	MessageId     int32                  `protobuf:"varint,1,opt,name=message_id,json=messageId,proto3" json:"message_id,omitempty"`
 	UserId        string                 `protobuf:"bytes,2,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
 	Message       string                 `protobuf:"bytes,3,opt,name=message,proto3" json:"message,omitempty"`
 	PostedAt      string                 `protobuf:"bytes,4,opt,name=posted_at,json=postedAt,proto3" json:"posted_at,omitempty"`
@@ -2749,11 +2781,11 @@ func (*LobbyChat) Descriptor() ([]byte, []int) {
 	return file_proto_juicer_juicer_proto_rawDescGZIP(), []int{29}
 }
 
-func (x *LobbyChat) GetMessageId() string {
+func (x *LobbyChat) GetMessageId() int32 {
 	if x != nil {
 		return x.MessageId
 	}
-	return ""
+	return 0
 }
 
 func (x *LobbyChat) GetUserId() string {
@@ -3467,7 +3499,7 @@ const file_proto_juicer_juicer_proto_rawDesc = "" +
 	"\n" +
 	"_played_at\"$\n" +
 	"\tGameFound\x12\x17\n" +
-	"\agame_id\x18\x01 \x01(\x05R\x06gameId\"\xf2\x05\n" +
+	"\agame_id\x18\x01 \x01(\x05R\x06gameId\"\xb8\a\n" +
 	"\bGameInfo\x12\x17\n" +
 	"\agame_id\x18\x01 \x01(\x05R\x06gameId\x122\n" +
 	"\fgame_variant\x18\x02 \x01(\x0e2\x0f.pb.GameVariantR\vgameVariant\x126\n" +
@@ -3492,7 +3524,12 @@ const file_proto_juicer_juicer_proto_rawDesc = "" +
 	"\n" +
 	"game_moves\x18\x11 \x03(\v2\f.pb.GameMoveR\tgameMoves\x129\n" +
 	"\n" +
-	"start_time\x18\x12 \x01(\v2\x1a.google.protobuf.TimestampR\tstartTime\"$\n" +
+	"start_time\x18\x12 \x01(\v2\x1a.google.protobuf.TimestampR\tstartTime\x125\n" +
+	"\bend_time\x18\x13 \x01(\v2\x1a.google.protobuf.TimestampR\aendTime\x12/\n" +
+	"\vgame_result\x18\x14 \x01(\x0e2\x0e.pb.GameResultR\n" +
+	"gameResult\x12B\n" +
+	"\x12game_result_status\x18\x15 \x01(\x0e2\x14.pb.GameResultStatusR\x10gameResultStatus\x12\x18\n" +
+	"\aversion\x18\x16 \x01(\x05R\aversion\"$\n" +
 	"\tAbortGame\x12\x17\n" +
 	"\agame_id\x18\x01 \x01(\x05R\x06gameId\"%\n" +
 	"\n" +
@@ -3512,7 +3549,7 @@ const file_proto_juicer_juicer_proto_rawDesc = "" +
 	"\x04size\x18\x02 \x01(\x05R\x04size\"z\n" +
 	"\tLobbyChat\x12\x1d\n" +
 	"\n" +
-	"message_id\x18\x01 \x01(\tR\tmessageId\x12\x17\n" +
+	"message_id\x18\x01 \x01(\x05R\tmessageId\x12\x17\n" +
 	"\auser_id\x18\x02 \x01(\tR\x06userId\x12\x18\n" +
 	"\amessage\x18\x03 \x01(\tR\amessage\x12\x1b\n" +
 	"\tposted_at\x18\x04 \x01(\tR\bpostedAt\"?\n" +
@@ -3739,17 +3776,20 @@ var file_proto_juicer_juicer_proto_depIdxs = []int32{
 	26, // 48: pb.GameInfo.black:type_name -> pb.PlayerInfo
 	27, // 49: pb.GameInfo.game_moves:type_name -> pb.GameMove
 	48, // 50: pb.GameInfo.start_time:type_name -> google.protobuf.Timestamp
-	37, // 51: pb.LobbyChatList.lobby_chats:type_name -> pb.LobbyChat
-	41, // 52: pb.GameChatList.game_chats:type_name -> pb.GameChat
-	23, // 53: pb.MoveSync.clocks:type_name -> pb.Clocks
-	4,  // 54: pb.GameFinished.game_result:type_name -> pb.GameResult
-	5,  // 55: pb.GameFinished.game_result_status:type_name -> pb.GameResultStatus
-	6,  // 56: pb.GameFinished.game_state:type_name -> pb.GameState
-	57, // [57:57] is the sub-list for method output_type
-	57, // [57:57] is the sub-list for method input_type
-	57, // [57:57] is the sub-list for extension type_name
-	57, // [57:57] is the sub-list for extension extendee
-	0,  // [0:57] is the sub-list for field type_name
+	48, // 51: pb.GameInfo.end_time:type_name -> google.protobuf.Timestamp
+	4,  // 52: pb.GameInfo.game_result:type_name -> pb.GameResult
+	5,  // 53: pb.GameInfo.game_result_status:type_name -> pb.GameResultStatus
+	37, // 54: pb.LobbyChatList.lobby_chats:type_name -> pb.LobbyChat
+	41, // 55: pb.GameChatList.game_chats:type_name -> pb.GameChat
+	23, // 56: pb.MoveSync.clocks:type_name -> pb.Clocks
+	4,  // 57: pb.GameFinished.game_result:type_name -> pb.GameResult
+	5,  // 58: pb.GameFinished.game_result_status:type_name -> pb.GameResultStatus
+	6,  // 59: pb.GameFinished.game_state:type_name -> pb.GameState
+	60, // [60:60] is the sub-list for method output_type
+	60, // [60:60] is the sub-list for method input_type
+	60, // [60:60] is the sub-list for extension type_name
+	60, // [60:60] is the sub-list for extension extendee
+	0,  // [0:60] is the sub-list for field type_name
 }
 
 func init() { file_proto_juicer_juicer_proto_init() }

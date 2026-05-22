@@ -20,22 +20,14 @@ import {
 	type OfferDraw,
 	type AcceptDraw,
 	type DeclineDraw,
-	type GameFinished
+	type GameFinished,
+	type PlayerInfo
 } from '$lib/gen/juicer_pb';
 import { create } from '@bufbuild/protobuf';
 import type { Coord, JuicerBoard } from '@dankop/juicer-board';
 import { ws } from '$lib/ws/juicer-ws.svelte';
 import { SvelteMap } from 'svelte/reactivity';
 import { goto } from '$app/navigation';
-
-export type Player = {
-	userId: string;
-	username: string;
-	guest: boolean;
-	avatarUrl: string;
-	color: Color;
-	rating: number;
-};
 
 class GameManager {
 	games = $state<SvelteMap<number, Game>>(new SvelteMap());
@@ -63,7 +55,7 @@ class GameManager {
 	}
 
 	onGameInfo(gameInfo: GameInfo): void {
-		console.log('------------------------- GOT GAME INFO ------------------------' + gameInfo);
+		console.log('------------------------- GOT GAME INFO ------------------------', gameInfo);
 
 		const exists = this.games.has(gameInfo.gameId);
 		if (!exists) {
@@ -75,30 +67,30 @@ class GameManager {
 			return;
 		}
 
-		const gameOptions: GameOptions = {};
-
-		// white?: Player;
-		// black?: Player;
-		// gameVariant?: GameVariant;
-		// gameTimeKind?: GameTimeKind;
-		// gameTimeCategory?: GameTimeCategory;
-		// gameTimeControl?: GameTimeControl;
-		// gameState?: GameState;
-		// gameResult?: GameResult;
-		// gameResultStatus?: GameResultStatus;
-		// reconnectTimeoutMs?: number;
-		// firstMoveTimeoutMs?: number;
-		// lastMove?: number;
-		// startTime?: number;
-		// endTime?: number;
-		// rated?: boolean;
-		// version?: number;
-		// repetitions?: number;
-		// ply?: number;
-		// gameMoves?: GameMove[];
-		// myColor?: Color;
-		// orientation?: Color;
-		// gameHistoryIndex?: number;
+		const gameOptions: GameOptions = {
+			white: gameInfo.white,
+			black: gameInfo.black,
+			gameVariant: gameInfo.gameVariant,
+			gameTimeKind: gameInfo.gameTimeKind,
+			gameTimeCategory: gameInfo.gameTimeCategory,
+			gameTimeControl: { $typeName: 'pb.GameTimeControl', clockMs: 423, incrementMs: 0 },
+			gameState: gameInfo.gameState,
+			gameResult: gameInfo.gameResult,
+			gameResultStatus: gameInfo.gameResultStatus,
+			reconnectTimeoutMs: gameInfo.reconnectTimeoutMs,
+			firstMoveTimeoutMs: gameInfo.firstMoveTimeoutMs,
+			// lastMove
+			startTime: Number(gameInfo.startTime?.seconds), // @TODO: fix later
+			endTime: Number(gameInfo.endTime?.seconds), // @TODO: fix later
+			rated: gameInfo.rated,
+			version: gameInfo.version,
+			// repetitions: gameInfo.repetitions
+			ply: gameInfo.ply,
+			gameMoves: gameInfo.gameMoves,
+			myColor: gameInfo.color,
+			orientation: Color.WHITE, // @TODO: fix later
+			gameHistoryIndex: 0 // @TODO: fix later
+		};
 
 		game.configure(gameOptions);
 	}
@@ -145,8 +137,8 @@ class GameManager {
 }
 
 type GameOptions = {
-	white?: Player;
-	black?: Player;
+	white?: PlayerInfo;
+	black?: PlayerInfo;
 	gameVariant?: GameVariant;
 	gameTimeKind?: GameTimeKind;
 	gameTimeCategory?: GameTimeCategory;
@@ -172,8 +164,8 @@ type GameOptions = {
 export class Game {
 	board!: JuicerBoard;
 	gameId = $state<number | undefined>();
-	white = $state<Player | undefined>();
-	black = $state<Player | undefined>();
+	white = $state<PlayerInfo | undefined>();
+	black = $state<PlayerInfo | undefined>();
 	gameVariant = $state<GameVariant>(GameVariant.UNSPECIFIED);
 	gameTimeKind = $state<GameTimeKind>(GameTimeKind.UNSPECIFIED);
 	gameTimeCategory = $state<GameTimeCategory>(GameTimeCategory.UNSPECIFIED);
@@ -255,6 +247,9 @@ export class Game {
 	// #######################################
 
 	view = $derived<'spectating' | 'playing'>(this.myColor === Color.UNSPECIFIED ? 'spectating' : 'playing');
+	currentPlayerId = $derived<string | undefined>(
+		this.myColor === Color.WHITE ? this.white?.userId : this.black?.userId
+	);
 
 	isCheck = $state<boolean>(Boolean(this.gameMoves.at(-1)?.check));
 	isCheckmate = $state<boolean>(Boolean(this.gameMoves.at(-1)?.san?.includes('#')));
@@ -316,6 +311,8 @@ export class Game {
 		// this.ply++;
 		// this.updateTimersState();
 	}
+
+	handlePromotionPiecePick() {}
 }
 
 function formatGameConcludedMsg(gameResult: GameResult, gameResultStatus: GameResultStatus): string {
@@ -464,4 +461,20 @@ export function playedEnpassantMove(game: Game, move: string): Coord | undefined
 			return `${dest[0]}${srcRank}` as Coord;
 		}
 	}
+}
+
+export function getPromotionLabelText(promotionSymbol: string): string {
+	if (promotionSymbol === 'q') {
+		return 'promote to queen';
+	}
+	if (promotionSymbol === 'r') {
+		return 'promote to rook';
+	}
+	if (promotionSymbol === 'n') {
+		return 'promote to knight';
+	}
+	if (promotionSymbol === 'b') {
+		return 'promote to bishop';
+	}
+	return '';
 }

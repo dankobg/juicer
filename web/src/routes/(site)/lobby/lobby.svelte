@@ -6,6 +6,8 @@
 	import CustomGame from './custom-game.svelte';
 	import PlayFriend from './play-friend.svelte';
 	import { onWsClose, onWsError, onWsMessage, onWsOpen } from '$lib/ws/ws-message-handler';
+	import ChatBox from '$lib/components/chat-box/chat-box.svelte';
+	import { lobbyManager } from '$lib/gameplay/lobby-manager.svelte';
 
 	let { data }: PageProps = $props();
 
@@ -25,8 +27,23 @@
 	});
 </script>
 
-<div class="lobby mx-auto mt-8 w-full max-w-screen-2xl">
-	<Tabs.Root value="quick-game" class="mx-auto w-full max-w-xl">
+<div
+	class="mx-auto mt-8 grid w-full max-w-screen-2xl grid-cols-1 justify-center gap-8 px-4 lg:grid-cols-[minmax(20rem,30rem)_minmax(20rem,42rem)]"
+>
+	<div class="max-h-[45rem] min-h-[30rem] w-full max-w-[30rem] justify-self-center">
+		<ChatBox
+			title="Lobby chat"
+			channel="lobby.chat"
+			chatUserId={data?.auth?.user?.id ?? ''}
+			messages={lobbyManager.lobbyChatMessages}
+			users={lobbyManager.lobbyChatUsers}
+			onSend={msg => {
+				lobbyManager.sendLobbyChat(msg);
+			}}
+		/>
+	</div>
+
+	<Tabs.Root value="quick-game" class="w-full max-w-[42rem] justify-self-center">
 		<Tabs.List class="grid w-full grid-cols-3">
 			<Tabs.Trigger value="quick-game">Quick game</Tabs.Trigger>
 			<Tabs.Trigger value="custom-game">Custom game</Tabs.Trigger>
