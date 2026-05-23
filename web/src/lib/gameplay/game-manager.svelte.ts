@@ -47,7 +47,6 @@ export class GameManager {
 		if (!exists) {
 			this.games.set(gameFound.gameId, new Game(gameFound.gameId));
 		}
-
 		goto(`/game/${gameFound.gameId}`);
 		soundManager.play('NewChallenge');
 	}
@@ -97,7 +96,14 @@ export class GameManager {
 
 	onDeclinedDraw(declineDraw: DeclineDraw): void {}
 
-	onGameFinished(gameFinished: GameFinished): void {}
+	onGameFinished(gameFinished: GameFinished): void {
+		const game = this.games.get(gameFinished.gameId);
+		if (game) {
+			game.gameResult = gameFinished.gameResult;
+			game.gameResultStatus = gameFinished.gameResultStatus;
+			game.gameState = gameFinished.gameState;
+		}
+	}
 
 	onMoveSync(moveSync: MoveSync): void {
 		const game = this.games.get(moveSync.gameId);
