@@ -45,7 +45,7 @@ export class GameManager {
 	onGameFound(gameFound: GameFound): void {
 		const exists = this.games.has(gameFound.gameId);
 		if (!exists) {
-			this.games.set(gameFound.gameId, new Game(gameFound.gameId));
+			this.games.set(gameFound.gameId, new Game({ gameId: gameFound.gameId }));
 		}
 		goto(`/game/${gameFound.gameId}`);
 		soundManager.play('NewChallenge');
@@ -53,6 +53,7 @@ export class GameManager {
 
 	onGameInfo(gameInfo: GameInfo): void {
 		const gameOpts: GameOptions = {
+			gameId: gameInfo.gameId,
 			white: gameInfo.white,
 			black: gameInfo.black,
 			gameVariant: gameInfo.gameVariant,
@@ -82,7 +83,7 @@ export class GameManager {
 			const game = this.games.get(gameInfo.gameId);
 			game?.configure(gameOpts);
 		} else {
-			this.games.set(gameInfo.gameId, new Game(gameInfo.gameId, gameOpts));
+			this.games.set(gameInfo.gameId, new Game(gameOpts));
 		}
 	}
 
@@ -188,6 +189,7 @@ export class GameManager {
 }
 
 type GameOptions = {
+	gameId?: number;
 	white?: PlayerInfo;
 	black?: PlayerInfo;
 	gameVariant?: GameVariant;
@@ -247,15 +249,11 @@ export class Game {
 	orientation = $state<Color>(Color.UNSPECIFIED);
 	gameHistoryIndex = $state<number>(0);
 
-	constructor(gameId: number, options?: GameOptions) {
-		this.gameId = gameId;
-
-		if (options) {
-			this.configure(options);
-		}
+	constructor(options?: Partial<GameOptions>) {
+		this.configure(options);
 	}
 
-	configure(options: GameOptions): void {
+	configure(options?: Partial<GameOptions>): void {
 		const defaultOptions: GameOptions = {
 			gameVariant: GameVariant.UNSPECIFIED,
 			gameTimeKind: GameTimeKind.UNSPECIFIED,
@@ -275,6 +273,7 @@ export class Game {
 
 		const opts = { ...defaultOptions, ...options };
 
+		this.gameId = opts?.gameId;
 		this.white = opts?.white;
 		this.black = opts?.black;
 		this.gameVariant = opts?.gameVariant ?? GameVariant.UNSPECIFIED;
