@@ -23,12 +23,13 @@
 
 		return () => {
 			ws.close();
+			lobbyManager.seekingQuickGame = false;
 		};
 	});
 </script>
 
 <div
-	class="mx-auto mt-8 grid w-full max-w-screen-2xl grid-cols-1 justify-center gap-8 px-4 lg:grid-cols-[minmax(20rem,30rem)_minmax(20rem,42rem)]"
+	class="mx-auto mt-8 grid w-full max-w-screen-2xl grid-cols-1 justify-center gap-8 p-4 px-4 lg:grid-cols-[minmax(20rem,30rem)_minmax(20rem,42rem)]"
 >
 	<div class="max-h-[45rem] min-h-[30rem] w-full max-w-[30rem] justify-self-center">
 		<ChatBox

@@ -374,14 +374,15 @@ message MoveAck {
 
 // MoveSync sends the move sync info
 message MoveSync {
-  string uci = 1;
-  string san = 2;
-  string lan = 3;
-  string fen = 4;
-  uint32 ply = 5;
-  Clocks clocks = 6;
-  repeated string legal_moves = 7;
-  int32 version = 8;
+  int32 game_id = 1;
+  string uci = 2;
+  string san = 3;
+  string lan = 4;
+  string fen = 5;
+  uint32 ply = 6;
+  Clocks clocks = 7;
+  repeated string legal_moves = 8;
+  int32 version = 9;
 }
 
 // GameFinished signals the game is over

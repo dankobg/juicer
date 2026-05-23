@@ -24,13 +24,16 @@ import {
 	type PlayerInfo
 } from '$lib/gen/juicer_pb';
 import { create } from '@bufbuild/protobuf';
-import type { Coord, JuicerBoard } from '@dankop/juicer-board';
+import type { Coord, JuicerBoard, PieceFenSymbol } from '@dankop/juicer-board';
 import { ws } from '$lib/ws/juicer-ws.svelte';
 import { SvelteMap } from 'svelte/reactivity';
 import { goto } from '$app/navigation';
+import type { ChatMessage } from '$lib/components/chat-box/chat-box.svelte';
+import { soundManager } from '$lib/sound/sound-manager.svelte';
 
-class GameManager {
+export class GameManager {
 	games = $state<SvelteMap<number, Game>>(new SvelteMap());
+	gameChatMessages = $state<SvelteMap<number, ChatMessage[]>>(new SvelteMap());
 
 	sendGameChat(gameId: number, message: string): void {
 		const sendGameChatMsg = create(MessageSchema, {
@@ -40,34 +43,17 @@ class GameManager {
 	}
 
 	onGameFound(gameFound: GameFound): void {
-		console.log('GameFound game_id: ', gameFound.gameId);
 		const exists = this.games.has(gameFound.gameId);
 		if (!exists) {
 			this.games.set(gameFound.gameId, new Game(gameFound.gameId));
 		}
 
-		const game = this.games.get(gameFound.gameId);
-		if (!game) {
-			return;
-		}
-
 		goto(`/game/${gameFound.gameId}`);
+		soundManager.play('NewChallenge');
 	}
 
 	onGameInfo(gameInfo: GameInfo): void {
-		console.log('------------------------- GOT GAME INFO ------------------------', gameInfo);
-
-		const exists = this.games.has(gameInfo.gameId);
-		if (!exists) {
-			this.games.set(gameInfo.gameId, new Game(gameInfo.gameId));
-		}
-
-		const game = this.games.get(gameInfo.gameId);
-		if (!game) {
-			return;
-		}
-
-		const gameOptions: GameOptions = {
+		const gameOpts: GameOptions = {
 			white: gameInfo.white,
 			black: gameInfo.black,
 			gameVariant: gameInfo.gameVariant,
@@ -88,52 +74,111 @@ class GameManager {
 			ply: gameInfo.ply,
 			gameMoves: gameInfo.gameMoves,
 			myColor: gameInfo.color,
-			orientation: Color.WHITE, // @TODO: fix later
-			gameHistoryIndex: 0 // @TODO: fix later
+			orientation: gameInfo.color, // @TODO: fix later
+			gameHistoryIndex: 0, // @TODO: fix later
+			legalMoves: gameInfo.legalMoves
 		};
 
-		game.configure(gameOptions);
+		if (this.games.has(gameInfo.gameId)) {
+			const game = this.games.get(gameInfo.gameId);
+			game?.configure(gameOpts);
+		} else {
+			this.games.set(gameInfo.gameId, new Game(gameInfo.gameId, gameOpts));
+		}
 	}
 
-	onAbortGame(abortGame: AbortGame): void {
-		console.log('AbortGame: ', abortGame);
-	}
+	onAbortGame(abortGame: AbortGame): void {}
 
-	onResignGame(resignGame: ResignGame): void {
-		console.log('ResignGame: ', resignGame);
-	}
+	onResignGame(resignGame: ResignGame): void {}
 
-	onOfferDraw(offerDraw: OfferDraw): void {
-		console.log('OfferDraw: ', offerDraw);
-	}
+	onOfferDraw(offerDraw: OfferDraw): void {}
 
-	onAcceptDraw(acceptDraw: AcceptDraw): void {
-		console.log('AcceptDraw: ', acceptDraw);
-	}
+	onAcceptDraw(acceptDraw: AcceptDraw): void {}
 
-	onDeclinedDraw(declineDraw: DeclineDraw): void {
-		console.log('DeclineDraw: ', declineDraw);
-	}
+	onDeclinedDraw(declineDraw: DeclineDraw): void {}
 
-	onGameFinished(gameFinished: GameFinished): void {
-		console.log('GameFinished: ', gameFinished);
-	}
+	onGameFinished(gameFinished: GameFinished): void {}
 
 	onMoveSync(moveSync: MoveSync): void {
-		console.log('MoveSync: ', moveSync);
+		const game = this.games.get(moveSync.gameId);
+		if (!game) {
+			throw new Error('movesync: no game found');
+		}
+
+		const myMove = moveSync.ply === game.ply;
+		game.version = moveSync.version;
+		game.legalMoves = moveSync.legalMoves;
+		game.ply = moveSync.ply;
+		game.gameMoves.push({
+			$typeName: 'pb.GameMove',
+			uci: moveSync.uci,
+			san: moveSync.san,
+			lan: moveSync.lan,
+			check: moveSync.san.includes('+'),
+			fen: moveSync.fen
+		});
+
+		// handleeeeeeeeeeeeeee moveSync.clocks
+
+		if (!myMove) {
+			// if (game.ply <= 2) {
+			//   this.clock?.setCurrentTurn(this.clock.currentTurn === 'w' ? 'b' : 'w');
+			// }
+			// 		this.updateTimersState();
+			const src = moveSync.uci.slice(0, 2) as Coord;
+			const dest = moveSync.uci.slice(2, 4) as Coord;
+			const isPromo = isPromotionUciMove(moveSync.uci);
+			if (isPromo) {
+				game.promotionSrcDest = moveSync.uci.slice(0, 4);
+				game.promotionPieceSymbol = game.myColor === Color.WHITE ? moveSync.uci[4]! : moveSync.uci[4]!.toUpperCase();
+				game.promotePiece(game.promotionPieceSymbol);
+				return;
+			}
+			const rookMove = getRookCastleMove(moveSync.uci);
+			if (rookMove) {
+				const rookSrc = rookMove.slice(0, 2) as Coord;
+				const rookDest = rookMove.slice(2, 4) as Coord;
+				const pos = new Map(game.board.position);
+				const pieceData = game.board.getPiece(src)!;
+				const rookPieceData = game.board.getPiece(rookSrc)!;
+				pos.delete(src);
+				pos.set(dest, pieceData);
+				pos.delete(rookSrc);
+				pos.set(rookDest, rookPieceData);
+				game.board.setPosition(pos);
+				return;
+			}
+			const enpOppPieceCoordToDelete = isEnpassantLanMove(moveSync.lan, game.opponentColor === Color.WHITE ? 'w' : 'b');
+			if (enpOppPieceCoordToDelete) {
+				const pos = new Map(game.board.position);
+				const pieceData = game.board.getPiece(src)!;
+				pos.delete(enpOppPieceCoordToDelete);
+				pos.delete(src);
+				pos.set(dest, pieceData);
+				game.board.setPosition(pos);
+				return;
+			}
+			game.board.movePiece(src, dest);
+		}
 	}
 
-	onMoveAck(moveAck: MoveAck): void {
-		console.log('MoveAck: ', moveAck);
-	}
+	onMoveAck(moveAck: MoveAck): void {}
 
 	onGameChat(gameChat: GameChat): void {
-		console.log('GameChat: ', gameChat);
+		const gameChats = this.gameChatMessages.get(gameChat.gameId);
+		if (!gameChats) {
+			this.gameChatMessages.set(gameChat.gameId, []);
+		}
+
+		gameChats!.push({
+			userId: gameChat.userId,
+			messageId: gameChat.messageId,
+			message: gameChat.message,
+			postedAt: gameChat.postedAt
+		});
 	}
 
-	onGameChatList(gameChats: GameChatList): void {
-		console.log('GameChatList: ', gameChats);
-	}
+	onGameChatList(gameChats: GameChatList): void {}
 }
 
 type GameOptions = {
@@ -159,6 +204,7 @@ type GameOptions = {
 	myColor?: Color;
 	orientation?: Color;
 	gameHistoryIndex?: number;
+	legalMoves?: string[];
 };
 
 export class Game {
@@ -188,8 +234,10 @@ export class Game {
 	// clocks and increment
 
 	// ####################################
-
 	myColor = $state<Color>(Color.UNSPECIFIED);
+	opponentColor = $derived(
+		this.myColor === Color.UNSPECIFIED ? Color.UNSPECIFIED : this.myColor === Color.WHITE ? Color.BLACK : Color.WHITE
+	);
 	orientation = $state<Color>(Color.UNSPECIFIED);
 	gameHistoryIndex = $state<number>(0);
 
@@ -215,7 +263,8 @@ export class Game {
 			gameMoves: [],
 			myColor: Color.UNSPECIFIED,
 			orientation: Color.UNSPECIFIED,
-			gameHistoryIndex: 0
+			gameHistoryIndex: 0,
+			legalMoves: []
 		};
 
 		const opts = { ...defaultOptions, ...options };
@@ -242,9 +291,12 @@ export class Game {
 		this.myColor = opts?.myColor ?? Color.UNSPECIFIED;
 		this.orientation = opts?.orientation ?? Color.UNSPECIFIED;
 		this.gameHistoryIndex = opts?.gameHistoryIndex ?? 0;
+		this.legalMoves = opts?.legalMoves ?? [];
 	}
 
 	// #######################################
+	promotionSrcDest = $state<string>('');
+	promotionPieceSymbol = $state<string>('');
 
 	view = $derived<'spectating' | 'playing'>(this.myColor === Color.UNSPECIFIED ? 'spectating' : 'playing');
 	currentPlayerId = $derived<string | undefined>(
@@ -264,9 +316,29 @@ export class Game {
 	gameConcludedText = $derived<string>(
 		this.isGameConcluded ? formatGameConcludedMsg(this.gameResult, this.gameResultStatus) : ''
 	);
+	isMyTurnActive = $derived(
+		(this.gameState === GameState.ACTIVE && this.myColor === Color.WHITE && this.isWhiteTurn) ||
+			(this.myColor === Color.BLACK && this.isBlackTurn)
+	);
 
 	incrementVersion(): void {
 		this.version++;
+	}
+
+	promotePiece(promotionPieceSymbol: string) {
+		const src = this.promotionSrcDest.slice(0, 2) as Coord;
+		const dest = this.promotionSrcDest.slice(2, 4) as Coord;
+		const pos = new Map(this.board.position);
+		pos.delete(src);
+		pos.set(dest, { id: crypto.randomUUID(), piece: promotionPieceSymbol as PieceFenSymbol });
+		this.board.setPosition(pos);
+	}
+
+	handlePromotionPiecePick(promotionPopoverElm: HTMLElement, symbol: string) {
+		this.promotionPieceSymbol = this.myColor === Color.WHITE ? symbol.toUpperCase() : symbol;
+		promotionPopoverElm.hidePopover();
+		this.promotePiece(this.promotionPieceSymbol);
+		this.playMoveUci(this.promotionSrcDest + this.promotionPieceSymbol.toLowerCase());
 	}
 
 	abortGame() {
@@ -299,6 +371,7 @@ export class Game {
 			event: {
 				case: 'playMoveUci',
 				value: {
+					// ack: 1,
 					gameId: this.gameId,
 					uci
 				}
@@ -311,8 +384,6 @@ export class Game {
 		// this.ply++;
 		// this.updateTimersState();
 	}
-
-	handlePromotionPiecePick() {}
 }
 
 function formatGameConcludedMsg(gameResult: GameResult, gameResultStatus: GameResultStatus): string {

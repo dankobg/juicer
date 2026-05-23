@@ -79,12 +79,16 @@ type GameState struct {
 	PendingDrawOffer *DrawOffer
 	running          atomic.Bool
 
+	// #####################################################################################
+
 	GameCommand         chan GameCommand
 	GameEvent           chan GameEvent
 	activeGameTimer     *time.Timer
 	firstMoveTimer      *time.Timer
 	whiteReconnectTimer *time.Timer
 	blackReconnectTimer *time.Timer
+	whiteDisconnectedAt *time.Time
+	blackDisconnectedAt *time.Time
 }
 
 func NewGameState(gameID int64, players [2]Player, timeControl *pb.GameTimeControl, thresholds []CategoryThreshold, gameEvent chan GameEvent, opts ...GameOption) (*GameState, error) {

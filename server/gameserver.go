@@ -162,11 +162,12 @@ func (a *ApiHandler) handlePlayMoveUCIEvent(event gameplay.PlayMoveUCIEvent) {
 	}
 
 	moveSyncMsg := &pb.Message{Event: &pb.Message_MoveSync{MoveSync: &pb.MoveSync{
-		Uci: event.Uci,
-		San: event.San,
-		Lan: event.Lan,
-		Fen: event.Position.Fen(),
-		Ply: uint32(event.Position.Ply),
+		GameId: int32(event.GameID),
+		Uci:    event.Uci,
+		San:    event.San,
+		Lan:    event.Lan,
+		Fen:    event.Position.Fen(),
+		Ply:    uint32(event.Position.Ply),
 		Clocks: &pb.Clocks{
 			White: durationpb.New(time.Duration(event.WhiteClockRemainingMs) * time.Millisecond),
 			Black: durationpb.New(time.Duration(event.BlackClockRemainingMs) * time.Millisecond),

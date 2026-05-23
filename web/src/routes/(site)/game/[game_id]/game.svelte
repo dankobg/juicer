@@ -2,12 +2,21 @@
 	import type { PageProps } from './$types';
 	import { ws } from '$lib/ws/juicer-ws.svelte';
 	import { onWsClose, onWsError, onWsMessage, onWsOpen } from '$lib/ws/ws-message-handler';
-	import { Game, gameManager, getPromotionLabelText, PROMOS } from '$lib/gameplay/game-manager.svelte';
-	import type { MoveCancelEvent, MoveFinishEvent, MoveStartEvent } from '@dankop/juicer-board';
+	import {
+		Game,
+		gameManager,
+		getPromotionLabelText,
+		getRookCastleMove,
+		isPromotionMove,
+		playedEnpassantMove,
+		PROMOS
+	} from '$lib/gameplay/game-manager.svelte';
+	import type { Coord, JuicerBoard, MoveCancelEvent, MoveFinishEvent, MoveStartEvent } from '@dankop/juicer-board';
 	import { uiSettings } from '$lib/components/ui-settings/ui-settings-state.svelte';
-	import { Color } from '$lib/gen/juicer_pb';
+	import { Color, GameState } from '$lib/gen/juicer_pb';
 	import ChatBox, { type ChatMessage } from '$lib/components/chat-box/chat-box.svelte';
 	import { presenceManager } from '$lib/gameplay/presence-manager.svelte';
+	import { soundManager } from '$lib/sound/sound-manager.svelte';
 
 	let { data, params }: PageProps = $props();
 
@@ -45,79 +54,76 @@
 	});
 
 	function onBoardMoveStart(event: MoveStartEvent) {
-		console.log('onBoardMoveStart', event.data);
-		// const isWhitePiece = event.data.pieceData.piece === event.data.pieceData.piece.toUpperCase();
-		// if ((isWhitePiece && gameManager.color === Color.BLACK) || (!isWhitePiece && gameManager.color === Color.WHITE)) {
-		// 	event.preventDefault();
-		// 	console.debug('not your piece');
-		// 	return;
-		// }
-		// if (!gameManager.hasActiveTurn) {
-		// 	event.preventDefault();
-		// 	console.debug('not your turn');
-		// 	return;
-		// }
+		const isWhitePiece = event.data.pieceData.piece === event.data.pieceData.piece.toUpperCase();
+		if ((isWhitePiece && game?.myColor === Color.BLACK) || (!isWhitePiece && game?.myColor === Color.WHITE)) {
+			event.preventDefault();
+			console.debug('not your piece');
+			return;
+		}
+		if (!game?.isMyTurnActive) {
+			event.preventDefault();
+			console.debug('not your turn');
+			return;
+		}
 	}
 
 	function onBoardMoveCancel(event: MoveCancelEvent) {
-		console.log('onBoardMoveCancel', event.data);
-		// if (event.data.reason === 'out-of-bound') {
-		// 	soundManager.play('OutOfBound');
-		// }
+		if (event.data.reason === 'out-of-bound') {
+			soundManager.play('OutOfBound');
+		}
 	}
 
 	function onBoardMoveFinish(event: MoveFinishEvent) {
-		console.log('onBoardMoveFinish', event.data);
-		// const isWhitePiece = event.data.pieceData.piece === event.data.pieceData.piece.toUpperCase();
-		// if ((isWhitePiece && gameManager.color === Color.BLACK) || (!isWhitePiece && gameManager.color === Color.WHITE)) {
-		// 	console.debug('not your piece');
-		// 	event.preventDefault();
-		// 	soundManager.play('Error');
-		// 	return;
-		// }
-		// if (!gameManager.hasActiveTurn) {
-		// 	console.debug('not your turn');
-		// 	event.preventDefault();
-		// 	soundManager.play('Error');
-		// 	return;
-		// }
-		// const move = event.data.src + event.data.dest;
-		// const isPromo = isPromotionMove(move, gameManager.legalMoves);
-		// if (isPromo) {
-		// 	gameManager.promotionSrcDest = move;
-		// 	const dest = move.slice(2, 4);
-		// 	const promoSquareElm = gameManager.board.shadowRoot?.querySelector(`juicer-square[coord='${dest}']`) ?? null;
-		// 	if (!promoSquareElm) {
-		// 		console.log('no promotion square element');
-		// 		return;
-		// 	}
-		// 	const rect = promoSquareElm.getBoundingClientRect();
-		// 	promotionPopoverElm.style.setProperty('--sq-size', `${rect.width}px`);
-		// 	promotionPopoverElm.style.left = `${rect.left}px`;
-		// 	promotionPopoverElm.style.top = `${rect.top}px`;
-		// 	promotionPopoverElm.showPopover();
-		// 	event.preventDefault();
-		// 	return;
-		// }
-		// if (!gameManager.legalMoves.includes(move)) {
-		// 	console.debug('invalid move attempt:', move, gameManager.legalMoves);
-		// 	soundManager.play('Error');
-		// 	event.preventDefault();
-		// 	return;
-		// }
-		// const rookMove = getRookCastleMove(move);
-		// if (rookMove) {
-		// 	const rookSrc = rookMove.slice(0, 2) as Coord;
-		// 	const rookDest = rookMove.slice(2, 4) as Coord;
-		// 	gameManager.board.movePiece(rookSrc, rookDest);
-		// }
-		// const enpOppPieceCoordToDelete = playedEnpassantMove(move);
-		// if (enpOppPieceCoordToDelete) {
-		// 	gameManager.board.removePiece(enpOppPieceCoordToDelete);
-		// }
-		// const isCapture = Boolean(gameManager.board.getPiece(event.data.dest));
-		// soundManager.play(isCapture ? 'Capture' : 'Move');
-		// gameManager.playMoveUci(move);
+		const isWhitePiece = event.data.pieceData.piece === event.data.pieceData.piece.toUpperCase();
+		if ((isWhitePiece && game?.myColor === Color.BLACK) || (!isWhitePiece && game?.myColor === Color.WHITE)) {
+			console.debug('not your piece');
+			event.preventDefault();
+			soundManager.play('Error');
+			return;
+		}
+		if (!game?.isMyTurnActive) {
+			console.debug('not your turn');
+			event.preventDefault();
+			soundManager.play('Error');
+			return;
+		}
+		const move = event.data.src + event.data.dest;
+		const isPromo = isPromotionMove(move, game.legalMoves);
+		if (isPromo) {
+			game.promotionSrcDest = move;
+			const dest = move.slice(2, 4);
+			const promoSquareElm = game.board.shadowRoot?.querySelector(`juicer-square[coord='${dest}']`) ?? null;
+			if (!promoSquareElm) {
+				console.log('no promotion square element');
+				return;
+			}
+			const rect = promoSquareElm.getBoundingClientRect();
+			promotionPopoverElm.style.setProperty('--sq-size', `${rect.width}px`);
+			promotionPopoverElm.style.left = `${rect.left}px`;
+			promotionPopoverElm.style.top = `${rect.top}px`;
+			promotionPopoverElm.showPopover();
+			event.preventDefault();
+			return;
+		}
+		if (!game.legalMoves.includes(move)) {
+			console.debug('invalid move attempt:', move, game.legalMoves);
+			soundManager.play('Error');
+			event.preventDefault();
+			return;
+		}
+		const rookMove = getRookCastleMove(move);
+		if (rookMove) {
+			const rookSrc = rookMove.slice(0, 2) as Coord;
+			const rookDest = rookMove.slice(2, 4) as Coord;
+			game.board.movePiece(rookSrc, rookDest);
+		}
+		const enpOppPieceCoordToDelete = playedEnpassantMove(game, move);
+		if (enpOppPieceCoordToDelete) {
+			game.board.removePiece(enpOppPieceCoordToDelete);
+		}
+		const isCapture = Boolean(game.board.getPiece(event.data.dest));
+		soundManager.play(isCapture ? 'Capture' : 'Move');
+		game.playMoveUci(move);
 	}
 
 	function addBoardEventListeners() {
@@ -174,31 +180,26 @@
 	let gameChatMessages = $state<ChatMessage[]>([]);
 </script>
 
-<pre class="l-20 t-20 fixed">{JSON.stringify(gameUserPresences?.values().toArray(), null, 2)}</pre>
-<pre class="l-[1000px] t-20 fixed">{JSON.stringify(gameChatMessages, null, 2)}</pre>
-
-{#if game?.gameId}
+{#if game}
 	<div class="game-layout">
 		<div class="chat">
 			<ChatBox
 				title="Game chat"
-				channel={`game.${game.gameId}`}
-				chatUserId={game.currentPlayerId ?? ''}
+				channel={`game.${game.gameId}.chat`}
+				chatUserId={data?.auth?.user?.id ?? ''}
 				messages={[]}
-				users={gameUserPresences}
-				onMessage={msg => {
-					gameChatMessages.push({ messageId: 1, message: msg, userId: game?.currentPlayerId ?? '', postedAt: '' });
-					console.log('msg to send: ', msg);
+				users={new Map()}
+				onSend={msg => {
+					gameManager.sendGameChat(game.gameId!, msg);
 				}}
 			/>
 		</div>
-		<!-- <aside class="chat">chat</aside> -->
 		<juicer-board
-			board-theme={boardTheme}
-			bind:this={game.board}
+			bind:this={() => game.board, v => (game.board = v)}
 			class="order-1 flex-1 md:order-0"
-			orientation={game.orientation}
-			fen={game.gameMoves[0]?.fen || ''}
+			board-theme={boardTheme}
+			fen={game.gameMoves.at(-1)?.fen || 'start'}
+			orientation={game.orientation === Color.WHITE ? 'w' : 'b'}
 			coords-placement="inside"
 			files-position="bottom"
 			ranks-position="left"
@@ -218,8 +219,8 @@
 					popovertarget="promotion-popover"
 					popovertargetaction="hide"
 					data-promo={promo}
+					onclick={() => game?.handlePromotionPiecePick(promotionPopoverElm, promo)}
 				></button>
-				<!-- onclick={() => game?.handlePromotionPiecePick(promotionPopoverElm, promo)} -->
 			{/each}
 		</div>
 	</div>
@@ -243,7 +244,7 @@
 
 	.chat,
 	.controls {
-		outline: 3px solid darkred;
+		outline: 1px solid darkred;
 	}
 
 	/*##############################################################*/

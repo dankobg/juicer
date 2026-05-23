@@ -3207,14 +3207,15 @@ func (x *MoveAck) GetVersion() int32 {
 // MoveSync sends the move sync info
 type MoveSync struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Uci           string                 `protobuf:"bytes,1,opt,name=uci,proto3" json:"uci,omitempty"`
-	San           string                 `protobuf:"bytes,2,opt,name=san,proto3" json:"san,omitempty"`
-	Lan           string                 `protobuf:"bytes,3,opt,name=lan,proto3" json:"lan,omitempty"`
-	Fen           string                 `protobuf:"bytes,4,opt,name=fen,proto3" json:"fen,omitempty"`
-	Ply           uint32                 `protobuf:"varint,5,opt,name=ply,proto3" json:"ply,omitempty"`
-	Clocks        *Clocks                `protobuf:"bytes,6,opt,name=clocks,proto3" json:"clocks,omitempty"`
-	LegalMoves    []string               `protobuf:"bytes,7,rep,name=legal_moves,json=legalMoves,proto3" json:"legal_moves,omitempty"`
-	Version       int32                  `protobuf:"varint,8,opt,name=version,proto3" json:"version,omitempty"`
+	GameId        int32                  `protobuf:"varint,1,opt,name=game_id,json=gameId,proto3" json:"game_id,omitempty"`
+	Uci           string                 `protobuf:"bytes,2,opt,name=uci,proto3" json:"uci,omitempty"`
+	San           string                 `protobuf:"bytes,3,opt,name=san,proto3" json:"san,omitempty"`
+	Lan           string                 `protobuf:"bytes,4,opt,name=lan,proto3" json:"lan,omitempty"`
+	Fen           string                 `protobuf:"bytes,5,opt,name=fen,proto3" json:"fen,omitempty"`
+	Ply           uint32                 `protobuf:"varint,6,opt,name=ply,proto3" json:"ply,omitempty"`
+	Clocks        *Clocks                `protobuf:"bytes,7,opt,name=clocks,proto3" json:"clocks,omitempty"`
+	LegalMoves    []string               `protobuf:"bytes,8,rep,name=legal_moves,json=legalMoves,proto3" json:"legal_moves,omitempty"`
+	Version       int32                  `protobuf:"varint,9,opt,name=version,proto3" json:"version,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -3247,6 +3248,13 @@ func (x *MoveSync) ProtoReflect() protoreflect.Message {
 // Deprecated: Use MoveSync.ProtoReflect.Descriptor instead.
 func (*MoveSync) Descriptor() ([]byte, []int) {
 	return file_proto_juicer_juicer_proto_rawDescGZIP(), []int{37}
+}
+
+func (x *MoveSync) GetGameId() int32 {
+	if x != nil {
+		return x.GameId
+	}
+	return 0
 }
 
 func (x *MoveSync) GetUci() string {
@@ -3579,18 +3587,19 @@ const file_proto_juicer_juicer_proto_rawDesc = "" +
 	"\x03ack\x18\x03 \x01(\x05R\x03ack\"<\n" +
 	"\aMoveAck\x12\x17\n" +
 	"\agame_id\x18\x01 \x01(\x05R\x06gameId\x12\x18\n" +
-	"\aversion\x18\x02 \x01(\x05R\aversion\"\xc3\x01\n" +
-	"\bMoveSync\x12\x10\n" +
-	"\x03uci\x18\x01 \x01(\tR\x03uci\x12\x10\n" +
-	"\x03san\x18\x02 \x01(\tR\x03san\x12\x10\n" +
-	"\x03lan\x18\x03 \x01(\tR\x03lan\x12\x10\n" +
-	"\x03fen\x18\x04 \x01(\tR\x03fen\x12\x10\n" +
-	"\x03ply\x18\x05 \x01(\rR\x03ply\x12\"\n" +
-	"\x06clocks\x18\x06 \x01(\v2\n" +
+	"\aversion\x18\x02 \x01(\x05R\aversion\"\xdc\x01\n" +
+	"\bMoveSync\x12\x17\n" +
+	"\agame_id\x18\x01 \x01(\x05R\x06gameId\x12\x10\n" +
+	"\x03uci\x18\x02 \x01(\tR\x03uci\x12\x10\n" +
+	"\x03san\x18\x03 \x01(\tR\x03san\x12\x10\n" +
+	"\x03lan\x18\x04 \x01(\tR\x03lan\x12\x10\n" +
+	"\x03fen\x18\x05 \x01(\tR\x03fen\x12\x10\n" +
+	"\x03ply\x18\x06 \x01(\rR\x03ply\x12\"\n" +
+	"\x06clocks\x18\a \x01(\v2\n" +
 	".pb.ClocksR\x06clocks\x12\x1f\n" +
-	"\vlegal_moves\x18\a \x03(\tR\n" +
+	"\vlegal_moves\x18\b \x03(\tR\n" +
 	"legalMoves\x12\x18\n" +
-	"\aversion\x18\b \x01(\x05R\aversion\"\xca\x01\n" +
+	"\aversion\x18\t \x01(\x05R\aversion\"\xca\x01\n" +
 	"\fGameFinished\x12\x17\n" +
 	"\agame_id\x18\x01 \x01(\x05R\x06gameId\x12/\n" +
 	"\vgame_result\x18\x02 \x01(\x0e2\x0e.pb.GameResultR\n" +
