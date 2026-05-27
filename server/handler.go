@@ -104,7 +104,7 @@ func New(
 		categoryThresholds: make([]categoryThreshold, 0),
 		protoMappingsCache: newProtoMappingsCache(),
 		gamestates:         make(map[int64]*gameplay.GameState),
-		gameEvent:          make(chan gameplay.GameEvent, 32),
+		gameEvent:          make(chan gameplay.GameEvent, 64),
 	}
 
 	return apiHandler

@@ -116,3 +116,13 @@ type DeclineDrawErrorEvent struct {
 }
 
 func (DeclineDrawErrorEvent) isGameEvent() {}
+
+type GameFinishedEvent struct {
+	GameID           int64
+	GameResult       pb.GameResult
+	GameResultStatus pb.GameResultStatus
+	GameState        pb.GameState
+	EndTime          time.Time
+}
+
+func (GameFinishedEvent) isGameEvent() {}

@@ -67,6 +67,10 @@ type ActiveGame struct {
 	GameHistoryHashes      []ActiveGameHistoryHash `json:"game_history_hashes"`
 	Version                int32                   `json:"version"`
 	PendingDrawOffer       *gameplay.DrawOffer     `json:"pending_draw_offer"`
+	WhiteGameRemainingSecs int32                   `json:"white_game_remaining_secs" `
+	WhiteGameRemainingNS   int64                   `json:"white_game_remaining_ns" `
+	BlackGameRemainingSecs int32                   `json:"black_game_remaining_secs" `
+	BlackGameRemainingNS   int64                   `json:"black_game_remaining_ns" `
 }
 
 type ActiveGameMove struct {

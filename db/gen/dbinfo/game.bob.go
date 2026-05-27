@@ -150,8 +150,8 @@ var Games = Table[
 			Generated: false,
 			AutoIncr:  false,
 		},
-		WhiteGameClock: column{
-			Name:      "white_game_clock",
+		WhiteGameRemainingSecs: column{
+			Name:      "white_game_remaining_secs",
 			DBType:    "integer",
 			Default:   "",
 			Comment:   "",
@@ -159,9 +159,27 @@ var Games = Table[
 			Generated: false,
 			AutoIncr:  false,
 		},
-		BlackGameClock: column{
-			Name:      "black_game_clock",
+		WhiteGameRemainingNS: column{
+			Name:      "white_game_remaining_ns",
+			DBType:    "bigint",
+			Default:   "",
+			Comment:   "",
+			Nullable:  false,
+			Generated: false,
+			AutoIncr:  false,
+		},
+		BlackGameRemainingSecs: column{
+			Name:      "black_game_remaining_secs",
 			DBType:    "integer",
+			Default:   "",
+			Comment:   "",
+			Nullable:  false,
+			Generated: false,
+			AutoIncr:  false,
+		},
+		BlackGameRemainingNS: column{
+			Name:      "black_game_remaining_ns",
+			DBType:    "bigint",
 			Default:   "",
 			Comment:   "",
 			Nullable:  false,
@@ -387,8 +405,10 @@ type gameColumns struct {
 	TimeControlIncrementMS column
 	ReconnectTimeoutMS     column
 	FirstMoveTimeoutMS     column
-	WhiteGameClock         column
-	BlackGameClock         column
+	WhiteGameRemainingSecs column
+	WhiteGameRemainingNS   column
+	BlackGameRemainingSecs column
+	BlackGameRemainingNS   column
 	Rated                  column
 	StartTime              column
 	EndTime                column
@@ -403,7 +423,7 @@ type gameColumns struct {
 
 func (c gameColumns) AsSlice() []column {
 	return []column{
-		c.ID, c.WhiteID, c.BlackID, c.GuestWhiteID, c.GuestBlackID, c.GameVariantID, c.GameTimeKindID, c.GameTimeCategoryID, c.GameStateID, c.GameResultID, c.GameResultStatusID, c.TimeControlClockMS, c.TimeControlIncrementMS, c.ReconnectTimeoutMS, c.FirstMoveTimeoutMS, c.WhiteGameClock, c.BlackGameClock, c.Rated, c.StartTime, c.EndTime, c.LastMove, c.Fen, c.PGN, c.Repetitions, c.Version, c.CreatedAt, c.UpdatedAt,
+		c.ID, c.WhiteID, c.BlackID, c.GuestWhiteID, c.GuestBlackID, c.GameVariantID, c.GameTimeKindID, c.GameTimeCategoryID, c.GameStateID, c.GameResultID, c.GameResultStatusID, c.TimeControlClockMS, c.TimeControlIncrementMS, c.ReconnectTimeoutMS, c.FirstMoveTimeoutMS, c.WhiteGameRemainingSecs, c.WhiteGameRemainingNS, c.BlackGameRemainingSecs, c.BlackGameRemainingNS, c.Rated, c.StartTime, c.EndTime, c.LastMove, c.Fen, c.PGN, c.Repetitions, c.Version, c.CreatedAt, c.UpdatedAt,
 	}
 }
 

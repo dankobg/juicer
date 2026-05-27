@@ -17,16 +17,16 @@ func GameToResponse(g models.Game) api.Game {
 	}
 
 	return api.Game{
-		ID:                     g.ID,
-		WhiteID:                g.WhiteID.Ptr(),
-		BlackID:                g.BlackID.Ptr(),
-		WhiteIsGuest:           whiteIsGuest,
-		BlackIsGuest:           blackIsGuest,
-		Rated:                  g.Rated,
-		WhiteGuestID:           g.GuestWhiteID.Ptr(),
-		BlackGuestID:           g.GuestBlackID.Ptr(),
-		WhiteGameClock:         int64(g.WhiteGameClock),
-		BlackGameClock:         int64(g.BlackGameClock),
+		ID:           g.ID,
+		WhiteID:      g.WhiteID.Ptr(),
+		BlackID:      g.BlackID.Ptr(),
+		WhiteIsGuest: whiteIsGuest,
+		BlackIsGuest: blackIsGuest,
+		Rated:        g.Rated,
+		WhiteGuestID: g.GuestWhiteID.Ptr(),
+		BlackGuestID: g.GuestBlackID.Ptr(),
+		// WhiteGameClock:         int64(g.WhiteGameClock), // @TODO: check lejtaaaaaaaaa
+		// BlackGameClock:         int64(g.BlackGameClock), // @TODO: check lejtaaaaaaaaa
 		GameVariantID:          g.GameVariantID,
 		GameStateID:            g.GameStateID,
 		GameTimeKindID:         g.GameTimeKindID,
@@ -58,16 +58,16 @@ func GameDetailsToResponse(g dbtype.GameDetails) api.Game {
 	}
 
 	game := api.Game{
-		ID:                     g.ID,
-		WhiteID:                g.WhiteID.Ptr(),
-		BlackID:                g.BlackID.Ptr(),
-		WhiteIsGuest:           whiteIsGuest,
-		BlackIsGuest:           blackIsGuest,
-		Rated:                  g.Rated,
-		WhiteGuestID:           g.GuestWhiteID.Ptr(),
-		BlackGuestID:           g.GuestBlackID.Ptr(),
-		WhiteGameClock:         int64(g.WhiteGameClock),
-		BlackGameClock:         int64(g.BlackGameClock),
+		ID:           g.ID,
+		WhiteID:      g.WhiteID.Ptr(),
+		BlackID:      g.BlackID.Ptr(),
+		WhiteIsGuest: whiteIsGuest,
+		BlackIsGuest: blackIsGuest,
+		Rated:        g.Rated,
+		WhiteGuestID: g.GuestWhiteID.Ptr(),
+		BlackGuestID: g.GuestBlackID.Ptr(),
+		// WhiteGameClock:         int64(g.WhiteGameClock), // @TODO: check lejtaaaaaaaaa
+		// BlackGameClock:         int64(g.BlackGameClock), // @TODO: check lejtaaaaaaaaa
 		GameVariantID:          g.GameVariantID,
 		GameStateID:            g.GameStateID,
 		GameTimeKindID:         g.GameTimeKindID,

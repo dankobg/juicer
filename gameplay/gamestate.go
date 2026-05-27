@@ -10,6 +10,7 @@ import (
 	"github.com/dankobg/juicer/engine"
 	pb "github.com/dankobg/juicer/pb/proto/juicer"
 	"github.com/google/uuid"
+	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -64,25 +65,27 @@ type GameState struct {
 	GameTimeKind     pb.GameTimeKind
 	GameTimeCategory pb.GameTimeCategory
 	// It could be much more complicated with many phases (e.g. increment only after move 30 etc)
-	GameTimeControl  *pb.GameTimeControl
-	GameResult       pb.GameResult
-	GameResultStatus pb.GameResultStatus
-	GameState        pb.GameState
-	ReconnectTimeout time.Duration
-	FirstMoveTimeout time.Duration
-	LastMove         *time.Time
-	StartTime        *time.Time
-	EndTime          *time.Time
-	Rated            bool
-	GameMoves        []*pb.GameMove
-	Version          int
-	PendingDrawOffer *DrawOffer
-	running          atomic.Bool
+	GameTimeControl        *pb.GameTimeControl
+	GameResult             pb.GameResult
+	GameResultStatus       pb.GameResultStatus
+	GameState              pb.GameState
+	ReconnectTimeout       time.Duration
+	FirstMoveTimeout       time.Duration
+	LastMove               *time.Time
+	StartTime              *time.Time
+	EndTime                *time.Time
+	Rated                  bool
+	GameMoves              []*pb.GameMove
+	Version                int
+	PendingDrawOffer       *DrawOffer
+	running                atomic.Bool
+	GameCommand            chan GameCommand
+	GameEvent              chan GameEvent
+	WhiteRemainingGameTime *durationpb.Duration
+	BlackRemainingGameTime *durationpb.Duration
 
 	// #####################################################################################
 
-	GameCommand         chan GameCommand
-	GameEvent           chan GameEvent
 	activeGameTimer     *time.Timer
 	firstMoveTimer      *time.Timer
 	whiteReconnectTimer *time.Timer
@@ -160,7 +163,7 @@ func NewGameState(gameID int64, players [2]Player, timeControl *pb.GameTimeContr
 		GameMoves:        gameMoves,
 		running:          atomic.Bool{},
 
-		GameCommand: make(chan GameCommand, 32),
+		GameCommand: make(chan GameCommand, 64),
 		GameEvent:   gameEvent,
 		// activeGameTimer     *time.Timer
 		// firstMoveTimer      *time.Timer

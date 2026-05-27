@@ -106,6 +106,10 @@ func (a *ApiHandler) onGameEvent(event gameplay.GameEvent) {
 	case gameplay.DeclineDrawErrorEvent:
 		fmt.Println("---------------------------------------------- GOT EVENT: DeclineDrawErrorEvent")
 		a.handleDeclineDrawErrorEvent(ev)
+
+	case gameplay.GameFinishedEvent:
+		fmt.Println("---------------------------------------------- GOT EVENT: GameFinishedEvent")
+		a.handleGameFinishedEvent(ev)
 	}
 }
 
@@ -187,26 +191,15 @@ func (a *ApiHandler) handlePlayMoveUCIEvent(event gameplay.PlayMoveUCIEvent) {
 	}
 
 	if terminated {
-		gameFinishedMsg := &pb.Message{Event: &pb.Message_GameFinished{GameFinished: &pb.GameFinished{
-			GameId:           int32(event.GameID),
-			GameResult:       event.GameResult,
-			GameResultStatus: event.GameResultStatus,
-			GameState:        event.GameState,
-		}}}
-
-		gameFinishedMsgBytes, err := protojson.Marshal(gameFinishedMsg)
-		if err != nil {
-			a.Log.Error("protojson.Marshal Message_GameFinished", slog.Int64("game_id", event.GameID), slog.Any("error", err))
-		} else {
-			topic := fmt.Sprintf("game.%d", event.GameID)
-			if err := a.bus.rdb.Publish(context.Background(), topic, gameFinishedMsgBytes).Err(); err != nil {
-				a.Log.Error("publish Message_GameFinished", slog.Int64("game_id", event.GameID), slog.Any("error", err))
+		go func() {
+			a.gameEvent <- gameplay.GameFinishedEvent{
+				GameID:           event.GameID,
+				GameResult:       event.GameResult,
+				GameResultStatus: event.GameResultStatus,
+				GameState:        event.GameState,
+				EndTime:          time.Now(),
 			}
-		}
-
-		if err := a.persistor.ActiveGame().DeleteActiveGameByID(context.Background(), event.GameID); err != nil {
-			a.Log.Error("DeleteActiveGameByID", slog.Int64("game_id", event.GameID), slog.Any("error", err))
-		}
+		}()
 	}
 }
 
@@ -226,26 +219,15 @@ func (a *ApiHandler) handleAbortGameEvent(event gameplay.AbortEvent) {
 		a.Log.Error("UpdateGame", slog.Int64("game_id", event.GameID), slog.Any("error", err))
 	}
 
-	gameFinishedMsg := &pb.Message{Event: &pb.Message_GameFinished{GameFinished: &pb.GameFinished{
-		GameId:           int32(event.GameID),
-		GameResult:       event.GameResult,
-		GameResultStatus: event.GameResultStatus,
-		GameState:        event.GameState,
-	}}}
-
-	gameFinishedMsgBytes, err := protojson.Marshal(gameFinishedMsg)
-	if err != nil {
-		a.Log.Error("protojson.Marshal Message_GameFinished", slog.Int64("game_id", event.GameID), slog.Any("error", err))
-	} else {
-		topic := fmt.Sprintf("game.%d", event.GameID)
-		if err := a.bus.rdb.Publish(context.Background(), topic, gameFinishedMsgBytes).Err(); err != nil {
-			a.Log.Error("publish Message_GameFinished", slog.Int64("game_id", event.GameID), slog.Any("error", err))
+	go func() {
+		a.gameEvent <- gameplay.GameFinishedEvent{
+			GameID:           event.GameID,
+			GameResult:       event.GameResult,
+			GameResultStatus: event.GameResultStatus,
+			GameState:        event.GameState,
+			EndTime:          time.Now(),
 		}
-	}
-
-	if err := a.persistor.ActiveGame().DeleteActiveGameByID(context.Background(), event.GameID); err != nil {
-		a.Log.Error("DeleteActiveGameByID", slog.Int64("game_id", event.GameID), slog.Any("error", err))
-	}
+	}()
 }
 
 func (a *ApiHandler) handleAbortGameErrorEvent(event gameplay.AbortErrorEvent) {
@@ -264,26 +246,15 @@ func (a *ApiHandler) handleResignGameEvent(event gameplay.ResignEvent) {
 		a.Log.Error("UpdateGame", slog.Int64("game_id", event.GameID), slog.Any("error", err))
 	}
 
-	gameFinishedMsg := &pb.Message{Event: &pb.Message_GameFinished{GameFinished: &pb.GameFinished{
-		GameId:           int32(event.GameID),
-		GameResult:       event.GameResult,
-		GameResultStatus: event.GameResultStatus,
-		GameState:        event.GameState,
-	}}}
-
-	gameFinishedMsgBytes, err := protojson.Marshal(gameFinishedMsg)
-	if err != nil {
-		a.Log.Error("protojson.Marshal Message_GameFinished", slog.Int64("game_id", event.GameID), slog.Any("error", err))
-	} else {
-		topic := fmt.Sprintf("game.%d", event.GameID)
-		if err := a.bus.rdb.Publish(context.Background(), topic, gameFinishedMsgBytes).Err(); err != nil {
-			a.Log.Error("publish Message_GameFinished", slog.Int64("game_id", event.GameID), slog.Any("error", err))
+	go func() {
+		a.gameEvent <- gameplay.GameFinishedEvent{
+			GameID:           event.GameID,
+			GameResult:       event.GameResult,
+			GameResultStatus: event.GameResultStatus,
+			GameState:        event.GameState,
+			EndTime:          time.Now(),
 		}
-	}
-
-	if err := a.persistor.ActiveGame().DeleteActiveGameByID(context.Background(), event.GameID); err != nil {
-		a.Log.Error("DeleteActiveGameByID", slog.Int64("game_id", event.GameID), slog.Any("error", err))
-	}
+	}()
 }
 
 func (a *ApiHandler) handleResignGameErrorEvent(event gameplay.ResignErrorEvent) {
@@ -311,6 +282,34 @@ func (a *ApiHandler) handleAcceptDrawEvent(event gameplay.AcceptDrawEvent) {
 		a.Log.Error("UpdateGame", slog.Int64("game_id", event.GameID), slog.Any("error", err))
 	}
 
+	go func() {
+		a.gameEvent <- gameplay.GameFinishedEvent{
+			GameID:           event.GameID,
+			GameResult:       event.GameResult,
+			GameResultStatus: event.GameResultStatus,
+			GameState:        event.GameState,
+			EndTime:          time.Now(),
+		}
+	}()
+}
+
+func (a *ApiHandler) handleAcceptDrawErrorEvent(event gameplay.AcceptDrawErrorEvent) {
+	if event.Err != nil {
+		fmt.Println("--------------- handleAcceptDrawErrorEvent", event.Err)
+		return
+	}
+}
+
+func (a *ApiHandler) handleDeclineDrawEvent(event gameplay.DeclineDrawEvent) {}
+
+func (a *ApiHandler) handleDeclineDrawErrorEvent(event gameplay.DeclineDrawErrorEvent) {
+	if event.Err != nil {
+		fmt.Println("--------------- handleDeclineDrawErrorEvent", event.Err)
+		return
+	}
+}
+
+func (a *ApiHandler) handleGameFinishedEvent(event gameplay.GameFinishedEvent) {
 	gameFinishedMsg := &pb.Message{Event: &pb.Message_GameFinished{GameFinished: &pb.GameFinished{
 		GameId:           int32(event.GameID),
 		GameResult:       event.GameResult,
@@ -330,22 +329,6 @@ func (a *ApiHandler) handleAcceptDrawEvent(event gameplay.AcceptDrawEvent) {
 
 	if err := a.persistor.ActiveGame().DeleteActiveGameByID(context.Background(), event.GameID); err != nil {
 		a.Log.Error("DeleteActiveGameByID", slog.Int64("game_id", event.GameID), slog.Any("error", err))
-	}
-}
-
-func (a *ApiHandler) handleAcceptDrawErrorEvent(event gameplay.AcceptDrawErrorEvent) {
-	if event.Err != nil {
-		fmt.Println("--------------- handleAcceptDrawErrorEvent", event.Err)
-		return
-	}
-}
-
-func (a *ApiHandler) handleDeclineDrawEvent(event gameplay.DeclineDrawEvent) {}
-
-func (a *ApiHandler) handleDeclineDrawErrorEvent(event gameplay.DeclineDrawErrorEvent) {
-	if event.Err != nil {
-		fmt.Println("--------------- handleDeclineDrawErrorEvent", event.Err)
-		return
 	}
 }
 
@@ -1495,8 +1478,10 @@ func (a *ApiHandler) processMatchedPoolPair(ctx context.Context, pair [2]string,
 		TimeControlIncrementMS: omit.From(gs.GameTimeControl.IncrementMs),
 		FirstMoveTimeoutMS:     omit.From(int32(gs.FirstMoveTimeout.Milliseconds())),
 		ReconnectTimeoutMS:     omit.From(int32(gs.ReconnectTimeout.Milliseconds())),
-		WhiteGameClock:         omit.From(gs.GameTimeControl.ClockMs),
-		BlackGameClock:         omit.From(gs.GameTimeControl.ClockMs),
+		WhiteGameRemainingSecs: omit.From(gs.GameTimeControl.GetClockMs() * 1000),
+		WhiteGameRemainingNS:   omit.From((time.Duration(gs.GameTimeControl.GetClockMs()) * time.Millisecond).Nanoseconds()),
+		BlackGameRemainingSecs: omit.From(gs.GameTimeControl.GetClockMs() * 1000),
+		BlackGameRemainingNS:   omit.From((time.Duration(gs.GameTimeControl.GetClockMs()) * time.Millisecond).Nanoseconds()),
 		Rated:                  omit.From(gs.Rated),
 		StartTime:              omitnull.FromPtr(gs.StartTime),
 		EndTime:                omitnull.FromPtr(gs.EndTime),

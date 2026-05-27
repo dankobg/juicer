@@ -117,6 +117,11 @@ func (pst *RedisActiveGamePersistor) CreateActiveGame(ctx context.Context, gs *g
 		Rated:                  gs.Rated,
 		GameMoves:              moves,
 		GameHistoryHashes:      hashes,
+		Version:                int32(gs.Version),
+		WhiteGameRemainingSecs: int32(gs.WhiteRemainingGameTime.GetSeconds()),
+		WhiteGameRemainingNS:   int64(gs.WhiteRemainingGameTime.GetNanos()),
+		BlackGameRemainingSecs: int32(gs.BlackRemainingGameTime.GetSeconds()),
+		BlackGameRemainingNS:   int64(gs.BlackRemainingGameTime.GetNanos()),
 	}
 
 	activeGameBytes, err := json.Marshal(activeGame)

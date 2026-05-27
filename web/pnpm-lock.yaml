@@ -9,8 +9,8 @@ importers:
   .:
     dependencies:
       '@dankop/juicer-board':
-        specifier: ^1.10.1
-        version: 1.10.1
+        specifier: ^1.10.2
+        version: 1.10.2
       '@ory/client-fetch':
         specifier: ^1.22.34
         version: 1.22.34
@@ -262,8 +262,8 @@ packages:
     resolution: {integrity: sha512-mepCf/e9+SKYy1d02/UkvSy6+6MoyXhVxP8lLDfA7BPE1X1d4dR0sZznmbM8/XVJ1GPM+Svnx7Xj6ZweByWUkw==}
     engines: {node: '>17.0.0'}
 
-  '@dankop/juicer-board@1.10.1':
-    resolution: {integrity: sha512-Z1FX338sAtZGxSOtToyelPHl3TW92eJBnJMsLKM9V93z7IYo1e/7K06v8IdkdAQ7UQPBSsajld5rNOGwwnj5Fg==}
+  '@dankop/juicer-board@1.10.2':
+    resolution: {integrity: sha512-RA3nP0PEI2/ZEd+ggH37Ynve+4yp2S6r6aZ71ltMDx2tdMzuHF3pEdkF8XWQTSv5UftSW4WdxDsIvi0cfX4gIg==}
 
   '@emnapi/core@1.9.1':
     resolution: {integrity: sha512-mukuNALVsoix/w1BJwFzwXBN/dHeejQtuVzcDsfOEsdpCumXb/E9j8w11h5S54tT1xhifGfbbSm/ICrObRb3KA==}
@@ -2401,7 +2401,7 @@ snapshots:
 
   '@dagrejs/graphlib@2.2.4': {}
 
-  '@dankop/juicer-board@1.10.1':
+  '@dankop/juicer-board@1.10.2':
     dependencies:
       '@lit-labs/observers': 2.1.0
       lit: 3.3.2
