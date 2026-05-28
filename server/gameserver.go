@@ -115,10 +115,13 @@ func (a *ApiHandler) onGameEvent(event gameplay.GameEvent) {
 
 func (a *ApiHandler) handlePlayMoveUCIEvent(event gameplay.PlayMoveUCIEvent) {
 	gameSetter := models.GameSetter{
-		Fen:         omit.From(event.Position.Fen()),
-		LastMove:    omitnull.FromPtr(event.LastMove),
-		EndTime:     omitnull.FromPtr(event.EndTime),
-		Repetitions: omit.From(int32(event.Repetitions)),
+		Fen:                    omit.From(event.Position.Fen()),
+		LastMove:               omitnull.FromPtr(event.LastMove),
+		Repetitions:            omit.From(int32(event.Repetitions)),
+		WhiteGameRemainingSecs: omit.From(int32(event.WhiteRemainingGameTime)),
+		WhiteGameRemainingNS:   omit.From(event.WhiteRemainingGameTime.Nanoseconds()),
+		BlackGameRemainingSecs: omit.From(int32(event.BlackRemainingGameTime)),
+		BlackGameRemainingNS:   omit.From(event.BlackRemainingGameTime.Nanoseconds()),
 	}
 
 	moveSetter := &models.GameMoveSetter{
@@ -136,23 +139,13 @@ func (a *ApiHandler) handlePlayMoveUCIEvent(event gameplay.PlayMoveUCIEvent) {
 		Hash:   omit.From(int64(event.Position.Hash)),
 	}
 
-	var terminated bool
-
-	if event.GameResult != pb.GameResult_GAME_RESULT_UNSPECIFIED {
-		gameSetter.GameResultID.Set(a.gameResultProtoToID(event.GameResult))
-		gameSetter.GameResultStatusID.Set(a.gameResultStatusProtoToID(event.GameResultStatus))
-		gameSetter.GameStateID.Set(a.gameStateProtoToID(event.GameState))
-
-		terminated = true
-	}
-
 	if _, err := a.persistor.Game().UpdateGame(context.Background(), event.GameID, gameSetter, moveSetter, hashSetter); err != nil {
 		a.Log.Error("UpdateGame", slog.Int64("game_id", event.GameID), slog.Any("error", err))
 	}
 
 	moveAckMsg := &pb.Message{Event: &pb.Message_MoveAck{MoveAck: &pb.MoveAck{
 		GameId:  int32(event.GameID),
-		Version: 42,
+		Version: int32(event.Version),
 	}}}
 
 	moveAckMsgBytes, err := protojson.Marshal(moveAckMsg)
@@ -173,11 +166,11 @@ func (a *ApiHandler) handlePlayMoveUCIEvent(event gameplay.PlayMoveUCIEvent) {
 		Fen:    event.Position.Fen(),
 		Ply:    uint32(event.Position.Ply),
 		Clocks: &pb.Clocks{
-			White: durationpb.New(time.Duration(event.WhiteClockRemainingMs) * time.Millisecond),
-			Black: durationpb.New(time.Duration(event.BlackClockRemainingMs) * time.Millisecond),
+			White: durationpb.New(event.WhiteRemainingGameTime),
+			Black: durationpb.New(event.BlackRemainingGameTime),
 		},
 		LegalMoves: event.LegalMoves,
-		Version:    42,
+		Version:    int32(event.Version),
 	}}}
 
 	moveSyncMsgBytes, err := protojson.Marshal(moveSyncMsg)
@@ -188,18 +181,6 @@ func (a *ApiHandler) handlePlayMoveUCIEvent(event gameplay.PlayMoveUCIEvent) {
 		if err := a.bus.rdb.Publish(context.Background(), topic, moveSyncMsgBytes).Err(); err != nil {
 			a.Log.Error("publish Message_MoveSync", slog.Int64("game_id", event.GameID), slog.Any("error", err))
 		}
-	}
-
-	if terminated {
-		go func() {
-			a.gameEvent <- gameplay.GameFinishedEvent{
-				GameID:           event.GameID,
-				GameResult:       event.GameResult,
-				GameResultStatus: event.GameResultStatus,
-				GameState:        event.GameState,
-				EndTime:          time.Now(),
-			}
-		}()
 	}
 }
 
@@ -310,6 +291,17 @@ func (a *ApiHandler) handleDeclineDrawErrorEvent(event gameplay.DeclineDrawError
 }
 
 func (a *ApiHandler) handleGameFinishedEvent(event gameplay.GameFinishedEvent) {
+	gameSetter := models.GameSetter{
+		EndTime:            omitnull.From(event.EndTime),
+		GameResultID:       omitnull.From(a.gameResultProtoToID(event.GameResult)),
+		GameResultStatusID: omitnull.From(a.gameResultStatusProtoToID(event.GameResultStatus)),
+		GameStateID:        omit.From(a.gameStateProtoToID(event.GameState)),
+	}
+
+	if _, err := a.persistor.Game().UpdateGame(context.Background(), event.GameID, gameSetter, nil, nil); err != nil {
+		a.Log.Error("UpdateGame", slog.Int64("game_id", event.GameID), slog.Any("error", err))
+	}
+
 	gameFinishedMsg := &pb.Message{Event: &pb.Message_GameFinished{GameFinished: &pb.GameFinished{
 		GameId:           int32(event.GameID),
 		GameResult:       event.GameResult,

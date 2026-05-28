@@ -540,17 +540,16 @@ export function playedEnpassantMove(game: Game, move: string): Coord | undefined
 }
 
 export function getPromotionLabelText(promotionSymbol: string): string {
-	if (promotionSymbol === 'q') {
-		return 'promote to queen';
+	switch (promotionSymbol) {
+		case 'q':
+			return 'promote to queen';
+		case 'r':
+			return 'promote to rook';
+		case 'n':
+			return 'promote to knight';
+		case 'b':
+			return 'promote to bishop';
+		default:
+			return '';
 	}
-	if (promotionSymbol === 'r') {
-		return 'promote to rook';
-	}
-	if (promotionSymbol === 'n') {
-		return 'promote to knight';
-	}
-	if (promotionSymbol === 'b') {
-		return 'promote to bishop';
-	}
-	return '';
 }

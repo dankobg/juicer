@@ -13,24 +13,20 @@ type GameEvent interface {
 }
 
 type PlayMoveUCIEvent struct {
-	GameID                int64
-	UserID                uuid.UUID
-	Players               map[uuid.UUID]*Player
-	Uci                   string
-	San                   string
-	Lan                   string
-	WhiteClockRemainingMs int64
-	BlackClockRemainingMs int64
-	Position              *engine.Position
-	GameResult            pb.GameResult
-	GameResultStatus      pb.GameResultStatus
-	GameState             pb.GameState
-	LastMove              *time.Time
-	StartTime             *time.Time
-	EndTime               *time.Time
-	Repetitions           uint16
-	LegalMoves            []string
-	Version               int
+	GameID                 int64
+	UserID                 uuid.UUID
+	Players                map[uuid.UUID]*Player
+	Uci                    string
+	San                    string
+	Lan                    string
+	WhiteRemainingGameTime time.Duration
+	BlackRemainingGameTime time.Duration
+	Position               *engine.Position
+	LastMove               *time.Time
+	StartTime              *time.Time
+	Repetitions            uint16
+	LegalMoves             []string
+	Version                int
 	// History []engine.History
 	// Hashes []engine.HistoryHash
 }
