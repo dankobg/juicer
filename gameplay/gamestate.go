@@ -345,6 +345,7 @@ func (gs *GameState) Start(ctx context.Context) {
 					GameResult:       pb.GameResult_GAME_RESULT_INTERRUPTED,
 					GameResultStatus: pb.GameResultStatus_GAME_RESULT_STATUS_INTERRUPTED,
 					GameState:        pb.GameState_GAME_STATE_INTERRUPTED,
+					EndTime:          time.Now(),
 				}
 
 				return
@@ -530,24 +531,30 @@ func (gs *GameState) playMoveUCI(c PlayMoveUCICmd) ([]GameEvent, error) {
 	if gs.LastMove != nil && gs.Chess.Position.Ply >= 2 {
 		elapsed := playedAt.Sub(*gs.LastMove)
 		if gs.Chess.Position.Turn.IsWhite() {
+			previousRemaining := gs.WhiteRemainingGameTime
 			gs.WhiteRemainingGameTime -= elapsed
 			if gs.WhiteRemainingGameTime <= 0 {
+				flaggedAt := gs.LastMove.Add(previousRemaining)
 				events = append(events, GameFinishedEvent{
 					GameID:           gs.GameID,
 					GameResult:       pb.GameResult_GAME_RESULT_BLACK_WON,
 					GameResultStatus: pb.GameResultStatus_GAME_RESULT_STATUS_FLAGGED,
 					GameState:        pb.GameState_GAME_STATE_FINISHED,
+					EndTime:          flaggedAt,
 				})
 				terminated = true
 			}
 		} else {
+			previousRemaining := gs.BlackRemainingGameTime
 			gs.BlackRemainingGameTime -= elapsed
 			if gs.BlackRemainingGameTime <= 0 {
+				flaggedAt := gs.LastMove.Add(previousRemaining)
 				events = append(events, GameFinishedEvent{
 					GameID:           gs.GameID,
 					GameResult:       pb.GameResult_GAME_RESULT_WHITE_WON,
 					GameResultStatus: pb.GameResultStatus_GAME_RESULT_STATUS_FLAGGED,
 					GameState:        pb.GameState_GAME_STATE_FINISHED,
+					EndTime:          flaggedAt,
 				})
 				terminated = true
 			}
