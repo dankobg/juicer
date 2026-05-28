@@ -530,6 +530,8 @@ func (gs *GameState) playMoveUCI(c PlayMoveUCICmd) ([]GameEvent, error) {
 
 	if gs.LastMove != nil && gs.Chess.Position.Ply >= 2 {
 		elapsed := playedAt.Sub(*gs.LastMove)
+		increment := time.Duration(gs.GameTimeControl.GetIncrementMs()) * time.Millisecond
+
 		if gs.Chess.Position.Turn.IsWhite() {
 			previousRemaining := gs.WhiteRemainingGameTime
 			gs.WhiteRemainingGameTime -= elapsed
@@ -543,6 +545,8 @@ func (gs *GameState) playMoveUCI(c PlayMoveUCICmd) ([]GameEvent, error) {
 					EndTime:          flaggedAt,
 				})
 				terminated = true
+			} else {
+				gs.WhiteRemainingGameTime += increment
 			}
 		} else {
 			previousRemaining := gs.BlackRemainingGameTime
@@ -557,6 +561,8 @@ func (gs *GameState) playMoveUCI(c PlayMoveUCICmd) ([]GameEvent, error) {
 					EndTime:          flaggedAt,
 				})
 				terminated = true
+			} else {
+				gs.BlackRemainingGameTime += increment
 			}
 		}
 	}
