@@ -21,7 +21,6 @@ import (
 	"github.com/dankobg/juicer/persistence"
 	"github.com/dankobg/juicer/persistence/dbtype"
 	"github.com/dankobg/juicer/ws"
-	"github.com/goforj/godump"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/redis/go-redis/v9"
@@ -60,60 +59,49 @@ func (a *ApiHandler) PubsubProcess(ctx context.Context) {
 func (a *ApiHandler) onGameEvent(event gameplay.GameEvent) {
 	switch ev := event.(type) {
 	case gameplay.PlayMoveUCIEvent:
-		fmt.Println("---------------------------------------------- GOT EVENT: PlayMoveUCIEvent")
 		a.handlePlayMoveUCIEvent(ev)
 
 	case gameplay.PlayMoveUCIErrorEvent:
-		fmt.Println("---------------------------------------------- GOT EVENT: PlayMoveUCIErrorEvent")
 		a.handlePlayMoveUCIErrorEvent(ev)
 
 	case gameplay.AbortEvent:
-		fmt.Println("---------------------------------------------- GOT EVENT: AbortEvent")
 		a.handleAbortGameEvent(ev)
 
 	case gameplay.AbortErrorEvent:
-		fmt.Println("---------------------------------------------- GOT EVENT: AbortErrorEvent")
 		a.handleAbortGameErrorEvent(ev)
 
 	case gameplay.ResignEvent:
-		fmt.Println("---------------------------------------------- GOT EVENT: ResignEvent")
 		a.handleResignGameEvent(ev)
 
 	case gameplay.ResignErrorEvent:
-		fmt.Println("---------------------------------------------- GOT EVENT: ResignErrorEvent")
 		a.handleResignGameErrorEvent(ev)
 
 	case gameplay.OfferDrawEvent:
-		fmt.Println("---------------------------------------------- GOT EVENT: OfferDrawEvent")
 		a.handleOfferDrawEvent(ev)
 
 	case gameplay.OfferDrawErrorEvent:
-		fmt.Println("---------------------------------------------- GOT EVENT: OfferDrawErrorEvent")
 		a.handleOfferDrawErrorEvent(ev)
 
 	case gameplay.AcceptDrawEvent:
-		fmt.Println("---------------------------------------------- GOT EVENT: AcceptDrawEvent")
 		a.handleAcceptDrawEvent(ev)
 
 	case gameplay.AcceptDrawErrorEvent:
-		fmt.Println("---------------------------------------------- GOT EVENT: AcceptDrawErrorEvent")
 		a.handleAcceptDrawErrorEvent(ev)
 
 	case gameplay.DeclineDrawEvent:
-		fmt.Println("---------------------------------------------- GOT EVENT: DeclineDrawEvent")
 		a.handleDeclineDrawEvent(ev)
 
 	case gameplay.DeclineDrawErrorEvent:
-		fmt.Println("---------------------------------------------- GOT EVENT: DeclineDrawErrorEvent")
 		a.handleDeclineDrawErrorEvent(ev)
 
 	case gameplay.GameFinishedEvent:
-		fmt.Println("---------------------------------------------- GOT EVENT: GameFinishedEvent")
 		a.handleGameFinishedEvent(ev)
 	}
 }
 
 func (a *ApiHandler) handlePlayMoveUCIEvent(event gameplay.PlayMoveUCIEvent) {
+	a.Log.Debug("handlePlayMoveUCIEvent", slog.String("user_id", event.UserID.String()), slog.Int64("game_id", event.GameID))
+
 	whiteSecs := int64(event.WhiteRemainingGameTime / time.Second)
 	whiteNS := int64(event.WhiteRemainingGameTime % time.Second)
 	blackSecs := int64(event.BlackRemainingGameTime / time.Second)
@@ -190,13 +178,12 @@ func (a *ApiHandler) handlePlayMoveUCIEvent(event gameplay.PlayMoveUCIEvent) {
 }
 
 func (a *ApiHandler) handlePlayMoveUCIErrorEvent(event gameplay.PlayMoveUCIErrorEvent) {
-	if event.Err != nil {
-		fmt.Println("--------------- handlePlayMoveUCIErrorEvent", event.Err)
-		return
-	}
+	a.Log.Debug("handlePlayMoveUCIErrorEvent", slog.String("user_id", event.UserID.String()), slog.Int64("game_id", event.GameID), slog.Any("error", event.Err))
 }
 
 func (a *ApiHandler) handleAbortGameEvent(event gameplay.AbortEvent) {
+	a.Log.Debug("handleAbortGameEvent", slog.Int64("game_id", event.GameID))
+
 	gameSetter := models.GameSetter{
 		EndTime: omitnull.From(event.EndTime),
 	}
@@ -217,13 +204,12 @@ func (a *ApiHandler) handleAbortGameEvent(event gameplay.AbortEvent) {
 }
 
 func (a *ApiHandler) handleAbortGameErrorEvent(event gameplay.AbortErrorEvent) {
-	if event.Err != nil {
-		fmt.Println("--------------- handleAbortGameErrorEvent", event.Err)
-		return
-	}
+	a.Log.Debug("handleAbortGameErrorEvent", slog.String("user_id", event.UserID.String()), slog.Int64("game_id", event.GameID), slog.Any("error", event.Err))
 }
 
 func (a *ApiHandler) handleResignGameEvent(event gameplay.ResignEvent) {
+	a.Log.Debug("handleResignGameEvent", slog.Int64("game_id", event.GameID))
+
 	gameSetter := models.GameSetter{
 		EndTime: omitnull.From(event.EndTime),
 	}
@@ -244,22 +230,20 @@ func (a *ApiHandler) handleResignGameEvent(event gameplay.ResignEvent) {
 }
 
 func (a *ApiHandler) handleResignGameErrorEvent(event gameplay.ResignErrorEvent) {
-	if event.Err != nil {
-		fmt.Println("--------------- handleResignGameErrorEvent", event.Err)
-		return
-	}
+	a.Log.Debug("handleResignGameErrorEvent", slog.String("user_id", event.UserID.String()), slog.Int64("game_id", event.GameID), slog.Any("error", event.Err))
 }
 
-func (a *ApiHandler) handleOfferDrawEvent(event gameplay.OfferDrawEvent) {}
+func (a *ApiHandler) handleOfferDrawEvent(event gameplay.OfferDrawEvent) {
+	a.Log.Debug("handleOfferDrawEvent", slog.String("user_id", event.UserID.String()), slog.Int64("game_id", event.GameID))
+}
 
 func (a *ApiHandler) handleOfferDrawErrorEvent(event gameplay.OfferDrawErrorEvent) {
-	if event.Err != nil {
-		fmt.Println("--------------- handleOfferDrawErrorEvent", event.Err)
-		return
-	}
+	a.Log.Debug("handleOfferDrawErrorEvent", slog.String("user_id", event.UserID.String()), slog.Int64("game_id", event.GameID), slog.Any("error", event.Err))
 }
 
 func (a *ApiHandler) handleAcceptDrawEvent(event gameplay.AcceptDrawEvent) {
+	a.Log.Debug("handleAcceptDrawEvent", slog.Int64("game_id", event.GameID))
+
 	gameSetter := models.GameSetter{
 		EndTime: omitnull.From(event.EndTime),
 	}
@@ -280,22 +264,20 @@ func (a *ApiHandler) handleAcceptDrawEvent(event gameplay.AcceptDrawEvent) {
 }
 
 func (a *ApiHandler) handleAcceptDrawErrorEvent(event gameplay.AcceptDrawErrorEvent) {
-	if event.Err != nil {
-		fmt.Println("--------------- handleAcceptDrawErrorEvent", event.Err)
-		return
-	}
+	a.Log.Debug("handleAcceptDrawErrorEvent", slog.String("user_id", event.UserID.String()), slog.Int64("game_id", event.GameID), slog.Any("error", event.Err))
 }
 
-func (a *ApiHandler) handleDeclineDrawEvent(event gameplay.DeclineDrawEvent) {}
+func (a *ApiHandler) handleDeclineDrawEvent(event gameplay.DeclineDrawEvent) {
+	a.Log.Debug("handleDeclineDrawEvent", slog.String("user_id", event.UserID.String()), slog.Int64("game_id", event.GameID))
+}
 
 func (a *ApiHandler) handleDeclineDrawErrorEvent(event gameplay.DeclineDrawErrorEvent) {
-	if event.Err != nil {
-		fmt.Println("--------------- handleDeclineDrawErrorEvent", event.Err)
-		return
-	}
+	a.Log.Debug("handleDeclineDrawErrorEvent", slog.String("user_id", event.UserID.String()), slog.Int64("game_id", event.GameID), slog.Any("error", event.Err))
 }
 
 func (a *ApiHandler) handleGameFinishedEvent(event gameplay.GameFinishedEvent) {
+	a.Log.Debug("handleGameFinishedEvent", slog.Int64("game_id", event.GameID))
+
 	gameSetter := models.GameSetter{
 		EndTime:            omitnull.From(event.EndTime),
 		GameResultID:       omitnull.From(a.gameResultProtoToID(event.GameResult)),
@@ -1705,33 +1687,4 @@ func (a *ApiHandler) gameStateFromPersistence(ctx context.Context, game models.G
 	}
 
 	return gs, nil
-}
-
-func debug_print_game_info(gs *gameplay.GameState) {
-	fmt.Printf("game_id: %d\n", gs.GameID)
-	fmt.Printf("rated: %v\n", gs.Rated)
-	fmt.Printf("white: %s\n", gs.White.Username)
-	fmt.Printf("black: %s\n", gs.Black.Username)
-	fmt.Printf("variant: %s\n", gs.GameVariant.String())
-	fmt.Printf("time_category: %s\n", gs.GameTimeCategory.String())
-	fmt.Printf("time_kind: %s\n", gs.GameTimeKind.String())
-	fmt.Printf("time_control_clock_ms: %d\n", gs.GameTimeControl.GetClockMs())
-	fmt.Printf("time_control_increment_ms: %d\n", gs.GameTimeControl.GetIncrementMs())
-	fmt.Printf("state: %s\n", gs.GameState.String())
-	fmt.Printf("result: %s\n", gs.GameResult.String())
-	fmt.Printf("result_status: %s\n", gs.GameResultStatus.String())
-	fmt.Printf("start_time: %s\n", gs.StartTime)
-	fmt.Printf("last_move: %s\n", gs.LastMove)
-	fmt.Printf("game_moves: %v\n", gs.GameMoves)
-	fmt.Printf("repetitions: %v\n", gs.Chess.Repetitions)
-	fmt.Printf("history_hashes: %v\n", gs.Chess.HistoryHashes)
-
-	fmt.Println(gs.Chess.Position.PrintBoard())
-
-	legals := []string{}
-	for _, x := range gs.Chess.LegalMoves {
-		legals = append(legals, x.String())
-	}
-
-	godump.DumpJSON("legal moves", legals)
 }

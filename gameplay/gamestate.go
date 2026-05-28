@@ -9,6 +9,7 @@ import (
 
 	"github.com/dankobg/juicer/engine"
 	pb "github.com/dankobg/juicer/pb/proto/juicer"
+	"github.com/goforj/godump"
 	"github.com/google/uuid"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
@@ -695,6 +696,8 @@ func (gs *GameState) playMoveUCI(c PlayMoveUCICmd) ([]GameEvent, error) {
 		})
 	}
 
+	debug_print_gamestate_info(gs)
+
 	return events, nil
 }
 
@@ -779,4 +782,35 @@ func determineGameTimeCategoryFromTimeControl(gtc *pb.GameTimeControl, threshold
 	}
 
 	return thresholds[len(thresholds)-1].TimeCategory, nil
+}
+
+func debug_print_gamestate_info(gs *GameState) {
+	fmt.Printf("game_id: %d\n", gs.GameID)
+	fmt.Printf("rated: %v\n", gs.Rated)
+	fmt.Printf("white: %s\n", gs.White.Username)
+	fmt.Printf("black: %s\n", gs.Black.Username)
+	fmt.Printf("variant: %s\n", gs.GameVariant.String())
+	fmt.Printf("time_category: %s\n", gs.GameTimeCategory.String())
+	fmt.Printf("time_kind: %s\n", gs.GameTimeKind.String())
+	fmt.Printf("clock_ms: %d\n", gs.GameTimeControl.GetClockMs())
+	fmt.Printf("increment_ms: %d\n", gs.GameTimeControl.GetIncrementMs())
+	fmt.Printf("state: %s\n", gs.GameState.String())
+	fmt.Printf("result: %s\n", gs.GameResult.String())
+	fmt.Printf("result_status: %s\n", gs.GameResultStatus.String())
+	fmt.Printf("start_time: %s\n", gs.StartTime)
+	fmt.Printf("last_move: %s\n", gs.LastMove)
+	fmt.Printf("game_moves: %v\n", gs.GameMoves)
+	fmt.Printf("repetitions: %v\n", gs.Chess.Repetitions)
+	fmt.Printf("history_hashes: %v\n", gs.Chess.HistoryHashes)
+	fmt.Printf("version: %d\n", gs.Version)
+	fmt.Printf("white_remaining: %v\n", gs.WhiteRemainingGameTime)
+	fmt.Printf("black_remaining: %v\n", gs.BlackRemainingGameTime)
+	fmt.Println(gs.Chess.Position.PrintBoard())
+
+	legals := []string{}
+	for _, x := range gs.Chess.LegalMoves {
+		legals = append(legals, x.String())
+	}
+
+	godump.DumpJSON("legal moves", legals)
 }
