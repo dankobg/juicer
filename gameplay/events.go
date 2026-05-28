@@ -34,6 +34,7 @@ type PlayMoveUCIEvent struct {
 func (PlayMoveUCIEvent) isGameEvent() {}
 
 type PlayMoveUCIErrorEvent struct {
+	GameID int64
 	UserID uuid.UUID
 	Err    error
 }
@@ -51,6 +52,7 @@ type AbortEvent struct {
 func (AbortEvent) isGameEvent() {}
 
 type AbortErrorEvent struct {
+	GameID int64
 	UserID uuid.UUID
 	Err    error
 }
@@ -68,17 +70,22 @@ type ResignEvent struct {
 func (ResignEvent) isGameEvent() {}
 
 type ResignErrorEvent struct {
+	GameID int64
 	UserID uuid.UUID
 	Err    error
 }
 
 func (ResignErrorEvent) isGameEvent() {}
 
-type OfferDrawEvent struct{}
+type OfferDrawEvent struct {
+	GameID int64
+	UserID uuid.UUID
+}
 
 func (OfferDrawEvent) isGameEvent() {}
 
 type OfferDrawErrorEvent struct {
+	GameID int64
 	UserID uuid.UUID
 	Err    error
 }
@@ -96,17 +103,22 @@ type AcceptDrawEvent struct {
 func (AcceptDrawEvent) isGameEvent() {}
 
 type AcceptDrawErrorEvent struct {
+	GameID int64
 	UserID uuid.UUID
 	Err    error
 }
 
 func (AcceptDrawErrorEvent) isGameEvent() {}
 
-type DeclineDrawEvent struct{}
+type DeclineDrawEvent struct {
+	GameID int64
+	UserID uuid.UUID
+}
 
 func (DeclineDrawEvent) isGameEvent() {}
 
 type DeclineDrawErrorEvent struct {
+	GameID int64
 	UserID uuid.UUID
 	Err    error
 }

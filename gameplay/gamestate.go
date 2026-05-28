@@ -82,7 +82,6 @@ type GameState struct {
 	GameEvent              chan GameEvent
 	WhiteRemainingGameTime time.Duration
 	BlackRemainingGameTime time.Duration
-	GameClockStartedAt     *time.Time
 	whiteDisconnectedAt    *time.Time
 	blackDisconnectedAt    *time.Time
 	activeGameTimer        *time.Timer
@@ -201,6 +200,7 @@ func Tick(t *time.Timer) <-chan time.Time {
 	if t != nil {
 		return t.C
 	}
+
 	return nil
 }
 
@@ -221,6 +221,7 @@ func (gs *GameState) Start(ctx context.Context) {
 					GameResult:       pb.GameResult_GAME_RESULT_INTERRUPTED,
 					GameResultStatus: pb.GameResultStatus_GAME_RESULT_STATUS_TIMED_OUT,
 					GameState:        pb.GameState_GAME_STATE_INTERRUPTED,
+					EndTime:          time.Now(),
 				}
 
 			case <-Tick(gs.activeGameTimer):
@@ -228,11 +229,13 @@ func (gs *GameState) Start(ctx context.Context) {
 				if gs.Chess.Position.Turn.IsBlack() {
 					gameResult = pb.GameResult_GAME_RESULT_WHITE_WON
 				}
+
 				gs.GameEvent <- GameFinishedEvent{
 					GameID:           gs.GameID,
 					GameResult:       gameResult,
 					GameResultStatus: pb.GameResultStatus_GAME_RESULT_STATUS_FLAGGED,
 					GameState:        pb.GameState_GAME_STATE_FINISHED,
+					EndTime:          time.Now(),
 				}
 
 			case <-Tick(gs.whiteReconnectTimer):
@@ -242,6 +245,7 @@ func (gs *GameState) Start(ctx context.Context) {
 					GameResult:       pb.GameResult_GAME_RESULT_BLACK_WON,
 					GameResultStatus: pb.GameResultStatus_GAME_RESULT_STATUS_TIMED_OUT,
 					GameState:        pb.GameState_GAME_STATE_FINISHED,
+					EndTime:          time.Now(),
 				}
 
 			case <-Tick(gs.blackReconnectTimer):
@@ -251,13 +255,18 @@ func (gs *GameState) Start(ctx context.Context) {
 					GameResult:       pb.GameResult_GAME_RESULT_WHITE_WON,
 					GameResultStatus: pb.GameResultStatus_GAME_RESULT_STATUS_TIMED_OUT,
 					GameState:        pb.GameState_GAME_STATE_FINISHED,
+					EndTime:          time.Now(),
 				}
 
 			case cmd := <-gs.GameCommand:
 				switch c := cmd.(type) {
 				case AbortGameCmd:
 					if events, err := gs.abortGame(c); err != nil {
-						gs.GameEvent <- AbortErrorEvent{Err: err}
+						gs.GameEvent <- AbortErrorEvent{
+							GameID: c.GameID,
+							UserID: c.UserID,
+							Err:    err,
+						}
 					} else {
 						for _, event := range events {
 							gs.GameEvent <- event
@@ -266,7 +275,11 @@ func (gs *GameState) Start(ctx context.Context) {
 
 				case ResignGameCmd:
 					if events, err := gs.resignGame(c); err != nil {
-						gs.GameEvent <- ResignErrorEvent{Err: err}
+						gs.GameEvent <- ResignErrorEvent{
+							GameID: c.GameID,
+							UserID: c.UserID,
+							Err:    err,
+						}
 					} else {
 						for _, event := range events {
 							gs.GameEvent <- event
@@ -275,7 +288,11 @@ func (gs *GameState) Start(ctx context.Context) {
 
 				case OfferDrawCmd:
 					if events, err := gs.offerDraw(c); err != nil {
-						gs.GameEvent <- OfferDrawErrorEvent{Err: err}
+						gs.GameEvent <- OfferDrawErrorEvent{
+							GameID: c.GameID,
+							UserID: c.UserID,
+							Err:    err,
+						}
 					} else {
 						for _, event := range events {
 							gs.GameEvent <- event
@@ -284,7 +301,11 @@ func (gs *GameState) Start(ctx context.Context) {
 
 				case AcceptDrawCmd:
 					if events, err := gs.acceptDraw(c); err != nil {
-						gs.GameEvent <- AcceptDrawErrorEvent{Err: err}
+						gs.GameEvent <- AcceptDrawErrorEvent{
+							GameID: c.GameID,
+							UserID: c.UserID,
+							Err:    err,
+						}
 					} else {
 						for _, event := range events {
 							gs.GameEvent <- event
@@ -293,7 +314,11 @@ func (gs *GameState) Start(ctx context.Context) {
 
 				case DeclineDrawCmd:
 					if events, err := gs.declineDraw(c); err != nil {
-						gs.GameEvent <- DeclineDrawErrorEvent{Err: err}
+						gs.GameEvent <- DeclineDrawErrorEvent{
+							GameID: c.GameID,
+							UserID: c.UserID,
+							Err:    err,
+						}
 					} else {
 						for _, event := range events {
 							gs.GameEvent <- event
@@ -302,7 +327,11 @@ func (gs *GameState) Start(ctx context.Context) {
 
 				case PlayMoveUCICmd:
 					if events, err := gs.playMoveUCI(c); err != nil {
-						gs.GameEvent <- PlayMoveUCIErrorEvent{Err: err}
+						gs.GameEvent <- PlayMoveUCIErrorEvent{
+							GameID: c.GameID,
+							UserID: c.UserID,
+							Err:    err,
+						}
 					} else {
 						for _, event := range events {
 							gs.GameEvent <- event
@@ -317,6 +346,7 @@ func (gs *GameState) Start(ctx context.Context) {
 					GameResultStatus: pb.GameResultStatus_GAME_RESULT_STATUS_INTERRUPTED,
 					GameState:        pb.GameState_GAME_STATE_INTERRUPTED,
 				}
+
 				return
 			}
 		}
@@ -324,6 +354,8 @@ func (gs *GameState) Start(ctx context.Context) {
 }
 
 func (gs *GameState) abortGame(c AbortGameCmd) ([]GameEvent, error) {
+	abortedAt := time.Now()
+
 	if !gs.HasGamePlayer(c.UserID) {
 		return nil, ErrPlayerNotInGame
 	}
@@ -356,7 +388,8 @@ func (gs *GameState) abortGame(c AbortGameCmd) ([]GameEvent, error) {
 		}
 	}
 
-	gs.EndTime = new(time.Now())
+	gs.EndTime = &abortedAt
+	gs.Stop()
 
 	events := []GameEvent{
 		AbortEvent{
@@ -372,6 +405,8 @@ func (gs *GameState) abortGame(c AbortGameCmd) ([]GameEvent, error) {
 }
 
 func (gs *GameState) resignGame(c ResignGameCmd) ([]GameEvent, error) {
+	resignedAt := time.Now()
+
 	if !gs.HasGamePlayer(c.UserID) {
 		return nil, ErrPlayerNotInGame
 	}
@@ -406,7 +441,8 @@ func (gs *GameState) resignGame(c ResignGameCmd) ([]GameEvent, error) {
 		}
 	}
 
-	gs.EndTime = new(time.Now())
+	gs.EndTime = &resignedAt
+	gs.Stop()
 
 	events := []GameEvent{
 		ResignEvent{
@@ -432,6 +468,8 @@ func (gs *GameState) offerDraw(c OfferDrawCmd) ([]GameEvent, error) {
 }
 
 func (gs *GameState) acceptDraw(c AcceptDrawCmd) ([]GameEvent, error) {
+	acceptedDrawAt := time.Now()
+
 	if gs.GameResult != pb.GameResult_GAME_RESULT_UNSPECIFIED {
 		return nil, ErrGameAlreadyConcluded
 	}
@@ -444,7 +482,7 @@ func (gs *GameState) acceptDraw(c AcceptDrawCmd) ([]GameEvent, error) {
 	gs.GameResultStatus = pb.GameResultStatus_GAME_RESULT_STATUS_DRAW_AGREED
 	gs.GameState = pb.GameState_GAME_STATE_FINISHED
 
-	gs.EndTime = new(time.Now())
+	gs.EndTime = &acceptedDrawAt
 
 	events := []GameEvent{
 		AcceptDrawEvent{
@@ -489,8 +527,8 @@ func (gs *GameState) playMoveUCI(c PlayMoveUCICmd) ([]GameEvent, error) {
 
 	events := []GameEvent{}
 
-	if gs.GameClockStartedAt != nil {
-		elapsed := playedAt.Sub(*gs.GameClockStartedAt)
+	if gs.LastMove != nil && gs.Chess.Position.Ply >= 2 {
+		elapsed := playedAt.Sub(*gs.LastMove)
 		if gs.Chess.Position.Turn.IsWhite() {
 			gs.WhiteRemainingGameTime -= elapsed
 			if gs.WhiteRemainingGameTime <= 0 {
@@ -530,12 +568,7 @@ func (gs *GameState) playMoveUCI(c PlayMoveUCICmd) ([]GameEvent, error) {
 	san := move.ToSAN(gs.Chess.Position, gs.Chess.Position.Check, gs.Chess.IsCheckmate(), gs.Chess.LegalMoves)
 	fen := gs.Chess.Position.Fen()
 
-	legalMoves := make([]string, len(gs.Chess.LegalMoves))
-	for i, legalMove := range gs.Chess.LegalMoves {
-		legalMoves[i] = fmt.Sprint(legalMove.String())
-	}
-
-	gs.LastMove = new(playedAt)
+	gs.LastMove = &playedAt
 	gs.GameMoves = append(gs.GameMoves, &pb.GameMove{
 		Fen:      fen,
 		Uci:      new(uci),
@@ -544,6 +577,11 @@ func (gs *GameState) playMoveUCI(c PlayMoveUCICmd) ([]GameEvent, error) {
 		Check:    gs.Chess.Position.Check,
 		PlayedAt: timestamppb.New(playedAt),
 	})
+
+	legalMoves := make([]string, len(gs.Chess.LegalMoves))
+	for i, legalMove := range gs.Chess.LegalMoves {
+		legalMoves[i] = fmt.Sprint(legalMove.String())
+	}
 
 	if gs.Chess.Position.Ply == 1 {
 		// stop white first move timer
@@ -560,13 +598,20 @@ func (gs *GameState) playMoveUCI(c PlayMoveUCICmd) ([]GameEvent, error) {
 		if gs.firstMoveTimer != nil {
 			gs.firstMoveTimer.Stop()
 		}
-		gs.firstMoveTimer = nil
 
-		gs.GameClockStartedAt = new(time.Now())
+		gs.firstMoveTimer = nil
 	}
 
 	if gs.Chess.Position.Ply >= 2 {
-		// gs.toggleClockAfterMove()
+		remaining := gs.WhiteRemainingGameTime
+		if gs.Chess.Position.Turn.IsBlack() {
+			remaining = gs.BlackRemainingGameTime
+		}
+		if gs.activeGameTimer == nil {
+			gs.activeGameTimer = time.NewTimer(remaining)
+		} else {
+			gs.activeGameTimer.Reset(remaining)
+		}
 	}
 
 	playMoveUciEvent := PlayMoveUCIEvent{
@@ -612,7 +657,6 @@ func (gs *GameState) playMoveUCI(c PlayMoveUCICmd) ([]GameEvent, error) {
 			gs.GameResultStatus = pb.GameResultStatus_GAME_RESULT_STATUS_SEVENTYFIVE_MOVE_RULE
 		case engine.StatusCheckmate:
 			gs.GameState = pb.GameState_GAME_STATE_FINISHED
-
 			gs.GameResultStatus = pb.GameResultStatus_GAME_RESULT_STATUS_CHECKMATE
 			if player.Color == pb.Color_COLOR_WHITE {
 				gs.GameResult = pb.GameResult_GAME_RESULT_WHITE_WON
@@ -659,7 +703,9 @@ func (gs *GameState) whiteReconnectTimeoutExpired() bool {
 	if gs.whiteDisconnectedAt == nil {
 		return false
 	}
+
 	elapsed := time.Since(*gs.whiteDisconnectedAt)
+
 	return elapsed >= gs.ReconnectTimeout
 }
 
@@ -667,7 +713,9 @@ func (gs *GameState) blackReconnectTimeoutExpired() bool {
 	if gs.blackReconnectTimer == nil {
 		return false
 	}
+
 	elapsed := time.Since(*gs.blackDisconnectedAt)
+
 	return elapsed >= gs.ReconnectTimeout
 }
 

@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"time"
 
 	"github.com/dankobg/juicer/db/gen/models"
 	"github.com/dankobg/juicer/gameplay"
@@ -97,6 +98,11 @@ func (pst *RedisActiveGamePersistor) CreateActiveGame(ctx context.Context, gs *g
 		}
 	}
 
+	whiteSecs := int64(gs.WhiteRemainingGameTime / time.Second)
+	whiteNS := int64(gs.WhiteRemainingGameTime % time.Second)
+	blackSecs := int64(gs.BlackRemainingGameTime / time.Second)
+	blackNS := int64(gs.BlackRemainingGameTime % time.Second)
+
 	activeGame := dbtype.ActiveGame{
 		GameID:                 gs.GameID,
 		WhiteID:                gs.White.ID.String(),
@@ -118,10 +124,10 @@ func (pst *RedisActiveGamePersistor) CreateActiveGame(ctx context.Context, gs *g
 		GameMoves:              moves,
 		GameHistoryHashes:      hashes,
 		Version:                int32(gs.Version),
-		WhiteGameRemainingSecs: int32(gs.WhiteRemainingGameTime.Seconds()),
-		WhiteGameRemainingNS:   int64(gs.WhiteRemainingGameTime.Nanoseconds()),
-		BlackGameRemainingSecs: int32(gs.BlackRemainingGameTime.Seconds()),
-		BlackGameRemainingNS:   int64(gs.BlackRemainingGameTime.Nanoseconds()),
+		WhiteGameRemainingSecs: int32(whiteSecs),
+		WhiteGameRemainingNS:   whiteNS,
+		BlackGameRemainingSecs: int32(blackSecs),
+		BlackGameRemainingNS:   blackNS,
 	}
 
 	activeGameBytes, err := json.Marshal(activeGame)

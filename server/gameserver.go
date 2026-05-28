@@ -114,14 +114,19 @@ func (a *ApiHandler) onGameEvent(event gameplay.GameEvent) {
 }
 
 func (a *ApiHandler) handlePlayMoveUCIEvent(event gameplay.PlayMoveUCIEvent) {
+	whiteSecs := int64(event.WhiteRemainingGameTime / time.Second)
+	whiteNS := int64(event.WhiteRemainingGameTime % time.Second)
+	blackSecs := int64(event.BlackRemainingGameTime / time.Second)
+	blackNS := int64(event.BlackRemainingGameTime % time.Second)
+
 	gameSetter := models.GameSetter{
 		Fen:                    omit.From(event.Position.Fen()),
 		LastMove:               omitnull.FromPtr(event.LastMove),
 		Repetitions:            omit.From(int32(event.Repetitions)),
-		WhiteGameRemainingSecs: omit.From(int32(event.WhiteRemainingGameTime)),
-		WhiteGameRemainingNS:   omit.From(event.WhiteRemainingGameTime.Nanoseconds()),
-		BlackGameRemainingSecs: omit.From(int32(event.BlackRemainingGameTime)),
-		BlackGameRemainingNS:   omit.From(event.BlackRemainingGameTime.Nanoseconds()),
+		WhiteGameRemainingSecs: omit.From(int32(whiteSecs)),
+		WhiteGameRemainingNS:   omit.From(whiteNS),
+		BlackGameRemainingSecs: omit.From(int32(blackSecs)),
+		BlackGameRemainingNS:   omit.From(blackNS),
 	}
 
 	moveSetter := &models.GameMoveSetter{
@@ -684,6 +689,7 @@ func (a *ApiHandler) handleWSCAbortGame(authInfo clientAuthInfo, data *pb.AbortG
 	}
 
 	gs.GameCommand <- gameplay.AbortGameCmd{
+		GameID: int64(data.GetGameId()),
 		UserID: userID,
 	}
 }
@@ -709,6 +715,7 @@ func (a *ApiHandler) handleWSCResignGame(authInfo clientAuthInfo, data *pb.Resig
 	}
 
 	gs.GameCommand <- gameplay.ResignGameCmd{
+		GameID: int64(data.GetGameId()),
 		UserID: userID,
 	}
 }
@@ -734,6 +741,7 @@ func (a *ApiHandler) handleWSCOfferDraw(authInfo clientAuthInfo, data *pb.OfferD
 	}
 
 	gs.GameCommand <- gameplay.OfferDrawCmd{
+		GameID: int64(data.GetGameId()),
 		UserID: userID,
 	}
 }
@@ -759,6 +767,7 @@ func (a *ApiHandler) handleWSCAcceptDraw(authInfo clientAuthInfo, data *pb.Accep
 	}
 
 	gs.GameCommand <- gameplay.AcceptDrawCmd{
+		GameID: int64(data.GetGameId()),
 		UserID: userID,
 	}
 }
@@ -784,6 +793,7 @@ func (a *ApiHandler) handleWSCDeclineDraw(authInfo clientAuthInfo, data *pb.Decl
 	}
 
 	gs.GameCommand <- gameplay.DeclineDrawCmd{
+		GameID: int64(data.GetGameId()),
 		UserID: userID,
 	}
 }
@@ -809,8 +819,10 @@ func (a *ApiHandler) handleWSCPlayMoveUCI(authInfo clientAuthInfo, data *pb.Play
 	}
 
 	gs.GameCommand <- gameplay.PlayMoveUCICmd{
+		GameID: int64(data.GetGameId()),
 		UserID: userID,
 		UCI:    data.GetUci(),
+		Ack:    data.GetAck(),
 	}
 }
 
@@ -1143,24 +1155,25 @@ func (a *ApiHandler) sendGameInfo(gameID int64, userID, connID string, guest boo
 		}
 	}
 
-	clocks := &pb.Clocks{}
-
 	legalMoves := make([]string, len(gs.Chess.LegalMoves))
 	for i, legalMove := range gs.Chess.LegalMoves {
 		legalMoves[i] = fmt.Sprint(legalMove.String())
 	}
 
 	gameInfo := &pb.GameInfo{
-		GameId:             int32(gameID),
-		GameVariant:        gs.GameVariant,
-		GameTimeKind:       gs.GameTimeKind,
-		GameTimeCategory:   gs.GameTimeCategory,
-		GameState:          gs.GameState,
-		TimeControl:        gs.GameTimeControl,
-		Color:              player.Color,
-		Fen:                gs.Chess.Position.Fen(),
-		Ply:                uint32(gs.Chess.Position.Ply),
-		Clocks:             clocks,
+		GameId:           int32(gameID),
+		GameVariant:      gs.GameVariant,
+		GameTimeKind:     gs.GameTimeKind,
+		GameTimeCategory: gs.GameTimeCategory,
+		GameState:        gs.GameState,
+		TimeControl:      gs.GameTimeControl,
+		Color:            player.Color,
+		Fen:              gs.Chess.Position.Fen(),
+		Ply:              uint32(gs.Chess.Position.Ply),
+		Clocks: &pb.Clocks{
+			White: durationpb.New(gs.WhiteRemainingGameTime),
+			Black: durationpb.New(gs.BlackRemainingGameTime),
+		},
 		Rated:              gs.Rated,
 		LegalMoves:         legalMoves,
 		White:              whitePlayerInfo,
@@ -1461,6 +1474,9 @@ func (a *ApiHandler) processMatchedPoolPair(ctx context.Context, pair [2]string,
 		return
 	}
 
+	gameRemainingSecs := gs.GameTimeControl.GetClockMs() / 1000
+	gameRemainingNs := (int64(gs.GameTimeControl.GetClockMs()) % 1000) * int64(time.Millisecond)
+
 	gameSetter := models.GameSetter{
 		GameVariantID:          omit.From(a.gameVariantProtoToID(gs.GameVariant)),
 		GameTimeKindID:         omit.From(a.gameTimeKindProtoToID(gs.GameTimeKind)),
@@ -1470,10 +1486,10 @@ func (a *ApiHandler) processMatchedPoolPair(ctx context.Context, pair [2]string,
 		TimeControlIncrementMS: omit.From(gs.GameTimeControl.IncrementMs),
 		FirstMoveTimeoutMS:     omit.From(int32(gs.FirstMoveTimeout.Milliseconds())),
 		ReconnectTimeoutMS:     omit.From(int32(gs.ReconnectTimeout.Milliseconds())),
-		WhiteGameRemainingSecs: omit.From(gs.GameTimeControl.GetClockMs() * 1000),
-		WhiteGameRemainingNS:   omit.From((time.Duration(gs.GameTimeControl.GetClockMs()) * time.Millisecond).Nanoseconds()),
-		BlackGameRemainingSecs: omit.From(gs.GameTimeControl.GetClockMs() * 1000),
-		BlackGameRemainingNS:   omit.From((time.Duration(gs.GameTimeControl.GetClockMs()) * time.Millisecond).Nanoseconds()),
+		WhiteGameRemainingSecs: omit.From(gameRemainingSecs),
+		WhiteGameRemainingNS:   omit.From(gameRemainingNs),
+		BlackGameRemainingSecs: omit.From(gameRemainingSecs),
+		BlackGameRemainingNS:   omit.From(gameRemainingNs),
 		Rated:                  omit.From(gs.Rated),
 		StartTime:              omitnull.FromPtr(gs.StartTime),
 		EndTime:                omitnull.FromPtr(gs.EndTime),
