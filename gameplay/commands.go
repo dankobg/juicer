@@ -32,6 +32,7 @@ func (ResignGameCmd) isGameCommand() {}
 type OfferDrawCmd struct {
 	GameID int64
 	UserID uuid.UUID
+	Ply    int
 }
 
 func (OfferDrawCmd) isGameCommand() {}
@@ -39,6 +40,7 @@ func (OfferDrawCmd) isGameCommand() {}
 type AcceptDrawCmd struct {
 	GameID int64
 	UserID uuid.UUID
+	Ply    int
 }
 
 func (AcceptDrawCmd) isGameCommand() {}
