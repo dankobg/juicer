@@ -22,7 +22,7 @@ var (
 
 	ErrPlayerIdMissing    = errors.New("player id can't be empty")
 	ErrPlayerColorMissing = errors.New("player color can't be empty")
-	ErrPlayersSameColors  = errors.New("player can't have the same color")
+	ErrPlayersSameColors  = errors.New("players can't have the same color")
 
 	ErrGameAlreadyConcluded = errors.New("game already concluded")
 	ErrPlayerNotInGame      = errors.New("player not in game")
@@ -535,6 +535,7 @@ func (gs *GameState) playMoveUCI(c PlayMoveUCICmd) ([]GameEvent, error) {
 		if gs.Chess.Position.Turn.IsWhite() {
 			previousRemaining := gs.WhiteRemainingGameTime
 			gs.WhiteRemainingGameTime -= elapsed
+
 			if gs.WhiteRemainingGameTime <= 0 {
 				flaggedAt := gs.LastMove.Add(previousRemaining)
 				events = append(events, GameFinishedEvent{
@@ -551,6 +552,7 @@ func (gs *GameState) playMoveUCI(c PlayMoveUCICmd) ([]GameEvent, error) {
 		} else {
 			previousRemaining := gs.BlackRemainingGameTime
 			gs.BlackRemainingGameTime -= elapsed
+
 			if gs.BlackRemainingGameTime <= 0 {
 				flaggedAt := gs.LastMove.Add(previousRemaining)
 				events = append(events, GameFinishedEvent{
@@ -620,6 +622,7 @@ func (gs *GameState) playMoveUCI(c PlayMoveUCICmd) ([]GameEvent, error) {
 		if gs.Chess.Position.Turn.IsBlack() {
 			remaining = gs.BlackRemainingGameTime
 		}
+
 		if gs.activeGameTimer == nil {
 			gs.activeGameTimer = time.NewTimer(remaining)
 		} else {
@@ -671,6 +674,7 @@ func (gs *GameState) playMoveUCI(c PlayMoveUCICmd) ([]GameEvent, error) {
 		case engine.StatusCheckmate:
 			gs.GameState = pb.GameState_GAME_STATE_FINISHED
 			gs.GameResultStatus = pb.GameResultStatus_GAME_RESULT_STATUS_CHECKMATE
+
 			if player.Color == pb.Color_COLOR_WHITE {
 				gs.GameResult = pb.GameResult_GAME_RESULT_WHITE_WON
 			} else {
