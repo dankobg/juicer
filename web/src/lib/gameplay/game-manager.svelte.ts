@@ -206,6 +206,7 @@ type GameOptions = {
 	endTime?: number;
 	rated?: boolean;
 	version?: number;
+	ack?: number;
 	repetitions?: number;
 	ply?: number;
 	gameMoves?: GameMove[];
@@ -234,6 +235,7 @@ export class Game {
 	endTime = $state<number | undefined>();
 	rated = $state<boolean | undefined>();
 	version = $state<number>(0);
+	ack = $state<number>(0);
 	repetitions = $state<number>(0);
 	gameMoves = $state<GameMove[]>([]);
 	legalMoves = $state<string[]>([]);
@@ -262,6 +264,7 @@ export class Game {
 			gameResult: GameResult.UNSPECIFIED,
 			gameResultStatus: GameResultStatus.UNSPECIFIED,
 			version: 0,
+			ack: 0,
 			repetitions: 0,
 			ply: 0,
 			gameMoves: [],
@@ -290,6 +293,7 @@ export class Game {
 		this.endTime = opts?.endTime;
 		this.rated = opts?.rated;
 		this.version = opts?.version ?? 0;
+		this.ack = opts?.ack ?? 0;
 		this.repetitions = opts?.repetitions ?? 0;
 		this.ply = opts?.ply ?? 0;
 		this.gameMoves = opts?.gameMoves ?? [];
@@ -372,11 +376,12 @@ export class Game {
 	}
 
 	playMoveUci(uci: string) {
+		this.ack++;
 		const playMoveUciMsg = create(MessageSchema, {
 			event: {
 				case: 'playMoveUci',
 				value: {
-					// ack: 1,
+					ack: this.ack,
 					gameId: this.gameId,
 					uci
 				}

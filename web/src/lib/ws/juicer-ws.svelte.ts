@@ -9,7 +9,7 @@ class JuicerWs {
 	#maxReconnectAttempts: number = 10;
 	#baseReconnectDelayMs: number = 500;
 	#maxReconnectDelayMs: number = 60_000;
-	#timerid: NodeJS.Timeout | null = null;
+	#timerid: ReturnType<typeof setTimeout> | null = null;
 	get readyState(): number | undefined {
 		return this.#ws?.readyState;
 	}

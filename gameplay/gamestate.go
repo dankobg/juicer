@@ -638,6 +638,7 @@ func (gs *GameState) playMoveUCI(c PlayMoveUCICmd) ([]GameEvent, error) {
 		Check:    gs.Chess.Position.Check,
 		PlayedAt: timestamppb.New(playedAt),
 	})
+	gs.Version = int(c.Ack)
 
 	legalMoves := make([]string, len(gs.Chess.LegalMoves))
 	for i, legalMove := range gs.Chess.LegalMoves {

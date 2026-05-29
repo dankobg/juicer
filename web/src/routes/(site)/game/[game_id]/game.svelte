@@ -242,13 +242,6 @@
 		width: calc((min(100cqh, calc(100cqw - 300px - 300px))) * (var(--board-scale) / 100));
 	}
 
-	.chat,
-	.controls {
-		outline: 1px solid darkred;
-	}
-
-	/*##############################################################*/
-
 	#promotion-popover {
 		margin: 0;
 		padding: 0;

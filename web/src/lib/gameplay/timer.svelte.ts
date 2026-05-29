@@ -7,7 +7,7 @@ export type TimerOptions = {
 export class Timer {
 	#fmt = new Intl.NumberFormat(undefined, { minimumIntegerDigits: 2 });
 	#initialTimeMs: number;
-	#intervalId?: NodeJS.Timeout;
+	#intervalId?: ReturnType<typeof setInterval>;
 	#startedAt: number = 0;
 	showPrecise: Required<TimerOptions>['showPrecise'] = 'centis';
 	showPreciseFn: Required<TimerOptions>['showPreciseFn'] = () => false;
