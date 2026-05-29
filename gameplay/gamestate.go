@@ -210,7 +210,6 @@ func (gs *GameState) Start(ctx context.Context) {
 		return
 	}
 
-	// start white first move timer
 	gs.firstMoveTimer = time.NewTimer(gs.FirstMoveTimeout)
 
 	go func() {
@@ -240,7 +239,6 @@ func (gs *GameState) Start(ctx context.Context) {
 				}
 
 			case <-Tick(gs.whiteReconnectTimer):
-				// @TODO: check later..................... for ply and shit
 				gs.GameEvent <- GameFinishedEvent{
 					GameID:           gs.GameID,
 					GameResult:       pb.GameResult_GAME_RESULT_BLACK_WON,
@@ -250,7 +248,6 @@ func (gs *GameState) Start(ctx context.Context) {
 				}
 
 			case <-Tick(gs.blackReconnectTimer):
-				// @TODO: check later..................... for ply and shit
 				gs.GameEvent <- GameFinishedEvent{
 					GameID:           gs.GameID,
 					GameResult:       pb.GameResult_GAME_RESULT_WHITE_WON,

@@ -1166,6 +1166,7 @@ func (a *ApiHandler) sendGameInfo(gameID int64, userID, connID string, guest boo
 		StartTime:          timestamppb.New(*gs.StartTime),
 		GameResult:         gs.GameResult,
 		GameResultStatus:   gs.GameResultStatus,
+		Version:            int32(gs.Version),
 	}
 	if gs.EndTime != nil {
 		gameInfo.EndTime = timestamppb.New(*gs.EndTime)
@@ -1518,9 +1519,7 @@ func (a *ApiHandler) processMatchedPoolPair(ctx context.Context, pair [2]string,
 		}
 	}
 
-	// @TODO: fix states better later
 	gs.Start(ctx)
-	// start white first move timer
 
 	game, err := a.persistor.Game().CreateGame(ctx, gameSetter, moveSetters, hashSetters)
 	if err != nil {
