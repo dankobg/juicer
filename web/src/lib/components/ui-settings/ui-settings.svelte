@@ -12,6 +12,8 @@
 	import IconVolume2 from '@lucide/svelte/icons/volume-2';
 	import IconVolumeOff from '@lucide/svelte/icons/volume-off';
 	import { soundManager } from '$lib/sound/sound-manager.svelte';
+	import Switch from '../ui/switch/switch.svelte';
+	import type { CoordsRanksPosition, CoordsFilesPosition, CoordsPlacement } from '@dankop/juicer-board';
 
 	let nestedOpen: boolean = $state(false);
 	let editPane: 'board' | 'pieces' | undefined = $state();
@@ -35,6 +37,31 @@
 		{ value: 'standard', label: 'Standard' },
 		{ value: 'woodland', label: 'Woodland' }
 	];
+	const boardCoordinatesPlacementOptions = [
+		{ value: 'inside', label: 'Inside' },
+		{ value: 'outside', label: 'Outside' }
+	];
+	const boardRanksPositionOptions = [
+		{ value: 'left', label: 'Left' },
+		{ value: 'right', label: 'Right' }
+	];
+	const boardFilesPositionOptions = [
+		{ value: 'top', label: 'Top' },
+		{ value: 'bottom', label: 'Bottom' }
+	];
+	let selectedBoardCoordinatesPlacement = $derived(
+		boardCoordinatesPlacementOptions.find(o => uiSettings.boardCoordinates.current.placement === o.value) ??
+			boardCoordinatesPlacementOptions[0]
+	);
+	let selectedBoardRanksPosition = $derived(
+		boardRanksPositionOptions.find(o => uiSettings.boardCoordinates.current.ranksPosition === o.value) ??
+			boardRanksPositionOptions[0]
+	);
+	let selectedBoardFilesPosition = $derived(
+		boardFilesPositionOptions.find(o => uiSettings.boardCoordinates.current.filesPosition === o.value) ??
+			boardFilesPositionOptions[1]
+	);
+
 	let selectedChat = $derived(chatOptions.find(o => uiSettings.chat.current === o.value) ?? chatOptions[2]);
 	let selectedResizer = $derived(resizerOptions.find(o => uiSettings.resizer.current === o.value) ?? resizerOptions[1]);
 	let selectedSound = $derived(soundOptions.find(o => uiSettings.sounds.current.theme === o.value) ?? soundOptions[6]);
@@ -282,6 +309,66 @@
 							{/each}
 						</Select.Content>
 					</Select.Root>
+				</div>
+
+				<div class="grid grid-cols-2">
+					<Label for="settings-chat" class="col-span-1">Board coordinates placement</Label>
+					<Select.Root
+						type="single"
+						value={selectedBoardCoordinatesPlacement!.value}
+						onValueChange={val => (uiSettings.boardCoordinates.current.placement = val as CoordsPlacement)}
+					>
+						<Select.Trigger class="justify-self-end" id="settings-chat"
+							>{selectedBoardCoordinatesPlacement!.label}</Select.Trigger
+						>
+						<Select.Content class="z-990">
+							{#each boardCoordinatesPlacementOptions as opt (opt.value)}
+								<Select.Item value={opt.value}>{opt.label}</Select.Item>
+							{/each}
+						</Select.Content>
+					</Select.Root>
+				</div>
+				<div class="grid grid-cols-2">
+					<Label for="settings-chat" class="col-span-1">Board ranks position</Label>
+					<Select.Root
+						type="single"
+						value={selectedBoardRanksPosition!.value}
+						onValueChange={val => (uiSettings.boardCoordinates.current.ranksPosition = val as CoordsRanksPosition)}
+					>
+						<Select.Trigger class="justify-self-end" id="settings-chat">
+							{selectedBoardRanksPosition!.label}
+						</Select.Trigger>
+						<Select.Content class="z-990">
+							{#each boardRanksPositionOptions as opt (opt.value)}
+								<Select.Item value={opt.value}>{opt.label}</Select.Item>
+							{/each}
+						</Select.Content>
+					</Select.Root>
+				</div>
+				<div class="grid grid-cols-2">
+					<Label for="settings-chat" class="col-span-1">Board files position</Label>
+					<Select.Root
+						type="single"
+						value={selectedBoardFilesPosition!.value}
+						onValueChange={val => (uiSettings.boardCoordinates.current.filesPosition = val as CoordsFilesPosition)}
+					>
+						<Select.Trigger class="justify-self-end" id="settings-chat">
+							{selectedBoardFilesPosition!.label}
+						</Select.Trigger>
+						<Select.Content class="z-990">
+							{#each boardFilesPositionOptions as opt (opt.value)}
+								<Select.Item value={opt.value}>{opt.label}</Select.Item>
+							{/each}
+						</Select.Content>
+					</Select.Root>
+				</div>
+				<div class="grid grid-cols-2">
+					<Label for="settings-chat" class="col-span-1">Show ghost piece</Label>
+					<Switch
+						class="justify-self-end"
+						checked={uiSettings.showGhost.current}
+						onCheckedChange={val => (uiSettings.showGhost.current = val)}
+					/>
 				</div>
 			</div>
 		{/if}

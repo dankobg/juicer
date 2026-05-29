@@ -1,3 +1,4 @@
+import type { CoordsFilesPosition, CoordsPlacement, CoordsRanksPosition } from '@dankop/juicer-board';
 import { PersistedState } from 'runed';
 
 class UiSettings {
@@ -90,6 +91,16 @@ class UiSettings {
 	});
 	chat = new PersistedState<'disabled' | 'friends-only' | 'everyone'>('juicer-chat', 'everyone');
 	resizer = new PersistedState<'disabled' | 'first-move' | 'always'>('juicer-resizer', 'first-move');
+	boardCoordinates = new PersistedState<{
+		placement: CoordsPlacement;
+		ranksPosition: CoordsRanksPosition;
+		filesPosition: CoordsFilesPosition;
+	}>('juicer-board-coords', {
+		placement: 'inside',
+		ranksPosition: 'left',
+		filesPosition: 'bottom'
+	});
+	showGhost = new PersistedState<boolean>('juicer-show-ghost', true);
 
 	dialogOpen: boolean = $state(false);
 

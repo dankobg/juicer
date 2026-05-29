@@ -11,18 +11,18 @@
 		playedEnpassantMove,
 		PROMOS
 	} from '$lib/gameplay/game-manager.svelte';
-	import type { Coord, JuicerBoard, MoveCancelEvent, MoveFinishEvent, MoveStartEvent } from '@dankop/juicer-board';
+	import type { Coord, MoveCancelEvent, MoveFinishEvent, MoveStartEvent } from '@dankop/juicer-board';
 	import { uiSettings } from '$lib/components/ui-settings/ui-settings-state.svelte';
-	import { Color, GameState } from '$lib/gen/juicer_pb';
+	import { Color } from '$lib/gen/juicer_pb';
 	import ChatBox, { type ChatMessage } from '$lib/components/chat-box/chat-box.svelte';
 	import { presenceManager } from '$lib/gameplay/presence-manager.svelte';
 	import { soundManager } from '$lib/sound/sound-manager.svelte';
 
 	let { data, params }: PageProps = $props();
 
-	let promotionPopoverElm!: HTMLDivElement;
-
 	let game = $derived<Game | undefined>(gameManager.games?.get(Number(params.game_id)));
+
+	let promotionPopoverElm!: HTMLDivElement;
 
 	let boardTheme = $derived.by(() => {
 		if (!uiSettings.boardActiveTheme.current) {
@@ -200,11 +200,11 @@
 			board-theme={boardTheme}
 			fen={game.gameMoves.at(-1)?.fen || 'start'}
 			orientation={game.orientation === Color.WHITE ? 'w' : 'b'}
-			coords-placement="inside"
-			files-position="bottom"
-			ranks-position="left"
+			coords-placement={uiSettings.boardCoordinates.current.placement}
+			ranks-position={uiSettings.boardCoordinates.current.ranksPosition}
+			files-position={uiSettings.boardCoordinates.current.filesPosition}
 			interactive
-			show-ghost
+			show-ghost={uiSettings.showGhost.current}
 			show-resizer={showResizer}
 		></juicer-board>
 		<aside class="controls">controls</aside>
