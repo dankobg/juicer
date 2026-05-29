@@ -83,8 +83,8 @@ type GameState struct {
 	GameEvent              chan GameEvent
 	WhiteRemainingGameTime time.Duration
 	BlackRemainingGameTime time.Duration
-	whiteDisconnectedAt    *time.Time
-	blackDisconnectedAt    *time.Time
+	WhiteDisconnectedAt    *time.Time
+	BlackDisconnectedAt    *time.Time
 	activeGameTimer        *time.Timer
 	firstMoveTimer         *time.Timer
 	whiteReconnectTimer    *time.Timer
@@ -335,6 +335,12 @@ func (gs *GameState) Start(ctx context.Context) {
 							gs.GameEvent <- event
 						}
 					}
+
+				case RejoinedGame:
+					_, _ = gs.rejoinedGame(c)
+
+				case LeftGame:
+					_, _ = gs.leftGame(c)
 				}
 
 			case <-ctx.Done():
@@ -350,6 +356,48 @@ func (gs *GameState) Start(ctx context.Context) {
 			}
 		}
 	}()
+}
+
+func (gs *GameState) rejoinedGame(c RejoinedGame) ([]GameEvent, error) {
+	player := gs.GetPlayerByID(c.UserID)
+
+	if !gs.HasGamePlayer(c.UserID) || player == nil {
+		return nil, ErrPlayerNotInGame
+	}
+
+	if player.Color == pb.Color_COLOR_WHITE {
+		gs.WhiteDisconnectedAt = nil
+		if gs.whiteReconnectTimer != nil {
+			gs.whiteReconnectTimer.Stop()
+		}
+		gs.whiteReconnectTimer = nil
+	} else {
+		gs.BlackDisconnectedAt = nil
+		if gs.blackReconnectTimer != nil {
+			gs.blackReconnectTimer.Stop()
+		}
+		gs.blackReconnectTimer = nil
+	}
+
+	return nil, nil
+}
+
+func (gs *GameState) leftGame(c LeftGame) ([]GameEvent, error) {
+	player := gs.GetPlayerByID(c.UserID)
+
+	if !gs.HasGamePlayer(c.UserID) || player == nil {
+		return nil, ErrPlayerNotInGame
+	}
+
+	if player.Color == pb.Color_COLOR_WHITE {
+		gs.WhiteDisconnectedAt = &c.LefAt
+		gs.whiteReconnectTimer = time.NewTimer(gs.ReconnectTimeout)
+	} else {
+		gs.BlackDisconnectedAt = &c.LefAt
+		gs.blackReconnectTimer = time.NewTimer(gs.ReconnectTimeout)
+	}
+
+	return nil, nil
 }
 
 func (gs *GameState) abortGame(c AbortGameCmd) ([]GameEvent, error) {
@@ -717,11 +765,11 @@ func (gs *GameState) Stop() {
 }
 
 func (gs *GameState) whiteReconnectTimeoutExpired() bool {
-	if gs.whiteDisconnectedAt == nil {
+	if gs.WhiteDisconnectedAt == nil {
 		return false
 	}
 
-	elapsed := time.Since(*gs.whiteDisconnectedAt)
+	elapsed := time.Since(*gs.WhiteDisconnectedAt)
 
 	return elapsed >= gs.ReconnectTimeout
 }
@@ -731,7 +779,7 @@ func (gs *GameState) blackReconnectTimeoutExpired() bool {
 		return false
 	}
 
-	elapsed := time.Since(*gs.blackDisconnectedAt)
+	elapsed := time.Since(*gs.BlackDisconnectedAt)
 
 	return elapsed >= gs.ReconnectTimeout
 }

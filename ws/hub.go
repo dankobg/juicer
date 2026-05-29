@@ -244,6 +244,8 @@ func (h *Hub) addClient(c *client) {
 func (h *Hub) removeClient(c *client) {
 	c.cancel()
 
+	var leftSite bool
+
 	h.mu.Lock()
 
 	for _, clientChannel := range h.clientChannels[c] {
@@ -257,8 +259,19 @@ func (h *Hub) removeClient(c *client) {
 	delete(h.clientChannels, c)
 	delete(h.clientsByConnID, c.connID)
 
+	if len(h.clientsByUserID[c.userID]) == 1 {
+		delete(h.clientsByUserID, c.userID)
+		leftSite = true
+	} else {
+		delete(h.clientsByUserID[c.userID], c)
+	}
+
+	h.mu.Unlock()
+
 	leaveTabMsg := &pb.Message{
-		Event: &pb.Message_LeaveTab{LeaveTab: &pb.LeaveTab{UserId: c.userID.String(), ConnId: c.connID.String(), Guest: c.authState == ClientGuest}},
+		Event: &pb.Message_LeaveTab{
+			LeaveTab: &pb.LeaveTab{UserId: c.userID.String(), ConnId: c.connID.String(), Guest: c.authState == ClientGuest},
+		},
 	}
 
 	leaveTabMsgBytes, err := protojson.Marshal(leaveTabMsg)
@@ -270,11 +283,11 @@ func (h *Hub) removeClient(c *client) {
 		}
 	}
 
-	if len(h.clientsByUserID[c.userID]) == 1 {
-		delete(h.clientsByUserID, c.userID)
-
+	if leftSite {
 		leaveSiteMsg := &pb.Message{
-			Event: &pb.Message_LeaveSite{LeaveSite: &pb.LeaveSite{UserId: c.userID.String(), ConnId: c.connID.String(), Guest: c.authState == ClientGuest}},
+			Event: &pb.Message_LeaveSite{
+				LeaveSite: &pb.LeaveSite{UserId: c.userID.String(), ConnId: c.connID.String(), Guest: c.authState == ClientGuest},
+			},
 		}
 
 		leaveSiteMsgBytes, err := protojson.Marshal(leaveSiteMsg)
@@ -285,11 +298,7 @@ func (h *Hub) removeClient(c *client) {
 				h.log.Error("hub publish Message_LeaveSite", slog.String("user_id", c.userID.String()), slog.String("conn_id", c.connID.String()), slog.String("auth_state", c.authState.String()), slog.String("topic", "ipc"), slog.Any("error", err))
 			}
 		}
-	} else {
-		delete(h.clientsByUserID[c.userID], c)
 	}
-
-	h.mu.Unlock()
 
 	h.log.Debug("hub client removed", slog.String("user_id", c.userID.String()), slog.String("conn_id", c.connID.String()), slog.String("auth_state", c.authState.String()))
 }

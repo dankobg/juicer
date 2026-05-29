@@ -364,6 +364,8 @@ func (a *ApiHandler) handleIPCHeartbeatMsg(data *pb.Heartbeat) {
 }
 
 func (a *ApiHandler) handleIPCLeaveTabMsg(data *pb.LeaveTab) {
+	leftAt := time.Now()
+
 	var username string
 
 	if data.GetGuest() {
@@ -383,6 +385,38 @@ func (a *ApiHandler) handleIPCLeaveTabMsg(data *pb.LeaveTab) {
 		a.Log.Error("ClearPresence", slog.String("user_id", data.GetUserId()), slog.String("conn_id", data.GetConnId()), slog.Any("error", err))
 	}
 
+	for _, ch := range channelsDiff.UserLeft {
+		if strings.HasPrefix(ch, "game.") && !strings.HasSuffix(ch, ".chat") {
+			parts := strings.Split(ch, "game.")
+			gameID, err := strconv.ParseInt(parts[1], 10, 64)
+			if err != nil {
+				return
+			}
+			userID := uuid.MustParse(data.UserId)
+
+			// @TODO: remove later, gs has player ids anyway
+			isInActiveGame, err := a.persistor.ActiveGame().IsUserInActiveGame(context.Background(), userID, gameID)
+			if err != nil {
+				a.Log.Error("IsUserInActiveGame", slog.Any("error", err))
+				return
+			}
+
+			if isInActiveGame {
+				gs, err := a.loadGameState(gameID)
+				if err != nil {
+					a.Log.Error("loadGameState", slog.Any("error", err))
+					return
+				}
+
+				gs.GameCommand <- gameplay.LeftGame{
+					GameID: gameID,
+					UserID: userID,
+					LefAt:  leftAt,
+				}
+			}
+		}
+	}
+
 	if err := a.publishPresenceDiff(context.Background(), channelsDiff, data.GetUserId(), data.GetConnId(), username, data.GetGuest()); err != nil {
 		a.Log.Error("broadcastPresenceDiff", slog.String("user_id", data.GetUserId()), slog.String("conn_id", data.GetConnId()), slog.Any("error", err))
 	}
@@ -394,7 +428,7 @@ func (a *ApiHandler) handleIPCLeaveTabMsg(data *pb.LeaveTab) {
 	}
 
 	if err := a.persistor.Pool().LeavePool(context.Background(), uuid.MustParse(data.GetUserId())); err != nil {
-		a.Log.Error("tableave LeavePool", slog.String("user_id", data.GetUserId()), slog.String("conn_id", data.GetConnId()), slog.Any("error", err))
+		a.Log.Error("leave tab LeavePool", slog.String("user_id", data.GetUserId()), slog.String("conn_id", data.GetConnId()), slog.Any("error", err))
 	}
 }
 
@@ -468,6 +502,8 @@ func (a *ApiHandler) handleIPCInitializeChannelsMsg(data *pb.InitializeChannels)
 }
 
 func (a *ApiHandler) handleIPCClientConnectedMsg(data *pb.ClientConnected) {
+	connectedAt := time.Now()
+
 	var username string
 
 	if data.GetGuest() {
@@ -486,6 +522,44 @@ func (a *ApiHandler) handleIPCClientConnectedMsg(data *pb.ClientConnected) {
 	if err != nil && !errors.Is(err, redis.Nil) {
 		a.Log.Error("SetPresence", slog.String("user_id", data.GetUserId()), slog.String("conn_id", data.GetConnId()), slog.Any("error", err))
 		return
+	}
+
+	for _, ch := range channelsDiff.UserJoined {
+		if strings.HasPrefix(ch, "game.") && !strings.HasSuffix(ch, ".chat") {
+			parts := strings.Split(ch, "game.")
+			gameID, err := strconv.ParseInt(parts[1], 10, 64)
+			if err != nil {
+				return
+			}
+			userID := uuid.MustParse(data.UserId)
+
+			// @TODO: remove later, gs has player ids anyway
+			isInActiveGame, err := a.persistor.ActiveGame().IsUserInActiveGame(context.Background(), userID, gameID)
+			if err != nil {
+				a.Log.Error("IsUserInActiveGame", slog.Any("error", err))
+				return
+			}
+
+			if isInActiveGame {
+				gs, err := a.loadGameState(gameID)
+				if err != nil {
+					a.Log.Error("loadGameState", slog.Any("error", err))
+					return
+				}
+
+				player := gs.GetPlayerByID(userID)
+				if player == nil {
+					return
+				}
+				if (player.Color == pb.Color_COLOR_WHITE && gs.WhiteDisconnectedAt != nil) || (player.Color == pb.Color_COLOR_BLACK && gs.BlackDisconnectedAt != nil) {
+					gs.GameCommand <- gameplay.RejoinedGame{
+						GameID:     gameID,
+						UserID:     userID,
+						RejoinedAt: connectedAt,
+					}
+				}
+			}
+		}
 	}
 
 	if err := a.publishPresenceDiff(context.Background(), channelsDiff, data.GetUserId(), data.GetConnId(), username, data.GetGuest()); err != nil {

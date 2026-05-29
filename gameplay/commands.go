@@ -1,6 +1,10 @@
 package gameplay
 
-import "github.com/google/uuid"
+import (
+	"time"
+
+	"github.com/google/uuid"
+)
 
 type GameCommand interface {
 	isGameCommand()
@@ -51,3 +55,19 @@ type DeclineDrawCmd struct {
 }
 
 func (DeclineDrawCmd) isGameCommand() {}
+
+type RejoinedGame struct {
+	GameID     int64
+	UserID     uuid.UUID
+	RejoinedAt time.Time
+}
+
+func (RejoinedGame) isGameCommand() {}
+
+type LeftGame struct {
+	GameID int64
+	UserID uuid.UUID
+	LefAt  time.Time
+}
+
+func (LeftGame) isGameCommand() {}
