@@ -5,7 +5,7 @@
 	import SocialProviders from './social-providers.svelte';
 
 	let { data, params }: PageProps = $props();
-	let currentFlowForm: 'settings' | 'password' | 'socials' | undefined = $state();
+	let currentFlowForm = $state<'settings' | 'password' | 'socials' | undefined>();
 </script>
 
 <section class="grid grid-cols-[repeat(auto-fill,minmax(min(24rem,100%),1fr))] justify-center gap-4">

@@ -330,6 +330,15 @@ export class Game {
 			(this.myColor === Color.BLACK && this.isBlackTurn)
 	);
 
+	moveDurationsMs = [];
+	movesJumpTo(move: number) {}
+	movesSkipToStart() {}
+	movesStepBack() {}
+	movesStepForward() {}
+	movesSkipToEnd() {}
+
+	historyIndex = $state<number>(0);
+
 	incrementVersion(): void {
 		this.version++;
 	}

@@ -31,8 +31,8 @@
 
 	let messagesContainer: HTMLDivElement;
 	let scrollPointElm: HTMLDivElement;
-	let allowedToScrollToLatest: boolean = $state(true);
-	let text: string = $state('');
+	let allowedToScrollToLatest = $state<boolean>(true);
+	let text = $state<string>('');
 
 	export function sendMessage() {
 		if (!text) {

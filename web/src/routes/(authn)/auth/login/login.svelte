@@ -176,8 +176,8 @@
 	// eslint-disable-next-line no-useless-assignment
 	restore = supForm.restore;
 
-	let emailVerified = $state(false);
-	let emailVerifiedMsg = $state('');
+	let emailVerified = $state<boolean>(false);
+	let emailVerifiedMsg = $state<string>('');
 
 	$effect(() => {
 		const val = window.sessionStorage.getItem('juicer_email_verified');

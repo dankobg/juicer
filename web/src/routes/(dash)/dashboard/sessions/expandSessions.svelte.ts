@@ -1,3 +1,3 @@
 import type { PathsSessionsGetParametersQueryExpand } from '$lib/gen/juicer_openapi';
 
-export const expandSessions: { expanded: PathsSessionsGetParametersQueryExpand[] } = $state({ expanded: [] });
+export const expandSessions = $state<{ expanded: PathsSessionsGetParametersQueryExpand[] }>({ expanded: [] });

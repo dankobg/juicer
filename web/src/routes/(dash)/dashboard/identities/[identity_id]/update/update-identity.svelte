@@ -17,7 +17,7 @@
 
 	let { data }: PageProps = $props();
 
-	let updateIdentity: components['schemas']['Identity'] | null = $state(null);
+	let updateIdentity = $state<components['schemas']['Identity'] | null>(null);
 
 	const updateIdentitySchema = v.object({
 		schemaId: v.pipe(v.string(), v.minLength(1, 'Schema id is required')),

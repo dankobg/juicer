@@ -25,10 +25,10 @@
 		...rest
 	}: TagsInputProps = $props();
 
-	let inputValue = $state('');
+	let inputValue = $state<string>('');
 	let tagIndex = $state<number>();
-	let invalid = $state(false);
-	let isComposing = $state(false);
+	let invalid = $state<boolean>(false);
+	let isComposing = $state<boolean>(false);
 
 	$effect(() => {
 		// whenever input value changes reset invalid

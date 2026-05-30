@@ -33,8 +33,8 @@
 
 	let { data }: PageProps = $props();
 
-	let secondFlowId: string | undefined = $state(undefined);
-	let codeSentToEmail: boolean = $state(false);
+	let secondFlowId = $state<string | undefined>(undefined);
+	let codeSentToEmail = $state<boolean>(false);
 
 	function handleFlowErrAction(redirectUrl: string, errMsg?: string) {
 		if (errMsg) {

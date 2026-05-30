@@ -11,12 +11,12 @@ type ConfirmationDialogOptions = {
 };
 
 export class Confirmation {
-	open: boolean = $state(false);
-	title: string = $state('Are you sure?');
-	cancelText: string = $state('Cancel');
-	confirmText: string = $state('Continue');
+	open = $state<boolean>(false);
+	title = $state<string>('Are you sure?');
+	cancelText = $state<string>('Cancel');
+	confirmText = $state<string>('Continue');
 	description?: Snippet;
-	destructive?: boolean = $state(false);
+	destructive? = $state<boolean>(false);
 	onCancel?: () => void = () => {
 		this.open = false;
 	};

@@ -22,10 +22,10 @@ export class Clock {
 	showPrecise: Required<ClockOptions>['showPrecise'] = 'centis';
 	showPreciseFn: Required<ClockOptions>['showPreciseFn'] = () => false;
 	onTimeout: ClockOptions['onTimeout'];
-	state: 'idle' | 'paused' | 'running' | 'timed-out' = $state('idle');
-	whiteIncrementMs: number = $state(0);
-	blackIncrementMs: number = $state(0);
-	currentTurn: 'w' | 'b' = $state('w');
+	state = $state<'idle' | 'paused' | 'running' | 'timed-out'>('idle');
+	whiteIncrementMs = $state<number>(0);
+	blackIncrementMs = $state<number>(0);
+	currentTurn = $state<'w' | 'b'>('w');
 	currentTimer: Timer = $derived(this.currentTurn === 'w' ? this.white : this.black);
 	currentIncrement: number = $derived(this.currentTurn === 'w' ? this.whiteIncrementMs : this.blackIncrementMs);
 

@@ -11,7 +11,7 @@
 
 	let { ref = $bindable(null), value = $bindable(), class: className, ...restProps }: Props = $props();
 
-	let visible: boolean = $state(false);
+	let visible = $state<boolean>(false);
 
 	function toggle() {
 		visible = !visible;

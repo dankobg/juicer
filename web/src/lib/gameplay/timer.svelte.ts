@@ -12,8 +12,8 @@ export class Timer {
 	showPrecise: Required<TimerOptions>['showPrecise'] = 'centis';
 	showPreciseFn: Required<TimerOptions>['showPreciseFn'] = () => false;
 	onTimeout: TimerOptions['onTimeout'];
-	state: 'idle' | 'paused' | 'running' | 'timed-out' = $state('idle');
-	timeMs: number = $state(0);
+	state = $state<'idle' | 'paused' | 'running' | 'timed-out'>('idle');
+	timeMs = $state<number>(0);
 	time = $derived(this.#getTime(this.timeMs));
 
 	constructor(timeMs: number, options?: TimerOptions) {

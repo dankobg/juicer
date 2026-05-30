@@ -15,8 +15,8 @@
 	import Switch from '../ui/switch/switch.svelte';
 	import type { CoordsRanksPosition, CoordsFilesPosition, CoordsPlacement } from '@dankop/juicer-board';
 
-	let nestedOpen: boolean = $state(false);
-	let editPane: 'board' | 'pieces' | undefined = $state();
+	let nestedOpen = $state<boolean>(false);
+	let editPane = $state<'board' | 'pieces' | undefined>();
 	const chatOptions = [
 		{ value: 'disabled', label: 'Disabled' },
 		{ value: 'friends-only', label: 'Friends only' },

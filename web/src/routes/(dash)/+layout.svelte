@@ -15,9 +15,9 @@
 	let { data, children }: { data: LayoutData; children: Snippet } = $props();
 
 	const ITEMS_TO_DISPLAY = 3;
-	let open = $state(false);
+	let open = $state<boolean>(false);
 	const isDesktop = new MediaQuery('(min-width: 768px)');
-	let crumbs: Array<{ label: string; href: string }> = $state([]);
+	let crumbs = $state<Array<{ label: string; href: string }>>([]);
 	const homeCrumb = { label: 'Home', href: '/' };
 
 	$effect(() => {

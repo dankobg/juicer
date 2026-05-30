@@ -17,6 +17,7 @@
 	import ChatBox, { type ChatMessage } from '$lib/components/chat-box/chat-box.svelte';
 	import { presenceManager } from '$lib/gameplay/presence-manager.svelte';
 	import { soundManager } from '$lib/sound/sound-manager.svelte';
+	import GamePanel from '$lib/components/game-panel/game-panel.svelte';
 
 	let { data, params }: PageProps = $props();
 
@@ -207,7 +208,7 @@
 			show-ghost={uiSettings.showGhost.current}
 			show-resizer={showResizer}
 		></juicer-board>
-		<aside class="controls">controls</aside>
+		<GamePanel {game} />
 	</div>
 
 	<div id="promotion-popover" popover="auto" bind:this={promotionPopoverElm}>

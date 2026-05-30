@@ -21,7 +21,7 @@
 
 	let { data }: PageProps = $props();
 
-	let createdIdentity: components['schemas']['Identity'] | null = $state(null);
+	let createdIdentity = $state<components['schemas']['Identity'] | null>(null);
 
 	const createIdentitySchema = v.object({
 		schemaId: v.pipe(v.string(), v.minLength(1, 'Schema id is required')),

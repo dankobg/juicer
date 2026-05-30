@@ -102,7 +102,7 @@ class UiSettings {
 	});
 	showGhost = new PersistedState<boolean>('juicer-show-ghost', true);
 
-	dialogOpen: boolean = $state(false);
+	dialogOpen = $state<boolean>(false);
 
 	open(): void {
 		this.dialogOpen = true;

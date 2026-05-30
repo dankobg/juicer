@@ -10,7 +10,7 @@
 	import { tick, type Component } from 'svelte';
 
 	let scrollPointElm: HTMLDivElement;
-	let allowedToScrollToLatest: boolean = $state(true);
+	let allowedToScrollToLatest = $state<boolean>(true);
 
 	function onScroll(event: Event) {
 		const elm = event.target as HTMLDivElement;
