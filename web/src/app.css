@@ -18,6 +18,11 @@
 	--bp-theme: url('/images/piece/gioco/bP.svg');
 
 	--board-scale: 100;
+	--chat-min-width: 11rem;
+	--chat-max-width: 22rem;
+	--panel-min-width: 14rem;
+	--panel-max-width: 25rem;
+	--game-layout-gap: 0.5rem;
 
 	--background: oklch(1 0 0);
 	--foreground: oklch(0 0 0);

@@ -11,7 +11,13 @@
 		playedEnpassantMove,
 		PROMOS
 	} from '$lib/gameplay/game-manager.svelte';
-	import type { Coord, MoveCancelEvent, MoveFinishEvent, MoveStartEvent } from '@dankop/juicer-board';
+	import type {
+		Coord,
+		MoveCancelEvent,
+		MoveFinishEvent,
+		MoveStartEvent,
+		ResizerScaleChangeEvent
+	} from '@dankop/juicer-board';
 	import { uiSettings } from '$lib/components/ui-settings/ui-settings-state.svelte';
 	import { Color } from '$lib/gen/juicer_pb';
 	import ChatBox, { type ChatMessage } from '$lib/components/chat-box/chat-box.svelte';
@@ -127,11 +133,18 @@
 		game.playMoveUci(move);
 	}
 
+	function onResizerScaleChanged(event: ResizerScaleChangeEvent) {
+		event.stopPropagation();
+		const clamped = Math.max(10, Math.min(event.data.scale, 100));
+		document.documentElement.style.setProperty('--board-scale', `${clamped}`);
+	}
+
 	function addBoardEventListeners() {
 		if (game?.board) {
 			game.board.addEventListener('movestart', onBoardMoveStart);
 			game.board.addEventListener('movecancel', onBoardMoveCancel);
 			game.board.addEventListener('movefinish', onBoardMoveFinish);
+			game.board.addEventListener('resizer:scale-changed', onResizerScaleChanged);
 		}
 	}
 
@@ -140,6 +153,7 @@
 			game.board.removeEventListener('movestart', onBoardMoveStart);
 			game.board.removeEventListener('movecancel', onBoardMoveCancel);
 			game.board.removeEventListener('movefinish', onBoardMoveFinish);
+			game.board.removeEventListener('resizer:scale-changed', onResizerScaleChanged);
 		}
 	}
 
@@ -195,20 +209,40 @@
 				}}
 			/>
 		</div>
-		<juicer-board
-			bind:this={() => game.board, v => (game.board = v)}
-			class="order-1 flex-1 md:order-0"
-			board-theme={boardTheme}
-			fen={game.gameMoves.at(-1)?.fen || 'start'}
-			orientation={game.orientation === Color.WHITE ? 'w' : 'b'}
-			coords-placement={uiSettings.boardCoordinates.current.placement}
-			ranks-position={uiSettings.boardCoordinates.current.ranksPosition}
-			files-position={uiSettings.boardCoordinates.current.filesPosition}
-			interactive
-			show-ghost={uiSettings.showGhost.current}
-			show-resizer={showResizer}
-		></juicer-board>
-		<GamePanel {game} />
+
+		<div class="moves">1. e4 2. e5 3. nf3 4. nc6 5. a3 6. ng6 7. h5</div>
+
+		<div class="player opp">
+			<div>03:57</div>
+			<div>stonkfish</div>
+		</div>
+
+		<div class="board-wrapper">
+			<juicer-board
+				bind:this={() => game.board, v => (game.board = v)}
+				board-theme={boardTheme}
+				fen={game.gameMoves.at(-1)?.fen || 'start'}
+				orientation={game.orientation === Color.WHITE ? 'w' : 'b'}
+				coords-placement={uiSettings.boardCoordinates.current.placement}
+				ranks-position={uiSettings.boardCoordinates.current.ranksPosition}
+				files-position={uiSettings.boardCoordinates.current.filesPosition}
+				interactive
+				show-ghost={uiSettings.showGhost.current}
+				show-resizer={showResizer}
+			></juicer-board>
+		</div>
+
+		<div class="controls">
+			<button>resign</button>
+			<button>abort</button>
+			<button>flip</button>
+			<button>draw</button>
+		</div>
+
+		<div class="player me">
+			<div>04:26</div>
+			<div>bozo</div>
+		</div>
 	</div>
 
 	<div id="promotion-popover" popover="auto" bind:this={promotionPopoverElm}>
@@ -229,18 +263,101 @@
 
 <style>
 	.game-layout {
-		position: relative;
+		container-name: game-layout;
 		container-type: size;
-		container-name: board-layout;
+		min-height: 0;
+		min-width: 0;
 		width: 100dvw;
 		height: calc(100dvh - var(--header-height) - 1px);
 		display: grid;
-		grid-template-columns: minmax(0, 300px) auto minmax(0, 300px);
+		gap: var(--game-layout-gap);
 		justify-content: center;
+		overflow: hidden;
+		grid-template-rows: auto auto minmax(0, 1fr) auto auto;
+		grid-template-areas:
+			'moves'
+			'player-opp'
+			'board'
+			'controls'
+			'player-me';
+
+		@media screen and (width > 60rem) {
+			--game-layout-gap: 1rem;
+			grid-template-rows: unset;
+			grid-template-columns:
+				minmax(var(--chat-min-width), var(--chat-max-width))
+				auto
+				minmax(var(--panel-min-width), var(--panel-max-width));
+			grid-template-areas:
+				'chat board player-opp'
+				'chat board moves'
+				'chat board controls'
+				'chat board player-me';
+		}
+	}
+
+	.chat {
+		grid-area: chat;
+		min-height: 20rem;
+		display: none;
+
+		@media screen and (width > 60rem) {
+			display: block;
+		}
+	}
+
+	.moves {
+		grid-area: moves;
+		background-color: hsl(from brown h s l / 20%);
+	}
+
+	.controls {
+		grid-area: controls;
+		display: flex;
+		flex-wrap: wrap;
+		justify-content: center;
+		align-items: center;
+		gap: 0.5rem;
+		background-color: hsl(from goldenrod h s l / 20%);
+	}
+
+	.board-wrapper {
+		grid-area: board;
+		container-name: board-wrapper;
+		container-type: size;
+		display: grid;
+		place-content: center;
+		width: calc(100cqmin * (var(--board-scale) / 100));
+
+		@media screen and (width > 60rem) {
+			place-content: unset;
+			width: calc(
+				(min(100cqh, calc(100cqw - var(--chat-min-width) - var(--panel-min-width) - 2 * var(--game-layout-gap)))) *
+					(var(--board-scale) / 100)
+			);
+		}
 	}
 
 	juicer-board {
-		width: calc((min(100cqh, calc(100cqw - 300px - 300px))) * (var(--board-scale) / 100));
+		min-width: 0;
+		min-height: 0;
+		width: 100cqmin;
+		height: 100cqmin;
+	}
+
+	.player {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 1rem;
+		background-color: hsl(from dodgerblue h s l / 20%);
+	}
+
+	.player.opp {
+		grid-area: player-opp;
+	}
+	.player.me {
+		grid-area: player-me;
 	}
 
 	#promotion-popover {
