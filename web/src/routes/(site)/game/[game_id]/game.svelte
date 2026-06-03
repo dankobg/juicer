@@ -23,7 +23,8 @@
 	import ChatBox, { type ChatMessage } from '$lib/components/chat-box/chat-box.svelte';
 	import { presenceManager } from '$lib/gameplay/presence-manager.svelte';
 	import { soundManager } from '$lib/sound/sound-manager.svelte';
-	import GamePanel from '$lib/components/game-panel/game-panel.svelte';
+	import GameControls from '$lib/components/game/game-controls.svelte';
+	import PlayerInfo from '$lib/components/game/player-info.svelte';
 
 	let { data, params }: PageProps = $props();
 
@@ -213,8 +214,15 @@
 		<div class="moves">1. e4 2. e5 3. nf3 4. nc6 5. a3 6. ng6 7. h5</div>
 
 		<div class="player opp">
-			<div>03:57</div>
-			<div>stonkfish</div>
+			{#if game.opponentPlayer}
+				<PlayerInfo
+					player={game.opponentPlayer}
+					color={game.opponentColor}
+					active={game.currentTurn === game.opponentColor}
+					clock="04:25"
+					online={gameUserPresences.has(game.opponentPlayer.userId)}
+				/>
+			{/if}
 		</div>
 
 		<div class="board-wrapper">
@@ -233,15 +241,19 @@
 		</div>
 
 		<div class="controls">
-			<button>resign</button>
-			<button>abort</button>
-			<button>flip</button>
-			<button>draw</button>
+			<GameControls {game} />
 		</div>
 
 		<div class="player me">
-			<div>04:26</div>
-			<div>bozo</div>
+			{#if game.mePlayer}
+				<PlayerInfo
+					player={game.mePlayer}
+					color={game.myColor}
+					active={game.currentTurn === game.myColor}
+					clock="03:57"
+					online={gameUserPresences.has(game.mePlayer.userId)}
+				/>
+			{/if}
 		</div>
 	</div>
 
@@ -313,12 +325,11 @@
 
 	.controls {
 		grid-area: controls;
-		display: flex;
+		/*display: flex;
 		flex-wrap: wrap;
 		justify-content: center;
 		align-items: center;
-		gap: 0.5rem;
-		background-color: hsl(from goldenrod h s l / 20%);
+		gap: 0.5rem;*/
 	}
 
 	.board-wrapper {
@@ -346,11 +357,11 @@
 	}
 
 	.player {
-		display: flex;
+		/*display: flex;
 		flex-wrap: wrap;
 		align-items: center;
 		gap: 1rem;
-		background-color: hsl(from dodgerblue h s l / 20%);
+		background-color: hsl(from dodgerblue h s l / 20%);*/
 	}
 
 	.player.opp {

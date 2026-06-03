@@ -312,6 +312,19 @@ export class Game {
 		this.myColor === Color.WHITE ? this.white?.userId : this.black?.userId
 	);
 
+	mePlayer = $derived.by(() => {
+		if (this.myColor === Color.UNSPECIFIED) {
+			return;
+		}
+		return this.myColor === Color.WHITE ? this.white : this.black;
+	});
+	opponentPlayer = $derived.by(() => {
+		if (this.myColor === Color.UNSPECIFIED) {
+			return;
+		}
+		return this.myColor === Color.WHITE ? this.black : this.white;
+	});
+
 	isCheck = $state<boolean>(Boolean(this.gameMoves.at(-1)?.check));
 	isCheckmate = $state<boolean>(Boolean(this.gameMoves.at(-1)?.san?.includes('#')));
 	hasIncrement: boolean = $derived<boolean>(this.gameTimeControl?.incrementMs !== 0);
@@ -329,6 +342,16 @@ export class Game {
 		(this.gameState === GameState.ACTIVE && this.myColor === Color.WHITE && this.isWhiteTurn) ||
 			(this.myColor === Color.BLACK && this.isBlackTurn)
 	);
+
+	uiShowAbortButton = $derived<boolean>(
+		this.gameState === GameState.ACTIVE &&
+			((this.myColor === Color.WHITE && this.ply === 0) || (this.myColor === Color.BLACK && this.ply <= 1))
+	);
+	uiShowFlipBoardButton = $state<boolean>(true);
+	uiShowResignButton = $derived<boolean>(this.gameState === GameState.ACTIVE && this.ply >= 2);
+	uiShowOfferDrawButton = $derived<boolean>(this.gameState === GameState.ACTIVE && this.ply >= 2);
+	uiShowDrawOfferResponseButtons = $derived<boolean>(false);
+	uiShowChatButton = $derived<boolean>(false);
 
 	moveDurationsMs = [];
 	movesJumpTo(move: number) {}
