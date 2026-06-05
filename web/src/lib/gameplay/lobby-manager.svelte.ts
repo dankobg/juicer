@@ -28,7 +28,7 @@ class LobbyManager {
 			event: {
 				case: 'seekGame',
 				value: {
-					timeControl: { clockMs, incrementMs }
+					gameTimeControl: { clockMs, incrementMs }
 				}
 			}
 		});

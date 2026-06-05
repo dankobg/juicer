@@ -227,7 +227,7 @@ message Clocks {
 
 // SeekGame is searching for a game
 message SeekGame {
-  GameTimeControl time_control = 1;
+  GameTimeControl game_time_control = 1;
 }
 
 // CancelSeekGame cancels the game search
@@ -264,7 +264,7 @@ message GameInfo {
   GameTimeKind game_time_kind = 3;
   GameTimeCategory game_time_category = 4;
   GameState game_state = 5;
-  GameTimeControl time_control = 6;
+  GameTimeControl game_time_control = 6;
   Color color = 7;
   string fen = 8;
   uint32 ply = 9;
@@ -281,6 +281,7 @@ message GameInfo {
   GameResult game_result = 20;
   GameResultStatus game_result_status = 21;
   int32 version = 22;
+  optional google.protobuf.Timestamp last_move = 23;
 }
 
 // AbortGame is game abort message
@@ -383,6 +384,7 @@ message MoveSync {
   Clocks clocks = 7;
   repeated string legal_moves = 8;
   int32 version = 9;
+  google.protobuf.Timestamp played_at = 10;
 }
 
 // GameFinished signals the game is over

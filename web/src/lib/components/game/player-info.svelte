@@ -5,18 +5,54 @@
 		player: PlayerInfo;
 		color: Color;
 		online?: boolean;
-		clock?: string;
 		active?: boolean;
+		clockMs?: number;
+		clockPrecisionFn?: (ms: number) => 'deciseconds' | 'centiseconds' | null;
 	};
 
-	let { player, color, online, clock, active }: Props = $props();
+	let { player, color, online, active, clockMs, clockPrecisionFn }: Props = $props();
+
+	function formatChessTime(totalMs: number, precisionFn?: Props['clockPrecisionFn']): string {
+		const precision = precisionFn?.(totalMs);
+
+		if (!Number.isFinite(totalMs) || totalMs <= 0) {
+			if (precision === 'deciseconds') return '00:00.0';
+			if (precision === 'centiseconds') return '00:00.00';
+			return '00:00';
+		}
+
+		const totalSeconds = Math.floor(totalMs / 1000);
+		const hours = Math.floor(totalSeconds / 3600);
+		const minutes = Math.floor((totalSeconds % 3600) / 60);
+		const seconds = Math.floor(totalSeconds % 60);
+
+		if (precision !== null) {
+			const baseTime = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+
+			if (precision === 'deciseconds') {
+				const tenths = Math.floor((totalMs % 1000) / 100);
+				return `${baseTime}.${tenths}`;
+			}
+
+			if (precision === 'centiseconds') {
+				const hundredths = Math.floor((totalMs % 1000) / 10);
+				return `${baseTime}.${hundredths.toString().padStart(2, '0')}`;
+			}
+		}
+
+		if (hours > 0) {
+			return `${hours}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+		}
+
+		return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+	}
 </script>
 
 <div class="flex items-center justify-between">
 	<span
 		class={['rounded-sm bg-green-700 p-1 text-5xl', active ? 'bg-green-700' : 'bg-neutral-200 dark:bg-neutral-700']}
 	>
-		{clock || '00:00'}
+		{formatChessTime(clockMs ?? 0, clockPrecisionFn)}
 	</span>
 	<div class="flex items-start justify-center gap-1">
 		<div class="flex flex-wrap items-center gap-1">

@@ -27,6 +27,7 @@ type PlayMoveUCIEvent struct {
 	Repetitions            uint16
 	LegalMoves             []string
 	Version                int
+	PlayedAt               time.Time
 	// History []engine.History
 	// Hashes []engine.HistoryHash
 }

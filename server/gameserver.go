@@ -164,6 +164,7 @@ func (a *ApiHandler) handlePlayMoveUCIEvent(event gameplay.PlayMoveUCIEvent) {
 		},
 		LegalMoves: event.LegalMoves,
 		Version:    int32(event.Version),
+		PlayedAt:   timestamppb.New(event.PlayedAt),
 	}}}
 
 	moveSyncMsgBytes, err := protojson.Marshal(moveSyncMsg)
@@ -707,8 +708,8 @@ func (a *ApiHandler) handleWSCSeekGameMsg(authInfo clientAuthInfo, data *pb.Seek
 	}
 
 	pool := dbtype.Pool{
-		ClockMS:     data.GetTimeControl().GetClockMs(),
-		IncrementMS: data.GetTimeControl().GetIncrementMs(),
+		ClockMS:     data.GetGameTimeControl().GetClockMs(),
+		IncrementMS: data.GetGameTimeControl().GetIncrementMs(),
 		Rated:       authInfo.authState == ws.ClientAuth,
 	}
 	if err := a.persistor.Pool().JoinPool(context.Background(), uuid.MustParse(authInfo.userID), pool); err != nil {
@@ -1222,7 +1223,7 @@ func (a *ApiHandler) sendGameInfo(gameID int64, userID, connID string, guest boo
 		GameTimeKind:     gs.GameTimeKind,
 		GameTimeCategory: gs.GameTimeCategory,
 		GameState:        gs.GameState,
-		TimeControl:      gs.GameTimeControl,
+		GameTimeControl:  gs.GameTimeControl,
 		Color:            player.Color,
 		Fen:              gs.Chess.Position.Fen(),
 		Ply:              uint32(gs.Chess.Position.Ply),
@@ -1241,6 +1242,9 @@ func (a *ApiHandler) sendGameInfo(gameID int64, userID, connID string, guest boo
 		GameResult:         gs.GameResult,
 		GameResultStatus:   gs.GameResultStatus,
 		Version:            int32(gs.Version),
+	}
+	if gs.LastMove != nil {
+		gameInfo.LastMove = timestamppb.New(*gs.LastMove)
 	}
 	if gs.EndTime != nil {
 		gameInfo.EndTime = timestamppb.New(*gs.EndTime)

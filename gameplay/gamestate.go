@@ -692,6 +692,7 @@ func (gs *GameState) playMoveUCI(c PlayMoveUCICmd) ([]GameEvent, error) {
 		Repetitions:            gs.Chess.Repetitions,
 		LegalMoves:             legalMoves,
 		Version:                gs.Version,
+		PlayedAt:               playedAt,
 	}
 
 	events = append(events, playMoveUciEvent)

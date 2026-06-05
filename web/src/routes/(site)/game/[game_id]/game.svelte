@@ -25,6 +25,7 @@
 	import { soundManager } from '$lib/sound/sound-manager.svelte';
 	import GameControls from '$lib/components/game/game-controls.svelte';
 	import PlayerInfo from '$lib/components/game/player-info.svelte';
+	import MovesList from '$lib/components/game/moves-list.svelte';
 
 	let { data, params }: PageProps = $props();
 
@@ -211,7 +212,9 @@
 			/>
 		</div>
 
-		<div class="moves">1. e4 2. e5 3. nf3 4. nc6 5. a3 6. ng6 7. h5</div>
+		<div class="moves">
+			<MovesList {game} />
+		</div>
 
 		<div class="player opp">
 			{#if game.opponentPlayer}
@@ -219,8 +222,13 @@
 					player={game.opponentPlayer}
 					color={game.opponentColor}
 					active={game.currentTurn === game.opponentColor}
-					clock="04:25"
 					online={gameUserPresences.has(game.opponentPlayer.userId)}
+					clockMs={game.opponentColor === Color.WHITE ? game.whiteDisplayTimeMs : game.blackDisplayTimeMs}
+					clockPrecisionFn={ms => {
+						if (ms <= 10_000) return 'centiseconds';
+						if (ms <= 60_000) return 'deciseconds';
+						return null;
+					}}
 				/>
 			{/if}
 		</div>
@@ -250,8 +258,13 @@
 					player={game.mePlayer}
 					color={game.myColor}
 					active={game.currentTurn === game.myColor}
-					clock="03:57"
 					online={gameUserPresences.has(game.mePlayer.userId)}
+					clockMs={game.myColor === Color.WHITE ? game.whiteDisplayTimeMs : game.blackDisplayTimeMs}
+					clockPrecisionFn={ms => {
+						if (ms <= 10_000) return 'centiseconds';
+						if (ms <= 60_000) return 'deciseconds';
+						return null;
+					}}
 				/>
 			{/if}
 		</div>
@@ -320,16 +333,10 @@
 
 	.moves {
 		grid-area: moves;
-		background-color: hsl(from brown h s l / 20%);
 	}
 
 	.controls {
 		grid-area: controls;
-		/*display: flex;
-		flex-wrap: wrap;
-		justify-content: center;
-		align-items: center;
-		gap: 0.5rem;*/
 	}
 
 	.board-wrapper {
@@ -354,14 +361,6 @@
 		min-height: 0;
 		width: 100cqmin;
 		height: 100cqmin;
-	}
-
-	.player {
-		/*display: flex;
-		flex-wrap: wrap;
-		align-items: center;
-		gap: 1rem;
-		background-color: hsl(from dodgerblue h s l / 20%);*/
 	}
 
 	.player.opp {

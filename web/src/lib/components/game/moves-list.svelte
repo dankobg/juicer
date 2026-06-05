@@ -1,5 +1,4 @@
-<!-- <script lang="ts">
-	import { gameManager } from '$lib/gameplay/game-manager.svelte';
+<script lang="ts">
 	import IconStepBack from '@lucide/svelte/icons/step-back';
 	import IconStepForward from '@lucide/svelte/icons/step-forward';
 	import IconSkipBack from '@lucide/svelte/icons/skip-back';
@@ -8,6 +7,9 @@
 	import { buttonVariants } from '$lib/components/ui/button/index';
 	import IconArrowDown from '@lucide/svelte/icons/arrow-down-to-line';
 	import { tick, type Component } from 'svelte';
+	import type { Game } from '$lib/gameplay/game-manager.svelte';
+
+	let { game }: { game: Game } = $props();
 
 	let scrollPointElm: HTMLDivElement;
 	let allowedToScrollToLatest = $state<boolean>(true);
@@ -28,7 +30,7 @@
 	}
 
 	$effect(() => {
-		if (allowedToScrollToLatest && gameManager.totalMoves > 0) {
+		if (allowedToScrollToLatest && game?.gameMoves?.length > 0) {
 			scrollToLatestMessage();
 		}
 	});
@@ -36,21 +38,21 @@
 	function onKeydown(e: KeyboardEvent) {
 		if (e.key === 'ArrowLeft') {
 			e.preventDefault();
-			gameManager.movesStepBack();
+			game.movesStepBack();
 		} else if (e.key === 'ArrowRight') {
 			e.preventDefault();
-			gameManager.movesStepForward();
+			game.movesStepForward();
 		} else if (e.key === 'ArrowUp') {
 			e.preventDefault();
-			gameManager.movesSkipToStart();
+			game.movesSkipToStart();
 		} else if (e.key === 'ArrowDown') {
 			e.preventDefault();
-			gameManager.movesSkipToEnd();
+			game.movesSkipToEnd();
 		}
 	}
 </script>
 
-{#snippet moveNavigationButton(text: string, Icon: Component, onclick: () => void)}
+{#snippet btn(text: string, Icon: Component, onclick?: () => void)}
 	<Tooltip.Provider delayDuration={200}>
 		<Tooltip.Root>
 			<Tooltip.Trigger class={buttonVariants({ variant: 'ghost', size: 'icon', class: 'rounded-full' })} {onclick}>
@@ -68,45 +70,45 @@
 <div class="flex flex-col">
 	<div class="">
 		<div class="mt-auto flex justify-center gap-4 p-2 pb-0">
-			{@render moveNavigationButton('Skip to start', IconSkipBack, () => gameManager.movesSkipToStart())}
-			{@render moveNavigationButton('Step back', IconStepBack, () => gameManager.movesStepBack())}
-			{@render moveNavigationButton('Step forward', IconStepForward, () => gameManager.movesStepForward())}
-			{@render moveNavigationButton('Skip to end', IconSkipForward, () => gameManager.movesSkipToEnd())}
+			{@render btn('Skip to start', IconSkipBack, () => game.movesSkipToStart())}
+			{@render btn('Step back', IconStepBack, () => game.movesStepBack())}
+			{@render btn('Step forward', IconStepForward, () => game.movesStepForward())}
+			{@render btn('Skip to end', IconSkipForward, () => game.movesSkipToEnd())}
 			{#if !allowedToScrollToLatest}
-				{@render moveNavigationButton('Scroll to last', IconArrowDown, () => scrollToLatestMessage())}
+				{@render btn('Scroll to last', IconArrowDown, () => scrollToLatestMessage())}
 			{/if}
 		</div>
 
 		<div class="flex max-h-30 min-h-40 flex-col gap-1 overflow-y-auto p-2" onscroll={onScroll}>
-			{#each Array(Math.ceil((gameManager.totalMoves - 1) / 2)) as _, i}
+			{#each Array(Math.ceil((game.gameMoves?.length - 1) / 2)) as _, i}
 				{@const w = i * 2 + 1}
 				{@const b = i * 2 + 2}
-				{@const h1 = gameManager.gameMoves[w]}
-				{@const h2 = gameManager.gameMoves[b]}
-				{@const d1 = gameManager.moveDurationsMs[w]}
-				{@const d2 = gameManager.moveDurationsMs[b]}
+				{@const h1 = game.gameMoves[w]}
+				{@const h2 = game.gameMoves[b]}
+				{@const d1 = game.moveDurationsMs[w]}
+				{@const d2 = game.moveDurationsMs[b]}
 				{@const num = i + 1}
 
 				<div class="grid grid-cols-[10%_1fr_1fr_15%] items-center justify-between gap-4 border-b border-stone-300/10">
 					<div class="text-start">{num}.</div>
 					<button
-						class={['rounded-sm text-center hover:bg-secondary', gameManager.historyIndex === w && 'bg-secondary']}
-						onclick={() => gameManager.movesJumpTo(w)}
+						class={['rounded-sm text-center hover:bg-secondary', game.historyIndex === w && 'bg-secondary']}
+						onclick={() => game.movesJumpTo(w)}
 					>
-						{h1?.move?.san}
+						{h1?.san}
 					</button>
 					<button
-						class={['rounded-sm text-center hover:bg-secondary', gameManager.historyIndex === b && 'bg-secondary']}
-						onclick={() => gameManager.movesJumpTo(b)}
+						class={['rounded-sm text-center hover:bg-secondary', game.historyIndex === b && 'bg-secondary']}
+						onclick={() => game.movesJumpTo(b)}
 					>
-						{h2?.move?.san}
+						{h2?.san}
 					</button>
-					{#if gameManager.totalMoves > 0}
+					{#if game.gameMoves?.length > 0}
 						<div>
 							{#if d1}
 								<div class="flex h-full items-center justify-between gap-1 text-xs">
 									<svg viewBox="0 0 5 10" xmlns="http://www.w3.org/2000/svg" class="h-full w-[6px]">
-										<rect width="100%" height="100%" fill="#fff" />
+										<rect width="100%" height="100%" fill="#fff" stroke="#000" />
 									</svg>
 									{(d1 / 1000).toFixed(1)}s
 								</div>
@@ -126,4 +128,4 @@
 			<div bind:this={scrollPointElm}></div>
 		</div>
 	</div>
-</div> -->
+</div>

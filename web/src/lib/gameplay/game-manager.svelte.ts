@@ -30,6 +30,7 @@ import { SvelteMap } from 'svelte/reactivity';
 import { goto } from '$app/navigation';
 import type { ChatMessage } from '$lib/components/chat-box/chat-box.svelte';
 import { soundManager } from '$lib/sound/sound-manager.svelte';
+import { timestampDate, type Duration, type Timestamp } from '@bufbuild/protobuf/wkt';
 
 export class GameManager {
 	games = $state<SvelteMap<number, Game>>(new SvelteMap());
@@ -59,15 +60,15 @@ export class GameManager {
 			gameVariant: gameInfo.gameVariant,
 			gameTimeKind: gameInfo.gameTimeKind,
 			gameTimeCategory: gameInfo.gameTimeCategory,
-			gameTimeControl: { $typeName: 'pb.GameTimeControl', clockMs: 423, incrementMs: 0 },
+			gameTimeControl: gameInfo.gameTimeControl,
 			gameState: gameInfo.gameState,
 			gameResult: gameInfo.gameResult,
 			gameResultStatus: gameInfo.gameResultStatus,
 			reconnectTimeoutMs: gameInfo.reconnectTimeoutMs,
 			firstMoveTimeoutMs: gameInfo.firstMoveTimeoutMs,
-			// lastMove
-			startTime: Number(gameInfo.startTime?.seconds), // @TODO: fix later
-			endTime: Number(gameInfo.endTime?.seconds), // @TODO: fix later
+			lastMove: gameInfo.lastMove,
+			startTime: gameInfo.startTime,
+			endTime: gameInfo.endTime,
 			rated: gameInfo.rated,
 			version: gameInfo.version,
 			// repetitions: gameInfo.repetitions
@@ -76,14 +77,29 @@ export class GameManager {
 			myColor: gameInfo.color,
 			orientation: gameInfo.color, // @TODO: fix later
 			gameHistoryIndex: 0, // @TODO: fix later
-			legalMoves: gameInfo.legalMoves
+			legalMoves: gameInfo.legalMoves,
+			whiteRemainingGameTime: gameInfo.clocks?.white,
+			blackRemainingGameTime: gameInfo.clocks?.black,
+			ack: gameInfo.version
 		};
+
+		console.log('CLOCKS: ', {
+			W: gameOpts.whiteRemainingGameTime?.seconds,
+			B: gameOpts.blackRemainingGameTime?.seconds
+		});
 
 		if (this.games.has(gameInfo.gameId)) {
 			const game = this.games.get(gameInfo.gameId);
 			game?.configure(gameOpts);
+			if (game && game.ply >= 2) {
+				game.startTimerLoop();
+			}
 		} else {
-			this.games.set(gameInfo.gameId, new Game(gameOpts));
+			const game = new Game(gameOpts);
+			if (game.ply >= 2) {
+				game.startTimerLoop();
+			}
+			this.games.set(gameInfo.gameId, game);
 		}
 	}
 
@@ -116,22 +132,24 @@ export class GameManager {
 		game.version = moveSync.version;
 		game.legalMoves = moveSync.legalMoves;
 		game.ply = moveSync.ply;
+		game.whiteRemainingGameTime = moveSync.clocks?.white;
+		game.blackRemainingGameTime = moveSync.clocks?.black;
+		game.lastMove = moveSync.playedAt;
 		game.gameMoves.push({
 			$typeName: 'pb.GameMove',
 			uci: moveSync.uci,
 			san: moveSync.san,
 			lan: moveSync.lan,
 			check: moveSync.san.includes('+'),
-			fen: moveSync.fen
+			fen: moveSync.fen,
+			playedAt: moveSync.playedAt
 		});
 
-		// handleeeeeeeeeeeeeee moveSync.clocks
+		if (game.ply >= 2) {
+			game.startTimerLoop();
+		}
 
 		if (!myMove) {
-			// if (game.ply <= 2) {
-			//   this.clock?.setCurrentTurn(this.clock.currentTurn === 'w' ? 'b' : 'w');
-			// }
-			// 		this.updateTimersState();
 			const src = moveSync.uci.slice(0, 2) as Coord;
 			const dest = moveSync.uci.slice(2, 4) as Coord;
 			const isPromo = isPromotionUciMove(moveSync.uci);
@@ -201,9 +219,9 @@ type GameOptions = {
 	gameResultStatus?: GameResultStatus;
 	reconnectTimeoutMs?: number;
 	firstMoveTimeoutMs?: number;
-	lastMove?: number;
-	startTime?: number;
-	endTime?: number;
+	lastMove?: Timestamp;
+	startTime?: Timestamp;
+	endTime?: Timestamp;
 	rated?: boolean;
 	version?: number;
 	ack?: number;
@@ -214,6 +232,8 @@ type GameOptions = {
 	orientation?: Color;
 	gameHistoryIndex?: number;
 	legalMoves?: string[];
+	whiteRemainingGameTime?: Duration;
+	blackRemainingGameTime?: Duration;
 };
 
 export class Game {
@@ -230,9 +250,9 @@ export class Game {
 	gameResultStatus = $state<GameResultStatus>(GameResultStatus.UNSPECIFIED);
 	reconnectTimeoutMs = $state<number | undefined>();
 	firstMoveTimeoutMs = $state<number | undefined>();
-	lastMove = $state<number | undefined>();
-	startTime = $state<number | undefined>();
-	endTime = $state<number | undefined>();
+	lastMove = $state<Timestamp | undefined>();
+	startTime = $state<Timestamp | undefined>();
+	endTime = $state<Timestamp | undefined>();
 	rated = $state<boolean | undefined>();
 	version = $state<number>(0);
 	ack = $state<number>(0);
@@ -240,8 +260,9 @@ export class Game {
 	gameMoves = $state<GameMove[]>([]);
 	legalMoves = $state<string[]>([]);
 	ply = $state<number>(0);
+	whiteRemainingGameTime = $state<Duration>();
+	blackRemainingGameTime = $state<Duration>();
 	// pending draw offer
-	// clocks and increment
 
 	// ####################################
 	myColor = $state<Color>(Color.UNSPECIFIED);
@@ -301,6 +322,8 @@ export class Game {
 		this.orientation = opts?.orientation ?? Color.UNSPECIFIED;
 		this.gameHistoryIndex = opts?.gameHistoryIndex ?? 0;
 		this.legalMoves = opts?.legalMoves ?? [];
+		this.whiteRemainingGameTime = opts?.whiteRemainingGameTime;
+		this.blackRemainingGameTime = opts?.blackRemainingGameTime;
 	}
 
 	// #######################################
@@ -324,6 +347,42 @@ export class Game {
 		}
 		return this.myColor === Color.WHITE ? this.black : this.white;
 	});
+
+	animationFrameId = $state<number | null>(null);
+	whiteRemaininGameTimeMs = $derived(this.whiteRemainingGameTime ? protoDurationToMs(this.whiteRemainingGameTime) : 0);
+	blackRemaininGameTimeMs = $derived(this.blackRemainingGameTime ? protoDurationToMs(this.blackRemainingGameTime) : 0);
+	whiteDisplayTimeMs = $state<number>(this.whiteRemaininGameTimeMs);
+	blackDisplayTimeMs = $state<number>(this.blackRemaininGameTimeMs);
+
+	getWhiteDisplayTimeMs(now: number) {
+		if (!this.lastMove) {
+			return this.whiteRemaininGameTimeMs;
+		}
+		const elapsed = Date.now() - timestampDate(this.lastMove).getTime();
+		return this.isWhiteTurn ? Math.max(0, this.whiteRemaininGameTimeMs - elapsed) : this.whiteRemaininGameTimeMs;
+	}
+
+	getBlackDisplayTimeMs(now: number): number {
+		if (!this.lastMove) {
+			return this.blackRemaininGameTimeMs;
+		}
+		const elapsed = Date.now() - timestampDate(this.lastMove).getTime();
+		return this.isBlackTurn ? Math.max(0, this.blackRemaininGameTimeMs - elapsed) : this.blackRemaininGameTimeMs;
+	}
+
+	startTimerLoop() {
+		if (this.animationFrameId !== null) {
+			return;
+		}
+
+		const tick = (timestamp: number) => {
+			this.whiteDisplayTimeMs = this.getWhiteDisplayTimeMs(timestamp);
+			this.blackDisplayTimeMs = this.getBlackDisplayTimeMs(timestamp);
+			this.animationFrameId = requestAnimationFrame(tick);
+		};
+
+		this.animationFrameId = requestAnimationFrame(tick);
+	}
 
 	isCheck = $state<boolean>(Boolean(this.gameMoves.at(-1)?.check));
 	isCheckmate = $state<boolean>(Boolean(this.gameMoves.at(-1)?.san?.includes('#')));
@@ -353,7 +412,24 @@ export class Game {
 	uiShowDrawOfferResponseButtons = $derived<boolean>(false);
 	uiShowChatButton = $derived<boolean>(false);
 
-	moveDurationsMs = [];
+	moveDurationsMs = $derived.by(() => {
+		if (!this.startTime || this.gameMoves?.length < 1) {
+			return [];
+		}
+		const startDate = timestampDate(this.startTime);
+		return this.gameMoves.reduce<number[]>((acc, cur, i) => {
+			if (cur.playedAt) {
+				const prev = this.gameMoves[i - i];
+				const curDate = timestampDate(cur.playedAt);
+				const prevDate = prev?.playedAt ? timestampDate(prev.playedAt) : startDate;
+				acc.push(curDate.getTime() - prevDate.getTime());
+			} else {
+				acc.push(0);
+			}
+			return acc;
+		}, []);
+	});
+
 	movesJumpTo(move: number) {}
 	movesSkipToStart() {}
 	movesStepBack() {}
@@ -420,11 +496,6 @@ export class Game {
 			}
 		});
 		ws.send(playMoveUciMsg);
-		// if (this.ply <= 1) {
-		// 	this.clock?.setCurrentTurn(this.clock.currentTurn === 'w' ? 'b' : 'w');
-		// }
-		// this.ply++;
-		// this.updateTimersState();
 	}
 }
 
@@ -589,4 +660,8 @@ export function getPromotionLabelText(promotionSymbol: string): string {
 		default:
 			return '';
 	}
+}
+
+function protoDurationToMs(dur: Duration): number {
+	return Number(dur.seconds) * 1000 + dur.nanos / 1e6;
 }
