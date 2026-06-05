@@ -195,6 +195,12 @@
 	let gameUserPresences = $derived(presenceManager.getPresenceInChannel(`game.${game?.gameId}`));
 
 	let gameChatMessages = $state<ChatMessage[]>([]);
+
+	function clockPrecision(ms: number): 'deciseconds' | 'centiseconds' | null {
+		if (ms <= 10_000) return 'centiseconds';
+		if (ms <= 60_000) return 'deciseconds';
+		return null;
+	}
 </script>
 
 {#if game}
@@ -224,11 +230,7 @@
 					active={game.currentTurn === game.opponentColor}
 					online={gameUserPresences.has(game.opponentPlayer.userId)}
 					clockMs={game.opponentColor === Color.WHITE ? game.whiteDisplayTimeMs : game.blackDisplayTimeMs}
-					clockPrecisionFn={ms => {
-						if (ms <= 10_000) return 'centiseconds';
-						if (ms <= 60_000) return 'deciseconds';
-						return null;
-					}}
+					{clockPrecision}
 				/>
 			{/if}
 		</div>
@@ -260,11 +262,7 @@
 					active={game.currentTurn === game.myColor}
 					online={gameUserPresences.has(game.mePlayer.userId)}
 					clockMs={game.myColor === Color.WHITE ? game.whiteDisplayTimeMs : game.blackDisplayTimeMs}
-					clockPrecisionFn={ms => {
-						if (ms <= 10_000) return 'centiseconds';
-						if (ms <= 60_000) return 'deciseconds';
-						return null;
-					}}
+					{clockPrecision}
 				/>
 			{/if}
 		</div>

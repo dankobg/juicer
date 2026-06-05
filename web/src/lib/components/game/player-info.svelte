@@ -7,13 +7,13 @@
 		online?: boolean;
 		active?: boolean;
 		clockMs?: number;
-		clockPrecisionFn?: (ms: number) => 'deciseconds' | 'centiseconds' | null;
+		clockPrecision?: (ms: number) => 'deciseconds' | 'centiseconds' | null;
 	};
 
-	let { player, color, online, active, clockMs, clockPrecisionFn }: Props = $props();
+	let { player, color, online, active, clockMs, clockPrecision }: Props = $props();
 
-	function formatChessTime(totalMs: number, precisionFn?: Props['clockPrecisionFn']): string {
-		const precision = precisionFn?.(totalMs);
+	function formatChessTime(totalMs: number, precisionFn?: Props['clockPrecision']): string {
+		const precision = precisionFn?.(totalMs) ?? null;
 
 		if (!Number.isFinite(totalMs) || totalMs <= 0) {
 			if (precision === 'deciseconds') return '00:00.0';
@@ -52,7 +52,7 @@
 	<span
 		class={['rounded-sm bg-green-700 p-1 text-5xl', active ? 'bg-green-700' : 'bg-neutral-200 dark:bg-neutral-700']}
 	>
-		{formatChessTime(clockMs ?? 0, clockPrecisionFn)}
+		{formatChessTime(clockMs ?? 0, clockPrecision)}
 	</span>
 	<div class="flex items-start justify-center gap-1">
 		<div class="flex flex-wrap items-center gap-1">
