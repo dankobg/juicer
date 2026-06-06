@@ -589,6 +589,8 @@ type Message struct {
 	//	*Message_ListGameChats
 	//	*Message_GameChat
 	//	*Message_GameChats
+	//	*Message_DrawDeclined
+	//	*Message_DrawOffer
 	//	*Message_MoveAck
 	//	*Message_GameInfo
 	//	*Message_Echo
@@ -904,6 +906,24 @@ func (x *Message) GetGameChats() *GameChatList {
 	return nil
 }
 
+func (x *Message) GetDrawDeclined() *DrawDeclined {
+	if x != nil {
+		if x, ok := x.Event.(*Message_DrawDeclined); ok {
+			return x.DrawDeclined
+		}
+	}
+	return nil
+}
+
+func (x *Message) GetDrawOffer() *DrawOffer {
+	if x != nil {
+		if x, ok := x.Event.(*Message_DrawOffer); ok {
+			return x.DrawOffer
+		}
+	}
+	return nil
+}
+
 func (x *Message) GetMoveAck() *MoveAck {
 	if x != nil {
 		if x, ok := x.Event.(*Message_MoveAck); ok {
@@ -1055,6 +1075,14 @@ type Message_GameChats struct {
 	GameChats *GameChatList `protobuf:"bytes,30,opt,name=game_chats,json=gameChats,proto3,oneof"`
 }
 
+type Message_DrawDeclined struct {
+	DrawDeclined *DrawDeclined `protobuf:"bytes,64,opt,name=draw_declined,json=drawDeclined,proto3,oneof"`
+}
+
+type Message_DrawOffer struct {
+	DrawOffer *DrawOffer `protobuf:"bytes,65,opt,name=draw_offer,json=drawOffer,proto3,oneof"`
+}
+
 type Message_MoveAck struct {
 	MoveAck *MoveAck `protobuf:"bytes,66,opt,name=move_ack,json=moveAck,proto3,oneof"`
 }
@@ -1126,6 +1154,10 @@ func (*Message_ListGameChats) isMessage_Event() {}
 func (*Message_GameChat) isMessage_Event() {}
 
 func (*Message_GameChats) isMessage_Event() {}
+
+func (*Message_DrawDeclined) isMessage_Event() {}
+
+func (*Message_DrawOffer) isMessage_Event() {}
 
 func (*Message_MoveAck) isMessage_Event() {}
 
@@ -1767,7 +1799,7 @@ func (x *Presence) GetChannel() string {
 // PresenceState is the full snapshot of all presences
 type PresenceState struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Presences     []*Presence            `protobuf:"bytes,1,rep,name=presences,proto3" json:"presences,omitempty"` // map<string, Presence> presences = 1;
+	Presences     []*Presence            `protobuf:"bytes,1,rep,name=presences,proto3" json:"presences,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2230,6 +2262,7 @@ type GameInfo struct {
 	GameResultStatus   GameResultStatus       `protobuf:"varint,21,opt,name=game_result_status,json=gameResultStatus,proto3,enum=pb.GameResultStatus" json:"game_result_status,omitempty"`
 	Version            int32                  `protobuf:"varint,22,opt,name=version,proto3" json:"version,omitempty"`
 	LastMove           *timestamppb.Timestamp `protobuf:"bytes,23,opt,name=last_move,json=lastMove,proto3,oneof" json:"last_move,omitempty"`
+	PendingDrawOffers  map[string]*DrawOffer  `protobuf:"bytes,24,rep,name=pending_draw_offers,json=pendingDrawOffers,proto3" json:"pending_draw_offers,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
 }
@@ -2425,6 +2458,13 @@ func (x *GameInfo) GetLastMove() *timestamppb.Timestamp {
 	return nil
 }
 
+func (x *GameInfo) GetPendingDrawOffers() map[string]*DrawOffer {
+	if x != nil {
+		return x.PendingDrawOffers
+	}
+	return nil
+}
+
 // AbortGame is game abort message
 type AbortGame struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
@@ -2560,6 +2600,128 @@ func (x *OfferDraw) GetGameId() int32 {
 	return 0
 }
 
+// DrawOffer is game draw offer response message
+type DrawOffer struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	GameId        int32                  `protobuf:"varint,1,opt,name=game_id,json=gameId,proto3" json:"game_id,omitempty"`
+	Ply           uint32                 `protobuf:"varint,2,opt,name=ply,proto3" json:"ply,omitempty"`
+	OfferedBy     string                 `protobuf:"bytes,3,opt,name=offered_by,json=offeredBy,proto3" json:"offered_by,omitempty"`
+	OfferedAt     *timestamppb.Timestamp `protobuf:"bytes,4,opt,name=offered_at,json=offeredAt,proto3" json:"offered_at,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DrawOffer) Reset() {
+	*x = DrawOffer{}
+	mi := &file_proto_juicer_juicer_proto_msgTypes[25]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DrawOffer) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DrawOffer) ProtoMessage() {}
+
+func (x *DrawOffer) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_juicer_juicer_proto_msgTypes[25]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DrawOffer.ProtoReflect.Descriptor instead.
+func (*DrawOffer) Descriptor() ([]byte, []int) {
+	return file_proto_juicer_juicer_proto_rawDescGZIP(), []int{25}
+}
+
+func (x *DrawOffer) GetGameId() int32 {
+	if x != nil {
+		return x.GameId
+	}
+	return 0
+}
+
+func (x *DrawOffer) GetPly() uint32 {
+	if x != nil {
+		return x.Ply
+	}
+	return 0
+}
+
+func (x *DrawOffer) GetOfferedBy() string {
+	if x != nil {
+		return x.OfferedBy
+	}
+	return ""
+}
+
+func (x *DrawOffer) GetOfferedAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.OfferedAt
+	}
+	return nil
+}
+
+// DrawDeclined is draw offer declined response message
+type DrawDeclined struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	GameId        int32                  `protobuf:"varint,1,opt,name=game_id,json=gameId,proto3" json:"game_id,omitempty"`
+	DeclinedBy    string                 `protobuf:"bytes,3,opt,name=declined_by,json=declinedBy,proto3" json:"declined_by,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DrawDeclined) Reset() {
+	*x = DrawDeclined{}
+	mi := &file_proto_juicer_juicer_proto_msgTypes[26]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DrawDeclined) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DrawDeclined) ProtoMessage() {}
+
+func (x *DrawDeclined) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_juicer_juicer_proto_msgTypes[26]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DrawDeclined.ProtoReflect.Descriptor instead.
+func (*DrawDeclined) Descriptor() ([]byte, []int) {
+	return file_proto_juicer_juicer_proto_rawDescGZIP(), []int{26}
+}
+
+func (x *DrawDeclined) GetGameId() int32 {
+	if x != nil {
+		return x.GameId
+	}
+	return 0
+}
+
+func (x *DrawDeclined) GetDeclinedBy() string {
+	if x != nil {
+		return x.DeclinedBy
+	}
+	return ""
+}
+
 // DeclineDraw is game draw decline message
 type DeclineDraw struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
@@ -2570,7 +2732,7 @@ type DeclineDraw struct {
 
 func (x *DeclineDraw) Reset() {
 	*x = DeclineDraw{}
-	mi := &file_proto_juicer_juicer_proto_msgTypes[25]
+	mi := &file_proto_juicer_juicer_proto_msgTypes[27]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2582,7 +2744,7 @@ func (x *DeclineDraw) String() string {
 func (*DeclineDraw) ProtoMessage() {}
 
 func (x *DeclineDraw) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_juicer_juicer_proto_msgTypes[25]
+	mi := &file_proto_juicer_juicer_proto_msgTypes[27]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2595,7 +2757,7 @@ func (x *DeclineDraw) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeclineDraw.ProtoReflect.Descriptor instead.
 func (*DeclineDraw) Descriptor() ([]byte, []int) {
-	return file_proto_juicer_juicer_proto_rawDescGZIP(), []int{25}
+	return file_proto_juicer_juicer_proto_rawDescGZIP(), []int{27}
 }
 
 func (x *DeclineDraw) GetGameId() int32 {
@@ -2615,7 +2777,7 @@ type AcceptDraw struct {
 
 func (x *AcceptDraw) Reset() {
 	*x = AcceptDraw{}
-	mi := &file_proto_juicer_juicer_proto_msgTypes[26]
+	mi := &file_proto_juicer_juicer_proto_msgTypes[28]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2627,7 +2789,7 @@ func (x *AcceptDraw) String() string {
 func (*AcceptDraw) ProtoMessage() {}
 
 func (x *AcceptDraw) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_juicer_juicer_proto_msgTypes[26]
+	mi := &file_proto_juicer_juicer_proto_msgTypes[28]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2640,7 +2802,7 @@ func (x *AcceptDraw) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AcceptDraw.ProtoReflect.Descriptor instead.
 func (*AcceptDraw) Descriptor() ([]byte, []int) {
-	return file_proto_juicer_juicer_proto_rawDescGZIP(), []int{26}
+	return file_proto_juicer_juicer_proto_rawDescGZIP(), []int{28}
 }
 
 func (x *AcceptDraw) GetGameId() int32 {
@@ -2660,7 +2822,7 @@ type SendLobbyChat struct {
 
 func (x *SendLobbyChat) Reset() {
 	*x = SendLobbyChat{}
-	mi := &file_proto_juicer_juicer_proto_msgTypes[27]
+	mi := &file_proto_juicer_juicer_proto_msgTypes[29]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2672,7 +2834,7 @@ func (x *SendLobbyChat) String() string {
 func (*SendLobbyChat) ProtoMessage() {}
 
 func (x *SendLobbyChat) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_juicer_juicer_proto_msgTypes[27]
+	mi := &file_proto_juicer_juicer_proto_msgTypes[29]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2685,7 +2847,7 @@ func (x *SendLobbyChat) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SendLobbyChat.ProtoReflect.Descriptor instead.
 func (*SendLobbyChat) Descriptor() ([]byte, []int) {
-	return file_proto_juicer_juicer_proto_rawDescGZIP(), []int{27}
+	return file_proto_juicer_juicer_proto_rawDescGZIP(), []int{29}
 }
 
 func (x *SendLobbyChat) GetMessage() string {
@@ -2706,7 +2868,7 @@ type ListLobbyChats struct {
 
 func (x *ListLobbyChats) Reset() {
 	*x = ListLobbyChats{}
-	mi := &file_proto_juicer_juicer_proto_msgTypes[28]
+	mi := &file_proto_juicer_juicer_proto_msgTypes[30]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2718,7 +2880,7 @@ func (x *ListLobbyChats) String() string {
 func (*ListLobbyChats) ProtoMessage() {}
 
 func (x *ListLobbyChats) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_juicer_juicer_proto_msgTypes[28]
+	mi := &file_proto_juicer_juicer_proto_msgTypes[30]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2731,7 +2893,7 @@ func (x *ListLobbyChats) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListLobbyChats.ProtoReflect.Descriptor instead.
 func (*ListLobbyChats) Descriptor() ([]byte, []int) {
-	return file_proto_juicer_juicer_proto_rawDescGZIP(), []int{28}
+	return file_proto_juicer_juicer_proto_rawDescGZIP(), []int{30}
 }
 
 func (x *ListLobbyChats) GetLastMessageId() int32 {
@@ -2761,7 +2923,7 @@ type LobbyChat struct {
 
 func (x *LobbyChat) Reset() {
 	*x = LobbyChat{}
-	mi := &file_proto_juicer_juicer_proto_msgTypes[29]
+	mi := &file_proto_juicer_juicer_proto_msgTypes[31]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2773,7 +2935,7 @@ func (x *LobbyChat) String() string {
 func (*LobbyChat) ProtoMessage() {}
 
 func (x *LobbyChat) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_juicer_juicer_proto_msgTypes[29]
+	mi := &file_proto_juicer_juicer_proto_msgTypes[31]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2786,7 +2948,7 @@ func (x *LobbyChat) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use LobbyChat.ProtoReflect.Descriptor instead.
 func (*LobbyChat) Descriptor() ([]byte, []int) {
-	return file_proto_juicer_juicer_proto_rawDescGZIP(), []int{29}
+	return file_proto_juicer_juicer_proto_rawDescGZIP(), []int{31}
 }
 
 func (x *LobbyChat) GetMessageId() int32 {
@@ -2827,7 +2989,7 @@ type LobbyChatList struct {
 
 func (x *LobbyChatList) Reset() {
 	*x = LobbyChatList{}
-	mi := &file_proto_juicer_juicer_proto_msgTypes[30]
+	mi := &file_proto_juicer_juicer_proto_msgTypes[32]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2839,7 +3001,7 @@ func (x *LobbyChatList) String() string {
 func (*LobbyChatList) ProtoMessage() {}
 
 func (x *LobbyChatList) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_juicer_juicer_proto_msgTypes[30]
+	mi := &file_proto_juicer_juicer_proto_msgTypes[32]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2852,7 +3014,7 @@ func (x *LobbyChatList) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use LobbyChatList.ProtoReflect.Descriptor instead.
 func (*LobbyChatList) Descriptor() ([]byte, []int) {
-	return file_proto_juicer_juicer_proto_rawDescGZIP(), []int{30}
+	return file_proto_juicer_juicer_proto_rawDescGZIP(), []int{32}
 }
 
 func (x *LobbyChatList) GetLobbyChats() []*LobbyChat {
@@ -2873,7 +3035,7 @@ type SendGameChat struct {
 
 func (x *SendGameChat) Reset() {
 	*x = SendGameChat{}
-	mi := &file_proto_juicer_juicer_proto_msgTypes[31]
+	mi := &file_proto_juicer_juicer_proto_msgTypes[33]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2885,7 +3047,7 @@ func (x *SendGameChat) String() string {
 func (*SendGameChat) ProtoMessage() {}
 
 func (x *SendGameChat) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_juicer_juicer_proto_msgTypes[31]
+	mi := &file_proto_juicer_juicer_proto_msgTypes[33]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2898,7 +3060,7 @@ func (x *SendGameChat) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SendGameChat.ProtoReflect.Descriptor instead.
 func (*SendGameChat) Descriptor() ([]byte, []int) {
-	return file_proto_juicer_juicer_proto_rawDescGZIP(), []int{31}
+	return file_proto_juicer_juicer_proto_rawDescGZIP(), []int{33}
 }
 
 func (x *SendGameChat) GetGameId() int32 {
@@ -2927,7 +3089,7 @@ type ListGameChats struct {
 
 func (x *ListGameChats) Reset() {
 	*x = ListGameChats{}
-	mi := &file_proto_juicer_juicer_proto_msgTypes[32]
+	mi := &file_proto_juicer_juicer_proto_msgTypes[34]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2939,7 +3101,7 @@ func (x *ListGameChats) String() string {
 func (*ListGameChats) ProtoMessage() {}
 
 func (x *ListGameChats) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_juicer_juicer_proto_msgTypes[32]
+	mi := &file_proto_juicer_juicer_proto_msgTypes[34]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2952,7 +3114,7 @@ func (x *ListGameChats) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListGameChats.ProtoReflect.Descriptor instead.
 func (*ListGameChats) Descriptor() ([]byte, []int) {
-	return file_proto_juicer_juicer_proto_rawDescGZIP(), []int{32}
+	return file_proto_juicer_juicer_proto_rawDescGZIP(), []int{34}
 }
 
 func (x *ListGameChats) GetGameId() int32 {
@@ -2990,7 +3152,7 @@ type GameChat struct {
 
 func (x *GameChat) Reset() {
 	*x = GameChat{}
-	mi := &file_proto_juicer_juicer_proto_msgTypes[33]
+	mi := &file_proto_juicer_juicer_proto_msgTypes[35]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3002,7 +3164,7 @@ func (x *GameChat) String() string {
 func (*GameChat) ProtoMessage() {}
 
 func (x *GameChat) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_juicer_juicer_proto_msgTypes[33]
+	mi := &file_proto_juicer_juicer_proto_msgTypes[35]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3015,7 +3177,7 @@ func (x *GameChat) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GameChat.ProtoReflect.Descriptor instead.
 func (*GameChat) Descriptor() ([]byte, []int) {
-	return file_proto_juicer_juicer_proto_rawDescGZIP(), []int{33}
+	return file_proto_juicer_juicer_proto_rawDescGZIP(), []int{35}
 }
 
 func (x *GameChat) GetGameId() int32 {
@@ -3063,7 +3225,7 @@ type GameChatList struct {
 
 func (x *GameChatList) Reset() {
 	*x = GameChatList{}
-	mi := &file_proto_juicer_juicer_proto_msgTypes[34]
+	mi := &file_proto_juicer_juicer_proto_msgTypes[36]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3075,7 +3237,7 @@ func (x *GameChatList) String() string {
 func (*GameChatList) ProtoMessage() {}
 
 func (x *GameChatList) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_juicer_juicer_proto_msgTypes[34]
+	mi := &file_proto_juicer_juicer_proto_msgTypes[36]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3088,7 +3250,7 @@ func (x *GameChatList) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GameChatList.ProtoReflect.Descriptor instead.
 func (*GameChatList) Descriptor() ([]byte, []int) {
-	return file_proto_juicer_juicer_proto_rawDescGZIP(), []int{34}
+	return file_proto_juicer_juicer_proto_rawDescGZIP(), []int{36}
 }
 
 func (x *GameChatList) GetGameChats() []*GameChat {
@@ -3110,7 +3272,7 @@ type PlayMoveUCI struct {
 
 func (x *PlayMoveUCI) Reset() {
 	*x = PlayMoveUCI{}
-	mi := &file_proto_juicer_juicer_proto_msgTypes[35]
+	mi := &file_proto_juicer_juicer_proto_msgTypes[37]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3122,7 +3284,7 @@ func (x *PlayMoveUCI) String() string {
 func (*PlayMoveUCI) ProtoMessage() {}
 
 func (x *PlayMoveUCI) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_juicer_juicer_proto_msgTypes[35]
+	mi := &file_proto_juicer_juicer_proto_msgTypes[37]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3135,7 +3297,7 @@ func (x *PlayMoveUCI) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PlayMoveUCI.ProtoReflect.Descriptor instead.
 func (*PlayMoveUCI) Descriptor() ([]byte, []int) {
-	return file_proto_juicer_juicer_proto_rawDescGZIP(), []int{35}
+	return file_proto_juicer_juicer_proto_rawDescGZIP(), []int{37}
 }
 
 func (x *PlayMoveUCI) GetGameId() int32 {
@@ -3170,7 +3332,7 @@ type MoveAck struct {
 
 func (x *MoveAck) Reset() {
 	*x = MoveAck{}
-	mi := &file_proto_juicer_juicer_proto_msgTypes[36]
+	mi := &file_proto_juicer_juicer_proto_msgTypes[38]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3182,7 +3344,7 @@ func (x *MoveAck) String() string {
 func (*MoveAck) ProtoMessage() {}
 
 func (x *MoveAck) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_juicer_juicer_proto_msgTypes[36]
+	mi := &file_proto_juicer_juicer_proto_msgTypes[38]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3195,7 +3357,7 @@ func (x *MoveAck) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MoveAck.ProtoReflect.Descriptor instead.
 func (*MoveAck) Descriptor() ([]byte, []int) {
-	return file_proto_juicer_juicer_proto_rawDescGZIP(), []int{36}
+	return file_proto_juicer_juicer_proto_rawDescGZIP(), []int{38}
 }
 
 func (x *MoveAck) GetGameId() int32 {
@@ -3231,7 +3393,7 @@ type MoveSync struct {
 
 func (x *MoveSync) Reset() {
 	*x = MoveSync{}
-	mi := &file_proto_juicer_juicer_proto_msgTypes[37]
+	mi := &file_proto_juicer_juicer_proto_msgTypes[39]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3243,7 +3405,7 @@ func (x *MoveSync) String() string {
 func (*MoveSync) ProtoMessage() {}
 
 func (x *MoveSync) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_juicer_juicer_proto_msgTypes[37]
+	mi := &file_proto_juicer_juicer_proto_msgTypes[39]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3256,7 +3418,7 @@ func (x *MoveSync) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MoveSync.ProtoReflect.Descriptor instead.
 func (*MoveSync) Descriptor() ([]byte, []int) {
-	return file_proto_juicer_juicer_proto_rawDescGZIP(), []int{37}
+	return file_proto_juicer_juicer_proto_rawDescGZIP(), []int{39}
 }
 
 func (x *MoveSync) GetGameId() int32 {
@@ -3342,7 +3504,7 @@ type GameFinished struct {
 
 func (x *GameFinished) Reset() {
 	*x = GameFinished{}
-	mi := &file_proto_juicer_juicer_proto_msgTypes[38]
+	mi := &file_proto_juicer_juicer_proto_msgTypes[40]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3354,7 +3516,7 @@ func (x *GameFinished) String() string {
 func (*GameFinished) ProtoMessage() {}
 
 func (x *GameFinished) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_juicer_juicer_proto_msgTypes[38]
+	mi := &file_proto_juicer_juicer_proto_msgTypes[40]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3367,7 +3529,7 @@ func (x *GameFinished) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GameFinished.ProtoReflect.Descriptor instead.
 func (*GameFinished) Descriptor() ([]byte, []int) {
-	return file_proto_juicer_juicer_proto_rawDescGZIP(), []int{38}
+	return file_proto_juicer_juicer_proto_rawDescGZIP(), []int{40}
 }
 
 func (x *GameFinished) GetGameId() int32 {
@@ -3405,7 +3567,7 @@ const file_proto_juicer_juicer_proto_rawDesc = "" +
 	"\x19proto/juicer/juicer.proto\x12\x02pb\x1a\x1egoogle/protobuf/duration.proto\x1a\x1fgoogle/protobuf/timestamp.proto\"O\n" +
 	"\x0fGameTimeControl\x12\x19\n" +
 	"\bclock_ms\x18\x01 \x01(\x05R\aclockMs\x12!\n" +
-	"\fincrement_ms\x18\x02 \x01(\x05R\vincrementMs\"\xe6\r\n" +
+	"\fincrement_ms\x18\x02 \x01(\x05R\vincrementMs\"\xcf\x0e\n" +
 	"\aMessage\x12'\n" +
 	"\aproblem\x18\x01 \x01(\v2\v.pb.ProblemH\x00R\aproblem\x12'\n" +
 	"\alatency\x18\x02 \x01(\v2\v.pb.LatencyH\x00R\alatency\x12-\n" +
@@ -3446,7 +3608,10 @@ const file_proto_juicer_juicer_proto_rawDesc = "" +
 	"\x0flist_game_chats\x18\x1c \x01(\v2\x11.pb.ListGameChatsH\x00R\rlistGameChats\x12+\n" +
 	"\tgame_chat\x18\x1d \x01(\v2\f.pb.GameChatH\x00R\bgameChat\x121\n" +
 	"\n" +
-	"game_chats\x18\x1e \x01(\v2\x10.pb.GameChatListH\x00R\tgameChats\x12(\n" +
+	"game_chats\x18\x1e \x01(\v2\x10.pb.GameChatListH\x00R\tgameChats\x127\n" +
+	"\rdraw_declined\x18@ \x01(\v2\x10.pb.DrawDeclinedH\x00R\fdrawDeclined\x12.\n" +
+	"\n" +
+	"draw_offer\x18A \x01(\v2\r.pb.DrawOfferH\x00R\tdrawOffer\x12(\n" +
 	"\bmove_ack\x18B \x01(\v2\v.pb.MoveAckH\x00R\amoveAck\x12+\n" +
 	"\tgame_info\x18C \x01(\v2\f.pb.GameInfoH\x00R\bgameInfo\x12\x1e\n" +
 	"\x04echo\x18E \x01(\v2\b.pb.EchoH\x00R\x04echoB\a\n" +
@@ -3523,7 +3688,7 @@ const file_proto_juicer_juicer_proto_rawDesc = "" +
 	"\n" +
 	"_played_at\"$\n" +
 	"\tGameFound\x12\x17\n" +
-	"\agame_id\x18\x01 \x01(\x05R\x06gameId\"\x8d\b\n" +
+	"\agame_id\x18\x01 \x01(\x05R\x06gameId\"\xb7\t\n" +
 	"\bGameInfo\x12\x17\n" +
 	"\agame_id\x18\x01 \x01(\x05R\x06gameId\x122\n" +
 	"\fgame_variant\x18\x02 \x01(\x0e2\x0f.pb.GameVariantR\vgameVariant\x126\n" +
@@ -3554,7 +3719,11 @@ const file_proto_juicer_juicer_proto_rawDesc = "" +
 	"gameResult\x12B\n" +
 	"\x12game_result_status\x18\x15 \x01(\x0e2\x14.pb.GameResultStatusR\x10gameResultStatus\x12\x18\n" +
 	"\aversion\x18\x16 \x01(\x05R\aversion\x12<\n" +
-	"\tlast_move\x18\x17 \x01(\v2\x1a.google.protobuf.TimestampH\x00R\blastMove\x88\x01\x01B\f\n" +
+	"\tlast_move\x18\x17 \x01(\v2\x1a.google.protobuf.TimestampH\x00R\blastMove\x88\x01\x01\x12S\n" +
+	"\x13pending_draw_offers\x18\x18 \x03(\v2#.pb.GameInfo.PendingDrawOffersEntryR\x11pendingDrawOffers\x1aS\n" +
+	"\x16PendingDrawOffersEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12#\n" +
+	"\x05value\x18\x02 \x01(\v2\r.pb.DrawOfferR\x05value:\x028\x01B\f\n" +
 	"\n" +
 	"_last_move\"$\n" +
 	"\tAbortGame\x12\x17\n" +
@@ -3563,7 +3732,18 @@ const file_proto_juicer_juicer_proto_rawDesc = "" +
 	"ResignGame\x12\x17\n" +
 	"\agame_id\x18\x01 \x01(\x05R\x06gameId\"$\n" +
 	"\tOfferDraw\x12\x17\n" +
-	"\agame_id\x18\x01 \x01(\x05R\x06gameId\"&\n" +
+	"\agame_id\x18\x01 \x01(\x05R\x06gameId\"\x90\x01\n" +
+	"\tDrawOffer\x12\x17\n" +
+	"\agame_id\x18\x01 \x01(\x05R\x06gameId\x12\x10\n" +
+	"\x03ply\x18\x02 \x01(\rR\x03ply\x12\x1d\n" +
+	"\n" +
+	"offered_by\x18\x03 \x01(\tR\tofferedBy\x129\n" +
+	"\n" +
+	"offered_at\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampR\tofferedAt\"H\n" +
+	"\fDrawDeclined\x12\x17\n" +
+	"\agame_id\x18\x01 \x01(\x05R\x06gameId\x12\x1f\n" +
+	"\vdeclined_by\x18\x03 \x01(\tR\n" +
+	"declinedBy\"&\n" +
 	"\vDeclineDraw\x12\x17\n" +
 	"\agame_id\x18\x01 \x01(\x05R\x06gameId\"%\n" +
 	"\n" +
@@ -3702,7 +3882,7 @@ func file_proto_juicer_juicer_proto_rawDescGZIP() []byte {
 }
 
 var file_proto_juicer_juicer_proto_enumTypes = make([]protoimpl.EnumInfo, 8)
-var file_proto_juicer_juicer_proto_msgTypes = make([]protoimpl.MessageInfo, 39)
+var file_proto_juicer_juicer_proto_msgTypes = make([]protoimpl.MessageInfo, 42)
 var file_proto_juicer_juicer_proto_goTypes = []any{
 	(Color)(0),                    // 0: pb.Color
 	(GameVariant)(0),              // 1: pb.GameVariant
@@ -3737,22 +3917,25 @@ var file_proto_juicer_juicer_proto_goTypes = []any{
 	(*AbortGame)(nil),             // 30: pb.AbortGame
 	(*ResignGame)(nil),            // 31: pb.ResignGame
 	(*OfferDraw)(nil),             // 32: pb.OfferDraw
-	(*DeclineDraw)(nil),           // 33: pb.DeclineDraw
-	(*AcceptDraw)(nil),            // 34: pb.AcceptDraw
-	(*SendLobbyChat)(nil),         // 35: pb.SendLobbyChat
-	(*ListLobbyChats)(nil),        // 36: pb.ListLobbyChats
-	(*LobbyChat)(nil),             // 37: pb.LobbyChat
-	(*LobbyChatList)(nil),         // 38: pb.LobbyChatList
-	(*SendGameChat)(nil),          // 39: pb.SendGameChat
-	(*ListGameChats)(nil),         // 40: pb.ListGameChats
-	(*GameChat)(nil),              // 41: pb.GameChat
-	(*GameChatList)(nil),          // 42: pb.GameChatList
-	(*PlayMoveUCI)(nil),           // 43: pb.PlayMoveUCI
-	(*MoveAck)(nil),               // 44: pb.MoveAck
-	(*MoveSync)(nil),              // 45: pb.MoveSync
-	(*GameFinished)(nil),          // 46: pb.GameFinished
-	(*durationpb.Duration)(nil),   // 47: google.protobuf.Duration
-	(*timestamppb.Timestamp)(nil), // 48: google.protobuf.Timestamp
+	(*DrawOffer)(nil),             // 33: pb.DrawOffer
+	(*DrawDeclined)(nil),          // 34: pb.DrawDeclined
+	(*DeclineDraw)(nil),           // 35: pb.DeclineDraw
+	(*AcceptDraw)(nil),            // 36: pb.AcceptDraw
+	(*SendLobbyChat)(nil),         // 37: pb.SendLobbyChat
+	(*ListLobbyChats)(nil),        // 38: pb.ListLobbyChats
+	(*LobbyChat)(nil),             // 39: pb.LobbyChat
+	(*LobbyChatList)(nil),         // 40: pb.LobbyChatList
+	(*SendGameChat)(nil),          // 41: pb.SendGameChat
+	(*ListGameChats)(nil),         // 42: pb.ListGameChats
+	(*GameChat)(nil),              // 43: pb.GameChat
+	(*GameChatList)(nil),          // 44: pb.GameChatList
+	(*PlayMoveUCI)(nil),           // 45: pb.PlayMoveUCI
+	(*MoveAck)(nil),               // 46: pb.MoveAck
+	(*MoveSync)(nil),              // 47: pb.MoveSync
+	(*GameFinished)(nil),          // 48: pb.GameFinished
+	nil,                           // 49: pb.GameInfo.PendingDrawOffersEntry
+	(*durationpb.Duration)(nil),   // 50: google.protobuf.Duration
+	(*timestamppb.Timestamp)(nil), // 51: google.protobuf.Timestamp
 }
 var file_proto_juicer_juicer_proto_depIdxs = []int32{
 	15, // 0: pb.Message.problem:type_name -> pb.Problem
@@ -3766,62 +3949,67 @@ var file_proto_juicer_juicer_proto_depIdxs = []int32{
 	19, // 8: pb.Message.initial_channels:type_name -> pb.InitialChannels
 	21, // 9: pb.Message.presence_state:type_name -> pb.PresenceState
 	22, // 10: pb.Message.presence_diff:type_name -> pb.PresenceDiff
-	35, // 11: pb.Message.send_lobby_chat:type_name -> pb.SendLobbyChat
-	36, // 12: pb.Message.list_lobby_chats:type_name -> pb.ListLobbyChats
-	37, // 13: pb.Message.lobby_chat:type_name -> pb.LobbyChat
-	38, // 14: pb.Message.lobby_chats:type_name -> pb.LobbyChatList
+	37, // 11: pb.Message.send_lobby_chat:type_name -> pb.SendLobbyChat
+	38, // 12: pb.Message.list_lobby_chats:type_name -> pb.ListLobbyChats
+	39, // 13: pb.Message.lobby_chat:type_name -> pb.LobbyChat
+	40, // 14: pb.Message.lobby_chats:type_name -> pb.LobbyChatList
 	24, // 15: pb.Message.seek_game:type_name -> pb.SeekGame
 	25, // 16: pb.Message.cancel_seek_game:type_name -> pb.CancelSeekGame
 	28, // 17: pb.Message.game_found:type_name -> pb.GameFound
 	30, // 18: pb.Message.abort_game:type_name -> pb.AbortGame
 	31, // 19: pb.Message.resign_game:type_name -> pb.ResignGame
 	32, // 20: pb.Message.offer_draw:type_name -> pb.OfferDraw
-	34, // 21: pb.Message.accept_draw:type_name -> pb.AcceptDraw
-	33, // 22: pb.Message.decline_draw:type_name -> pb.DeclineDraw
-	43, // 23: pb.Message.play_move_uci:type_name -> pb.PlayMoveUCI
-	45, // 24: pb.Message.move_sync:type_name -> pb.MoveSync
-	46, // 25: pb.Message.game_finished:type_name -> pb.GameFinished
-	39, // 26: pb.Message.send_game_chat:type_name -> pb.SendGameChat
-	40, // 27: pb.Message.list_game_chats:type_name -> pb.ListGameChats
-	41, // 28: pb.Message.game_chat:type_name -> pb.GameChat
-	42, // 29: pb.Message.game_chats:type_name -> pb.GameChatList
-	44, // 30: pb.Message.move_ack:type_name -> pb.MoveAck
-	29, // 31: pb.Message.game_info:type_name -> pb.GameInfo
-	10, // 32: pb.Message.echo:type_name -> pb.Echo
-	20, // 33: pb.PresenceState.presences:type_name -> pb.Presence
-	20, // 34: pb.PresenceDiff.joined:type_name -> pb.Presence
-	20, // 35: pb.PresenceDiff.left:type_name -> pb.Presence
-	47, // 36: pb.Clocks.white:type_name -> google.protobuf.Duration
-	47, // 37: pb.Clocks.black:type_name -> google.protobuf.Duration
-	8,  // 38: pb.SeekGame.game_time_control:type_name -> pb.GameTimeControl
-	48, // 39: pb.GameMove.played_at:type_name -> google.protobuf.Timestamp
-	1,  // 40: pb.GameInfo.game_variant:type_name -> pb.GameVariant
-	2,  // 41: pb.GameInfo.game_time_kind:type_name -> pb.GameTimeKind
-	3,  // 42: pb.GameInfo.game_time_category:type_name -> pb.GameTimeCategory
-	6,  // 43: pb.GameInfo.game_state:type_name -> pb.GameState
-	8,  // 44: pb.GameInfo.game_time_control:type_name -> pb.GameTimeControl
-	0,  // 45: pb.GameInfo.color:type_name -> pb.Color
-	23, // 46: pb.GameInfo.clocks:type_name -> pb.Clocks
-	26, // 47: pb.GameInfo.white:type_name -> pb.PlayerInfo
-	26, // 48: pb.GameInfo.black:type_name -> pb.PlayerInfo
-	27, // 49: pb.GameInfo.game_moves:type_name -> pb.GameMove
-	48, // 50: pb.GameInfo.start_time:type_name -> google.protobuf.Timestamp
-	48, // 51: pb.GameInfo.end_time:type_name -> google.protobuf.Timestamp
-	4,  // 52: pb.GameInfo.game_result:type_name -> pb.GameResult
-	5,  // 53: pb.GameInfo.game_result_status:type_name -> pb.GameResultStatus
-	48, // 54: pb.GameInfo.last_move:type_name -> google.protobuf.Timestamp
-	37, // 55: pb.LobbyChatList.lobby_chats:type_name -> pb.LobbyChat
-	41, // 56: pb.GameChatList.game_chats:type_name -> pb.GameChat
-	23, // 57: pb.MoveSync.clocks:type_name -> pb.Clocks
-	48, // 58: pb.MoveSync.played_at:type_name -> google.protobuf.Timestamp
-	4,  // 59: pb.GameFinished.game_result:type_name -> pb.GameResult
-	5,  // 60: pb.GameFinished.game_result_status:type_name -> pb.GameResultStatus
-	6,  // 61: pb.GameFinished.game_state:type_name -> pb.GameState
-	62, // [62:62] is the sub-list for method output_type
-	62, // [62:62] is the sub-list for method input_type
-	62, // [62:62] is the sub-list for extension type_name
-	62, // [62:62] is the sub-list for extension extendee
-	0,  // [0:62] is the sub-list for field type_name
+	36, // 21: pb.Message.accept_draw:type_name -> pb.AcceptDraw
+	35, // 22: pb.Message.decline_draw:type_name -> pb.DeclineDraw
+	45, // 23: pb.Message.play_move_uci:type_name -> pb.PlayMoveUCI
+	47, // 24: pb.Message.move_sync:type_name -> pb.MoveSync
+	48, // 25: pb.Message.game_finished:type_name -> pb.GameFinished
+	41, // 26: pb.Message.send_game_chat:type_name -> pb.SendGameChat
+	42, // 27: pb.Message.list_game_chats:type_name -> pb.ListGameChats
+	43, // 28: pb.Message.game_chat:type_name -> pb.GameChat
+	44, // 29: pb.Message.game_chats:type_name -> pb.GameChatList
+	34, // 30: pb.Message.draw_declined:type_name -> pb.DrawDeclined
+	33, // 31: pb.Message.draw_offer:type_name -> pb.DrawOffer
+	46, // 32: pb.Message.move_ack:type_name -> pb.MoveAck
+	29, // 33: pb.Message.game_info:type_name -> pb.GameInfo
+	10, // 34: pb.Message.echo:type_name -> pb.Echo
+	20, // 35: pb.PresenceState.presences:type_name -> pb.Presence
+	20, // 36: pb.PresenceDiff.joined:type_name -> pb.Presence
+	20, // 37: pb.PresenceDiff.left:type_name -> pb.Presence
+	50, // 38: pb.Clocks.white:type_name -> google.protobuf.Duration
+	50, // 39: pb.Clocks.black:type_name -> google.protobuf.Duration
+	8,  // 40: pb.SeekGame.game_time_control:type_name -> pb.GameTimeControl
+	51, // 41: pb.GameMove.played_at:type_name -> google.protobuf.Timestamp
+	1,  // 42: pb.GameInfo.game_variant:type_name -> pb.GameVariant
+	2,  // 43: pb.GameInfo.game_time_kind:type_name -> pb.GameTimeKind
+	3,  // 44: pb.GameInfo.game_time_category:type_name -> pb.GameTimeCategory
+	6,  // 45: pb.GameInfo.game_state:type_name -> pb.GameState
+	8,  // 46: pb.GameInfo.game_time_control:type_name -> pb.GameTimeControl
+	0,  // 47: pb.GameInfo.color:type_name -> pb.Color
+	23, // 48: pb.GameInfo.clocks:type_name -> pb.Clocks
+	26, // 49: pb.GameInfo.white:type_name -> pb.PlayerInfo
+	26, // 50: pb.GameInfo.black:type_name -> pb.PlayerInfo
+	27, // 51: pb.GameInfo.game_moves:type_name -> pb.GameMove
+	51, // 52: pb.GameInfo.start_time:type_name -> google.protobuf.Timestamp
+	51, // 53: pb.GameInfo.end_time:type_name -> google.protobuf.Timestamp
+	4,  // 54: pb.GameInfo.game_result:type_name -> pb.GameResult
+	5,  // 55: pb.GameInfo.game_result_status:type_name -> pb.GameResultStatus
+	51, // 56: pb.GameInfo.last_move:type_name -> google.protobuf.Timestamp
+	49, // 57: pb.GameInfo.pending_draw_offers:type_name -> pb.GameInfo.PendingDrawOffersEntry
+	51, // 58: pb.DrawOffer.offered_at:type_name -> google.protobuf.Timestamp
+	39, // 59: pb.LobbyChatList.lobby_chats:type_name -> pb.LobbyChat
+	43, // 60: pb.GameChatList.game_chats:type_name -> pb.GameChat
+	23, // 61: pb.MoveSync.clocks:type_name -> pb.Clocks
+	51, // 62: pb.MoveSync.played_at:type_name -> google.protobuf.Timestamp
+	4,  // 63: pb.GameFinished.game_result:type_name -> pb.GameResult
+	5,  // 64: pb.GameFinished.game_result_status:type_name -> pb.GameResultStatus
+	6,  // 65: pb.GameFinished.game_state:type_name -> pb.GameState
+	33, // 66: pb.GameInfo.PendingDrawOffersEntry.value:type_name -> pb.DrawOffer
+	67, // [67:67] is the sub-list for method output_type
+	67, // [67:67] is the sub-list for method input_type
+	67, // [67:67] is the sub-list for extension type_name
+	67, // [67:67] is the sub-list for extension extendee
+	0,  // [0:67] is the sub-list for field type_name
 }
 
 func init() { file_proto_juicer_juicer_proto_init() }
@@ -3860,6 +4048,8 @@ func file_proto_juicer_juicer_proto_init() {
 		(*Message_ListGameChats)(nil),
 		(*Message_GameChat)(nil),
 		(*Message_GameChats)(nil),
+		(*Message_DrawDeclined)(nil),
+		(*Message_DrawOffer)(nil),
 		(*Message_MoveAck)(nil),
 		(*Message_GameInfo)(nil),
 		(*Message_Echo)(nil),
@@ -3872,7 +4062,7 @@ func file_proto_juicer_juicer_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_proto_juicer_juicer_proto_rawDesc), len(file_proto_juicer_juicer_proto_rawDesc)),
 			NumEnums:      8,
-			NumMessages:   39,
+			NumMessages:   42,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

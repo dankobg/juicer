@@ -36,7 +36,7 @@
 			{@render btn('Toggle chat', IconMessageSquareText, () => console.log('chat'))}
 		{/if}
 
-		{#if game.uiShowDrawOfferResponseButtons}
+		{#if game.uiShowDrawAcceptDeclineButtons}
 			{@render btn('Accept draw', IconCheck, () => game.acceptDraw())}
 			{@render btn('Decline draw', IconX, () => game.dedclineDraw())}
 		{/if}

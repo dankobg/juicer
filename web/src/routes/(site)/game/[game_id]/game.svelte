@@ -19,7 +19,7 @@
 		ResizerScaleChangeEvent
 	} from '@dankop/juicer-board';
 	import { uiSettings } from '$lib/components/ui-settings/ui-settings-state.svelte';
-	import { Color } from '$lib/gen/juicer_pb';
+	import { Color, GameState } from '$lib/gen/juicer_pb';
 	import ChatBox, { type ChatMessage } from '$lib/components/chat-box/chat-box.svelte';
 	import { presenceManager } from '$lib/gameplay/presence-manager.svelte';
 	import { soundManager } from '$lib/sound/sound-manager.svelte';
@@ -227,7 +227,7 @@
 				<PlayerInfo
 					player={game.opponentPlayer}
 					color={game.opponentColor}
-					active={game.currentTurn === game.opponentColor}
+					active={game.gameState === GameState.ACTIVE && game.currentTurn === game.opponentColor}
 					online={gameUserPresences.has(game.opponentPlayer.userId)}
 					clockMs={game.opponentColor === Color.WHITE ? game.whiteDisplayTimeMs : game.blackDisplayTimeMs}
 					{clockPrecision}
@@ -259,7 +259,7 @@
 				<PlayerInfo
 					player={game.mePlayer}
 					color={game.myColor}
-					active={game.currentTurn === game.myColor}
+					active={game.gameState === GameState.ACTIVE && game.currentTurn === game.myColor}
 					online={gameUserPresences.has(game.mePlayer.userId)}
 					clockMs={game.myColor === Color.WHITE ? game.whiteDisplayTimeMs : game.blackDisplayTimeMs}
 					{clockPrecision}

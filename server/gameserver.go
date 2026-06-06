@@ -236,6 +236,24 @@ func (a *ApiHandler) handleResignGameErrorEvent(event gameplay.ResignErrorEvent)
 
 func (a *ApiHandler) handleOfferDrawEvent(event gameplay.OfferDrawEvent) {
 	a.Log.Debug("handleOfferDrawEvent", slog.String("user_id", event.UserID.String()), slog.Int64("game_id", event.GameID))
+
+	// @TODO: update active game pending draw offers
+
+	drawOfferMsg := &pb.Message{Event: &pb.Message_DrawOffer{DrawOffer: &pb.DrawOffer{
+		GameId:    int32(event.GameID),
+		Ply:       uint32(event.Ply),
+		OfferedBy: event.UserID.String(),
+		OfferedAt: timestamppb.New(event.OfferedAt),
+	}}}
+	drawOfferMsgBytes, err := protojson.Marshal(drawOfferMsg)
+	if err != nil {
+		a.Log.Error("protojson.Marshal Message_DrawOffer", slog.Any("error", err))
+	} else {
+		topic := fmt.Sprintf("user.%s.game.%d", event.OtherPlayer.String(), event.GameID)
+		if err := a.bus.rdb.Publish(context.Background(), topic, drawOfferMsgBytes).Err(); err != nil {
+			a.Log.Error("publish Message_DrawOffer", slog.Int64("game_id", event.GameID), slog.Any("error", err))
+		}
+	}
 }
 
 func (a *ApiHandler) handleOfferDrawErrorEvent(event gameplay.OfferDrawErrorEvent) {
@@ -270,6 +288,20 @@ func (a *ApiHandler) handleAcceptDrawErrorEvent(event gameplay.AcceptDrawErrorEv
 
 func (a *ApiHandler) handleDeclineDrawEvent(event gameplay.DeclineDrawEvent) {
 	a.Log.Debug("handleDeclineDrawEvent", slog.String("user_id", event.UserID.String()), slog.Int64("game_id", event.GameID))
+
+	drawDeclinedMsg := &pb.Message{Event: &pb.Message_DrawDeclined{DrawDeclined: &pb.DrawDeclined{
+		GameId:     int32(event.GameID),
+		DeclinedBy: event.UserID.String(),
+	}}}
+	drawDeclinedMsgBytes, err := protojson.Marshal(drawDeclinedMsg)
+	if err != nil {
+		a.Log.Error("protojson.Marshal Message_DrawDeclined", slog.Any("error", err))
+	} else {
+		topic := fmt.Sprintf("user.%s.game.%d", event.OtherPlayer.String(), event.GameID)
+		if err := a.bus.rdb.Publish(context.Background(), topic, drawDeclinedMsgBytes).Err(); err != nil {
+			a.Log.Error("publish Message_DrawDeclined", slog.Int64("game_id", event.GameID), slog.Any("error", err))
+		}
+	}
 }
 
 func (a *ApiHandler) handleDeclineDrawErrorEvent(event gameplay.DeclineDrawErrorEvent) {
@@ -800,6 +832,7 @@ func (a *ApiHandler) handleWSCOfferDraw(authInfo clientAuthInfo, data *pb.OfferD
 	gs.GameCommand <- gameplay.OfferDrawCmd{
 		GameID: int64(data.GetGameId()),
 		UserID: userID,
+		Ply:    int(gs.Chess.Position.Ply),
 	}
 }
 
@@ -826,6 +859,7 @@ func (a *ApiHandler) handleWSCAcceptDraw(authInfo clientAuthInfo, data *pb.Accep
 	gs.GameCommand <- gameplay.AcceptDrawCmd{
 		GameID: int64(data.GetGameId()),
 		UserID: userID,
+		Ply:    int(gs.Chess.Position.Ply),
 	}
 }
 
@@ -1217,6 +1251,17 @@ func (a *ApiHandler) sendGameInfo(gameID int64, userID, connID string, guest boo
 		legalMoves[i] = fmt.Sprint(legalMove.String())
 	}
 
+	pendingDrawOffers := make(map[string]*pb.DrawOffer)
+
+	for k, v := range gs.PendingDrawOffers {
+		pendingDrawOffers[k.String()] = &pb.DrawOffer{
+			GameId:    int32(gs.GameID),
+			Ply:       uint32(v.Ply),
+			OfferedBy: v.OfferedBy.String(),
+			OfferedAt: timestamppb.New(v.OfferedAt),
+		}
+	}
+
 	gameInfo := &pb.GameInfo{
 		GameId:           int32(gameID),
 		GameVariant:      gs.GameVariant,
@@ -1242,6 +1287,7 @@ func (a *ApiHandler) sendGameInfo(gameID int64, userID, connID string, guest boo
 		GameResult:         gs.GameResult,
 		GameResultStatus:   gs.GameResultStatus,
 		Version:            int32(gs.Version),
+		PendingDrawOffers:  pendingDrawOffers,
 	}
 	if gs.LastMove != nil {
 		gameInfo.LastMove = timestamppb.New(*gs.LastMove)

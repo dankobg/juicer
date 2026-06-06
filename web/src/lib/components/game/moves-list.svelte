@@ -80,7 +80,7 @@
 		</div>
 
 		<div class="flex max-h-30 min-h-40 flex-col gap-1 overflow-y-auto p-2" onscroll={onScroll}>
-			{#each Array(Math.ceil((game.gameMoves?.length - 1) / 2)) as _, i}
+			{#each Array(Math.ceil((game.gameMoves.length - 1) / 2)) as _, i}
 				{@const w = i * 2 + 1}
 				{@const b = i * 2 + 2}
 				{@const h1 = game.gameMoves[w]}
@@ -92,23 +92,23 @@
 				<div class="grid grid-cols-[10%_1fr_1fr_15%] items-center justify-between gap-4 border-b border-stone-300/10">
 					<div class="text-start">{num}.</div>
 					<button
-						class={['rounded-sm text-center hover:bg-secondary', game.historyIndex === w && 'bg-secondary']}
+						class={['hover:bg-secondary rounded-sm text-center', game.historyIndex === w && 'bg-secondary']}
 						onclick={() => game.movesJumpTo(w)}
 					>
 						{h1?.san}
 					</button>
 					<button
-						class={['rounded-sm text-center hover:bg-secondary', game.historyIndex === b && 'bg-secondary']}
+						class={['hover:bg-secondary rounded-sm text-center', game.historyIndex === b && 'bg-secondary']}
 						onclick={() => game.movesJumpTo(b)}
 					>
 						{h2?.san}
 					</button>
-					{#if game.gameMoves?.length > 0}
+					{#if game.gameMoves.length > 0}
 						<div>
 							{#if d1}
 								<div class="flex h-full items-center justify-between gap-1 text-xs">
 									<svg viewBox="0 0 5 10" xmlns="http://www.w3.org/2000/svg" class="h-full w-[6px]">
-										<rect width="100%" height="100%" fill="#fff" stroke="#000" />
+										<rect width="100%" height="100%" fill="#fff" />
 									</svg>
 									{(d1 / 1000).toFixed(1)}s
 								</div>
@@ -125,6 +125,7 @@
 					{/if}
 				</div>
 			{/each}
+
 			<div bind:this={scrollPointElm}></div>
 		</div>
 	</div>

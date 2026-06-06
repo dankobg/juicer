@@ -29,6 +29,9 @@ var (
 	ErrPlayerNotInGame      = errors.New("player not in game")
 	ErrNotYourTurn          = errors.New("not your turn")
 	ErrInvalidMove          = errors.New("invalid move attempt")
+
+	ErrDrawOfferExpired   = errors.New("draw offer expired")
+	ErrNoPendingDrawOffer = errors.New("no pending draw offer")
 )
 
 const (
@@ -77,7 +80,7 @@ type GameState struct {
 	Rated                  bool
 	GameMoves              []*pb.GameMove
 	Version                int
-	PendingDrawOffer       *DrawOffer
+	PendingDrawOffers      map[uuid.UUID]*DrawOffer
 	running                atomic.Bool
 	GameCommand            chan GameCommand
 	GameEvent              chan GameEvent
@@ -163,6 +166,7 @@ func NewGameState(gameID int64, players [2]Player, timeControl *pb.GameTimeContr
 		running:                atomic.Bool{},
 		GameCommand:            make(chan GameCommand, 64),
 		GameEvent:              gameEvent,
+		PendingDrawOffers:      make(map[uuid.UUID]*DrawOffer),
 	}
 
 	return gs, nil
@@ -505,13 +509,49 @@ func (gs *GameState) resignGame(c ResignGameCmd) ([]GameEvent, error) {
 }
 
 func (gs *GameState) offerDraw(c OfferDrawCmd) ([]GameEvent, error) {
+	offeredDrawAt := time.Now()
+
 	if gs.GameResult != pb.GameResult_GAME_RESULT_UNSPECIFIED {
 		return nil, ErrGameAlreadyConcluded
 	}
 
-	res := []GameEvent{OfferDrawEvent{}}
+	if !gs.HasGamePlayer(c.UserID) {
+		return nil, ErrPlayerNotInGame
+	}
 
-	return res, nil
+	player := gs.GetPlayerByID(c.UserID)
+	opponent := gs.GetOtherPlayer(c.UserID)
+
+	gs.PendingDrawOffers[player.ID] = &DrawOffer{
+		OfferedBy: player.ID,
+		OfferedAt: offeredDrawAt,
+		Ply:       int(gs.Chess.Position.Ply),
+	}
+
+	events := []GameEvent{OfferDrawEvent{
+		GameID:      gs.GameID,
+		UserID:      c.UserID,
+		OtherPlayer: opponent.ID,
+		Ply:         int(gs.Chess.Position.Ply),
+		OfferedAt:   offeredDrawAt,
+	}}
+
+	oppPendingDraw := gs.PendingDrawOffers[opponent.ID]
+	if oppPendingDraw != nil && gs.Chess.Position.Ply == uint16(c.Ply) && gs.Chess.Position.Ply == uint16(oppPendingDraw.Ply) {
+		gs.GameResult = pb.GameResult_GAME_RESULT_DRAW
+		gs.GameResultStatus = pb.GameResultStatus_GAME_RESULT_STATUS_DRAW_AGREED
+		gs.GameState = pb.GameState_GAME_STATE_FINISHED
+
+		events = append(events, GameFinishedEvent{
+			GameID:           gs.GameID,
+			GameResult:       gs.GameResult,
+			GameResultStatus: gs.GameResultStatus,
+			GameState:        gs.GameState,
+			EndTime:          time.Now(),
+		})
+	}
+
+	return events, nil
 }
 
 func (gs *GameState) acceptDraw(c AcceptDrawCmd) ([]GameEvent, error) {
@@ -523,6 +563,16 @@ func (gs *GameState) acceptDraw(c AcceptDrawCmd) ([]GameEvent, error) {
 
 	if !gs.HasGamePlayer(c.UserID) {
 		return nil, ErrPlayerNotInGame
+	}
+
+	opponent := gs.GetOtherPlayer(c.UserID)
+	oppPendingDraw := gs.PendingDrawOffers[opponent.ID]
+	if oppPendingDraw == nil {
+		return nil, ErrNoPendingDrawOffer
+	}
+
+	if oppPendingDraw.Ply != int(gs.Chess.Position.Ply) {
+		return nil, ErrDrawOfferExpired
 	}
 
 	gs.GameResult = pb.GameResult_GAME_RESULT_DRAW
@@ -545,11 +595,26 @@ func (gs *GameState) acceptDraw(c AcceptDrawCmd) ([]GameEvent, error) {
 }
 
 func (gs *GameState) declineDraw(c DeclineDrawCmd) ([]GameEvent, error) {
+	// declinedDrawAt := time.Now()
+
 	if gs.GameResult != pb.GameResult_GAME_RESULT_UNSPECIFIED {
 		return nil, ErrGameAlreadyConcluded
 	}
 
-	events := []GameEvent{DeclineDrawEvent{}}
+	if !gs.HasGamePlayer(c.UserID) {
+		return nil, ErrPlayerNotInGame
+	}
+
+	opponent := gs.GetOtherPlayer(c.UserID)
+	delete(gs.PendingDrawOffers, opponent.ID)
+
+	events := []GameEvent{
+		DeclineDrawEvent{
+			GameID:      gs.GameID,
+			UserID:      c.UserID,
+			OtherPlayer: opponent.ID,
+		},
+	}
 
 	return events, nil
 }

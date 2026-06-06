@@ -128,6 +128,7 @@ func (pst *RedisActiveGamePersistor) CreateActiveGame(ctx context.Context, gs *g
 		WhiteGameRemainingNS:   whiteNS,
 		BlackGameRemainingSecs: int32(blackSecs),
 		BlackGameRemainingNS:   blackNS,
+		PendingDrawOffers:      gs.PendingDrawOffers,
 	}
 
 	activeGameBytes, err := json.Marshal(activeGame)

@@ -17,11 +17,12 @@ import {
 	type GameChatList,
 	type AbortGame,
 	type ResignGame,
-	type OfferDraw,
 	type AcceptDraw,
 	type DeclineDraw,
 	type GameFinished,
-	type PlayerInfo
+	type PlayerInfo,
+	type DrawOffer,
+	type DrawDeclined
 } from '$lib/gen/juicer_pb';
 import { create } from '@bufbuild/protobuf';
 import type { Coord, JuicerBoard, PieceFenSymbol } from '@dankop/juicer-board';
@@ -80,13 +81,9 @@ export class GameManager {
 			legalMoves: gameInfo.legalMoves,
 			whiteRemainingGameTime: gameInfo.clocks?.white,
 			blackRemainingGameTime: gameInfo.clocks?.black,
-			ack: gameInfo.version
+			ack: gameInfo.version,
+			pendingDrawOffers: gameInfo.pendingDrawOffers
 		};
-
-		console.log('CLOCKS: ', {
-			W: gameOpts.whiteRemainingGameTime?.seconds,
-			B: gameOpts.blackRemainingGameTime?.seconds
-		});
 
 		if (this.games.has(gameInfo.gameId)) {
 			const game = this.games.get(gameInfo.gameId);
@@ -107,7 +104,19 @@ export class GameManager {
 
 	onResignGame(resignGame: ResignGame): void {}
 
-	onOfferDraw(offerDraw: OfferDraw): void {}
+	onDrawOffer(drawOffer: DrawOffer): void {
+		const game = this.games.get(drawOffer.gameId);
+		if (game) {
+			game.pendingDrawOffers.set(drawOffer.offeredBy, drawOffer);
+		}
+	}
+
+	onDrawDeclined(drawDeclined: DrawDeclined): void {
+		const game = this.games.get(drawDeclined.gameId);
+		if (game) {
+			game.pendingDrawOffers.clear();
+		}
+	}
 
 	onAcceptDraw(acceptDraw: AcceptDraw): void {}
 
@@ -119,6 +128,7 @@ export class GameManager {
 			game.gameResult = gameFinished.gameResult;
 			game.gameResultStatus = gameFinished.gameResultStatus;
 			game.gameState = gameFinished.gameState;
+			game.stopTimerLoop();
 		}
 	}
 
@@ -234,6 +244,7 @@ type GameOptions = {
 	legalMoves?: string[];
 	whiteRemainingGameTime?: Duration;
 	blackRemainingGameTime?: Duration;
+	pendingDrawOffers?: Record<string, DrawOffer>;
 };
 
 export class Game {
@@ -262,7 +273,7 @@ export class Game {
 	ply = $state<number>(0);
 	whiteRemainingGameTime = $state<Duration>();
 	blackRemainingGameTime = $state<Duration>();
-	// pending draw offer
+	pendingDrawOffers = $state<SvelteMap<string, DrawOffer>>(new SvelteMap());
 
 	// ####################################
 	myColor = $state<Color>(Color.UNSPECIFIED);
@@ -324,6 +335,12 @@ export class Game {
 		this.legalMoves = opts?.legalMoves ?? [];
 		this.whiteRemainingGameTime = opts?.whiteRemainingGameTime;
 		this.blackRemainingGameTime = opts?.blackRemainingGameTime;
+		if (opts.pendingDrawOffers) {
+			this.pendingDrawOffers = new SvelteMap();
+			Object.entries(opts.pendingDrawOffers).forEach(([k, v]) => {
+				this.pendingDrawOffers.set(k, v);
+			});
+		}
 	}
 
 	// #######################################
@@ -331,10 +348,6 @@ export class Game {
 	promotionPieceSymbol = $state<string>('');
 
 	view = $derived<'spectating' | 'playing'>(this.myColor === Color.UNSPECIFIED ? 'spectating' : 'playing');
-	currentPlayerId = $derived<string | undefined>(
-		this.myColor === Color.WHITE ? this.white?.userId : this.black?.userId
-	);
-
 	mePlayer = $derived.by(() => {
 		if (this.myColor === Color.UNSPECIFIED) {
 			return;
@@ -384,6 +397,12 @@ export class Game {
 		this.animationFrameId = requestAnimationFrame(tick);
 	}
 
+	stopTimerLoop() {
+		if (this.animationFrameId) {
+			cancelAnimationFrame(this.animationFrameId);
+		}
+	}
+
 	isCheck = $state<boolean>(Boolean(this.gameMoves.at(-1)?.check));
 	isCheckmate = $state<boolean>(Boolean(this.gameMoves.at(-1)?.san?.includes('#')));
 	hasIncrement: boolean = $derived<boolean>(this.gameTimeControl?.incrementMs !== 0);
@@ -409,17 +428,23 @@ export class Game {
 	uiShowFlipBoardButton = $state<boolean>(true);
 	uiShowResignButton = $derived<boolean>(this.gameState === GameState.ACTIVE && this.ply >= 2);
 	uiShowOfferDrawButton = $derived<boolean>(this.gameState === GameState.ACTIVE && this.ply >= 2);
-	uiShowDrawOfferResponseButtons = $derived<boolean>(false);
+	uiShowDrawAcceptDeclineButtons = $derived.by(() => {
+		if (this.gameState !== GameState.ACTIVE || !this.opponentPlayer?.userId) {
+			return false;
+		}
+		const offer = this.pendingDrawOffers.get(this.opponentPlayer?.userId);
+		return offer?.ply === this.ply;
+	});
 	uiShowChatButton = $derived<boolean>(false);
 
 	moveDurationsMs = $derived.by(() => {
-		if (!this.startTime || this.gameMoves?.length < 1) {
+		if (!this.startTime || this.gameMoves.length < 1) {
 			return [];
 		}
 		const startDate = timestampDate(this.startTime);
 		return this.gameMoves.reduce<number[]>((acc, cur, i) => {
 			if (cur.playedAt) {
-				const prev = this.gameMoves[i - i];
+				const prev = this.gameMoves[i - 1];
 				const curDate = timestampDate(cur.playedAt);
 				const prevDate = prev?.playedAt ? timestampDate(prev.playedAt) : startDate;
 				acc.push(curDate.getTime() - prevDate.getTime());

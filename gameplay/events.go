@@ -79,8 +79,11 @@ type ResignErrorEvent struct {
 func (ResignErrorEvent) isGameEvent() {}
 
 type OfferDrawEvent struct {
-	GameID int64
-	UserID uuid.UUID
+	GameID      int64
+	UserID      uuid.UUID
+	OtherPlayer uuid.UUID
+	Ply         int
+	OfferedAt   time.Time
 }
 
 func (OfferDrawEvent) isGameEvent() {}
@@ -112,8 +115,9 @@ type AcceptDrawErrorEvent struct {
 func (AcceptDrawErrorEvent) isGameEvent() {}
 
 type DeclineDrawEvent struct {
-	GameID int64
-	UserID uuid.UUID
+	GameID      int64
+	UserID      uuid.UUID
+	OtherPlayer uuid.UUID
 }
 
 func (DeclineDrawEvent) isGameEvent() {}

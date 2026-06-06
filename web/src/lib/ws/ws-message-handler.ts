@@ -67,8 +67,11 @@ export function onWsMessage(event: MessageEvent): void {
 			case 'resignGame':
 				gameManager.onResignGame(msg.event.value);
 				break;
-			case 'offerDraw':
-				gameManager.onOfferDraw(msg.event.value);
+			case 'drawOffer':
+				gameManager.onDrawOffer(msg.event.value);
+				break;
+			case 'drawDeclined':
+				gameManager.onDrawDeclined(msg.event.value);
 				break;
 			case 'acceptDraw':
 				gameManager.onAcceptDraw(msg.event.value);

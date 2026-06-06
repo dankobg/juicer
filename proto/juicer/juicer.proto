@@ -129,6 +129,8 @@ message Message {
     GameChat game_chat = 29;
     GameChatList game_chats = 30;
 
+    DrawDeclined draw_declined = 64;
+    DrawOffer draw_offer = 65;
     MoveAck move_ack = 66;
     GameInfo game_info = 67;
     Echo echo = 69;
@@ -210,7 +212,6 @@ message Presence {
 // PresenceState is the full snapshot of all presences
 message PresenceState {
   repeated Presence presences = 1;
-  // map<string, Presence> presences = 1;
 }
 
 // PresenceDiff is the incremental presence change event
@@ -282,6 +283,7 @@ message GameInfo {
   GameResultStatus game_result_status = 21;
   int32 version = 22;
   optional google.protobuf.Timestamp last_move = 23;
+  map<string, DrawOffer> pending_draw_offers = 24;
 }
 
 // AbortGame is game abort message
@@ -297,6 +299,20 @@ message ResignGame {
 // OfferDraw is game draw offer message
 message OfferDraw {
   int32 game_id = 1;
+}
+
+// DrawOffer is game draw offer response message
+message DrawOffer {
+  int32 game_id = 1;
+  uint32 ply = 2;
+  string offered_by = 3;
+  google.protobuf.Timestamp offered_at = 4;
+}
+
+// DrawDeclined is draw offer declined response message
+message DrawDeclined {
+  int32 game_id = 1;
+  string declined_by = 3;
 }
 
 // DeclineDraw is game draw decline message
