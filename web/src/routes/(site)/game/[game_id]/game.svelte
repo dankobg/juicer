@@ -53,15 +53,6 @@
 		}
 	});
 
-	let arr = $derived.by(() => {
-		return game?.gameMoves.map(({ uci, playedAt }) => {
-			return {
-				m: uci || '-',
-				ts: playedAt ? Number(playedAt.seconds || 0) : '-'
-			};
-		});
-	});
-
 	function onBoardMoveStart(event: MoveStartEvent) {
 		if (!game?.isViewingLatestPosition) {
 			event.preventDefault();

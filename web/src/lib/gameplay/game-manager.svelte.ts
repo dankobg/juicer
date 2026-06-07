@@ -13,7 +13,8 @@ import {
 	type DeclineDraw,
 	type GameFinished,
 	type DrawOffer,
-	type DrawDeclined
+	type DrawDeclined,
+	GameResult
 } from '$lib/gen/juicer_pb';
 import { create } from '@bufbuild/protobuf';
 import type { Coord } from '@dankop/juicer-board';
@@ -123,6 +124,18 @@ export class GameManager {
 			game.gameResultStatus = gameFinished.gameResultStatus;
 			game.gameState = gameFinished.gameState;
 			game.stopClockTimerLoop();
+
+			switch (game?.gameResult) {
+				case GameResult.DRAW:
+					soundManager.play('Draw');
+					break;
+				case GameResult.WHITE_WON:
+					soundManager.play(game?.myColor === Color.WHITE ? 'Victory' : 'Defeat');
+					break;
+				case GameResult.BLACK_WON:
+					soundManager.play(game?.myColor === Color.BLACK ? 'Victory' : 'Defeat');
+					break;
+			}
 		}
 	}
 

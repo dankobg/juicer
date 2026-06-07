@@ -12,7 +12,7 @@ import {
 	type GameMove,
 	type DrawOffer
 } from '$lib/gen/juicer_pb';
-import { soundManager } from '$lib/sound/sound-manager.svelte';
+import { soundManager, type SoundName } from '$lib/sound/sound-manager.svelte';
 import { ws } from '$lib/ws/juicer-ws.svelte';
 import { create } from '@bufbuild/protobuf';
 import { type Timestamp, type Duration, timestampDate } from '@bufbuild/protobuf/wkt';
@@ -302,7 +302,17 @@ export class Game {
 	movesGoForward() {
 		if (this.movesCanGoForward) {
 			this.historyPointer++;
-			soundManager.play(this.isCapture ? 'Capture' : 'Move');
+
+			let sound: SoundName = 'Move';
+			if (this.isCheckmate) {
+				sound = 'Checkmate';
+			} else if (this.isCheck) {
+				sound = 'Check';
+			} else if (this.isCapture) {
+				sound = 'Capture';
+			}
+
+			soundManager.play(sound);
 		}
 	}
 
@@ -315,7 +325,17 @@ export class Game {
 	movesGotoEnd() {
 		if (this.movesCanGotoEnd) {
 			this.historyPointer = this.gameMoves.length - 1;
-			soundManager.play(this.isCapture ? 'Capture' : 'Move');
+
+			let sound: SoundName = 'Move';
+			if (this.isCheckmate) {
+				sound = 'Checkmate';
+			} else if (this.isCheck) {
+				sound = 'Check';
+			} else if (this.isCapture) {
+				sound = 'Capture';
+			}
+
+			soundManager.play(sound);
 		}
 	}
 
