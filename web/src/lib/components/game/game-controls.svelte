@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { Game } from '$lib/gameplay/game-manager.svelte';
+	import type { Game } from '$lib/gameplay/game.svelte';
 	import IconFlag from '@lucide/svelte/icons/flag';
 	import IconHandshake from '@lucide/svelte/icons/handshake';
 	import IconArrowUpDown from '@lucide/svelte/icons/arrow-up-down';

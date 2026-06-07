@@ -79,7 +79,6 @@ type ActiveGameMove struct {
 	Fen      string     `json:"fen"`
 	Uci      string     `json:"uci"`
 	San      string     `json:"san"`
-	Check    bool       `json:"check"`
 	PlayedAt *time.Time `json:"played_at"`
 }
 

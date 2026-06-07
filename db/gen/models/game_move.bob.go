@@ -30,7 +30,6 @@ type GameMove struct {
 	Uci      string              `db:"uci" `
 	San      string              `db:"san" `
 	Lan      string              `db:"lan" `
-	Check    bool                `db:"check" `
 	PlayedAt null.Val[time.Time] `db:"played_at" `
 
 	R gameMoveR `db:"-" `
@@ -54,7 +53,7 @@ type gameMoveR struct {
 func buildGameMoveColumns(alias string) gameMoveColumns {
 	return gameMoveColumns{
 		ColumnsExpr: expr.NewColumnsExpr(
-			"id", "game_id", "fen", "uci", "san", "lan", "check", "played_at",
+			"id", "game_id", "fen", "uci", "san", "lan", "played_at",
 		).WithParent("game_move"),
 		tableAlias: alias,
 		ID:         psql.Quote(alias, "id"),
@@ -63,7 +62,6 @@ func buildGameMoveColumns(alias string) gameMoveColumns {
 		Uci:        psql.Quote(alias, "uci"),
 		San:        psql.Quote(alias, "san"),
 		Lan:        psql.Quote(alias, "lan"),
-		Check:      psql.Quote(alias, "check"),
 		PlayedAt:   psql.Quote(alias, "played_at"),
 	}
 }
@@ -77,7 +75,6 @@ type gameMoveColumns struct {
 	Uci        psql.Expression
 	San        psql.Expression
 	Lan        psql.Expression
-	Check      psql.Expression
 	PlayedAt   psql.Expression
 }
 
@@ -98,12 +95,11 @@ type GameMoveSetter struct {
 	Uci      omit.Val[string]        `db:"uci" `
 	San      omit.Val[string]        `db:"san" `
 	Lan      omit.Val[string]        `db:"lan" `
-	Check    omit.Val[bool]          `db:"check" `
 	PlayedAt omitnull.Val[time.Time] `db:"played_at" `
 }
 
 func (s GameMoveSetter) SetColumns() []string {
-	vals := make([]string, 0, 7)
+	vals := make([]string, 0, 6)
 	if s.GameID.IsValue() {
 		vals = append(vals, "game_id")
 	}
@@ -118,9 +114,6 @@ func (s GameMoveSetter) SetColumns() []string {
 	}
 	if s.Lan.IsValue() {
 		vals = append(vals, "lan")
-	}
-	if s.Check.IsValue() {
-		vals = append(vals, "check")
 	}
 	if !s.PlayedAt.IsUnset() {
 		vals = append(vals, "played_at")
@@ -144,9 +137,6 @@ func (s GameMoveSetter) Overwrite(t *GameMove) {
 	if s.Lan.IsValue() {
 		t.Lan = s.Lan.MustGet()
 	}
-	if s.Check.IsValue() {
-		t.Check = s.Check.MustGet()
-	}
 	if !s.PlayedAt.IsUnset() {
 		t.PlayedAt = s.PlayedAt.MustGetNull()
 	}
@@ -158,7 +148,7 @@ func (s *GameMoveSetter) Apply(q *dialect.InsertQuery) {
 	})
 
 	q.AppendValues(bob.ExpressionFunc(func(ctx context.Context, w io.StringWriter, d bob.Dialect, start int) ([]any, error) {
-		vals := make([]bob.Expression, 7)
+		vals := make([]bob.Expression, 6)
 		if s.GameID.IsValue() {
 			vals[0] = psql.Arg(s.GameID.MustGet())
 		} else {
@@ -189,16 +179,10 @@ func (s *GameMoveSetter) Apply(q *dialect.InsertQuery) {
 			vals[4] = psql.Raw("DEFAULT")
 		}
 
-		if s.Check.IsValue() {
-			vals[5] = psql.Arg(s.Check.MustGet())
+		if !s.PlayedAt.IsUnset() {
+			vals[5] = psql.Arg(s.PlayedAt.MustGetNull())
 		} else {
 			vals[5] = psql.Raw("DEFAULT")
-		}
-
-		if !s.PlayedAt.IsUnset() {
-			vals[6] = psql.Arg(s.PlayedAt.MustGetNull())
-		} else {
-			vals[6] = psql.Raw("DEFAULT")
 		}
 
 		return bob.ExpressSlice(ctx, w, d, start, vals, "", ", ", "")
@@ -210,7 +194,7 @@ func (s GameMoveSetter) UpdateMod() bob.Mod[*dialect.UpdateQuery] {
 }
 
 func (s GameMoveSetter) Expressions(prefix ...string) []bob.Expression {
-	exprs := make([]bob.Expression, 0, 7)
+	exprs := make([]bob.Expression, 0, 6)
 
 	if s.GameID.IsValue() {
 		exprs = append(exprs, expr.Join{Sep: " = ", Exprs: []bob.Expression{
@@ -244,13 +228,6 @@ func (s GameMoveSetter) Expressions(prefix ...string) []bob.Expression {
 		exprs = append(exprs, expr.Join{Sep: " = ", Exprs: []bob.Expression{
 			psql.Quote(append(prefix, "lan")...),
 			psql.Arg(s.Lan),
-		}})
-	}
-
-	if s.Check.IsValue() {
-		exprs = append(exprs, expr.Join{Sep: " = ", Exprs: []bob.Expression{
-			psql.Quote(append(prefix, "check")...),
-			psql.Arg(s.Check),
 		}})
 	}
 

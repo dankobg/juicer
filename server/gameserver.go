@@ -123,7 +123,6 @@ func (a *ApiHandler) handlePlayMoveUCIEvent(event gameplay.PlayMoveUCIEvent) {
 		Uci:      omit.From(event.Uci),
 		San:      omit.From(event.San),
 		Lan:      omit.From(event.Lan),
-		Check:    omit.From(event.Position.Check),
 		PlayedAt: omitnull.FromPtr(event.LastMove),
 	}
 
@@ -1623,11 +1622,10 @@ func (a *ApiHandler) processMatchedPoolPair(ctx context.Context, pair [2]string,
 	moveSetters := make([]models.GameMoveSetter, len(gs.GameMoves))
 	for i, move := range gs.GameMoves {
 		moveSetter := models.GameMoveSetter{
-			Fen:   omit.From(move.GetFen()),
-			Uci:   omit.From(move.GetUci()),
-			San:   omit.From(move.GetSan()),
-			Lan:   omit.From(move.GetLan()),
-			Check: omit.From(gs.Chess.Position.Check),
+			Fen: omit.From(move.GetFen()),
+			Uci: omit.From(move.GetUci()),
+			San: omit.From(move.GetSan()),
+			Lan: omit.From(move.GetLan()),
 		}
 		if move.GetPlayedAt() != nil {
 			moveSetter.PlayedAt = omitnull.From(move.GetPlayedAt().AsTime())
@@ -1776,8 +1774,7 @@ func (a *ApiHandler) gameStateFromPersistence(ctx context.Context, game models.G
 
 		for i, m := range *moves {
 			move := &pb.GameMove{
-				Fen:   m.Fen,
-				Check: m.Check,
+				Fen: m.Fen,
 			}
 			if m.Uci != "" {
 				move.Uci = &m.Uci

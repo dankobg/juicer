@@ -2113,8 +2113,7 @@ type GameMove struct {
 	Uci           *string                `protobuf:"bytes,2,opt,name=uci,proto3,oneof" json:"uci,omitempty"`
 	San           *string                `protobuf:"bytes,3,opt,name=san,proto3,oneof" json:"san,omitempty"`
 	Lan           *string                `protobuf:"bytes,4,opt,name=lan,proto3,oneof" json:"lan,omitempty"`
-	Check         bool                   `protobuf:"varint,5,opt,name=check,proto3" json:"check,omitempty"`
-	PlayedAt      *timestamppb.Timestamp `protobuf:"bytes,6,opt,name=played_at,json=playedAt,proto3,oneof" json:"played_at,omitempty"`
+	PlayedAt      *timestamppb.Timestamp `protobuf:"bytes,5,opt,name=played_at,json=playedAt,proto3,oneof" json:"played_at,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2175,13 +2174,6 @@ func (x *GameMove) GetLan() string {
 		return *x.Lan
 	}
 	return ""
-}
-
-func (x *GameMove) GetCheck() bool {
-	if x != nil {
-		return x.Check
-	}
-	return false
 }
 
 func (x *GameMove) GetPlayedAt() *timestamppb.Timestamp {
@@ -3674,14 +3666,13 @@ const file_proto_juicer_juicer_proto_rawDesc = "" +
 	"\x05guest\x18\x03 \x01(\bR\x05guest\x12\x1d\n" +
 	"\n" +
 	"avatar_url\x18\x04 \x01(\tR\tavatarUrl\x12\x16\n" +
-	"\x06rating\x18\x05 \x01(\x05R\x06rating\"\xdb\x01\n" +
+	"\x06rating\x18\x05 \x01(\x05R\x06rating\"\xc5\x01\n" +
 	"\bGameMove\x12\x10\n" +
 	"\x03fen\x18\x01 \x01(\tR\x03fen\x12\x15\n" +
 	"\x03uci\x18\x02 \x01(\tH\x00R\x03uci\x88\x01\x01\x12\x15\n" +
 	"\x03san\x18\x03 \x01(\tH\x01R\x03san\x88\x01\x01\x12\x15\n" +
-	"\x03lan\x18\x04 \x01(\tH\x02R\x03lan\x88\x01\x01\x12\x14\n" +
-	"\x05check\x18\x05 \x01(\bR\x05check\x12<\n" +
-	"\tplayed_at\x18\x06 \x01(\v2\x1a.google.protobuf.TimestampH\x03R\bplayedAt\x88\x01\x01B\x06\n" +
+	"\x03lan\x18\x04 \x01(\tH\x02R\x03lan\x88\x01\x01\x12<\n" +
+	"\tplayed_at\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampH\x03R\bplayedAt\x88\x01\x01B\x06\n" +
 	"\x04_uciB\x06\n" +
 	"\x04_sanB\x06\n" +
 	"\x04_lanB\f\n" +

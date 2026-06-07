@@ -249,8 +249,7 @@ message GameMove {
   optional string uci = 2;
   optional string san = 3;
   optional string lan = 4;
-  bool check = 5;
-  optional google.protobuf.Timestamp played_at = 6;
+  optional google.protobuf.Timestamp played_at = 5;
 }
 
 // GameFound signals that the game was found

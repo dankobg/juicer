@@ -72,9 +72,8 @@ func (pst *RedisActiveGamePersistor) CreateActiveGame(ctx context.Context, gs *g
 
 	for i, move := range gs.GameMoves {
 		agm := dbtype.ActiveGameMove{
-			ID:    int64(i + 1),
-			Fen:   move.Fen,
-			Check: move.Check,
+			ID:  int64(i + 1),
+			Fen: move.Fen,
 		}
 		if move.Uci != nil {
 			agm.Uci = *move.Uci

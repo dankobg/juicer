@@ -139,7 +139,7 @@ func NewGameState(gameID int64, players [2]Player, timeControl *pb.GameTimeContr
 		}
 	}
 
-	gameMoves := []*pb.GameMove{{Fen: gopts.fen, Check: false}}
+	gameMoves := []*pb.GameMove{{Fen: gopts.fen}}
 
 	gs := &GameState{
 		Chess:                  chess,
@@ -700,7 +700,6 @@ func (gs *GameState) playMoveUCI(c PlayMoveUCICmd) ([]GameEvent, error) {
 		Uci:      new(uci),
 		San:      new(san),
 		Lan:      new(lan),
-		Check:    gs.Chess.Position.Check,
 		PlayedAt: timestamppb.New(playedAt),
 	})
 	gs.Version = int(c.Ack)

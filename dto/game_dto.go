@@ -96,7 +96,6 @@ func GameDetailsToResponse(g dbtype.GameDetails) api.Game {
 				Fen:      m.Fen,
 				San:      m.San,
 				Uci:      m.Uci,
-				Check:    m.Check,
 				PlayedAt: m.PlayedAt.Ptr(),
 			}
 		}

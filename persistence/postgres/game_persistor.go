@@ -113,7 +113,6 @@ func (pst *PgGamePersistor) ListGames(ctx context.Context, filters dbtype.ListGa
         game_move.fen AS "fen",
         game_move.san AS "san",
         game_move.uci AS "uci",
-        game_move.check AS "check",
         game_move.played_at AS "playedAt"
       FROM
         public.game_move
@@ -270,7 +269,6 @@ func (pst *PgGamePersistor) GetGameByID(ctx context.Context, gameID int64, filte
         game_move.fen AS "fen",
         game_move.san AS "san",
         game_move.uci AS "uci",
-        game_move.check AS "check",
         game_move.played_at AS "playedAt"
       FROM
         public.game_move

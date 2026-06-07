@@ -7,7 +7,7 @@
 	import { buttonVariants } from '$lib/components/ui/button/index';
 	import IconArrowDown from '@lucide/svelte/icons/arrow-down-to-line';
 	import { tick, type Component } from 'svelte';
-	import type { Game } from '$lib/gameplay/game-manager.svelte';
+	import type { Game } from '$lib/gameplay/game.svelte';
 
 	let { game }: { game: Game } = $props();
 
@@ -38,24 +38,28 @@
 	function onKeydown(e: KeyboardEvent) {
 		if (e.key === 'ArrowLeft') {
 			e.preventDefault();
-			game.movesStepBack();
+			game.movesGoBack();
 		} else if (e.key === 'ArrowRight') {
 			e.preventDefault();
-			game.movesStepForward();
+			game.movesGoForward();
 		} else if (e.key === 'ArrowUp') {
 			e.preventDefault();
-			game.movesSkipToStart();
+			game.movesGotoStart();
 		} else if (e.key === 'ArrowDown') {
 			e.preventDefault();
-			game.movesSkipToEnd();
+			game.movesGotoEnd();
 		}
 	}
 </script>
 
-{#snippet btn(text: string, Icon: Component, onclick?: () => void)}
+{#snippet btn(text: string, Icon: Component, onclick?: () => void, disabled?: boolean)}
 	<Tooltip.Provider delayDuration={200}>
 		<Tooltip.Root>
-			<Tooltip.Trigger class={buttonVariants({ variant: 'ghost', size: 'icon', class: 'rounded-full' })} {onclick}>
+			<Tooltip.Trigger
+				class={buttonVariants({ variant: 'ghost', size: 'icon', class: 'rounded-full' })}
+				{onclick}
+				{disabled}
+			>
 				<Icon />
 			</Tooltip.Trigger>
 			<Tooltip.Content>
@@ -70,10 +74,10 @@
 <div class="flex flex-col">
 	<div class="">
 		<div class="mt-auto flex justify-center gap-4 p-2 pb-0">
-			{@render btn('Skip to start', IconSkipBack, () => game.movesSkipToStart())}
-			{@render btn('Step back', IconStepBack, () => game.movesStepBack())}
-			{@render btn('Step forward', IconStepForward, () => game.movesStepForward())}
-			{@render btn('Skip to end', IconSkipForward, () => game.movesSkipToEnd())}
+			{@render btn('Skip to start', IconSkipBack, () => game.movesGotoStart(), !game?.movesCanGotoStart)}
+			{@render btn('Step back', IconStepBack, () => game.movesGoBack(), !game?.movesCanGoBack)}
+			{@render btn('Step forward', IconStepForward, () => game.movesGoForward(), !game?.movesCanGoForward)}
+			{@render btn('Skip to end', IconSkipForward, () => game.movesGotoEnd(), !game?.movesCanGotoEnd)}
 			{#if !allowedToScrollToLatest}
 				{@render btn('Scroll to last', IconArrowDown, () => scrollToLatestMessage())}
 			{/if}
@@ -92,14 +96,14 @@
 				<div class="grid grid-cols-[10%_1fr_1fr_15%] items-center justify-between gap-4 border-b border-stone-300/10">
 					<div class="text-start">{num}.</div>
 					<button
-						class={['hover:bg-secondary rounded-sm text-center', game.historyIndex === w && 'bg-secondary']}
-						onclick={() => game.movesJumpTo(w)}
+						class={['hover:bg-secondary rounded-sm text-center', game.historyPointer === w && 'bg-secondary']}
+						onclick={() => game.movesGoto(w)}
 					>
 						{h1?.san}
 					</button>
 					<button
-						class={['hover:bg-secondary rounded-sm text-center', game.historyIndex === b && 'bg-secondary']}
-						onclick={() => game.movesJumpTo(b)}
+						class={['hover:bg-secondary rounded-sm text-center', game.historyPointer === b && 'bg-secondary']}
+						onclick={() => game.movesGoto(b)}
 					>
 						{h2?.san}
 					</button>
@@ -107,7 +111,7 @@
 						<div>
 							{#if d1}
 								<div class="flex h-full items-center justify-between gap-1 text-xs">
-									<svg viewBox="0 0 5 10" xmlns="http://www.w3.org/2000/svg" class="h-full w-[6px]">
+									<svg viewBox="0 0 5 10" xmlns="http://www.w3.org/2000/svg" class="h-full w-1.5">
 										<rect width="100%" height="100%" fill="#fff" />
 									</svg>
 									{(d1 / 1000).toFixed(1)}s
@@ -115,7 +119,7 @@
 							{/if}
 							{#if d2}
 								<div class="flex h-full items-center justify-between gap-1 text-xs">
-									<svg viewBox="0 0 5 10" xmlns="http://www.w3.org/2000/svg" class="h-full w-[6px]">
+									<svg viewBox="0 0 5 10" xmlns="http://www.w3.org/2000/svg" class="h-full w-1.5">
 										<rect width="100%" height="100%" fill="#000" stroke="#fff" />
 									</svg>
 									{(d2 / 1000).toFixed(1)}s

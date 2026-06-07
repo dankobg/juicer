@@ -2,15 +2,15 @@
 	import type { PageProps } from './$types';
 	import { ws } from '$lib/ws/juicer-ws.svelte';
 	import { onWsClose, onWsError, onWsMessage, onWsOpen } from '$lib/ws/ws-message-handler';
+	import { gameManager } from '$lib/gameplay/game-manager.svelte';
 	import {
 		Game,
-		gameManager,
 		getPromotionLabelText,
 		getRookCastleMove,
 		isPromotionMove,
 		playedEnpassantMove,
 		PROMOS
-	} from '$lib/gameplay/game-manager.svelte';
+	} from '$lib/gameplay/game.svelte';
 	import type {
 		Coord,
 		MoveCancelEvent,
@@ -63,6 +63,11 @@
 	});
 
 	function onBoardMoveStart(event: MoveStartEvent) {
+		if (!game?.isViewingLatestPosition) {
+			event.preventDefault();
+			return;
+		}
+
 		const isWhitePiece = event.data.pieceData.piece === event.data.pieceData.piece.toUpperCase();
 		if ((isWhitePiece && game?.myColor === Color.BLACK) || (!isWhitePiece && game?.myColor === Color.WHITE)) {
 			event.preventDefault();
@@ -239,7 +244,7 @@
 			<juicer-board
 				bind:this={() => game.board, v => (game.board = v)}
 				board-theme={boardTheme}
-				fen={game.gameMoves.at(-1)?.fen || 'start'}
+				fen={game?.currentPosition?.fen || 'start'}
 				orientation={game.orientation === Color.WHITE ? 'w' : 'b'}
 				coords-placement={uiSettings.boardCoordinates.current.placement}
 				ranks-position={uiSettings.boardCoordinates.current.ranksPosition}
@@ -247,6 +252,7 @@
 				interactive
 				show-ghost={uiSettings.showGhost.current}
 				show-resizer={showResizer}
+				check-square={game?.checkSquare}
 			></juicer-board>
 		</div>
 
