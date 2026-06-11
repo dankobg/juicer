@@ -199,9 +199,11 @@ export class Game {
 	blackDisplayTimeMs = $state<number>(this.blackRemaininGameTimeMs);
 	whiteDisplayReconnectTimeMs = $state<number | undefined>(this.reconnectTimeoutMs);
 	blackDisplayReconnectTimeMs = $state<number | undefined>(this.reconnectTimeoutMs);
+	whiteDisplayFirstMoveTimeMs = $state<number | undefined>(this.firstMoveTimeoutMs);
+	blackDisplayFirstMoveTimeMs = $state<number | undefined>(this.firstMoveTimeoutMs);
 
 	getWhiteDisplayTimeMs(ts: number): number {
-		if (!this.lastMove) {
+		if (!this.lastMove || this.ply < 2) {
 			return this.whiteRemaininGameTimeMs;
 		}
 		const elapsed = Date.now() - timestampDate(this.lastMove).getTime();
@@ -209,7 +211,7 @@ export class Game {
 	}
 
 	getBlackDisplayTimeMs(ts: number): number {
-		if (!this.lastMove) {
+		if (!this.lastMove || this.ply < 2) {
 			return this.blackRemaininGameTimeMs;
 		}
 		const elapsed = Date.now() - timestampDate(this.lastMove).getTime();
@@ -217,25 +219,43 @@ export class Game {
 	}
 
 	getWhiteDisplayReconnectTimeMs(ts: number): number | undefined {
-		if (!this.reconnectTimeoutMs || !this.whiteDisconnectedAt) {
+		if (!this.reconnectTimeoutMs || !this.whiteDisconnectedAt || this.ply < 2) {
 			return;
 		}
 		return Math.max(0, this.reconnectTimeoutMs - (Date.now() - timestampDate(this.whiteDisconnectedAt).getTime()));
 	}
 
 	getBlackDisplayReconnectTimeMs(ts: number): number | undefined {
-		if (!this.reconnectTimeoutMs || !this.blackDisconnectedAt) {
+		if (!this.reconnectTimeoutMs || !this.blackDisconnectedAt || this.ply < 2) {
 			return;
 		}
 		return Math.max(0, this.reconnectTimeoutMs - (Date.now() - timestampDate(this.blackDisconnectedAt).getTime()));
 	}
 
-	startClockTimerLoop() {
+	getWhiteDisplayFirstMoveTimeMs(ts: number): number | undefined {
+		if (!this.firstMoveTimeoutMs || !this.startTime || this.ply !== 0) {
+			return;
+		}
+		const elapsed = Date.now() - timestampDate(this.startTime).getTime();
+		return Math.max(0, this.firstMoveTimeoutMs - elapsed);
+	}
+
+	getBlackDisplayFirstMoveTimeMs(ts: number): number | undefined {
+		if (!this.firstMoveTimeoutMs || this.ply !== 1 || !this.lastMove) {
+			return;
+		}
+		const elapsed = Date.now() - timestampDate(this.lastMove).getTime();
+		return Math.max(0, this.firstMoveTimeoutMs - elapsed);
+	}
+
+	startLoop() {
 		if (this.animationFrameId !== null) {
 			return;
 		}
 
 		const tick = (timestamp: number) => {
+			this.whiteDisplayFirstMoveTimeMs = this.getWhiteDisplayFirstMoveTimeMs(timestamp);
+			this.blackDisplayFirstMoveTimeMs = this.getBlackDisplayFirstMoveTimeMs(timestamp);
 			this.whiteDisplayTimeMs = this.getWhiteDisplayTimeMs(timestamp);
 			this.blackDisplayTimeMs = this.getBlackDisplayTimeMs(timestamp);
 			this.whiteDisplayReconnectTimeMs = this.getWhiteDisplayReconnectTimeMs(timestamp);
@@ -246,7 +266,7 @@ export class Game {
 		this.animationFrameId = requestAnimationFrame(tick);
 	}
 
-	stopClockTimerLoop() {
+	stopLoop() {
 		if (this.animationFrameId) {
 			cancelAnimationFrame(this.animationFrameId);
 		}

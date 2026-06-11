@@ -86,14 +86,10 @@ export class GameManager {
 		if (this.games.has(gameInfo.gameId)) {
 			const game = this.games.get(gameInfo.gameId);
 			game?.configure(gameOpts);
-			if (game && game.ply >= 2) {
-				game.startClockTimerLoop();
-			}
+			game?.startLoop();
 		} else {
 			const game = new Game(gameOpts);
-			if (game.ply >= 2) {
-				game.startClockTimerLoop();
-			}
+			game.startLoop();
 			this.games.set(gameInfo.gameId, game);
 		}
 	}
@@ -150,7 +146,7 @@ export class GameManager {
 			game.gameResult = gameFinished.gameResult;
 			game.gameResultStatus = gameFinished.gameResultStatus;
 			game.gameState = gameFinished.gameState;
-			game.stopClockTimerLoop();
+			game.stopLoop();
 
 			switch (game?.gameResult) {
 				case GameResult.DRAW:
@@ -194,9 +190,7 @@ export class GameManager {
 			game.historyPointer = game.gameMoves.length - 1;
 		}
 
-		if (game.ply >= 2) {
-			game.startClockTimerLoop();
-		}
+		game.startLoop();
 
 		if (!myMove && wasViewingLatestPosition) {
 			const src = moveSync.uci.slice(0, 2) as Coord;

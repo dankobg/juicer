@@ -229,6 +229,9 @@
 					reconnectMs={game.opponentColor === Color.WHITE
 						? game.whiteDisplayReconnectTimeMs
 						: game.blackDisplayReconnectTimeMs}
+					firstMoveMs={game.opponentColor === Color.WHITE
+						? game.whiteDisplayFirstMoveTimeMs
+						: game.blackDisplayFirstMoveTimeMs}
 					{clockPrecision}
 				/>
 			{/if}
@@ -265,6 +268,9 @@
 					reconnectMs={game.myColor === Color.WHITE
 						? game.whiteDisplayReconnectTimeMs
 						: game.blackDisplayReconnectTimeMs}
+					firstMoveMs={game.myColor === Color.WHITE
+						? game.whiteDisplayFirstMoveTimeMs
+						: game.blackDisplayFirstMoveTimeMs}
 					{clockPrecision}
 				/>
 			{/if}

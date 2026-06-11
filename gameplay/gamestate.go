@@ -36,8 +36,8 @@ var (
 
 const (
 	AverageGameMovesEstimate = 40
-	defaultReconnectTimeout  = time.Second * 15
-	defaultFirstMoveTimeout  = time.Second * 10
+	defaultReconnectTimeout  = time.Second * 20
+	defaultFirstMoveTimeout  = time.Second * 15
 )
 
 type CategoryThreshold struct {
