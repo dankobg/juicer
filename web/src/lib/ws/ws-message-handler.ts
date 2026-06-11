@@ -82,6 +82,12 @@ export function onWsMessage(event: MessageEvent): void {
 			case 'gameFinished':
 				gameManager.onGameFinished(msg.event.value);
 				break;
+			case 'playerLeft':
+				gameManager.onGamePlayerLeft(msg.event.value);
+				break;
+			case 'playerRejoined':
+				gameManager.onGamePlayerRejoined(msg.event.value);
+				break;
 			default:
 				console.error('unknown message', msg.event.case, msg.event.value);
 				break;

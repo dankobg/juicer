@@ -8,9 +8,14 @@
 		active?: boolean;
 		clockMs?: number;
 		clockPrecision?: (ms: number) => 'deciseconds' | 'centiseconds' | null;
+		reconnectMs?: number;
 	};
 
-	let { player, color, online, active, clockMs, clockPrecision }: Props = $props();
+	let { player, color, online, active, clockMs, clockPrecision, reconnectMs }: Props = $props();
+
+	function formatSimpleTimer(totalMs: number): string {
+		return Math.max(0, totalMs / 1000).toFixed(1);
+	}
 
 	function formatChessTime(totalMs: number, precisionFn?: Props['clockPrecision']): string {
 		const precision = precisionFn?.(totalMs) ?? null;
@@ -48,6 +53,11 @@
 	}
 </script>
 
+{#if reconnectMs !== undefined}
+	<span class="rounded-sm bg-orange-600 p-1 text-xl">
+		{formatSimpleTimer(reconnectMs ?? 0)}s to reconnect
+	</span>
+{/if}
 <div class="flex items-center justify-between">
 	<span
 		class={['rounded-sm bg-green-700 p-1 text-5xl', active ? 'bg-green-700' : 'bg-neutral-200 dark:bg-neutral-700']}

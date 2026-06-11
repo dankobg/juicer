@@ -139,3 +139,21 @@ type GameFinishedEvent struct {
 }
 
 func (GameFinishedEvent) isGameEvent() {}
+
+type PlayerDisconnected struct {
+	GameID         int64
+	UserID         uuid.UUID
+	OtherUserID    uuid.UUID
+	DisconnectedAt time.Time
+}
+
+func (PlayerDisconnected) isGameEvent() {}
+
+type PlayerReconnected struct {
+	GameID        int64
+	UserID        uuid.UUID
+	OtherUserID   uuid.UUID
+	ReconnectedAt time.Time
+}
+
+func (PlayerReconnected) isGameEvent() {}

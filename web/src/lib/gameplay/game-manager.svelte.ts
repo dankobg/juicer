@@ -14,7 +14,9 @@ import {
 	type GameFinished,
 	type DrawOffer,
 	type DrawDeclined,
-	GameResult
+	GameResult,
+	type PlayerRejoined,
+	type PlayerLeft
 } from '$lib/gen/juicer_pb';
 import { create } from '@bufbuild/protobuf';
 import type { Coord } from '@dankop/juicer-board';
@@ -72,8 +74,9 @@ export class GameManager {
 			whiteRemainingGameTime: gameInfo.clocks?.white,
 			blackRemainingGameTime: gameInfo.clocks?.black,
 			ack: gameInfo.version,
-			pendingDrawOffers: gameInfo.pendingDrawOffers
-			// repetitions: 0
+			pendingDrawOffers: gameInfo.pendingDrawOffers,
+			whiteDisconnectedAt: gameInfo.whiteDisconnectedAt,
+			blackDisconnectedAt: gameInfo.blackDisconnectedAt
 		};
 
 		if (gameInfo.gameMoves.length > 0) {
@@ -116,6 +119,30 @@ export class GameManager {
 	onAcceptDraw(acceptDraw: AcceptDraw): void {}
 
 	onDeclinedDraw(declineDraw: DeclineDraw): void {}
+
+	onGamePlayerLeft(playerLeft: PlayerLeft): void {
+		const game = this.games.get(playerLeft.gameId);
+		if (game) {
+			const color = game?.getPlayerColor(playerLeft.userId);
+			if (color === Color.WHITE) {
+				game.whiteDisconnectedAt = playerLeft.leftAt;
+			} else if (color === Color.BLACK) {
+				game.blackDisconnectedAt = playerLeft.leftAt;
+			}
+		}
+	}
+
+	onGamePlayerRejoined(playerRejoined: PlayerRejoined): void {
+		const game = this.games.get(playerRejoined.gameId);
+		if (game) {
+			const color = game?.getPlayerColor(playerRejoined.userId);
+			if (color === Color.WHITE) {
+				game.whiteDisconnectedAt = undefined;
+			} else if (color === Color.BLACK) {
+				game.blackDisconnectedAt = undefined;
+			}
+		}
+	}
 
 	onGameFinished(gameFinished: GameFinished): void {
 		const game = this.games.get(gameFinished.gameId);

@@ -340,11 +340,31 @@ func (gs *GameState) Start(ctx context.Context) {
 						}
 					}
 
-				case RejoinedGame:
-					_, _ = gs.rejoinedGame(c)
-
 				case LeftGame:
-					_, _ = gs.leftGame(c)
+					if events, err := gs.leftGame(c); err != nil {
+						gs.GameEvent <- PlayerDisconnected{
+							GameID:         c.GameID,
+							UserID:         c.UserID,
+							DisconnectedAt: c.LefAt,
+						}
+					} else {
+						for _, event := range events {
+							gs.GameEvent <- event
+						}
+					}
+
+				case RejoinedGame:
+					if events, err := gs.rejoinedGame(c); err != nil {
+						gs.GameEvent <- PlayerReconnected{
+							GameID:        c.GameID,
+							UserID:        c.UserID,
+							ReconnectedAt: c.RejoinedAt,
+						}
+					} else {
+						for _, event := range events {
+							gs.GameEvent <- event
+						}
+					}
 				}
 
 			case <-ctx.Done():
@@ -364,6 +384,7 @@ func (gs *GameState) Start(ctx context.Context) {
 
 func (gs *GameState) rejoinedGame(c RejoinedGame) ([]GameEvent, error) {
 	player := gs.GetPlayerByID(c.UserID)
+	otherPlayer := gs.GetOtherPlayer(player.ID)
 
 	if !gs.HasGamePlayer(c.UserID) || player == nil {
 		return nil, ErrPlayerNotInGame
@@ -383,11 +404,21 @@ func (gs *GameState) rejoinedGame(c RejoinedGame) ([]GameEvent, error) {
 		gs.blackReconnectTimer = nil
 	}
 
-	return nil, nil
+	events := []GameEvent{
+		PlayerReconnected{
+			GameID:        gs.GameID,
+			UserID:        player.ID,
+			OtherUserID:   otherPlayer.ID,
+			ReconnectedAt: c.RejoinedAt,
+		},
+	}
+
+	return events, nil
 }
 
 func (gs *GameState) leftGame(c LeftGame) ([]GameEvent, error) {
 	player := gs.GetPlayerByID(c.UserID)
+	otherPlayer := gs.GetOtherPlayer(player.ID)
 
 	if !gs.HasGamePlayer(c.UserID) || player == nil {
 		return nil, ErrPlayerNotInGame
@@ -401,7 +432,16 @@ func (gs *GameState) leftGame(c LeftGame) ([]GameEvent, error) {
 		gs.blackReconnectTimer = time.NewTimer(gs.ReconnectTimeout)
 	}
 
-	return nil, nil
+	events := []GameEvent{
+		PlayerDisconnected{
+			GameID:         gs.GameID,
+			UserID:         player.ID,
+			OtherUserID:    otherPlayer.ID,
+			DisconnectedAt: c.LefAt,
+		},
+	}
+
+	return events, nil
 }
 
 func (gs *GameState) abortGame(c AbortGameCmd) ([]GameEvent, error) {

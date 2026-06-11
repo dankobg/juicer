@@ -48,6 +48,8 @@ export type GameOptions = {
 	whiteRemainingGameTime?: Duration;
 	blackRemainingGameTime?: Duration;
 	pendingDrawOffers?: Record<string, DrawOffer>;
+	whiteDisconnectedAt?: Timestamp;
+	blackDisconnectedAt?: Timestamp;
 };
 
 export class Game {
@@ -84,6 +86,8 @@ export class Game {
 	);
 	promotionSrcDest = $state<string>('');
 	promotionPieceSymbol = $state<string>('');
+	whiteDisconnectedAt = $state<Timestamp | undefined>();
+	blackDisconnectedAt = $state<Timestamp | undefined>();
 
 	constructor(options?: Partial<GameOptions>) {
 		this.configure(options);
@@ -139,6 +143,8 @@ export class Game {
 		this.legalMoves = opts?.legalMoves ?? [];
 		this.whiteRemainingGameTime = opts?.whiteRemainingGameTime;
 		this.blackRemainingGameTime = opts?.blackRemainingGameTime;
+		this.whiteDisconnectedAt = opts?.whiteDisconnectedAt;
+		this.blackDisconnectedAt = opts?.blackDisconnectedAt;
 		if (opts.pendingDrawOffers) {
 			this.pendingDrawOffers = new SvelteMap();
 			Object.entries(opts.pendingDrawOffers).forEach(([k, v]) => {
@@ -150,6 +156,23 @@ export class Game {
 	isPlaying = $derived(this.myColor !== Color.UNSPECIFIED);
 	isSpectating = $derived(this.myColor === Color.UNSPECIFIED);
 
+	getPlayerById(id: string): PlayerInfo | undefined {
+		if (id === this.white?.userId) {
+			return this.white;
+		} else if (id === this.black?.userId) {
+			return this.black;
+		}
+		return;
+	}
+
+	getPlayerColor(id: string): Color {
+		if (id === this.white?.userId) {
+			return Color.WHITE;
+		} else if (id === this.black?.userId) {
+			return Color.BLACK;
+		}
+		return Color.UNSPECIFIED;
+	}
 	getPlayerByColor(color: Color): PlayerInfo | undefined {
 		if (color === Color.UNSPECIFIED) {
 			return;
@@ -174,6 +197,8 @@ export class Game {
 	blackRemaininGameTimeMs = $derived(this.blackRemainingGameTime ? protoDurationToMs(this.blackRemainingGameTime) : 0);
 	whiteDisplayTimeMs = $state<number>(this.whiteRemaininGameTimeMs);
 	blackDisplayTimeMs = $state<number>(this.blackRemaininGameTimeMs);
+	whiteDisplayReconnectTimeMs = $state<number | undefined>(this.reconnectTimeoutMs);
+	blackDisplayReconnectTimeMs = $state<number | undefined>(this.reconnectTimeoutMs);
 
 	getWhiteDisplayTimeMs(ts: number): number {
 		if (!this.lastMove) {
@@ -191,6 +216,20 @@ export class Game {
 		return this.isBlackTurn ? Math.max(0, this.blackRemaininGameTimeMs - elapsed) : this.blackRemaininGameTimeMs;
 	}
 
+	getWhiteDisplayReconnectTimeMs(ts: number): number | undefined {
+		if (!this.reconnectTimeoutMs || !this.whiteDisconnectedAt) {
+			return;
+		}
+		return Math.max(0, this.reconnectTimeoutMs - (Date.now() - timestampDate(this.whiteDisconnectedAt).getTime()));
+	}
+
+	getBlackDisplayReconnectTimeMs(ts: number): number | undefined {
+		if (!this.reconnectTimeoutMs || !this.blackDisconnectedAt) {
+			return;
+		}
+		return Math.max(0, this.reconnectTimeoutMs - (Date.now() - timestampDate(this.blackDisconnectedAt).getTime()));
+	}
+
 	startClockTimerLoop() {
 		if (this.animationFrameId !== null) {
 			return;
@@ -199,6 +238,8 @@ export class Game {
 		const tick = (timestamp: number) => {
 			this.whiteDisplayTimeMs = this.getWhiteDisplayTimeMs(timestamp);
 			this.blackDisplayTimeMs = this.getBlackDisplayTimeMs(timestamp);
+			this.whiteDisplayReconnectTimeMs = this.getWhiteDisplayReconnectTimeMs(timestamp);
+			this.blackDisplayReconnectTimeMs = this.getBlackDisplayReconnectTimeMs(timestamp);
 			this.animationFrameId = requestAnimationFrame(tick);
 		};
 

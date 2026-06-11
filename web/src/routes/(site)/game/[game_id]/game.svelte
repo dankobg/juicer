@@ -226,6 +226,9 @@
 					active={game.gameState === GameState.ACTIVE && game.currentTurn === game.opponentColor}
 					online={gameUserPresences.has(game.opponentPlayer.userId)}
 					clockMs={game.opponentColor === Color.WHITE ? game.whiteDisplayTimeMs : game.blackDisplayTimeMs}
+					reconnectMs={game.opponentColor === Color.WHITE
+						? game.whiteDisplayReconnectTimeMs
+						: game.blackDisplayReconnectTimeMs}
 					{clockPrecision}
 				/>
 			{/if}
@@ -259,6 +262,9 @@
 					active={game.gameState === GameState.ACTIVE && game.currentTurn === game.myColor}
 					online={gameUserPresences.has(game.mePlayer.userId)}
 					clockMs={game.myColor === Color.WHITE ? game.whiteDisplayTimeMs : game.blackDisplayTimeMs}
+					reconnectMs={game.myColor === Color.WHITE
+						? game.whiteDisplayReconnectTimeMs
+						: game.blackDisplayReconnectTimeMs}
 					{clockPrecision}
 				/>
 			{/if}

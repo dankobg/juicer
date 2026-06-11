@@ -96,6 +96,12 @@ func (a *ApiHandler) onGameEvent(event gameplay.GameEvent) {
 
 	case gameplay.GameFinishedEvent:
 		a.handleGameFinishedEvent(ev)
+
+	case gameplay.PlayerDisconnected:
+		a.handleGamePlayerDisconnectedEvent(ev)
+
+	case gameplay.PlayerReconnected:
+		a.handleGamePlayerReconnectedEvent(ev)
 	}
 }
 
@@ -305,6 +311,44 @@ func (a *ApiHandler) handleDeclineDrawEvent(event gameplay.DeclineDrawEvent) {
 
 func (a *ApiHandler) handleDeclineDrawErrorEvent(event gameplay.DeclineDrawErrorEvent) {
 	a.Log.Debug("handleDeclineDrawErrorEvent", slog.String("user_id", event.UserID.String()), slog.Int64("game_id", event.GameID), slog.Any("error", event.Err))
+}
+
+func (a *ApiHandler) handleGamePlayerDisconnectedEvent(event gameplay.PlayerDisconnected) {
+	playerLeftMsg := &pb.Message{Event: &pb.Message_PlayerLeft{
+		PlayerLeft: &pb.PlayerLeft{
+			GameId: int32(event.GameID),
+			UserId: event.UserID.String(),
+			LeftAt: timestamppb.New(event.DisconnectedAt),
+		},
+	}}
+
+	playerLeftMsgBytes, err := protojson.Marshal(playerLeftMsg)
+	if err != nil {
+	} else {
+		if err := a.bus.rdb.Publish(context.Background(), "user."+event.OtherUserID.String(), playerLeftMsgBytes).Err(); err != nil {
+			a.Log.Error("PlayerLeft publish", slog.String("user_id", event.UserID.String()), slog.Any("error", err))
+			return
+		}
+	}
+}
+
+func (a *ApiHandler) handleGamePlayerReconnectedEvent(event gameplay.PlayerReconnected) {
+	playerRejoinedMsg := &pb.Message{Event: &pb.Message_PlayerRejoined{
+		PlayerRejoined: &pb.PlayerRejoined{
+			GameId:     int32(event.GameID),
+			UserId:     event.UserID.String(),
+			RejoinedAt: timestamppb.New(event.ReconnectedAt),
+		},
+	}}
+
+	playerRejoinedMsgBytes, err := protojson.Marshal(playerRejoinedMsg)
+	if err != nil {
+	} else {
+		if err := a.bus.rdb.Publish(context.Background(), "user."+event.OtherUserID.String(), playerRejoinedMsgBytes).Err(); err != nil {
+			a.Log.Error("PlayerRejoined publish", slog.String("user_id", event.UserID.String()), slog.Any("error", err))
+			return
+		}
+	}
 }
 
 func (a *ApiHandler) handleGameFinishedEvent(event gameplay.GameFinishedEvent) {
@@ -1293,6 +1337,12 @@ func (a *ApiHandler) sendGameInfo(gameID int64, userID, connID string, guest boo
 	}
 	if gs.EndTime != nil {
 		gameInfo.EndTime = timestamppb.New(*gs.EndTime)
+	}
+	if gs.WhiteDisconnectedAt != nil {
+		gameInfo.WhiteDisconnectedAt = timestamppb.New(*gs.WhiteDisconnectedAt)
+	}
+	if gs.BlackDisconnectedAt != nil {
+		gameInfo.BlackDisconnectedAt = timestamppb.New(*gs.BlackDisconnectedAt)
 	}
 
 	gameInfoMsg := &pb.Message{Event: &pb.Message_GameInfo{GameInfo: gameInfo}}

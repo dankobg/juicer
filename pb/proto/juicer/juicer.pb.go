@@ -589,6 +589,8 @@ type Message struct {
 	//	*Message_ListGameChats
 	//	*Message_GameChat
 	//	*Message_GameChats
+	//	*Message_PlayerLeft
+	//	*Message_PlayerRejoined
 	//	*Message_DrawDeclined
 	//	*Message_DrawOffer
 	//	*Message_MoveAck
@@ -906,6 +908,24 @@ func (x *Message) GetGameChats() *GameChatList {
 	return nil
 }
 
+func (x *Message) GetPlayerLeft() *PlayerLeft {
+	if x != nil {
+		if x, ok := x.Event.(*Message_PlayerLeft); ok {
+			return x.PlayerLeft
+		}
+	}
+	return nil
+}
+
+func (x *Message) GetPlayerRejoined() *PlayerRejoined {
+	if x != nil {
+		if x, ok := x.Event.(*Message_PlayerRejoined); ok {
+			return x.PlayerRejoined
+		}
+	}
+	return nil
+}
+
 func (x *Message) GetDrawDeclined() *DrawDeclined {
 	if x != nil {
 		if x, ok := x.Event.(*Message_DrawDeclined); ok {
@@ -1075,6 +1095,14 @@ type Message_GameChats struct {
 	GameChats *GameChatList `protobuf:"bytes,30,opt,name=game_chats,json=gameChats,proto3,oneof"`
 }
 
+type Message_PlayerLeft struct {
+	PlayerLeft *PlayerLeft `protobuf:"bytes,62,opt,name=player_left,json=playerLeft,proto3,oneof"`
+}
+
+type Message_PlayerRejoined struct {
+	PlayerRejoined *PlayerRejoined `protobuf:"bytes,63,opt,name=player_rejoined,json=playerRejoined,proto3,oneof"`
+}
+
 type Message_DrawDeclined struct {
 	DrawDeclined *DrawDeclined `protobuf:"bytes,64,opt,name=draw_declined,json=drawDeclined,proto3,oneof"`
 }
@@ -1154,6 +1182,10 @@ func (*Message_ListGameChats) isMessage_Event() {}
 func (*Message_GameChat) isMessage_Event() {}
 
 func (*Message_GameChats) isMessage_Event() {}
+
+func (*Message_PlayerLeft) isMessage_Event() {}
+
+func (*Message_PlayerRejoined) isMessage_Event() {}
 
 func (*Message_DrawDeclined) isMessage_Event() {}
 
@@ -2230,33 +2262,35 @@ func (x *GameFound) GetGameId() int32 {
 
 // GameInfo holds game info
 type GameInfo struct {
-	state              protoimpl.MessageState `protogen:"open.v1"`
-	GameId             int32                  `protobuf:"varint,1,opt,name=game_id,json=gameId,proto3" json:"game_id,omitempty"`
-	GameVariant        GameVariant            `protobuf:"varint,2,opt,name=game_variant,json=gameVariant,proto3,enum=pb.GameVariant" json:"game_variant,omitempty"`
-	GameTimeKind       GameTimeKind           `protobuf:"varint,3,opt,name=game_time_kind,json=gameTimeKind,proto3,enum=pb.GameTimeKind" json:"game_time_kind,omitempty"`
-	GameTimeCategory   GameTimeCategory       `protobuf:"varint,4,opt,name=game_time_category,json=gameTimeCategory,proto3,enum=pb.GameTimeCategory" json:"game_time_category,omitempty"`
-	GameState          GameState              `protobuf:"varint,5,opt,name=game_state,json=gameState,proto3,enum=pb.GameState" json:"game_state,omitempty"`
-	GameTimeControl    *GameTimeControl       `protobuf:"bytes,6,opt,name=game_time_control,json=gameTimeControl,proto3" json:"game_time_control,omitempty"`
-	Color              Color                  `protobuf:"varint,7,opt,name=color,proto3,enum=pb.Color" json:"color,omitempty"`
-	Fen                string                 `protobuf:"bytes,8,opt,name=fen,proto3" json:"fen,omitempty"`
-	Ply                uint32                 `protobuf:"varint,9,opt,name=ply,proto3" json:"ply,omitempty"`
-	Clocks             *Clocks                `protobuf:"bytes,10,opt,name=clocks,proto3" json:"clocks,omitempty"`
-	Rated              bool                   `protobuf:"varint,11,opt,name=rated,proto3" json:"rated,omitempty"`
-	LegalMoves         []string               `protobuf:"bytes,12,rep,name=legal_moves,json=legalMoves,proto3" json:"legal_moves,omitempty"`
-	White              *PlayerInfo            `protobuf:"bytes,13,opt,name=white,proto3" json:"white,omitempty"`
-	Black              *PlayerInfo            `protobuf:"bytes,14,opt,name=black,proto3" json:"black,omitempty"`
-	ReconnectTimeoutMs int32                  `protobuf:"varint,15,opt,name=reconnect_timeout_ms,json=reconnectTimeoutMs,proto3" json:"reconnect_timeout_ms,omitempty"`
-	FirstMoveTimeoutMs int32                  `protobuf:"varint,16,opt,name=first_move_timeout_ms,json=firstMoveTimeoutMs,proto3" json:"first_move_timeout_ms,omitempty"`
-	GameMoves          []*GameMove            `protobuf:"bytes,17,rep,name=game_moves,json=gameMoves,proto3" json:"game_moves,omitempty"`
-	StartTime          *timestamppb.Timestamp `protobuf:"bytes,18,opt,name=start_time,json=startTime,proto3" json:"start_time,omitempty"`
-	EndTime            *timestamppb.Timestamp `protobuf:"bytes,19,opt,name=end_time,json=endTime,proto3" json:"end_time,omitempty"`
-	GameResult         GameResult             `protobuf:"varint,20,opt,name=game_result,json=gameResult,proto3,enum=pb.GameResult" json:"game_result,omitempty"`
-	GameResultStatus   GameResultStatus       `protobuf:"varint,21,opt,name=game_result_status,json=gameResultStatus,proto3,enum=pb.GameResultStatus" json:"game_result_status,omitempty"`
-	Version            int32                  `protobuf:"varint,22,opt,name=version,proto3" json:"version,omitempty"`
-	LastMove           *timestamppb.Timestamp `protobuf:"bytes,23,opt,name=last_move,json=lastMove,proto3,oneof" json:"last_move,omitempty"`
-	PendingDrawOffers  map[string]*DrawOffer  `protobuf:"bytes,24,rep,name=pending_draw_offers,json=pendingDrawOffers,proto3" json:"pending_draw_offers,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	unknownFields      protoimpl.UnknownFields
-	sizeCache          protoimpl.SizeCache
+	state               protoimpl.MessageState `protogen:"open.v1"`
+	GameId              int32                  `protobuf:"varint,1,opt,name=game_id,json=gameId,proto3" json:"game_id,omitempty"`
+	GameVariant         GameVariant            `protobuf:"varint,2,opt,name=game_variant,json=gameVariant,proto3,enum=pb.GameVariant" json:"game_variant,omitempty"`
+	GameTimeKind        GameTimeKind           `protobuf:"varint,3,opt,name=game_time_kind,json=gameTimeKind,proto3,enum=pb.GameTimeKind" json:"game_time_kind,omitempty"`
+	GameTimeCategory    GameTimeCategory       `protobuf:"varint,4,opt,name=game_time_category,json=gameTimeCategory,proto3,enum=pb.GameTimeCategory" json:"game_time_category,omitempty"`
+	GameState           GameState              `protobuf:"varint,5,opt,name=game_state,json=gameState,proto3,enum=pb.GameState" json:"game_state,omitempty"`
+	GameTimeControl     *GameTimeControl       `protobuf:"bytes,6,opt,name=game_time_control,json=gameTimeControl,proto3" json:"game_time_control,omitempty"`
+	Color               Color                  `protobuf:"varint,7,opt,name=color,proto3,enum=pb.Color" json:"color,omitempty"`
+	Fen                 string                 `protobuf:"bytes,8,opt,name=fen,proto3" json:"fen,omitempty"`
+	Ply                 uint32                 `protobuf:"varint,9,opt,name=ply,proto3" json:"ply,omitempty"`
+	Clocks              *Clocks                `protobuf:"bytes,10,opt,name=clocks,proto3" json:"clocks,omitempty"`
+	Rated               bool                   `protobuf:"varint,11,opt,name=rated,proto3" json:"rated,omitempty"`
+	LegalMoves          []string               `protobuf:"bytes,12,rep,name=legal_moves,json=legalMoves,proto3" json:"legal_moves,omitempty"`
+	White               *PlayerInfo            `protobuf:"bytes,13,opt,name=white,proto3" json:"white,omitempty"`
+	Black               *PlayerInfo            `protobuf:"bytes,14,opt,name=black,proto3" json:"black,omitempty"`
+	ReconnectTimeoutMs  int32                  `protobuf:"varint,15,opt,name=reconnect_timeout_ms,json=reconnectTimeoutMs,proto3" json:"reconnect_timeout_ms,omitempty"`
+	FirstMoveTimeoutMs  int32                  `protobuf:"varint,16,opt,name=first_move_timeout_ms,json=firstMoveTimeoutMs,proto3" json:"first_move_timeout_ms,omitempty"`
+	GameMoves           []*GameMove            `protobuf:"bytes,17,rep,name=game_moves,json=gameMoves,proto3" json:"game_moves,omitempty"`
+	StartTime           *timestamppb.Timestamp `protobuf:"bytes,18,opt,name=start_time,json=startTime,proto3" json:"start_time,omitempty"`
+	EndTime             *timestamppb.Timestamp `protobuf:"bytes,19,opt,name=end_time,json=endTime,proto3" json:"end_time,omitempty"`
+	GameResult          GameResult             `protobuf:"varint,20,opt,name=game_result,json=gameResult,proto3,enum=pb.GameResult" json:"game_result,omitempty"`
+	GameResultStatus    GameResultStatus       `protobuf:"varint,21,opt,name=game_result_status,json=gameResultStatus,proto3,enum=pb.GameResultStatus" json:"game_result_status,omitempty"`
+	Version             int32                  `protobuf:"varint,22,opt,name=version,proto3" json:"version,omitempty"`
+	LastMove            *timestamppb.Timestamp `protobuf:"bytes,23,opt,name=last_move,json=lastMove,proto3,oneof" json:"last_move,omitempty"`
+	PendingDrawOffers   map[string]*DrawOffer  `protobuf:"bytes,24,rep,name=pending_draw_offers,json=pendingDrawOffers,proto3" json:"pending_draw_offers,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	WhiteDisconnectedAt *timestamppb.Timestamp `protobuf:"bytes,25,opt,name=white_disconnected_at,json=whiteDisconnectedAt,proto3,oneof" json:"white_disconnected_at,omitempty"`
+	BlackDisconnectedAt *timestamppb.Timestamp `protobuf:"bytes,26,opt,name=black_disconnected_at,json=blackDisconnectedAt,proto3,oneof" json:"black_disconnected_at,omitempty"`
+	unknownFields       protoimpl.UnknownFields
+	sizeCache           protoimpl.SizeCache
 }
 
 func (x *GameInfo) Reset() {
@@ -2453,6 +2487,20 @@ func (x *GameInfo) GetLastMove() *timestamppb.Timestamp {
 func (x *GameInfo) GetPendingDrawOffers() map[string]*DrawOffer {
 	if x != nil {
 		return x.PendingDrawOffers
+	}
+	return nil
+}
+
+func (x *GameInfo) GetWhiteDisconnectedAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.WhiteDisconnectedAt
+	}
+	return nil
+}
+
+func (x *GameInfo) GetBlackDisconnectedAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.BlackDisconnectedAt
 	}
 	return nil
 }
@@ -3552,6 +3600,128 @@ func (x *GameFinished) GetGameState() GameState {
 	return GameState_GAME_STATE_UNSPECIFIED
 }
 
+// PlayerLeft signals that player disconnected from the game
+type PlayerLeft struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	GameId        int32                  `protobuf:"varint,1,opt,name=game_id,json=gameId,proto3" json:"game_id,omitempty"`
+	UserId        string                 `protobuf:"bytes,2,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	LeftAt        *timestamppb.Timestamp `protobuf:"bytes,3,opt,name=left_at,json=leftAt,proto3" json:"left_at,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *PlayerLeft) Reset() {
+	*x = PlayerLeft{}
+	mi := &file_proto_juicer_juicer_proto_msgTypes[41]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PlayerLeft) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PlayerLeft) ProtoMessage() {}
+
+func (x *PlayerLeft) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_juicer_juicer_proto_msgTypes[41]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PlayerLeft.ProtoReflect.Descriptor instead.
+func (*PlayerLeft) Descriptor() ([]byte, []int) {
+	return file_proto_juicer_juicer_proto_rawDescGZIP(), []int{41}
+}
+
+func (x *PlayerLeft) GetGameId() int32 {
+	if x != nil {
+		return x.GameId
+	}
+	return 0
+}
+
+func (x *PlayerLeft) GetUserId() string {
+	if x != nil {
+		return x.UserId
+	}
+	return ""
+}
+
+func (x *PlayerLeft) GetLeftAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.LeftAt
+	}
+	return nil
+}
+
+// PlayerRejoined signals that player reconnected to the game
+type PlayerRejoined struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	GameId        int32                  `protobuf:"varint,1,opt,name=game_id,json=gameId,proto3" json:"game_id,omitempty"`
+	UserId        string                 `protobuf:"bytes,2,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	RejoinedAt    *timestamppb.Timestamp `protobuf:"bytes,3,opt,name=rejoined_at,json=rejoinedAt,proto3" json:"rejoined_at,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *PlayerRejoined) Reset() {
+	*x = PlayerRejoined{}
+	mi := &file_proto_juicer_juicer_proto_msgTypes[42]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PlayerRejoined) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PlayerRejoined) ProtoMessage() {}
+
+func (x *PlayerRejoined) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_juicer_juicer_proto_msgTypes[42]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PlayerRejoined.ProtoReflect.Descriptor instead.
+func (*PlayerRejoined) Descriptor() ([]byte, []int) {
+	return file_proto_juicer_juicer_proto_rawDescGZIP(), []int{42}
+}
+
+func (x *PlayerRejoined) GetGameId() int32 {
+	if x != nil {
+		return x.GameId
+	}
+	return 0
+}
+
+func (x *PlayerRejoined) GetUserId() string {
+	if x != nil {
+		return x.UserId
+	}
+	return ""
+}
+
+func (x *PlayerRejoined) GetRejoinedAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.RejoinedAt
+	}
+	return nil
+}
+
 var File_proto_juicer_juicer_proto protoreflect.FileDescriptor
 
 const file_proto_juicer_juicer_proto_rawDesc = "" +
@@ -3559,7 +3729,7 @@ const file_proto_juicer_juicer_proto_rawDesc = "" +
 	"\x19proto/juicer/juicer.proto\x12\x02pb\x1a\x1egoogle/protobuf/duration.proto\x1a\x1fgoogle/protobuf/timestamp.proto\"O\n" +
 	"\x0fGameTimeControl\x12\x19\n" +
 	"\bclock_ms\x18\x01 \x01(\x05R\aclockMs\x12!\n" +
-	"\fincrement_ms\x18\x02 \x01(\x05R\vincrementMs\"\xcf\x0e\n" +
+	"\fincrement_ms\x18\x02 \x01(\x05R\vincrementMs\"\xc1\x0f\n" +
 	"\aMessage\x12'\n" +
 	"\aproblem\x18\x01 \x01(\v2\v.pb.ProblemH\x00R\aproblem\x12'\n" +
 	"\alatency\x18\x02 \x01(\v2\v.pb.LatencyH\x00R\alatency\x12-\n" +
@@ -3600,7 +3770,10 @@ const file_proto_juicer_juicer_proto_rawDesc = "" +
 	"\x0flist_game_chats\x18\x1c \x01(\v2\x11.pb.ListGameChatsH\x00R\rlistGameChats\x12+\n" +
 	"\tgame_chat\x18\x1d \x01(\v2\f.pb.GameChatH\x00R\bgameChat\x121\n" +
 	"\n" +
-	"game_chats\x18\x1e \x01(\v2\x10.pb.GameChatListH\x00R\tgameChats\x127\n" +
+	"game_chats\x18\x1e \x01(\v2\x10.pb.GameChatListH\x00R\tgameChats\x121\n" +
+	"\vplayer_left\x18> \x01(\v2\x0e.pb.PlayerLeftH\x00R\n" +
+	"playerLeft\x12=\n" +
+	"\x0fplayer_rejoined\x18? \x01(\v2\x12.pb.PlayerRejoinedH\x00R\x0eplayerRejoined\x127\n" +
 	"\rdraw_declined\x18@ \x01(\v2\x10.pb.DrawDeclinedH\x00R\fdrawDeclined\x12.\n" +
 	"\n" +
 	"draw_offer\x18A \x01(\v2\r.pb.DrawOfferH\x00R\tdrawOffer\x12(\n" +
@@ -3679,7 +3852,7 @@ const file_proto_juicer_juicer_proto_rawDesc = "" +
 	"\n" +
 	"_played_at\"$\n" +
 	"\tGameFound\x12\x17\n" +
-	"\agame_id\x18\x01 \x01(\x05R\x06gameId\"\xb7\t\n" +
+	"\agame_id\x18\x01 \x01(\x05R\x06gameId\"\x95\v\n" +
 	"\bGameInfo\x12\x17\n" +
 	"\agame_id\x18\x01 \x01(\x05R\x06gameId\x122\n" +
 	"\fgame_variant\x18\x02 \x01(\x0e2\x0f.pb.GameVariantR\vgameVariant\x126\n" +
@@ -3711,12 +3884,16 @@ const file_proto_juicer_juicer_proto_rawDesc = "" +
 	"\x12game_result_status\x18\x15 \x01(\x0e2\x14.pb.GameResultStatusR\x10gameResultStatus\x12\x18\n" +
 	"\aversion\x18\x16 \x01(\x05R\aversion\x12<\n" +
 	"\tlast_move\x18\x17 \x01(\v2\x1a.google.protobuf.TimestampH\x00R\blastMove\x88\x01\x01\x12S\n" +
-	"\x13pending_draw_offers\x18\x18 \x03(\v2#.pb.GameInfo.PendingDrawOffersEntryR\x11pendingDrawOffers\x1aS\n" +
+	"\x13pending_draw_offers\x18\x18 \x03(\v2#.pb.GameInfo.PendingDrawOffersEntryR\x11pendingDrawOffers\x12S\n" +
+	"\x15white_disconnected_at\x18\x19 \x01(\v2\x1a.google.protobuf.TimestampH\x01R\x13whiteDisconnectedAt\x88\x01\x01\x12S\n" +
+	"\x15black_disconnected_at\x18\x1a \x01(\v2\x1a.google.protobuf.TimestampH\x02R\x13blackDisconnectedAt\x88\x01\x01\x1aS\n" +
 	"\x16PendingDrawOffersEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12#\n" +
 	"\x05value\x18\x02 \x01(\v2\r.pb.DrawOfferR\x05value:\x028\x01B\f\n" +
 	"\n" +
-	"_last_move\"$\n" +
+	"_last_moveB\x18\n" +
+	"\x16_white_disconnected_atB\x18\n" +
+	"\x16_black_disconnected_at\"$\n" +
 	"\tAbortGame\x12\x17\n" +
 	"\agame_id\x18\x01 \x01(\x05R\x06gameId\"%\n" +
 	"\n" +
@@ -3798,7 +3975,17 @@ const file_proto_juicer_juicer_proto_rawDesc = "" +
 	"gameResult\x12B\n" +
 	"\x12game_result_status\x18\x03 \x01(\x0e2\x14.pb.GameResultStatusR\x10gameResultStatus\x12,\n" +
 	"\n" +
-	"game_state\x18\x04 \x01(\x0e2\r.pb.GameStateR\tgameState*@\n" +
+	"game_state\x18\x04 \x01(\x0e2\r.pb.GameStateR\tgameState\"s\n" +
+	"\n" +
+	"PlayerLeft\x12\x17\n" +
+	"\agame_id\x18\x01 \x01(\x05R\x06gameId\x12\x17\n" +
+	"\auser_id\x18\x02 \x01(\tR\x06userId\x123\n" +
+	"\aleft_at\x18\x03 \x01(\v2\x1a.google.protobuf.TimestampR\x06leftAt\"\x7f\n" +
+	"\x0ePlayerRejoined\x12\x17\n" +
+	"\agame_id\x18\x01 \x01(\x05R\x06gameId\x12\x17\n" +
+	"\auser_id\x18\x02 \x01(\tR\x06userId\x12;\n" +
+	"\vrejoined_at\x18\x03 \x01(\v2\x1a.google.protobuf.TimestampR\n" +
+	"rejoinedAt*@\n" +
 	"\x05Color\x12\x15\n" +
 	"\x11COLOR_UNSPECIFIED\x10\x00\x12\x0f\n" +
 	"\vCOLOR_WHITE\x10\x01\x12\x0f\n" +
@@ -3873,7 +4060,7 @@ func file_proto_juicer_juicer_proto_rawDescGZIP() []byte {
 }
 
 var file_proto_juicer_juicer_proto_enumTypes = make([]protoimpl.EnumInfo, 8)
-var file_proto_juicer_juicer_proto_msgTypes = make([]protoimpl.MessageInfo, 42)
+var file_proto_juicer_juicer_proto_msgTypes = make([]protoimpl.MessageInfo, 44)
 var file_proto_juicer_juicer_proto_goTypes = []any{
 	(Color)(0),                    // 0: pb.Color
 	(GameVariant)(0),              // 1: pb.GameVariant
@@ -3924,9 +4111,11 @@ var file_proto_juicer_juicer_proto_goTypes = []any{
 	(*MoveAck)(nil),               // 46: pb.MoveAck
 	(*MoveSync)(nil),              // 47: pb.MoveSync
 	(*GameFinished)(nil),          // 48: pb.GameFinished
-	nil,                           // 49: pb.GameInfo.PendingDrawOffersEntry
-	(*durationpb.Duration)(nil),   // 50: google.protobuf.Duration
-	(*timestamppb.Timestamp)(nil), // 51: google.protobuf.Timestamp
+	(*PlayerLeft)(nil),            // 49: pb.PlayerLeft
+	(*PlayerRejoined)(nil),        // 50: pb.PlayerRejoined
+	nil,                           // 51: pb.GameInfo.PendingDrawOffersEntry
+	(*durationpb.Duration)(nil),   // 52: google.protobuf.Duration
+	(*timestamppb.Timestamp)(nil), // 53: google.protobuf.Timestamp
 }
 var file_proto_juicer_juicer_proto_depIdxs = []int32{
 	15, // 0: pb.Message.problem:type_name -> pb.Problem
@@ -3959,48 +4148,54 @@ var file_proto_juicer_juicer_proto_depIdxs = []int32{
 	42, // 27: pb.Message.list_game_chats:type_name -> pb.ListGameChats
 	43, // 28: pb.Message.game_chat:type_name -> pb.GameChat
 	44, // 29: pb.Message.game_chats:type_name -> pb.GameChatList
-	34, // 30: pb.Message.draw_declined:type_name -> pb.DrawDeclined
-	33, // 31: pb.Message.draw_offer:type_name -> pb.DrawOffer
-	46, // 32: pb.Message.move_ack:type_name -> pb.MoveAck
-	29, // 33: pb.Message.game_info:type_name -> pb.GameInfo
-	10, // 34: pb.Message.echo:type_name -> pb.Echo
-	20, // 35: pb.PresenceState.presences:type_name -> pb.Presence
-	20, // 36: pb.PresenceDiff.joined:type_name -> pb.Presence
-	20, // 37: pb.PresenceDiff.left:type_name -> pb.Presence
-	50, // 38: pb.Clocks.white:type_name -> google.protobuf.Duration
-	50, // 39: pb.Clocks.black:type_name -> google.protobuf.Duration
-	8,  // 40: pb.SeekGame.game_time_control:type_name -> pb.GameTimeControl
-	51, // 41: pb.GameMove.played_at:type_name -> google.protobuf.Timestamp
-	1,  // 42: pb.GameInfo.game_variant:type_name -> pb.GameVariant
-	2,  // 43: pb.GameInfo.game_time_kind:type_name -> pb.GameTimeKind
-	3,  // 44: pb.GameInfo.game_time_category:type_name -> pb.GameTimeCategory
-	6,  // 45: pb.GameInfo.game_state:type_name -> pb.GameState
-	8,  // 46: pb.GameInfo.game_time_control:type_name -> pb.GameTimeControl
-	0,  // 47: pb.GameInfo.color:type_name -> pb.Color
-	23, // 48: pb.GameInfo.clocks:type_name -> pb.Clocks
-	26, // 49: pb.GameInfo.white:type_name -> pb.PlayerInfo
-	26, // 50: pb.GameInfo.black:type_name -> pb.PlayerInfo
-	27, // 51: pb.GameInfo.game_moves:type_name -> pb.GameMove
-	51, // 52: pb.GameInfo.start_time:type_name -> google.protobuf.Timestamp
-	51, // 53: pb.GameInfo.end_time:type_name -> google.protobuf.Timestamp
-	4,  // 54: pb.GameInfo.game_result:type_name -> pb.GameResult
-	5,  // 55: pb.GameInfo.game_result_status:type_name -> pb.GameResultStatus
-	51, // 56: pb.GameInfo.last_move:type_name -> google.protobuf.Timestamp
-	49, // 57: pb.GameInfo.pending_draw_offers:type_name -> pb.GameInfo.PendingDrawOffersEntry
-	51, // 58: pb.DrawOffer.offered_at:type_name -> google.protobuf.Timestamp
-	39, // 59: pb.LobbyChatList.lobby_chats:type_name -> pb.LobbyChat
-	43, // 60: pb.GameChatList.game_chats:type_name -> pb.GameChat
-	23, // 61: pb.MoveSync.clocks:type_name -> pb.Clocks
-	51, // 62: pb.MoveSync.played_at:type_name -> google.protobuf.Timestamp
-	4,  // 63: pb.GameFinished.game_result:type_name -> pb.GameResult
-	5,  // 64: pb.GameFinished.game_result_status:type_name -> pb.GameResultStatus
-	6,  // 65: pb.GameFinished.game_state:type_name -> pb.GameState
-	33, // 66: pb.GameInfo.PendingDrawOffersEntry.value:type_name -> pb.DrawOffer
-	67, // [67:67] is the sub-list for method output_type
-	67, // [67:67] is the sub-list for method input_type
-	67, // [67:67] is the sub-list for extension type_name
-	67, // [67:67] is the sub-list for extension extendee
-	0,  // [0:67] is the sub-list for field type_name
+	49, // 30: pb.Message.player_left:type_name -> pb.PlayerLeft
+	50, // 31: pb.Message.player_rejoined:type_name -> pb.PlayerRejoined
+	34, // 32: pb.Message.draw_declined:type_name -> pb.DrawDeclined
+	33, // 33: pb.Message.draw_offer:type_name -> pb.DrawOffer
+	46, // 34: pb.Message.move_ack:type_name -> pb.MoveAck
+	29, // 35: pb.Message.game_info:type_name -> pb.GameInfo
+	10, // 36: pb.Message.echo:type_name -> pb.Echo
+	20, // 37: pb.PresenceState.presences:type_name -> pb.Presence
+	20, // 38: pb.PresenceDiff.joined:type_name -> pb.Presence
+	20, // 39: pb.PresenceDiff.left:type_name -> pb.Presence
+	52, // 40: pb.Clocks.white:type_name -> google.protobuf.Duration
+	52, // 41: pb.Clocks.black:type_name -> google.protobuf.Duration
+	8,  // 42: pb.SeekGame.game_time_control:type_name -> pb.GameTimeControl
+	53, // 43: pb.GameMove.played_at:type_name -> google.protobuf.Timestamp
+	1,  // 44: pb.GameInfo.game_variant:type_name -> pb.GameVariant
+	2,  // 45: pb.GameInfo.game_time_kind:type_name -> pb.GameTimeKind
+	3,  // 46: pb.GameInfo.game_time_category:type_name -> pb.GameTimeCategory
+	6,  // 47: pb.GameInfo.game_state:type_name -> pb.GameState
+	8,  // 48: pb.GameInfo.game_time_control:type_name -> pb.GameTimeControl
+	0,  // 49: pb.GameInfo.color:type_name -> pb.Color
+	23, // 50: pb.GameInfo.clocks:type_name -> pb.Clocks
+	26, // 51: pb.GameInfo.white:type_name -> pb.PlayerInfo
+	26, // 52: pb.GameInfo.black:type_name -> pb.PlayerInfo
+	27, // 53: pb.GameInfo.game_moves:type_name -> pb.GameMove
+	53, // 54: pb.GameInfo.start_time:type_name -> google.protobuf.Timestamp
+	53, // 55: pb.GameInfo.end_time:type_name -> google.protobuf.Timestamp
+	4,  // 56: pb.GameInfo.game_result:type_name -> pb.GameResult
+	5,  // 57: pb.GameInfo.game_result_status:type_name -> pb.GameResultStatus
+	53, // 58: pb.GameInfo.last_move:type_name -> google.protobuf.Timestamp
+	51, // 59: pb.GameInfo.pending_draw_offers:type_name -> pb.GameInfo.PendingDrawOffersEntry
+	53, // 60: pb.GameInfo.white_disconnected_at:type_name -> google.protobuf.Timestamp
+	53, // 61: pb.GameInfo.black_disconnected_at:type_name -> google.protobuf.Timestamp
+	53, // 62: pb.DrawOffer.offered_at:type_name -> google.protobuf.Timestamp
+	39, // 63: pb.LobbyChatList.lobby_chats:type_name -> pb.LobbyChat
+	43, // 64: pb.GameChatList.game_chats:type_name -> pb.GameChat
+	23, // 65: pb.MoveSync.clocks:type_name -> pb.Clocks
+	53, // 66: pb.MoveSync.played_at:type_name -> google.protobuf.Timestamp
+	4,  // 67: pb.GameFinished.game_result:type_name -> pb.GameResult
+	5,  // 68: pb.GameFinished.game_result_status:type_name -> pb.GameResultStatus
+	6,  // 69: pb.GameFinished.game_state:type_name -> pb.GameState
+	53, // 70: pb.PlayerLeft.left_at:type_name -> google.protobuf.Timestamp
+	53, // 71: pb.PlayerRejoined.rejoined_at:type_name -> google.protobuf.Timestamp
+	33, // 72: pb.GameInfo.PendingDrawOffersEntry.value:type_name -> pb.DrawOffer
+	73, // [73:73] is the sub-list for method output_type
+	73, // [73:73] is the sub-list for method input_type
+	73, // [73:73] is the sub-list for extension type_name
+	73, // [73:73] is the sub-list for extension extendee
+	0,  // [0:73] is the sub-list for field type_name
 }
 
 func init() { file_proto_juicer_juicer_proto_init() }
@@ -4039,6 +4234,8 @@ func file_proto_juicer_juicer_proto_init() {
 		(*Message_ListGameChats)(nil),
 		(*Message_GameChat)(nil),
 		(*Message_GameChats)(nil),
+		(*Message_PlayerLeft)(nil),
+		(*Message_PlayerRejoined)(nil),
 		(*Message_DrawDeclined)(nil),
 		(*Message_DrawOffer)(nil),
 		(*Message_MoveAck)(nil),
@@ -4053,7 +4250,7 @@ func file_proto_juicer_juicer_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_proto_juicer_juicer_proto_rawDesc), len(file_proto_juicer_juicer_proto_rawDesc)),
 			NumEnums:      8,
-			NumMessages:   42,
+			NumMessages:   44,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

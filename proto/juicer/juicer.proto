@@ -129,6 +129,8 @@ message Message {
     GameChat game_chat = 29;
     GameChatList game_chats = 30;
 
+    PlayerLeft player_left = 62;
+    PlayerRejoined player_rejoined = 63;
     DrawDeclined draw_declined = 64;
     DrawOffer draw_offer = 65;
     MoveAck move_ack = 66;
@@ -283,6 +285,8 @@ message GameInfo {
   int32 version = 22;
   optional google.protobuf.Timestamp last_move = 23;
   map<string, DrawOffer> pending_draw_offers = 24;
+  optional google.protobuf.Timestamp white_disconnected_at = 25;
+  optional google.protobuf.Timestamp black_disconnected_at = 26;
 }
 
 // AbortGame is game abort message
@@ -408,4 +412,18 @@ message GameFinished {
   GameResult game_result = 2;
   GameResultStatus game_result_status = 3;
   GameState game_state = 4;
+}
+
+// PlayerLeft signals that player disconnected from the game
+message PlayerLeft {
+  int32 game_id = 1;
+  string user_id = 2;
+  google.protobuf.Timestamp left_at = 3;
+}
+
+// PlayerRejoined signals that player reconnected to the game
+message PlayerRejoined {
+  int32 game_id = 1;
+  string user_id = 2;
+  google.protobuf.Timestamp rejoined_at = 3;
 }
