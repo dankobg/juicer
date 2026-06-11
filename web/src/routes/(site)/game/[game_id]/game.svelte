@@ -26,6 +26,7 @@
 	import GameControls from '$lib/components/game/game-controls.svelte';
 	import PlayerInfo from '$lib/components/game/player-info.svelte';
 	import MovesList from '$lib/components/game/moves-list.svelte';
+	import GameInfo from '$lib/components/game/game-info.svelte';
 
 	let { data, params }: PageProps = $props();
 
@@ -201,17 +202,22 @@
 
 {#if game}
 	<div class="game-layout">
-		<div class="chat">
-			<ChatBox
-				title="Game chat"
-				channel={`game.${game.gameId}.chat`}
-				chatUserId={data?.auth?.user?.id ?? ''}
-				messages={[]}
-				users={new Map()}
-				onSend={msg => {
-					gameManager.sendGameChat(game.gameId!, msg);
-				}}
-			/>
+		<div class="game-panel">
+			<div class="game-info">
+				<GameInfo {game} />
+			</div>
+			<div class="chat">
+				<ChatBox
+					title="Game chat"
+					channel={`game.${game.gameId}.chat`}
+					chatUserId={data?.auth?.user?.id ?? ''}
+					messages={[]}
+					users={new Map()}
+					onSend={msg => {
+						gameManager.sendGameChat(game.gameId!, msg);
+					}}
+				/>
+			</div>
 		</div>
 
 		<div class="moves">
@@ -321,21 +327,26 @@
 				auto
 				minmax(var(--panel-min-width), var(--panel-max-width));
 			grid-template-areas:
-				'chat board player-opp'
-				'chat board moves'
-				'chat board controls'
-				'chat board player-me';
+				'game-panel board player-opp'
+				'game-panel board moves'
+				'game-panel board controls'
+				'game-panel board player-me';
+		}
+	}
+
+	.game-panel {
+		grid-area: game-panel;
+		display: none;
+		flex-direction: column;
+		gap: 1rem;
+
+		@media screen and (width > 60rem) {
+			display: flex;
 		}
 	}
 
 	.chat {
-		grid-area: chat;
-		min-height: 20rem;
-		display: none;
-
-		@media screen and (width > 60rem) {
-			display: block;
-		}
+		flex: 1;
 	}
 
 	.moves {

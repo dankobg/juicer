@@ -516,7 +516,7 @@ function formatGameConcludedMsg(gameResult: GameResult, gameResultStatus: GameRe
 			msg += ' by stalemate';
 			break;
 		case GameResultStatus.RESIGNATION:
-			msg += ' byresignation';
+			msg += ' by resignation';
 			break;
 		case GameResultStatus.DRAW_AGREED:
 			msg += ', draw agreed';
