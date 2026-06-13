@@ -23,6 +23,16 @@ func collectFieldErrors(err error, out *[]api.ValidationDetail) {
 		return
 	}
 
+	if se, ok := errors.AsType[*openapi3filter.SecurityRequirementsError](err); ok {
+		*out = append(*out, api.ValidationDetail{
+			In:      "headers",
+			Pointer: "cookie",
+			Reason:  se.Error(),
+		})
+
+		return
+	}
+
 	if se, ok := errors.AsType[*openapi3.SchemaError](err); ok {
 		p := "/" + strings.Join(se.JSONPointer(), "/")
 
