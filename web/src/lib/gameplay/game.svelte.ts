@@ -1,3 +1,4 @@
+import { goto } from '$app/navigation';
 import {
 	Color,
 	GameResult,
@@ -330,6 +331,18 @@ export class Game {
 		return offer?.ply === this.ply;
 	});
 	uiShowChatButton = $derived<boolean>(false);
+	uiShowRequeueQuickGame = $derived<boolean>(
+		this.isPlaying && this.gameState !== GameState.ACTIVE && this.gameTimeControl !== undefined
+	);
+
+	requeueQuickGame(): void {
+		if (!this.gameTimeControl) {
+			return;
+		}
+		goto('/', {
+			state: { reseek: { clockMs: this.gameTimeControl.clockMs, incrementMs: this.gameTimeControl.incrementMs } }
+		});
+	}
 
 	moveDurationsMs = $derived.by(() => {
 		if (!this.startTime || this.gameMoves.length < 1) {

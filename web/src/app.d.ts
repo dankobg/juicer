@@ -5,9 +5,16 @@ declare global {
 		// interface Error {}
 		// interface Locals {}
 		// interface PageData {}
-		// interface PageState {}
+		interface PageState {
+			reseek?: {
+				clockMs: number;
+				incrementMs: number;
+			};
+		}
 		// interface Platform {}
 	}
 }
+
+export {};
 
 export {};

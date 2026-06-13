@@ -68,11 +68,6 @@
 		"vitest": "^4.1.8",
 		"vitest-browser-svelte": "^2.1.1"
 	},
-	"pnpm": {
-		"onlyBuiltDependencies": [
-			"esbuild"
-		]
-	},
 	"dependencies": {
 		"@dankop/juicer-board": "^1.11.2",
 		"@ory/client-fetch": "^1.22.37",

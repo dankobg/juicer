@@ -1,52 +1,81 @@
 import { MessageSchema, type Message } from '$lib/gen/juicer_pb';
 import { toJsonString } from '@bufbuild/protobuf';
+import { createSubscriber } from 'svelte/reactivity';
 const wsEndpoint = import.meta.env['VITE_PUBLIC_WS_ENDPOINT'] as string;
 
-class JuicerWs {
-	baseUrl = wsEndpoint;
+class JuicerWebSocket {
+	baseUrl: string = wsEndpoint;
 	#ws: WebSocket | null = null;
+	#update: VoidFunction | null = null;
+	subscribe: VoidFunction;
+
 	#reconnectAttempts: number = 0;
 	#maxReconnectAttempts: number = 10;
 	#baseReconnectDelayMs: number = 500;
 	#maxReconnectDelayMs: number = 60_000;
-	#timerid: ReturnType<typeof setTimeout> | null = null;
-	get readyState(): number | undefined {
-		return this.#ws?.readyState;
-	}
+	#timeoutId: ReturnType<typeof setTimeout> | null = null;
+
 	onMessage: (event: MessageEvent) => void = () => {};
 	onOpen: (event: Event) => void = () => {};
 	onClose: (event: CloseEvent) => void = () => {};
 	onError: (event: Event) => void = () => {};
 
+	constructor() {
+		this.subscribe = createSubscriber(update => {
+			this.#update = update;
+
+			return () => {
+				this.#update = null;
+			};
+		});
+	}
+
+	get readyState(): WebSocket['readyState'] {
+		this.subscribe();
+		return this.#ws ? this.#ws.readyState : WebSocket.CLOSED;
+	}
+
 	connect(params?: URLSearchParams): void {
-		if (this.readyState === WebSocket.OPEN) {
-			console.debug('websocket connection already open');
+		this.#update?.();
+
+		if (this.#ws && (this.#ws.readyState === WebSocket.CONNECTING || this.#ws.readyState === WebSocket.OPEN)) {
+			console.debug('websocket connection connecting or already open');
 			return;
 		}
 
-		const url = `${this.baseUrl}${params ? '?' + params.toString() : ''}`;
+		const url = params ? `${this.baseUrl}?${params.toString()}` : this.baseUrl;
 
 		this.#ws = new WebSocket(url);
-		this.#ws.onopen = (event: Event) => {
-			this.#reconnectAttempts = 0;
-			if (this.#timerid) {
-				clearTimeout(this.#timerid);
+
+		this.#update?.();
+
+		this.#ws.onopen = (event: Event): void => {
+			this.#update?.();
+			this.#maxReconnectAttempts = 0;
+			if (this.#timeoutId !== null) {
+				clearTimeout(this.#timeoutId);
 			}
-			this.onOpen(event);
+			this?.onOpen?.(event);
 		};
-		this.#ws.onclose = (event: CloseEvent) => {
-			if (this.#timerid) {
-				clearTimeout(this.#timerid);
+
+		this.#ws.onclose = (event: CloseEvent): void => {
+			this.#update?.();
+			if (this.#timeoutId !== null) {
+				clearTimeout(this.#timeoutId);
 			}
-			this.onClose(event);
+			this?.onClose?.(event);
 			this.#reconnect();
 		};
-		this.#ws.onmessage = (event: MessageEvent) => {
-			this.onMessage(event);
-		};
-		this.#ws.onerror = (event: Event) => {
-			this.onError(event);
+
+		this.#ws.onerror = (event: Event): void => {
+			this.#update?.();
+			this?.onError?.(event);
 			this.close();
+		};
+
+		this.#ws.onmessage = (event: MessageEvent): void => {
+			this.#update?.();
+			this?.onMessage?.(event);
 		};
 	}
 
@@ -55,14 +84,11 @@ class JuicerWs {
 	}
 
 	send(msg: Message) {
-		if (!this.#ws) {
+		if (!this.#ws || this.#ws.readyState !== WebSocket.OPEN) {
+			console.debug('ws is not open, cannot send message');
 			return;
 		}
-		if (this.readyState === WebSocket.OPEN) {
-			this.#ws.send(toJsonString(MessageSchema, msg));
-		} else {
-			console.debug('ws is not open, cannot send message');
-		}
+		this.#ws.send(toJsonString(MessageSchema, msg));
 	}
 
 	#reconnect(): void {
@@ -83,7 +109,7 @@ class JuicerWs {
 		}
 		const delay = this.#getBackoffDelayMs(this.#reconnectAttempts);
 		console.log(`reconnecting in ${(delay / 1000).toFixed(2)} seconds...`);
-		this.#timerid = setTimeout(() => {
+		this.#timeoutId = setTimeout(() => {
 			this.#reconnectAttempts++;
 			this.connect();
 		}, delay);
@@ -95,4 +121,4 @@ class JuicerWs {
 	}
 }
 
-export const ws = $state(new JuicerWs());
+export const ws = new JuicerWebSocket();

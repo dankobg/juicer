@@ -1,7 +1,9 @@
 <script lang="ts">
+	import { page } from '$app/state';
 	import { quickGameIcons } from '$lib/components/quick-game-icons/quick-game-icons.svelte';
 	import { lobbyManager } from '$lib/gameplay/lobby-manager.svelte';
 	import type { components } from '$lib/gen/juicer_openapi';
+	import { ws } from '$lib/ws/juicer-ws.svelte';
 
 	let {
 		gameTimeCategories,
@@ -81,6 +83,33 @@
 
 		document.startViewTransition(updater);
 	}
+
+	function onReseekGame(clockMs: number, incrementMs: number) {
+		const updater = () => {
+			lobbyManager.seekGame(clockMs, incrementMs);
+		};
+
+		if (!document.startViewTransition) {
+			updater();
+			return;
+		}
+
+		document.startViewTransition(updater);
+	}
+
+	let reseekDone = $state(false);
+
+	$effect(() => {
+		if (reseekDone || lobbyManager.seekingQuickGame || ws.readyState !== WebSocket.OPEN) {
+			return;
+		}
+		const reseek = page.state.reseek;
+		if (!reseek) {
+			return;
+		}
+		onReseekGame(reseek.clockMs, reseek.incrementMs);
+		reseekDone = true;
+	});
 </script>
 
 <div class="rounded-xl border border-yellow-400/20">

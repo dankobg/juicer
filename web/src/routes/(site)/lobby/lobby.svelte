@@ -12,14 +12,14 @@
 	let { data }: PageProps = $props();
 
 	$effect(() => {
-		const params = new URLSearchParams();
-		params.set('path', window.location.pathname);
-		ws.connect(params);
-
 		ws.onOpen = onWsOpen;
 		ws.onError = onWsError;
 		ws.onClose = onWsClose;
 		ws.onMessage = onWsMessage;
+
+		const params = new URLSearchParams();
+		params.set('path', window.location.pathname);
+		ws.connect(params);
 
 		return () => {
 			ws.close();
