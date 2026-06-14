@@ -324,6 +324,8 @@ func (a *ApiHandler) handleGamePlayerDisconnectedEvent(event gameplay.PlayerDisc
 
 	playerLeftMsgBytes, err := protojson.Marshal(playerLeftMsg)
 	if err != nil {
+		a.Log.Error("Message_PlayerLeft protojson marshal", slog.String("user_id", event.UserID.String()), slog.Any("error", err))
+		return
 	} else {
 		if err := a.bus.rdb.Publish(context.Background(), "user."+event.OtherUserID.String(), playerLeftMsgBytes).Err(); err != nil {
 			a.Log.Error("PlayerLeft publish", slog.String("user_id", event.UserID.String()), slog.Any("error", err))
@@ -343,6 +345,8 @@ func (a *ApiHandler) handleGamePlayerReconnectedEvent(event gameplay.PlayerRecon
 
 	playerRejoinedMsgBytes, err := protojson.Marshal(playerRejoinedMsg)
 	if err != nil {
+		a.Log.Error("Message_PlayerRejoined protojson marshal", slog.String("user_id", event.UserID.String()), slog.Any("error", err))
+		return
 	} else {
 		if err := a.bus.rdb.Publish(context.Background(), "user."+event.OtherUserID.String(), playerRejoinedMsgBytes).Err(); err != nil {
 			a.Log.Error("PlayerRejoined publish", slog.String("user_id", event.UserID.String()), slog.Any("error", err))
@@ -972,6 +976,8 @@ func (a *ApiHandler) handleWSCSendLobbyChat(authInfo clientAuthInfo, data *pb.Se
 
 	lobbyChatMsgBytes, err := protojson.Marshal(lobbyChatMsg)
 	if err != nil {
+		a.Log.Error("Message_LobbyChat protojson marshal", slog.String("user_id", authInfo.userID), slog.String("conn_id", authInfo.connID), slog.Any("error", err))
+		return
 	} else {
 		if err := a.bus.rdb.Publish(context.Background(), "lobby.chat", lobbyChatMsgBytes).Err(); err != nil {
 			a.Log.Error("LobbyChat publish", slog.String("user_id", authInfo.userID), slog.String("auth_state", authInfo.authState.String()), slog.Any("error", err))
@@ -1004,6 +1010,8 @@ func (a *ApiHandler) handleWSCSendGameChat(authInfo clientAuthInfo, data *pb.Sen
 
 	gameChatMsgBytes, err := protojson.Marshal(gameChatMsg)
 	if err != nil {
+		a.Log.Error("Message_GameChat protojson marshal", slog.String("user_id", authInfo.userID), slog.String("conn_id", authInfo.connID), slog.Any("error", err))
+		return
 	} else {
 		topic := fmt.Sprintf("game.%d.chat", data.GetGameId())
 		if err := a.bus.rdb.Publish(context.Background(), topic, gameChatMsgBytes).Err(); err != nil {
