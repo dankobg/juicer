@@ -83,7 +83,7 @@
 			{/if}
 		</div>
 
-		<div class="flex max-h-30 min-h-40 flex-col gap-1 overflow-y-auto p-2" onscroll={onScroll}>
+		<div class="flex max-h-70 min-h-40 flex-col gap-1 overflow-y-auto p-2" onscroll={onScroll}>
 			{#each Array(Math.ceil((game.gameMoves.length - 1) / 2)) as _, i (i)}
 				{@const w = i * 2 + 1}
 				{@const b = i * 2 + 2}

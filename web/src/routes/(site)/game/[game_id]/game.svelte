@@ -323,7 +323,7 @@
 
 		@media screen and (width > 60rem) {
 			--game-layout-gap: 1rem;
-			grid-template-rows: unset;
+			grid-template-rows: auto minmax(0, 1fr) auto auto;
 			grid-template-columns:
 				minmax(var(--chat-min-width), var(--chat-max-width))
 				auto
@@ -385,9 +385,17 @@
 
 	.player.opp {
 		grid-area: player-opp;
+
+		@media screen and (width > 60rem) {
+			margin-top: 1rem;
+		}
 	}
 	.player.me {
 		grid-area: player-me;
+
+		@media screen and (width > 60rem) {
+			margin-bottom: 1rem;
+		}
 	}
 
 	#promotion-popover {
