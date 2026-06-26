@@ -6,7 +6,6 @@ import {
 	type MoveSync,
 	type MoveAck,
 	type GameChat,
-	type GameChatList,
 	type AbortGame,
 	type ResignGame,
 	type AcceptDraw,
@@ -16,20 +15,19 @@ import {
 	type DrawDeclined,
 	GameResult,
 	type PlayerRejoined,
-	type PlayerLeft
+	type PlayerLeft,
+	type GameChatList
 } from '$lib/gen/juicer_pb';
 import { create } from '@bufbuild/protobuf';
 import type { Coord } from '@dankop/juicer-board';
 import { ws } from '$lib/ws/juicer-ws.svelte';
-import { SvelteMap } from 'svelte/reactivity';
 import { goto } from '$app/navigation';
-import type { ChatMessage } from '$lib/components/chat-box/chat-box.svelte';
 import { soundManager } from '$lib/sound/sound-manager.svelte';
 import { Game, getRookCastleMove, isEnpassantLanMove, isPromotionUciMove, type GameOptions } from './game.svelte';
+import { chatManager, gameChatChannel, type ChatMessage } from './chat-manager.svelte';
 
 export class GameManager {
-	games = $state<SvelteMap<number, Game>>(new SvelteMap());
-	gameChatMessages = $state<SvelteMap<number, ChatMessage[]>>(new SvelteMap());
+	games = $state<Record<number, Game>>({});
 
 	sendGameChat(gameId: number, message: string): void {
 		const sendGameChatMsg = create(MessageSchema, {
@@ -39,9 +37,9 @@ export class GameManager {
 	}
 
 	onGameFound(gameFound: GameFound): void {
-		const exists = this.games.has(gameFound.gameId);
-		if (!exists) {
-			this.games.set(gameFound.gameId, new Game({ gameId: gameFound.gameId }));
+		const game = this.games[gameFound.gameId];
+		if (!game) {
+			this.games[gameFound.gameId] = new Game({ gameId: gameFound.gameId });
 		}
 		goto(`/game/${gameFound.gameId}`);
 		soundManager.play('NewChallenge');
@@ -83,14 +81,14 @@ export class GameManager {
 			gameOpts.historyPointer = gameInfo.gameMoves.length - 1;
 		}
 
-		if (this.games.has(gameInfo.gameId)) {
-			const game = this.games.get(gameInfo.gameId);
+		if (this.games[gameInfo.gameId]) {
+			const game = this.games[gameInfo.gameId];
 			game?.configure(gameOpts);
 			game?.startLoop();
 		} else {
 			const game = new Game(gameOpts);
 			game.startLoop();
-			this.games.set(gameInfo.gameId, game);
+			this.games[gameInfo.gameId] = game;
 		}
 	}
 
@@ -99,16 +97,16 @@ export class GameManager {
 	onResignGame(resignGame: ResignGame): void {}
 
 	onDrawOffer(drawOffer: DrawOffer): void {
-		const game = this.games.get(drawOffer.gameId);
+		const game = this.games[drawOffer.gameId];
 		if (game) {
-			game.pendingDrawOffers.set(drawOffer.offeredBy, drawOffer);
+			game.pendingDrawOffers[drawOffer.offeredBy] = drawOffer;
 		}
 	}
 
 	onDrawDeclined(drawDeclined: DrawDeclined): void {
-		const game = this.games.get(drawDeclined.gameId);
+		const game = this.games[drawDeclined.gameId];
 		if (game) {
-			game.pendingDrawOffers.clear();
+			game.pendingDrawOffers = {};
 		}
 	}
 
@@ -117,7 +115,7 @@ export class GameManager {
 	onDeclinedDraw(declineDraw: DeclineDraw): void {}
 
 	onGamePlayerLeft(playerLeft: PlayerLeft): void {
-		const game = this.games.get(playerLeft.gameId);
+		const game = this.games[playerLeft.gameId];
 		if (game) {
 			const color = game?.getPlayerColor(playerLeft.userId);
 			if (color === Color.WHITE) {
@@ -129,7 +127,7 @@ export class GameManager {
 	}
 
 	onGamePlayerRejoined(playerRejoined: PlayerRejoined): void {
-		const game = this.games.get(playerRejoined.gameId);
+		const game = this.games[playerRejoined.gameId];
 		if (game) {
 			const color = game?.getPlayerColor(playerRejoined.userId);
 			if (color === Color.WHITE) {
@@ -141,7 +139,7 @@ export class GameManager {
 	}
 
 	onGameFinished(gameFinished: GameFinished): void {
-		const game = this.games.get(gameFinished.gameId);
+		const game = this.games[gameFinished.gameId];
 		if (game) {
 			game.gameResult = gameFinished.gameResult;
 			game.gameResultStatus = gameFinished.gameResultStatus;
@@ -163,7 +161,7 @@ export class GameManager {
 	}
 
 	onMoveSync(moveSync: MoveSync): void {
-		const game = this.games.get(moveSync.gameId);
+		const game = this.games[moveSync.gameId];
 		if (!game) {
 			throw new Error('movesync: no game found');
 		}
@@ -232,21 +230,41 @@ export class GameManager {
 
 	onMoveAck(moveAck: MoveAck): void {}
 
-	onGameChat(gameChat: GameChat): void {
-		const gameChats = this.gameChatMessages.get(gameChat.gameId);
-		if (!gameChats) {
-			this.gameChatMessages.set(gameChat.gameId, []);
-		}
+	fetchOlderGameChatMessages(gameId: number): void {
+		const cursor = chatManager.getChatCursor(gameChatChannel(gameId));
+		const listGameChatsMsg = create(MessageSchema, {
+			event: { case: 'listGameChats', value: { cursor } }
+		});
+		ws.send(listGameChatsMsg);
+	}
 
-		gameChats!.push({
-			userId: gameChat.userId,
+	onGameChat(gameChat: GameChat): void {
+		chatManager.addChatMessage(gameChatChannel(gameChat.gameId), {
 			messageId: gameChat.messageId,
 			message: gameChat.message,
+			user: {
+				id: gameChat.user?.id ?? '',
+				username: gameChat.user?.username ?? ''
+			},
 			postedAt: gameChat.postedAt
 		});
 	}
 
-	onGameChatList(gameChats: GameChatList): void {}
+	onGameChatList(gameChats: GameChatList): void {
+		const messages: ChatMessage[] = [];
+		for (const msg of gameChats.gameChats) {
+			messages.push({
+				messageId: msg.messageId,
+				message: msg.message,
+				user: {
+					id: msg.user?.id ?? '',
+					username: msg.user?.username ?? ''
+				},
+				postedAt: msg.postedAt
+			});
+		}
+		chatManager.prependChatMessages(gameChatChannel(gameChats.gameId), messages, gameChats.hasMore);
+	}
 }
 
 export const gameManager = new GameManager();

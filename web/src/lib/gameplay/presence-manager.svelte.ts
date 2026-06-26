@@ -1,22 +1,23 @@
 import type { Echo, Presence, PresenceDiff, PresenceState } from '$lib/gen/juicer_pb';
-import { SvelteMap, SvelteSet } from 'svelte/reactivity';
 
 class PresenceManager {
-	userPresences = $state<SvelteMap<string, Presence>>(new SvelteMap());
-	channelPresences = $state<SvelteMap<string, SvelteSet<string>>>(new SvelteMap());
+	userPresences = $state<Record<string, Presence>>({});
+	channelPresences = $state<Record<string, string[]>>({});
 
 	lobbyPresence = $derived(this.getPresenceInChannel('lobby'));
 	lobbyChatPresence = $derived(this.getPresenceInChannel('lobby.chat'));
 
-	getPresenceInChannel(channel: string): SvelteMap<string, Presence> {
-		const presenceSet = this.channelPresences.get(channel);
-		const result = new SvelteMap<string, Presence>();
-		if (!presenceSet) {
+	getPresenceInChannel(channel: string): Record<string, Presence> {
+		const userIds = this.channelPresences[channel];
+		const result: Record<string, Presence> = {};
+		if (!userIds) {
 			return result;
 		}
-		for (const userId of presenceSet) {
-			const presence = this.userPresences.get(userId);
-			if (presence) result.set(userId, presence);
+		for (const userId of userIds) {
+			const presence = this.userPresences[userId];
+			if (presence) {
+				result[userId] = presence;
+			}
 		}
 		return result;
 	}
@@ -27,45 +28,52 @@ class PresenceManager {
 
 	onPresenceState(presenceState: PresenceState): void {
 		for (const presence of presenceState.presences) {
-			this.userPresences.set(presence.userId, presence);
-			const channelPresence = this.channelPresences.get(presence.channel) ?? new SvelteSet<string>();
-			channelPresence.add(presence.userId);
-			this.channelPresences.set(presence.channel, channelPresence);
+			this.userPresences[presence.userId] = presence;
+			const currentChannel = this.channelPresences[presence.channel] ?? [];
+			if (!currentChannel.includes(presence.userId)) {
+				currentChannel.push(presence.userId);
+				this.channelPresences[presence.channel] = currentChannel;
+			}
 		}
 	}
 
 	onPresenceDiff(presenceDiff: PresenceDiff): void {
 		for (const presence of presenceDiff.joined) {
-			let channelUsers = this.channelPresences.get(presence.channel);
-
-			if (!channelUsers) {
-				channelUsers = new SvelteSet<string>();
-				this.channelPresences.set(presence.channel, channelUsers);
+			if (!this.channelPresences[presence.channel]) {
+				this.channelPresences[presence.channel] = [];
 			}
 
-			channelUsers.add(presence.userId);
-			this.userPresences.set(presence.userId, presence);
+			const channelUsers = this.channelPresences[presence.channel];
+			if (!channelUsers?.includes(presence.userId)) {
+				channelUsers?.push(presence.userId);
+			}
+
+			this.userPresences[presence.userId] = presence;
 		}
 
 		for (const presence of presenceDiff.left) {
-			const channelUsers = this.channelPresences.get(presence.channel);
-			channelUsers?.delete(presence.userId);
+			const channelUsers = this.channelPresences[presence.channel];
+			if (channelUsers) {
+				const index = channelUsers.indexOf(presence.userId);
+				if (index !== -1) {
+					channelUsers.splice(index, 1);
+				}
 
-			if (channelUsers?.size === 0) {
-				this.channelPresences.delete(presence.channel);
+				if (channelUsers.length === 0) {
+					delete this.channelPresences[presence.channel];
+				}
 			}
 
 			let stillInAnyChannel = false;
-
-			for (const userId of this.channelPresences.values()) {
-				if (userId.has(presence.userId)) {
+			for (const activeUsers of Object.values(this.channelPresences)) {
+				if (activeUsers.includes(presence.userId)) {
 					stillInAnyChannel = true;
 					break;
 				}
 			}
 
 			if (!stillInAnyChannel) {
-				this.userPresences.delete(presence.userId);
+				delete this.userPresences[presence.userId];
 			}
 		}
 	}

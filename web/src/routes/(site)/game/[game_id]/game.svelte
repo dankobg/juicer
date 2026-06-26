@@ -20,17 +20,18 @@
 	} from '@dankop/juicer-board';
 	import { uiSettings } from '$lib/components/ui-settings/ui-settings-state.svelte';
 	import { Color, GameState } from '$lib/gen/juicer_pb';
-	import ChatBox, { type ChatMessage } from '$lib/components/chat-box/chat-box.svelte';
+	import ChatBox from '$lib/components/chat-box/chat-box.svelte';
 	import { presenceManager } from '$lib/gameplay/presence-manager.svelte';
 	import { soundManager } from '$lib/sound/sound-manager.svelte';
 	import GameControls from '$lib/components/game/game-controls.svelte';
 	import PlayerInfo from '$lib/components/game/player-info.svelte';
 	import MovesList from '$lib/components/game/moves-list.svelte';
 	import GameInfo from '$lib/components/game/game-info.svelte';
+	import { chatManager, type ChatMessage } from '$lib/gameplay/chat-manager.svelte';
 
 	let { data, params }: PageProps = $props();
 
-	let game = $derived<Game | undefined>(gameManager.games?.get(Number(params.game_id)));
+	let game = $derived<Game | undefined>(gameManager.games[Number(params.game_id)]);
 
 	let promotionPopoverElm!: HTMLDivElement;
 
@@ -190,8 +191,7 @@
 	});
 
 	let gameUserPresences = $derived(presenceManager.getPresenceInChannel(`game.${game?.gameId}`));
-
-	let gameChatMessages = $state<ChatMessage[]>([]);
+	let gameChatMessages = $derived(chatManager.channelChats[`game.${game?.gameId}.chat`]?.messages ?? []);
 
 	function clockPrecision(ms: number): 'deciseconds' | 'centiseconds' | null {
 		if (ms <= 10_000) return 'centiseconds';
@@ -211,11 +211,12 @@
 					title="Game chat"
 					channel={`game.${game.gameId}.chat`}
 					chatUserId={data?.auth?.user?.id ?? ''}
-					messages={[]}
-					users={new Map()}
+					messages={gameChatMessages}
+					presences={gameUserPresences}
 					onSend={msg => {
 						gameManager.sendGameChat(game.gameId!, msg);
 					}}
+					onLoadMore={() => gameManager.fetchOlderGameChatMessages(game.gameId!)}
 				/>
 			</div>
 		</div>
@@ -230,7 +231,7 @@
 					player={game.opponentPlayer}
 					color={game.opponentColor}
 					active={game.gameState === GameState.ACTIVE && game.currentTurn === game.opponentColor}
-					online={gameUserPresences.has(game.opponentPlayer.userId)}
+					online={gameUserPresences[game.opponentPlayer.userId] !== undefined}
 					clockMs={game.opponentColor === Color.WHITE ? game.whiteDisplayTimeMs : game.blackDisplayTimeMs}
 					reconnectMs={game.opponentColor === Color.WHITE
 						? game.whiteDisplayReconnectTimeMs
@@ -269,7 +270,7 @@
 					player={game.mePlayer}
 					color={game.myColor}
 					active={game.gameState === GameState.ACTIVE && game.currentTurn === game.myColor}
-					online={gameUserPresences.has(game.mePlayer.userId)}
+					online={gameUserPresences[game.mePlayer.userId] !== undefined}
 					clockMs={game.myColor === Color.WHITE ? game.whiteDisplayTimeMs : game.blackDisplayTimeMs}
 					reconnectMs={game.myColor === Color.WHITE
 						? game.whiteDisplayReconnectTimeMs

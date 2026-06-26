@@ -68,3 +68,12 @@ export function capitalize(s: string) {
 export function assertUnreachable(value: never): never {
 	throw new Error(`Unexpected value: ${value}`);
 }
+
+export function colorFromUserId(userId: string): string {
+	let hash = 0;
+	for (let i = 0; i < userId.length; i++) {
+		hash = userId.charCodeAt(i) + ((hash << 5) - hash);
+	}
+	const hue = Math.abs(hash) % 360;
+	return `hsl(${hue}, 70%, 50%)`;
+}

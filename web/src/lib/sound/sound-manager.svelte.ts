@@ -1,6 +1,5 @@
 import { browser } from '$app/environment';
 import { uiSettings } from '$lib/components/ui-settings/ui-settings-state.svelte';
-import { SvelteMap } from 'svelte/reactivity';
 
 export type SoundName =
 	| 'Capture'
@@ -29,28 +28,29 @@ class SoundManager {
 				: theme === 'piano'
 					? '/sounds/piano/stock/NewChatMessage.ogg'
 					: `/sounds/${theme}/GenericNotify.ogg`;
-		const sounds = new SvelteMap<SoundName, string>([
-			['Capture', `/sounds/${theme}/Capture.ogg`],
-			['Check', `/sounds/${theme}/Check.ogg`],
-			['Checkmate', `/sounds/${theme}/Checkmate.ogg`],
-			['Confirmation', `/sounds/${theme}/Confirmation.ogg`],
-			['Defeat', `/sounds/${theme}/Defeat.ogg`],
-			['Draw', `/sounds/${theme}/Draw.ogg`],
-			['Error', `/sounds/${theme}/Error.ogg`],
-			['LowTime', `/sounds/${theme}/LowTime.ogg`],
-			['Move', `/sounds/${theme}/Move.ogg`],
-			['NewChallenge', `/sounds/${theme}/NewChallenge.ogg`],
-			['NewChatMessage', newChatMsgUrl],
-			['NewPM', `/sounds/${theme}/NewPM.ogg`],
-			['OutOfBound', `/sounds/${theme}/OutOfBound.ogg`],
-			['Victory', `/sounds/${theme}/Victory.ogg`]
-		]);
+
+		const sounds: Record<SoundName, string> = {
+			Capture: `/sounds/${theme}/Capture.ogg`,
+			Check: `/sounds/${theme}/Check.ogg`,
+			Checkmate: `/sounds/${theme}/Checkmate.ogg`,
+			Confirmation: `/sounds/${theme}/Confirmation.ogg`,
+			Defeat: `/sounds/${theme}/Defeat.ogg`,
+			Draw: `/sounds/${theme}/Draw.ogg`,
+			Error: `/sounds/${theme}/Error.ogg`,
+			LowTime: `/sounds/${theme}/LowTime.ogg`,
+			Move: `/sounds/${theme}/Move.ogg`,
+			NewChallenge: `/sounds/${theme}/NewChallenge.ogg`,
+			NewChatMessage: newChatMsgUrl,
+			NewPM: `/sounds/${theme}/NewPM.ogg`,
+			OutOfBound: `/sounds/${theme}/OutOfBound.ogg`,
+			Victory: `/sounds/${theme}/Victory.ogg`
+		};
 		return sounds;
 	});
 
 	async preloadSounds(): Promise<void> {
-		for (const sound of this.sounds) {
-			this.loadSound(sound[1]);
+		for (const sound of Object.values(this.sounds)) {
+			this.loadSound(sound);
 		}
 	}
 
@@ -66,7 +66,7 @@ class SoundManager {
 	}
 
 	async playSound(name: SoundName, volume: number = 1) {
-		const url = this.sounds.get(name) as string;
+		const url = this.sounds[name];
 		const buffer = await this.loadSound(url);
 		const source = this.audioCtx!.createBufferSource();
 		const gainNode = this.audioCtx!.createGain();

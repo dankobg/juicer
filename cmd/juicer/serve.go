@@ -13,16 +13,28 @@ import (
 
 	"github.com/dankobg/juicer/auth/keto"
 	"github.com/dankobg/juicer/auth/kratos"
+	"github.com/dankobg/juicer/bus"
 	"github.com/dankobg/juicer/config"
 	"github.com/dankobg/juicer/engine"
+	"github.com/dankobg/juicer/features/chat"
+	chatpg "github.com/dankobg/juicer/features/chat/persistence/postgres"
+	chatrdb "github.com/dankobg/juicer/features/chat/persistence/redis"
+	"github.com/dankobg/juicer/features/game"
+	gamepg "github.com/dankobg/juicer/features/game/persistence/postgres"
+	gamerdb "github.com/dankobg/juicer/features/game/persistence/redis"
+	"github.com/dankobg/juicer/features/idp"
+	idppg "github.com/dankobg/juicer/features/idp/persistence/postgres"
+	"github.com/dankobg/juicer/features/presence"
+	presencerdb "github.com/dankobg/juicer/features/presence/persistence/redis"
+	"github.com/dankobg/juicer/features/webhooks"
 	"github.com/dankobg/juicer/httpserver"
 	"github.com/dankobg/juicer/logging"
 	"github.com/dankobg/juicer/mailer"
-	"github.com/dankobg/juicer/persistence/postgres"
-	redisp "github.com/dankobg/juicer/persistence/redis"
+	"github.com/dankobg/juicer/postgres"
 	"github.com/dankobg/juicer/redis"
 	"github.com/dankobg/juicer/server"
 	"github.com/dankobg/juicer/ws"
+	"github.com/google/uuid"
 )
 
 type ServeCommand struct{}
@@ -62,8 +74,6 @@ func (sc *ServeCommand) Run() error {
 		return fmt.Errorf("failed to connect to redis: %w", err)
 	}
 
-	rdbPersistor := redisp.New(rdb)
-
 	kratosClient := kratos.NewClient(cfg.KratosPublicURL, cfg.KratosAdminURL)
 
 	ketoClient, err := keto.NewClient()
@@ -77,22 +87,57 @@ func (sc *ServeCommand) Run() error {
 	}
 	defer pool.Close()
 
-	pg := postgres.New(pool)
+	pgPst := postgres.NewPgPersistor(pool)
 
-	persistor := struct {
-		*redisp.RedisPersistor
-		*postgres.PgPersistor
-	}{rdbPersistor, pg}
+	hub := ws.NewHub(rdb, logger)
 
-	hub := ws.NewHub(persistor, rdb, logger)
+	gamePst := gamepg.NewPgGamePersistor(pgPst)
+	gvPst := gamepg.NewPgGameVariantPersistor(pgPst)
+	gtcPst := gamepg.NewPgGameTimeCategoryPersistor(pgPst)
+	gtkPst := gamepg.NewPgGameTimeKindPersistor(pgPst)
+	agPst := gamerdb.NewRedisActiveGamePersistor(rdb)
+	grPst := gamepg.NewPgGameResultPersistor(pgPst)
+	grsPst := gamepg.NewPgGameResultStatusPersistor(pgPst)
+	gsPst := gamepg.NewPgGameStatePersistor(pgPst)
+	userPst := idppg.NewPgUserPersistor(pgPst)
+	ratingPst := gamepg.NewPgRatingPersistor(pgPst)
+	poolPst := gamerdb.NewRedisPoolPersistor(rdb)
+	presencePst := presencerdb.NewRedisPresencePersistor(rdb)
 
-	apiHandler := server.New(cfg, logger, rdb, kratosClient, ketoClient, smtpClient, hub, persistor)
+	bus := bus.NewBus(rdb)
 
-	if err := apiHandler.FetchCategoryThresholds(context.Background()); err != nil {
+	redisChatPst := chatrdb.NewRedisChatPersistor(rdb)
+	sqlChatPst := chatpg.NewPostgresChatPersistor(pgPst)
+	presenceSvc := presence.NewPresenceService(bus, presencePst, logger)
+
+	// chatSvc := chat.NewChatService(redisChatPst, sqlChatPst, sqlChatPst, sqlChatPst, logger)
+	chatSvc := chat.NewChatService(redisChatPst, redisChatPst, redisChatPst, redisChatPst, logger)
+	_ = sqlChatPst
+	idpr := idp.NewIdentityProvider(kratosClient, ketoClient, cfg.KratosAPIKey, cfg.KetoAPIKey, userPst, gtcPst, ratingPst, logger)
+
+	pst := game.Persistor{
+		Game:             gamePst,
+		GameVariant:      gvPst,
+		GameTimeCategory: gtcPst,
+		GameTimeKind:     gtkPst,
+		ActiveGame:       agPst,
+		GameResult:       grPst,
+		GameResultStatus: grsPst,
+		GameState:        gsPst,
+		Rating:           ratingPst,
+		Pool:             poolPst,
+	}
+
+	gameSvc := game.NewGameService(presenceSvc, chatSvc, bus, usrRdr{idpr}, pst, logger)
+	webhooksSvc := webhooks.NewWebhooks(idpr, logger)
+
+	apiHandler := server.New(cfg, logger, rdb, kratosClient, ketoClient, smtpClient, hub, gameSvc, chatSvc, idpr, webhooksSvc)
+
+	if err := gameSvc.FetchCategoryThresholds(context.Background()); err != nil {
 		return fmt.Errorf("FetchCategoryThresholds: %w", err)
 	}
 
-	if err := apiHandler.FetchProtoMappingsCacheLookups(context.Background()); err != nil {
+	if err := gameSvc.FetchProtoMappingsCacheLookups(context.Background()); err != nil {
 		return fmt.Errorf("FetchProtoMappingsCacheLookups: %w", err)
 	}
 
@@ -126,8 +171,8 @@ func (sc *ServeCommand) Run() error {
 		}
 	}()
 
-	go apiHandler.PubsubProcess(rootCtx)
-	go apiHandler.StartMatchmaking(rootCtx)
+	go gameSvc.PubsubProcess(rootCtx)
+	go gameSvc.StartMatchmaking(rootCtx)
 
 	go func() {
 		if err := apiHandler.Hub.Run(rootCtx); err != nil {
@@ -158,4 +203,21 @@ func (sc *ServeCommand) Run() error {
 	logger.Info("server shut down")
 
 	return errors.Join(shutdownErrors...)
+}
+
+type usrRdr struct {
+	*idp.IdentityProvider
+}
+
+func (ur usrRdr) GetUserInfo(ctx context.Context, userID uuid.UUID) (game.UserInfo, error) {
+	userInfo, err := ur.IdentityProvider.GetUserInfo(ctx, userID)
+	if err != nil {
+		return game.UserInfo{}, err
+	}
+
+	return game.UserInfo(userInfo), nil
+}
+
+func (ur usrRdr) GetUsername(ctx context.Context, userID uuid.UUID) (string, error) {
+	return ur.IdentityProvider.GetUsername(ctx, userID)
 }

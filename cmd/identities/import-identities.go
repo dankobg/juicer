@@ -13,7 +13,8 @@ import (
 	"github.com/dankobg/juicer/auth/kratos"
 	"github.com/dankobg/juicer/config"
 	"github.com/dankobg/juicer/db/gen/models"
-	"github.com/dankobg/juicer/persistence/postgres"
+	userpg "github.com/dankobg/juicer/features/idp/persistence/postgres"
+	"github.com/dankobg/juicer/postgres"
 	"github.com/dankobg/juicer/shared"
 	"github.com/google/uuid"
 	orykratos "github.com/ory/client-go"
@@ -42,7 +43,8 @@ func (ic *ImportIdentitiesCmd) Run() error {
 	}
 	defer pool.Close()
 
-	pg := postgres.New(pool)
+	pgPst := postgres.NewPgPersistor(pool)
+	userPst := userpg.NewPgUserPersistor(pgPst)
 
 	customersFile, err := os.ReadFile("ory/kratos/imports/customers.json")
 	if err != nil {
@@ -105,7 +107,7 @@ func (ic *ImportIdentitiesCmd) Run() error {
 	}
 
 	for _, uid := range userIDs {
-		if _, err := pg.User().CreateUser(ctx, models.UserSetter{ID: omit.From(uid)}); err != nil {
+		if _, err := userPst.CreateUser(ctx, models.UserSetter{ID: omit.From(uid)}); err != nil {
 			log.Fatalln("failed to insert users:", err)
 		}
 	}

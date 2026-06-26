@@ -52,7 +52,7 @@
 	}
 </script>
 
-{#snippet btn(text: string, Icon: Component, onclick?: () => void, disabled?: boolean)}
+{#snippet btn(text: string, Icon: Component, onclick?: VoidFunction, disabled?: boolean)}
 	<Tooltip.Provider delayDuration={200}>
 		<Tooltip.Root>
 			<Tooltip.Trigger

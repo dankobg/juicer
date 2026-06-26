@@ -2,13 +2,9 @@ package server
 
 import (
 	"context"
-	"errors"
 	"fmt"
 
 	api "github.com/dankobg/juicer/api/gen"
-	"github.com/dankobg/juicer/dto"
-	"github.com/dankobg/juicer/persistence/dbtype"
-	"github.com/dankobg/juicer/persistence/postgres"
 )
 
 func (a *ApiHandler) ListGameVariants(ctx context.Context, request api.ListGameVariantsRequestObject) (api.ListGameVariantsResponseObject, error) {
@@ -24,24 +20,14 @@ func (a *ApiHandler) ListGameVariants(ctx context.Context, request api.ListGameV
 	// }); err != nil || !checkResp.GetAllowed() {
 	// 	return api.ListGameVariants403JSONResponse{UnauthorizedErrorResponseJSONResponse: newUnauthorizedResp("gamevariant_permission", "permission denied")}, nil
 	// }
-	filters := dbtype.ListGameVariantsFilters{ListGameVariantsParams: request.Params}
-	paginationParams := getPaginationParams(request.Params.Page, request.Params.PageSize)
-	filters.Page = &paginationParams.Page
-	filters.PageSize = &paginationParams.PageSize
-
-	gamevariants, err := a.persistor.GameVariant().ListGameVariants(ctx, filters)
+	gameVariants, err := a.game.ListGameVariants(ctx, request)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list gamevariants: %w", err)
 	}
 
-	gamevariantsData := make([]api.GameVariant, len(gamevariants.Data))
-	for i, gamevariant := range gamevariants.Data {
-		gamevariantsData[i] = dto.GameVariantToResponse(gamevariant)
-	}
-
 	resp := api.ListGameVariants200JSONResponse{
-		Data: gamevariantsData,
-		Meta: getPaginationMeta(request.Params.Page, request.Params.PageSize, gamevariants.TotalCount),
+		Data: gameVariants.Data,
+		Meta: gameVariants.Meta.ToResp(),
 	}
 
 	return resp, nil
@@ -60,24 +46,14 @@ func (a *ApiHandler) ListGameTimeCategories(ctx context.Context, request api.Lis
 	// }); err != nil || !checkResp.GetAllowed() {
 	// 	return api.ListGameTimeCategories403JSONResponse{UnauthorizedErrorResponseJSONResponse: newUnauthorizedResp("gametimecategory_permission", "permission denied")}, nil
 	// }
-	filters := dbtype.ListGameTimeCategoriesFilters{ListGameTimeCategoriesParams: request.Params}
-	paginationParams := getPaginationParams(request.Params.Page, request.Params.PageSize)
-	filters.Page = &paginationParams.Page
-	filters.PageSize = &paginationParams.PageSize
-
-	gametimecategories, err := a.persistor.GameTimeCategory().ListGameTimeCategories(ctx, filters)
+	gameTimeCategories, err := a.game.ListGameTimeCategories(ctx, request)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list gametimecategories: %w", err)
 	}
 
-	gametimecategoriesData := make([]api.GameTimeCategory, len(gametimecategories.Data))
-	for i, gametimecategory := range gametimecategories.Data {
-		gametimecategoriesData[i] = dto.GameTimeCategoryToResponse(gametimecategory)
-	}
-
 	resp := api.ListGameTimeCategories200JSONResponse{
-		Data: gametimecategoriesData,
-		Meta: getPaginationMeta(request.Params.Page, request.Params.PageSize, gametimecategories.TotalCount),
+		Data: gameTimeCategories.Data,
+		Meta: gameTimeCategories.Meta.ToResp(),
 	}
 
 	return resp, nil
@@ -96,38 +72,25 @@ func (a *ApiHandler) ListGameTimeKinds(ctx context.Context, request api.ListGame
 	// }); err != nil || !checkResp.GetAllowed() {
 	// 	return api.ListGameTimeKinds403JSONResponse{UnauthorizedErrorResponseJSONResponse: newUnauthorizedResp("gametimekind_permission", "permission denied")}, nil
 	// }
-	filters := dbtype.ListGameTimeKindsFilters{ListGameTimeKindsParams: request.Params}
-	paginationParams := getPaginationParams(request.Params.Page, request.Params.PageSize)
-	filters.Page = &paginationParams.Page
-	filters.PageSize = &paginationParams.PageSize
-
-	gametimekinds, err := a.persistor.GameTimeKind().ListGameTimeKinds(ctx, filters)
+	gameTimeKinds, err := a.game.ListGameTimeKinds(ctx, request)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list gametimekinds: %w", err)
 	}
 
-	gametimekindsData := make([]api.GameTimeKind, len(gametimekinds.Data))
-	for i, gametimekind := range gametimekinds.Data {
-		gametimekindsData[i] = dto.GameTimeKindToResponse(gametimekind)
-	}
-
 	resp := api.ListGameTimeKinds200JSONResponse{
-		Data: gametimekindsData,
-		Meta: getPaginationMeta(request.Params.Page, request.Params.PageSize, gametimekinds.TotalCount),
+		Data: gameTimeKinds.Data,
+		Meta: gameTimeKinds.Meta.ToResp(),
 	}
 
 	return resp, nil
 }
 
 func (a *ApiHandler) GetGame(ctx context.Context, request api.GetGameRequestObject) (api.GetGameResponseObject, error) {
-	filters := dbtype.GetGameByIDFilters{GetGameParams: request.Params}
-
-	gameDetails, err := a.persistor.Game().GetGameByID(ctx, request.ID, filters)
+	game, err := a.game.GetGame(ctx, request)
 	if err != nil {
-		if errors.Is(err, postgres.ErrGameNotFound) {
-			return api.GetGame404JSONResponse{NotFoundErrorResponseJSONResponse: newNotFoundResp("game_not_found", "game not found")}, nil
-		}
-
+		// if errors.Is(err, postgres.ErrGameNotFound) {
+		// 	return api.GetGame404JSONResponse{NotFoundErrorResponseJSONResponse: newNotFoundResp("game_not_found", "game not found")}, nil
+		// }
 		return nil, fmt.Errorf("failed to get game by id: %w", err)
 	}
 
@@ -141,8 +104,7 @@ func (a *ApiHandler) GetGame(ctx context.Context, request api.GetGameRequestObje
 	// }); err != nil || !checkResp.GetAllowed() {
 	// 	return api.GetGamedefaultJSONResponse{StatusCode: http.StatusUnauthorized, Body: newGenericErr(http.StatusUnauthorized, "game_permission", "permission denied")}, nil
 	// }
-
-	resp := api.GetGame200JSONResponse(dto.GameDetailsToResponse(gameDetails))
+	resp := api.GetGame200JSONResponse(*game)
 
 	return resp, nil
 }
@@ -158,24 +120,14 @@ func (a *ApiHandler) ListGames(ctx context.Context, request api.ListGamesRequest
 	// 	// }); err != nil || !checkResp.GetAllowed() {
 	// 	// 	return api.ListGames403JSONResponse{UnauthorizedErrorResponseJSONResponse: newUnauthorizedResp("game_permission", "permission denied")}, nil
 	// 	// }
-	filters := dbtype.ListGamesFilters{ListGamesParams: request.Params}
-	paginationParams := getPaginationParams(request.Params.Page, request.Params.PageSize)
-	filters.Page = &paginationParams.Page
-	filters.PageSize = &paginationParams.PageSize
-
-	games, err := a.persistor.Game().ListGames(ctx, filters)
+	games, err := a.game.ListGames(ctx, request)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list games: %w", err)
 	}
 
-	gamesData := make([]api.Game, len(games.Data))
-	for i, gameDetailsData := range games.Data {
-		gamesData[i] = dto.GameDetailsToResponse(gameDetailsData)
-	}
-
 	resp := api.ListGames200JSONResponse{
-		Data: gamesData,
-		Meta: getPaginationMeta(request.Params.Page, request.Params.PageSize, games.TotalCount),
+		Data: games.Data,
+		Meta: games.Meta.ToResp(),
 	}
 
 	return resp, nil
@@ -194,24 +146,14 @@ func (a *ApiHandler) ListRatings(ctx context.Context, request api.ListRatingsReq
 	// }); err != nil || !checkResp.GetAllowed() {
 	// 	return api.ListRatings403JSONResponse{UnauthorizedErrorResponseJSONResponse: newUnauthorizedResp("rating_permission", "permission denied")}, nil
 	// }
-	filters := dbtype.ListRatingsFilters{ListRatingsParams: request.Params}
-	paginationParams := getPaginationParams(request.Params.Page, request.Params.PageSize)
-	filters.Page = &paginationParams.Page
-	filters.PageSize = &paginationParams.PageSize
-
-	ratings, err := a.persistor.Rating().ListRatings(ctx, filters)
+	ratings, err := a.game.ListRatings(ctx, request)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list ratings: %w", err)
 	}
 
-	ratingsData := make([]api.Rating, len(ratings.Data))
-	for i, rating := range ratings.Data {
-		ratingsData[i] = dto.RatingToResponse(rating)
-	}
-
 	resp := api.ListRatings200JSONResponse{
-		Data: ratingsData,
-		Meta: getPaginationMeta(request.Params.Page, request.Params.PageSize, ratings.TotalCount),
+		Data: ratings.Data,
+		Meta: ratings.Meta.ToResp(),
 	}
 
 	return resp, nil

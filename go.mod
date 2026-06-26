@@ -5,7 +5,7 @@ go 1.26
 require (
 	github.com/aarondl/opt v0.0.0-20250607033636-982744e1bd65
 	github.com/alecthomas/kong v1.15.0
-	github.com/coder/websocket v1.8.14
+	github.com/coder/websocket v1.8.15
 	github.com/getkin/kin-openapi v0.140.0
 	github.com/goforj/godump v1.9.1
 	github.com/google/uuid v1.6.0
@@ -20,10 +20,10 @@ require (
 	github.com/lmittmann/tint v1.1.3
 	github.com/oapi-codegen/nethttp-middleware v1.1.2
 	github.com/oapi-codegen/nullable v1.1.0
-	github.com/oapi-codegen/runtime v1.4.1
-	github.com/ory/client-go v1.22.51
+	github.com/oapi-codegen/runtime v1.4.2
+	github.com/ory/client-go v1.22.55
 	github.com/ory/keto/proto v0.13.0-alpha.0.0.20240724130948-6f5ee2ebdab3
-	github.com/redis/go-redis/v9 v9.20.1
+	github.com/redis/go-redis/v9 v9.21.0
 	github.com/stephenafamo/bob v0.46.0
 	github.com/stephenafamo/scan v0.7.0
 	github.com/wneessen/go-mail v0.7.3

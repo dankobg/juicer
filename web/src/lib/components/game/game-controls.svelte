@@ -57,7 +57,7 @@
 	{/if}
 </div>
 
-{#snippet btn(text: string, Icon: Component, onclick?: () => void)}
+{#snippet btn(text: string, Icon: Component, onclick?: VoidFunction)}
 	<Tooltip.Provider delayDuration={200}>
 		<Tooltip.Root>
 			<Tooltip.Trigger class={buttonVariants({ variant: 'outline', size: 'icon', class: 'rounded-full' })} {onclick}>

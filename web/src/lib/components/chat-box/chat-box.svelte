@@ -1,38 +1,34 @@
 <script lang="ts">
-	import { tick } from 'svelte';
+	import { onMount, tick } from 'svelte';
 	import { Button } from '$lib/components/ui/button/index';
 	import { Input } from '$lib/components/ui/input';
 	import IconArrowDown from '@lucide/svelte/icons/arrow-down';
-
-	export type ChatMessage = {
-		messageId: number;
-		userId: string;
-		message: string;
-		postedAt: string;
-	};
-
-	export type ChatUser = {
-		userId: string;
-		username: string;
-		avatarUrl?: string;
-		guest?: boolean;
-	};
+	import type { Presence } from '$lib/gen/juicer_pb';
+	import { colorFromUserId } from '$lib/utils';
+	import { chatManager, type ChatMessage } from '$lib/gameplay/chat-manager.svelte';
 
 	type Props = {
 		title: string;
 		channel: string;
 		chatUserId: string;
 		messages: ChatMessage[];
-		users: Map<string, ChatUser>;
+		hasMore?: boolean;
+		presences: Record<string, Presence>;
 		onSend?: (text: string) => void;
+		onLoadMore?: VoidFunction;
 	};
 
-	let { title, channel, chatUserId, messages, users, onSend }: Props = $props();
+	let { title, channel, chatUserId, messages, hasMore, presences, onSend, onLoadMore }: Props = $props();
 
-	let messagesContainer: HTMLDivElement;
-	let scrollPointElm: HTMLDivElement;
-	let allowedToScrollToLatest = $state<boolean>(true);
 	let text = $state<string>('');
+	let messagesContainer: HTMLDivElement;
+	let scrollTopSentinelElm: HTMLDivElement;
+	let scrollBottomSentinelElm: HTMLDivElement;
+	let canScrollToLatest = $state<boolean>(true);
+
+	let loadingMore = false;
+	let restoreScroll = false;
+	let oldHeight = 0;
 
 	export function sendMessage() {
 		if (!text) {
@@ -42,25 +38,61 @@
 		text = '';
 	}
 
-	function onScroll(event: Event) {
-		const elm = event.target as HTMLDivElement;
-		const threshold = 50;
-		if (elm.scrollTop + elm.clientHeight >= elm.scrollHeight - threshold) {
-			allowedToScrollToLatest = true;
-		} else {
-			allowedToScrollToLatest = false;
-		}
-	}
-
 	async function scrollToLatestMessage() {
 		await tick();
-		scrollPointElm.scrollIntoView({ behavior: 'smooth', block: 'end' });
+		scrollBottomSentinelElm.scrollIntoView({ behavior: 'smooth', block: 'end' });
 	}
 
+	function onScroll(event: Event) {
+		const elm = event.target as HTMLDivElement;
+		canScrollToLatest = elm.scrollTop + elm.clientHeight >= elm.scrollHeight - 50;
+	}
+
+	async function loadMore() {
+		if (loadingMore) {
+			return;
+		}
+		loadingMore = true;
+		oldHeight = messagesContainer.scrollHeight;
+		restoreScroll = true;
+		if (hasMore && onLoadMore) {
+			onLoadMore();
+		}
+	}
+
+	onMount(() => {
+		const observer = new IntersectionObserver(
+			([entry]) => {
+				if (entry?.isIntersecting) {
+					loadMore();
+				}
+			},
+			{
+				root: messagesContainer,
+				threshold: 0
+			}
+		);
+		observer.observe(scrollTopSentinelElm);
+
+		return () => observer.disconnect();
+	});
+
 	$effect(() => {
-		if (allowedToScrollToLatest && messages.length > 0 && messagesContainer) {
+		if (canScrollToLatest && messages.length > 0 && messagesContainer) {
 			scrollToLatestMessage();
 		}
+	});
+
+	$effect(() => {
+		if (!messages.length || !restoreScroll) {
+			return;
+		}
+		tick().then(() => {
+			const newHeight = messagesContainer.scrollHeight;
+			messagesContainer.scrollTop += newHeight - oldHeight;
+			restoreScroll = false;
+			loadingMore = false;
+		});
 	});
 </script>
 
@@ -70,27 +102,27 @@
 	</div>
 	<div class="flex flex-1 flex-col overflow-hidden p-4">
 		<div class="grid flex-1 content-start gap-1 overflow-y-auto" bind:this={messagesContainer} onscroll={onScroll}>
+			<div bind:this={scrollTopSentinelElm}></div>
 			{#each messages as msg (msg.messageId)}
-				{@const chatUser = users.get(msg.userId)}
-
 				<div class="flex flex-wrap items-center gap-2">
 					<div class="flex items-center justify-center gap-1">
 						<img
 							class="aspect-square h-[22px] w-[22px] max-w-full object-cover"
-							src={chatUser?.avatarUrl || '/images/empty-avatar.svg'}
-							alt={chatUser?.username + ' avatar'}
+							src={msg?.user?.avatarUrl || '/images/empty-avatar.svg'}
+							alt={msg?.user?.username + ' avatar'}
 						/>
 						<span
-							class={['rounded px-2 text-sm text-black', chatUserId === chatUser?.userId ? 'bg-primary' : 'bg-sky-700']}
+							style:--chat-bg={chatUserId === msg?.user?.id ? 'var(--primary)' : colorFromUserId(msg?.user?.id ?? '')}
+							class="rounded px-2 text-sm bg-(--chat-bg) text-[contrast-color(var(--chat-bg))]"
 						>
-							{chatUser?.username}
+							{msg?.user?.username}
 						</span>
 					</div>
 					<p>{msg.message}</p>
 				</div>
 			{/each}
 
-			{#if !allowedToScrollToLatest}
+			{#if !canScrollToLatest}
 				<div class="absolute bottom-16 left-1/2 -translate-x-1/2 transform">
 					<Button variant="default" onclick={scrollToLatestMessage} class="bg-primary">
 						Jump to latest
@@ -98,7 +130,7 @@
 					</Button>
 				</div>
 			{/if}
-			<div bind:this={scrollPointElm}></div>
+			<div bind:this={scrollBottomSentinelElm}></div>
 		</div>
 		<div class="mt-2 flex shrink-0 gap-[0.3rem]">
 			<Input

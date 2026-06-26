@@ -6,8 +6,8 @@ type ConfirmationDialogOptions = {
 	confirmText?: string;
 	description?: Snippet;
 	destructive?: boolean;
-	onCancel?: () => void;
-	onConfirm?: () => void;
+	onCancel?: VoidFunction;
+	onConfirm?: VoidFunction;
 };
 
 export class Confirmation {

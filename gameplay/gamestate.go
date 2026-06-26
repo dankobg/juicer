@@ -164,7 +164,7 @@ func NewGameState(gameID int64, players [2]Player, timeControl *pb.GameTimeContr
 		EndTime:                gopts.endTime,
 		GameMoves:              gameMoves,
 		running:                atomic.Bool{},
-		GameCommand:            make(chan GameCommand, 64),
+		GameCommand:            make(chan GameCommand, 100),
 		GameEvent:              gameEvent,
 		PendingDrawOffers:      make(map[uuid.UUID]*DrawOffer),
 	}
@@ -395,12 +395,14 @@ func (gs *GameState) rejoinedGame(c RejoinedGame) ([]GameEvent, error) {
 		if gs.whiteReconnectTimer != nil {
 			gs.whiteReconnectTimer.Stop()
 		}
+
 		gs.whiteReconnectTimer = nil
 	} else {
 		gs.BlackDisconnectedAt = nil
 		if gs.blackReconnectTimer != nil {
 			gs.blackReconnectTimer.Stop()
 		}
+
 		gs.blackReconnectTimer = nil
 	}
 
@@ -606,6 +608,7 @@ func (gs *GameState) acceptDraw(c AcceptDrawCmd) ([]GameEvent, error) {
 	}
 
 	opponent := gs.GetOtherPlayer(c.UserID)
+
 	oppPendingDraw := gs.PendingDrawOffers[opponent.ID]
 	if oppPendingDraw == nil {
 		return nil, ErrNoPendingDrawOffer
@@ -636,7 +639,6 @@ func (gs *GameState) acceptDraw(c AcceptDrawCmd) ([]GameEvent, error) {
 
 func (gs *GameState) declineDraw(c DeclineDrawCmd) ([]GameEvent, error) {
 	// declinedDrawAt := time.Now()
-
 	if gs.GameResult != pb.GameResult_GAME_RESULT_UNSPECIFIED {
 		return nil, ErrGameAlreadyConcluded
 	}

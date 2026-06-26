@@ -10,7 +10,6 @@ import (
 	"sync"
 
 	pb "github.com/dankobg/juicer/pb/proto/juicer"
-	"github.com/dankobg/juicer/persistence"
 	"github.com/google/uuid"
 	"github.com/redis/go-redis/v9"
 	"google.golang.org/protobuf/encoding/protojson"
@@ -32,7 +31,7 @@ type Hub struct {
 	log                *slog.Logger
 }
 
-func NewHub(persistor persistence.Persistor, rdb *redis.Client, logger *slog.Logger) *Hub {
+func NewHub(rdb *redis.Client, logger *slog.Logger) *Hub {
 	hub := &Hub{
 		ClientConnected:    make(chan *client),
 		ClientDisconnected: make(chan *client),
@@ -107,7 +106,7 @@ func (h *Hub) Stop() {
 func (h *Hub) processClientWebsocketMessage(client *client, msg []byte) error {
 	topic := fmt.Sprintf("wsc.%s.%s.%d", client.userID, client.connID, client.authState)
 
-	if err := h.bus.rdb.Publish(context.Background(), topic, msg).Err(); err != nil {
+	if err := h.bus.Publish(context.Background(), topic, msg); err != nil {
 		h.log.Error("hub publish websocket message", slog.String("user_id", client.userID.String()), slog.String("conn_id", client.connID.String()), slog.String("auth_state", client.authState.String()), slog.String("topic", topic), slog.Any("error", err))
 	}
 
@@ -137,7 +136,7 @@ func (h *Hub) onClientConnected(client *client) {
 	if err != nil {
 		h.log.Error("protojson marshal Message_ClientConnected", slog.String("user_id", client.userID.String()), slog.String("conn_id", client.connID.String()), slog.String("auth_state", client.authState.String()), slog.Any("channels", client.channels), slog.Any("error", err))
 	} else {
-		if err := h.bus.rdb.Publish(context.Background(), "ipc", clientConnectedMsgBytes).Err(); err != nil {
+		if err := h.bus.Publish(context.Background(), "ipc", clientConnectedMsgBytes); err != nil {
 			h.log.Error("hub publish Message_ClientConnected", slog.String("user_id", client.userID.String()), slog.String("conn_id", client.connID.String()), slog.String("auth_state", client.authState.String()), slog.String("topic", "ipc"), slog.Any("error", err))
 		}
 	}
@@ -159,7 +158,7 @@ func (h *Hub) onClientDisconnected(client *client) {
 	if err != nil {
 		h.log.Error("protojson marshal Message_ClientDisconnected", slog.String("user_id", client.userID.String()), slog.String("conn_id", client.connID.String()), slog.String("auth_state", client.authState.String()), slog.Any("error", err))
 	} else {
-		if err := h.bus.rdb.Publish(context.Background(), "ipc", clientDisconnectedMsgBytes).Err(); err != nil {
+		if err := h.bus.Publish(context.Background(), "ipc", clientDisconnectedMsgBytes); err != nil {
 			h.log.Error("hub publish Message_ClientDisconnected", slog.String("user_id", client.userID.String()), slog.String("conn_id", client.connID.String()), slog.String("auth_state", client.authState.String()), slog.String("topic", "ipc"), slog.Any("error", err))
 		}
 	}
@@ -261,6 +260,7 @@ func (h *Hub) removeClient(c *client) {
 
 	if len(h.clientsByUserID[c.userID]) == 1 {
 		delete(h.clientsByUserID, c.userID)
+
 		leftSite = true
 	} else {
 		delete(h.clientsByUserID[c.userID], c)
@@ -278,7 +278,7 @@ func (h *Hub) removeClient(c *client) {
 	if err != nil {
 		h.log.Error("protojson marshal Message_LeaveTab", slog.String("user_id", c.userID.String()), slog.String("conn_id", c.connID.String()), slog.String("auth_state", c.authState.String()), slog.Any("error", err))
 	} else {
-		if err := h.bus.rdb.Publish(context.Background(), "ipc", leaveTabMsgBytes).Err(); err != nil {
+		if err := h.bus.Publish(context.Background(), "ipc", leaveTabMsgBytes); err != nil {
 			h.log.Error("hub publish Message_LeaveTab", slog.String("user_id", c.userID.String()), slog.String("conn_id", c.connID.String()), slog.String("auth_state", c.authState.String()), slog.String("topic", "ipc"), slog.Any("error", err))
 		}
 	}
@@ -294,7 +294,7 @@ func (h *Hub) removeClient(c *client) {
 		if err != nil {
 			h.log.Error("protojson marshal Message_LeaveSite", slog.String("user_id", c.userID.String()), slog.String("conn_id", c.connID.String()), slog.String("auth_state", c.authState.String()), slog.Any("error", err))
 		} else {
-			if err := h.bus.rdb.Publish(context.Background(), "ipc", leaveSiteMsgBytes).Err(); err != nil {
+			if err := h.bus.Publish(context.Background(), "ipc", leaveSiteMsgBytes); err != nil {
 				h.log.Error("hub publish Message_LeaveSite", slog.String("user_id", c.userID.String()), slog.String("conn_id", c.connID.String()), slog.String("auth_state", c.authState.String()), slog.String("topic", "ipc"), slog.Any("error", err))
 			}
 		}
@@ -326,7 +326,7 @@ func (h *Hub) InitializeChannels(ctx context.Context, client *client) ([]string,
 	if err != nil {
 		h.log.Error("protojson marshal Message_InitializeChannels", slog.String("user_id", client.userID.String()), slog.String("conn_id", client.connID.String()), slog.String("auth_state", client.authState.String()), slog.Any("error", err))
 	} else {
-		if err := h.bus.rdb.Publish(context.Background(), "ipc", initializeChannelsMsgBytes).Err(); err != nil {
+		if err := h.bus.Publish(context.Background(), "ipc", initializeChannelsMsgBytes); err != nil {
 			h.log.Error("hub publish Message_InitializeChannels", slog.String("user_id", client.userID.String()), slog.String("conn_id", client.connID.String()), slog.String("auth_state", client.authState.String()), slog.String("topic", "ipc"), slog.Any("error", err))
 		}
 	}

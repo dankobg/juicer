@@ -35,6 +35,10 @@ func newBus(rdb *redis.Client) *bus {
 	return bus
 }
 
+func (b *bus) Publish(ctx context.Context, channel string, message any) error {
+	return b.rdb.Publish(ctx, channel, message).Err()
+}
+
 func (b *bus) subscribeToPubSub(ctx context.Context) {
 	for _, topic := range b.topics {
 		pubsub := b.rdb.PSubscribe(ctx, topic)

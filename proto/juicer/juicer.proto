@@ -335,21 +335,22 @@ message SendLobbyChat {
 
 // ListLobbyChats fetches the lobby chat messages
 message ListLobbyChats {
-  int32 last_message_id = 1;
-  int32 size = 2;
+  optional string cursor = 1;
+  optional int32 page_size = 2;
 }
 
 // LobbyChat is the lobby chat msg received
 message LobbyChat {
-  int32 message_id = 1;
-  string user_id = 2;
-  string message = 3;
-  string posted_at = 4;
+  string message_id = 1;
+  string message = 2;
+  ChatUserSnapshot user = 3;
+  google.protobuf.Timestamp posted_at = 4;
 }
 
 // LobbyChatList is the list of lobby chat messages
 message LobbyChatList {
   repeated LobbyChat lobby_chats = 1;
+  bool has_more = 2;
 }
 
 // SendGameChat is the msg sent to game
@@ -361,22 +362,30 @@ message SendGameChat {
 // ListGameChats fetches the game chat messages
 message ListGameChats {
   int32 game_id = 1;
-  int32 last_message_id = 2;
-  int32 size = 3;
+  optional string cursor = 2;
+  optional int32 page_size = 3;
+}
+
+// ChatUserSnapshot is userinfo for chat msgs
+message ChatUserSnapshot {
+  string id = 1;
+  string username = 2;
 }
 
 // GameChat is the game chat msg received
 message GameChat {
   int32 game_id = 1;
-  int32 message_id = 2;
-  string user_id = 3;
-  string message = 4;
-  string posted_at = 5;
+  string message_id = 2;
+  string message = 3;
+  ChatUserSnapshot user = 4;
+  google.protobuf.Timestamp posted_at = 5;
 }
 
 // GameChatList is the list of game chat messages
 message GameChatList {
-  repeated GameChat game_chats = 1;
+  int32 game_id = 1;
+  repeated GameChat game_chats = 2;
+  bool has_more = 3;
 }
 
 // PlayMoveUCI plays a game move

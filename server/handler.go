@@ -6,79 +6,38 @@ import (
 	"log/slog"
 	"net/http"
 	"strings"
-	"time"
 
 	api "github.com/dankobg/juicer/api/gen"
 	"github.com/dankobg/juicer/auth/keto"
 	"github.com/dankobg/juicer/auth/kratos"
+	"github.com/dankobg/juicer/bus"
 	"github.com/dankobg/juicer/config"
-	"github.com/dankobg/juicer/gameplay"
+	"github.com/dankobg/juicer/features/chat"
+	"github.com/dankobg/juicer/features/game"
+	"github.com/dankobg/juicer/features/idp"
+	"github.com/dankobg/juicer/features/webhooks"
 	"github.com/dankobg/juicer/mailer"
-	pb "github.com/dankobg/juicer/pb/proto/juicer"
-	"github.com/dankobg/juicer/persistence"
 	"github.com/dankobg/juicer/ws"
 	"github.com/redis/go-redis/v9"
 )
 
-// var _ api.StrictServerInterface = (*ApiHandler)(nil)
-
-type categoryThreshold struct {
-	upperLimit   time.Duration
-	timeCategory pb.GameTimeCategory
-}
-
-// for now this does not change, so i keep it static and fetch once
-type protoMappingsCache struct {
-	gameVariantsProtoToDB       map[pb.GameVariant]int64
-	gameTimeKindsProtoToDB      map[pb.GameTimeKind]int64
-	gameTimeCategoriesProtoToDB map[pb.GameTimeCategory]int64
-	gameResultsProtoToDB        map[pb.GameResult]int64
-	gameResultStatusesProtoToDB map[pb.GameResultStatus]int64
-	gameStatesProtoToDB         map[pb.GameState]int64
-
-	gameVariantsDBToProto       map[int64]pb.GameVariant
-	gameTimeKindsDBToProto      map[int64]pb.GameTimeKind
-	gameTimeCategoriesDBToProto map[int64]pb.GameTimeCategory
-	gameResultsDBToProto        map[int64]pb.GameResult
-	gameResultStatusesDBToProto map[int64]pb.GameResultStatus
-	gameStatesDBToProto         map[int64]pb.GameState
-}
-
-func newProtoMappingsCache() protoMappingsCache {
-	return protoMappingsCache{
-		gameVariantsProtoToDB:       make(map[pb.GameVariant]int64),
-		gameTimeKindsProtoToDB:      make(map[pb.GameTimeKind]int64),
-		gameTimeCategoriesProtoToDB: make(map[pb.GameTimeCategory]int64),
-		gameResultsProtoToDB:        make(map[pb.GameResult]int64),
-		gameResultStatusesProtoToDB: make(map[pb.GameResultStatus]int64),
-		gameStatesProtoToDB:         make(map[pb.GameState]int64),
-
-		gameVariantsDBToProto:       make(map[int64]pb.GameVariant),
-		gameTimeKindsDBToProto:      make(map[int64]pb.GameTimeKind),
-		gameTimeCategoriesDBToProto: make(map[int64]pb.GameTimeCategory),
-		gameResultsDBToProto:        make(map[int64]pb.GameResult),
-		gameResultStatusesDBToProto: make(map[int64]pb.GameResultStatus),
-		gameStatesDBToProto:         make(map[int64]pb.GameState),
-	}
-}
+var _ api.StrictServerInterface = (*ApiHandler)(nil)
 
 type ApiHandler struct {
+	idp  *idp.IdentityProvider
+	game *game.GameService
+	chat *chat.ChatService
+	wh   *webhooks.Webhooks
+
 	Cfg        *config.Config
 	Log        *slog.Logger
 	Kratos     *kratos.Client
 	Keto       *keto.Client
 	Hub        *ws.Hub
 	Rdb        *redis.Client
-	persistor  persistence.Persistor
 	Mailer     mailer.Mailer
 	openapiTpl *template.Template
-	bus        *bus
-
-	categoryThresholds []categoryThreshold
-	protoMappingsCache protoMappingsCache
-
-	gamestates map[int64]*gameplay.GameState
-	gameEvent  chan gameplay.GameEvent
+	bus        *bus.Bus
 }
 
 func New(
@@ -89,22 +48,24 @@ func New(
 	keto *keto.Client,
 	mailer mailer.Mailer,
 	hub *ws.Hub,
-	p persistence.Persistor,
+	game *game.GameService,
+	chat *chat.ChatService,
+	idp *idp.IdentityProvider,
+	wh *webhooks.Webhooks,
 ) *ApiHandler {
 	apiHandler := &ApiHandler{
-		Cfg:                cfg,
-		Log:                log,
-		Kratos:             kratos,
-		Keto:               keto,
-		persistor:          p,
-		Mailer:             mailer,
-		Hub:                hub,
-		Rdb:                rdb,
-		bus:                newBus(rdb),
-		categoryThresholds: make([]categoryThreshold, 0),
-		protoMappingsCache: newProtoMappingsCache(),
-		gamestates:         make(map[int64]*gameplay.GameState),
-		gameEvent:          make(chan gameplay.GameEvent, 64),
+		Cfg:    cfg,
+		Log:    log,
+		Kratos: kratos,
+		Keto:   keto,
+		Mailer: mailer,
+		Hub:    hub,
+		Rdb:    rdb,
+		bus:    bus.NewBus(rdb),
+		game:   game,
+		chat:   chat,
+		idp:    idp,
+		wh:     wh,
 	}
 
 	return apiHandler

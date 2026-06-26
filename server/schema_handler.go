@@ -5,7 +5,6 @@ import (
 	"net/http"
 
 	api "github.com/dankobg/juicer/api/gen"
-	"github.com/dankobg/juicer/dto"
 	"github.com/dankobg/juicer/shared"
 	rts "github.com/ory/keto/proto/ory/keto/relation_tuples/v1alpha2"
 )
@@ -24,45 +23,23 @@ func (a *ApiHandler) ListIdentitySchemas(ctx context.Context, request api.ListId
 		return api.ListIdentitySchemas403JSONResponse{UnauthorizedErrorResponseJSONResponse: newUnauthorizedResp("schema_permission", "permission denied")}, nil
 	}
 
-	req := a.Kratos.Admin.IdentityAPI.ListIdentitySchemas(ctx)
-	if request.Params.PageSize != nil {
-		req = req.PageSize(*request.Params.PageSize)
-	}
-
-	if request.Params.PageToken != nil && *request.Params.PageToken != "1" {
-		req = req.PageToken(*request.Params.PageToken)
-	}
-
-	schemaContainers, schemaContainersResp, err := req.Execute()
+	schemaContainers, err := a.idp.ListIdentitySchemas(ctx, request)
 	if err != nil {
 		return api.ListIdentitySchemasdefaultJSONResponse{StatusCode: http.StatusServiceUnavailable, Body: newGenericErr(http.StatusServiceUnavailable, "schemas_list", "failed to list identity schemas")}, nil
 	}
 
-	defer func() { _ = schemaContainersResp.Body.Close() }()
+	out := api.ListIdentitySchemas200JSONResponse(schemaContainers.Data)
 
-	resp := make(api.ListIdentitySchemas200JSONResponse, 0, len(schemaContainers))
-	for _, sc := range schemaContainers {
-		res, err := dto.SchemaContainerToResponse(sc)
-		if err != nil {
-			return nil, err
-		}
-
-		resp = append(resp, res)
-	}
-
-	return resp, nil
+	return out, nil
 }
 
 func (a *ApiHandler) GetIdentitySchema(ctx context.Context, request api.GetIdentitySchemaRequestObject) (api.GetIdentitySchemaResponseObject, error) {
 	sess := GetSession(ctx)
-	req := a.Kratos.Admin.IdentityAPI.GetIdentitySchema(ctx, request.ID)
 
-	identitySchema, identitySchemaResp, err := req.Execute()
+	identitySchema, err := a.idp.GetIdentitySchema(ctx, request)
 	if err != nil {
 		return api.GetIdentitySchema404JSONResponse{NotFoundErrorResponseJSONResponse: newNotFoundResp("schema_not_found", "schema not found")}, nil
 	}
-
-	defer func() { _ = identitySchemaResp.Body.Close() }()
 
 	if checkResp, err := a.Keto.Check.Check(ctx, &rts.CheckRequest{
 		Tuple: &rts.RelationTuple{
@@ -75,5 +52,5 @@ func (a *ApiHandler) GetIdentitySchema(ctx context.Context, request api.GetIdent
 		return api.GetIdentitySchema403JSONResponse{UnauthorizedErrorResponseJSONResponse: newUnauthorizedResp("schema_permission", "permission denied")}, nil
 	}
 
-	return api.GetIdentitySchema200JSONResponse(identitySchema), nil
+	return api.GetIdentitySchema200JSONResponse(*identitySchema), nil
 }

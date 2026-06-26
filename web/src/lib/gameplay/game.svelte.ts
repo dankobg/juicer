@@ -79,7 +79,7 @@ export class Game {
 	legalMoves = $state<string[]>([]);
 	whiteRemainingGameTime = $state<Duration>();
 	blackRemainingGameTime = $state<Duration>();
-	pendingDrawOffers = $state<SvelteMap<string, DrawOffer>>(new SvelteMap());
+	pendingDrawOffers = $state<Record<string, DrawOffer>>({});
 	historyPointer = $state<number>(Math.max(0, this.gameMoves.length - 1));
 	myColor = $state<Color>(Color.UNSPECIFIED);
 	opponentColor = $derived(
@@ -146,12 +146,7 @@ export class Game {
 		this.blackRemainingGameTime = opts?.blackRemainingGameTime;
 		this.whiteDisconnectedAt = opts?.whiteDisconnectedAt;
 		this.blackDisconnectedAt = opts?.blackDisconnectedAt;
-		if (opts.pendingDrawOffers) {
-			this.pendingDrawOffers = new SvelteMap();
-			Object.entries(opts.pendingDrawOffers).forEach(([k, v]) => {
-				this.pendingDrawOffers.set(k, v);
-			});
-		}
+		this.pendingDrawOffers = opts?.pendingDrawOffers ?? {};
 	}
 
 	isPlaying = $derived(this.myColor !== Color.UNSPECIFIED);
@@ -327,7 +322,7 @@ export class Game {
 		if (this.gameState !== GameState.ACTIVE || !this.opponentPlayer?.userId) {
 			return false;
 		}
-		const offer = this.pendingDrawOffers.get(this.opponentPlayer?.userId);
+		const offer = this.pendingDrawOffers[this.opponentPlayer?.userId];
 		return offer?.ply === this.ply;
 	});
 	uiShowChatButton = $derived<boolean>(false);

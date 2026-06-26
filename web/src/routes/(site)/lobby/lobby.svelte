@@ -8,6 +8,8 @@
 	import { onWsClose, onWsError, onWsMessage, onWsOpen } from '$lib/ws/ws-message-handler';
 	import ChatBox from '$lib/components/chat-box/chat-box.svelte';
 	import { lobbyManager } from '$lib/gameplay/lobby-manager.svelte';
+	import { presenceManager } from '$lib/gameplay/presence-manager.svelte';
+	import { chatManager } from '$lib/gameplay/chat-manager.svelte';
 
 	let { data }: PageProps = $props();
 
@@ -36,11 +38,13 @@
 			title="Lobby chat"
 			channel="lobby.chat"
 			chatUserId={data?.auth?.user?.id ?? ''}
-			messages={lobbyManager.lobbyChatMessages}
-			users={lobbyManager.lobbyChatUsers}
+			messages={chatManager.lobbyChats.messages}
+			hasMore={chatManager.lobbyChats.hasMore}
+			presences={presenceManager.lobbyChatPresence}
 			onSend={msg => {
 				lobbyManager.sendLobbyChat(msg);
 			}}
+			onLoadMore={() => lobbyManager.fetchOlderLobbyChatMessages()}
 		/>
 	</div>
 

@@ -189,7 +189,7 @@ func (c *client) onPongReceived(ctx context.Context, payload []byte) {
 	if err != nil {
 		c.log.Error("protojson marshal Message_Heartbeat", slog.Any("error", err))
 	} else {
-		if err := c.hub.bus.rdb.Publish(context.Background(), "ipc", heartbeatMsgBytes).Err(); err != nil {
+		if err := c.hub.bus.Publish(context.Background(), "ipc", heartbeatMsgBytes); err != nil {
 			c.log.Error("client publish Message_Heartbeat", slog.String("topic", "ipc"), slog.Any("error", err))
 		}
 	}
