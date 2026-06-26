@@ -59,6 +59,10 @@ export class ChatManager {
 			cursor: messages.at(0)?.messageId
 		};
 	}
+
+	clearChatMessages(channel: string): void {
+		delete this.channelChats[channel];
+	}
 }
 
 export const chatManager = new ChatManager();

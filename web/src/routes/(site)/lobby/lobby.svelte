@@ -9,7 +9,7 @@
 	import ChatBox from '$lib/components/chat-box/chat-box.svelte';
 	import { lobbyManager } from '$lib/gameplay/lobby-manager.svelte';
 	import { presenceManager } from '$lib/gameplay/presence-manager.svelte';
-	import { chatManager } from '$lib/gameplay/chat-manager.svelte';
+	import { chatManager, LOBBY_CHAT_CHANNEL } from '$lib/gameplay/chat-manager.svelte';
 
 	let { data }: PageProps = $props();
 
@@ -26,6 +26,7 @@
 		return () => {
 			ws.close();
 			lobbyManager.seekingQuickGame = false;
+			chatManager.clearChatMessages(LOBBY_CHAT_CHANNEL);
 		};
 	});
 </script>

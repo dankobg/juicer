@@ -27,7 +27,7 @@
 	import PlayerInfo from '$lib/components/game/player-info.svelte';
 	import MovesList from '$lib/components/game/moves-list.svelte';
 	import GameInfo from '$lib/components/game/game-info.svelte';
-	import { chatManager, type ChatMessage } from '$lib/gameplay/chat-manager.svelte';
+	import { chatManager } from '$lib/gameplay/chat-manager.svelte';
 
 	let { data, params }: PageProps = $props();
 
@@ -169,6 +169,7 @@
 
 		return () => {
 			ws.close();
+			chatManager.clearChatMessages(`game.${game?.gameId}.chat`);
 		};
 	});
 
