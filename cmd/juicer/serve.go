@@ -202,6 +202,9 @@ func (sc *ServeCommand) Run() error {
 
 	logger.Info("server shut down")
 
+	hub.Stop()
+	bus.Close()
+
 	return errors.Join(shutdownErrors...)
 }
 

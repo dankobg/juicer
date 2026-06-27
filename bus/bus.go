@@ -48,6 +48,14 @@ func (b *Bus) subscribeToPubsub(ctx context.Context) {
 	}
 }
 
+func (b *Bus) Close() {
+	for _, sub := range b.Subs {
+		if sub != nil {
+			_ = sub.Close()
+		}
+	}
+}
+
 const useBinaryMessageFormat = false
 
 func serializeMsg(msg *pb.Message) ([]byte, error) {

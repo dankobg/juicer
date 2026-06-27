@@ -46,3 +46,11 @@ func (b *bus) subscribeToPubSub(ctx context.Context) {
 		b.subMessages[topic] = pubsub.Channel()
 	}
 }
+
+func (b *bus) Close() {
+	for _, sub := range b.subs {
+		if sub != nil {
+			_ = sub.Close()
+		}
+	}
+}

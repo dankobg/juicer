@@ -97,9 +97,7 @@ loop:
 }
 
 func (h *Hub) Stop() {
-	for _, sub := range h.bus.subs {
-		_ = sub.Close()
-	}
+	h.bus.Close()
 }
 
 // processClientWebsocketMessage publishes client websocket message to pubsub
