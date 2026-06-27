@@ -1674,9 +1674,13 @@ func (g *GameService) loadGameState(gameID int64) (*gameplay.GameState, error) {
 }
 
 func (g *GameService) gameStateFromPersistence(ctx context.Context, game models.Game, moves *[]models.GameMove, hashes *[]models.GameHistoryHash) (*gameplay.GameState, error) {
-	// @TODO: fix panic later... im lazy now
-	whiteID := game.GuestWhiteID.GetOr(game.WhiteID.MustGet())
-	blackID := game.GuestBlackID.GetOr(game.BlackID.MustGet())
+	var whiteID, blackID uuid.UUID
+	if game.GuestBlackID.IsValue() && game.GuestWhiteID.IsValue() {
+		whiteID, blackID = game.GuestWhiteID.MustGet(), game.GuestBlackID.MustGet()
+	}
+	if game.WhiteID.IsValue() && game.BlackID.IsValue() {
+		whiteID, blackID = game.WhiteID.MustGet(), game.BlackID.MustGet()
+	}
 
 	whiteUsername, blackUsername := "guest", "guest"
 
