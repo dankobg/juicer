@@ -71,7 +71,7 @@
 
 <svelte:window onkeydown={onKeydown} />
 
-<div class="flex flex-col">
+<div class="flex flex-col max-[60rem]:hidden">
 	<div class="">
 		<div class="mt-auto flex justify-center gap-4 p-2 pb-0">
 			{@render btn('Skip to start', IconSkipBack, () => game.movesGotoStart(), !game?.movesCanGotoStart)}
@@ -133,4 +133,33 @@
 			<div bind:this={scrollPointElm}></div>
 		</div>
 	</div>
+</div>
+
+<div class="flex items-center gap-1 min-[60rem]:hidden w-screen">
+	<button class={buttonVariants({ variant: 'secondary', size: 'icon' })} onclick={() => game.movesGotoStart()}>
+		<IconSkipBack />
+	</button>
+
+	<div class="flex items-center flex-1 overflow-x-auto min-w-0 no-scrollbar gap-1">
+		{#each game.gameMoves.slice(1) as move, i (move.fen)}
+			{@const num = i + 1}
+			<button
+				class={buttonVariants({
+					variant: 'ghost',
+					size: 'sm',
+					class: [
+						'hover:bg-secondary text-center border rounded-sm whitespace-nowrap shrink-0 px-2',
+						game.historyPointer === num && 'bg-secondary'
+					]
+				})}
+				onclick={() => game.movesGoto(num)}
+			>
+				<span>{num}. {move?.san ?? ''}</span>
+			</button>
+		{/each}
+	</div>
+
+	<button class={buttonVariants({ variant: 'secondary', size: 'icon' })} onclick={() => game.movesGotoEnd()}>
+		<IconSkipForward />
+	</button>
 </div>

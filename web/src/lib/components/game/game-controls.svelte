@@ -13,6 +13,7 @@
 	import type { Component } from 'svelte';
 	import type { GameTimeControl } from '$lib/gen/juicer_pb';
 	import Button from '../ui/button/button.svelte';
+	import { toggleChatDialog } from '../chat-box/game-chat-dialog.svelte';
 
 	let { game }: { game: Game } = $props();
 
@@ -39,9 +40,9 @@
 			{@render btn('Flip board', IconArrowUpDown, () => game?.board?.flip())}
 		{/if}
 
-		{#if game.uiShowChatButton}
-			{@render btn('Toggle chat', IconMessageSquareText, () => console.log('chat'))}
-		{/if}
+		<div class="min-[60rem]:hidden">
+			{@render btn('Toggle chat', IconMessageSquareText, () => toggleChatDialog())}
+		</div>
 
 		{#if game.uiShowDrawAcceptDeclineButtons}
 			{@render btn('Accept draw', IconCheck, () => game.acceptDraw())}

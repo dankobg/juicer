@@ -73,7 +73,7 @@
 	});
 </script>
 
-<div class="flex p-2 flex-col rounded-md border border-secondary gap-4">
+<div class="flex p-4 flex-col rounded-md border border-secondary gap-4">
 	{#if game.gameTimeCategory}
 		<div class="flex gap-1 items-center">
 			{@render gameTimeCategoryIcons?.[game.gameTimeCategory]?.('h-8 w-8')}

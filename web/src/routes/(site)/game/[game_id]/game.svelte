@@ -28,6 +28,8 @@
 	import MovesList from '$lib/components/game/moves-list.svelte';
 	import GameInfo from '$lib/components/game/game-info.svelte';
 	import { chatManager } from '$lib/gameplay/chat-manager.svelte';
+	import { MediaQuery } from 'svelte/reactivity';
+	import GameChatDialog from '$lib/components/chat-box/game-chat-dialog.svelte';
 
 	let { data, params }: PageProps = $props();
 
@@ -199,9 +201,15 @@
 		if (ms <= 60_000) return 'deciseconds';
 		return null;
 	}
+
+	const smallScreen = new MediaQuery('width < 60rem');
 </script>
 
 {#if game}
+	{#if smallScreen.current}
+		<GameChatDialog {game} chatUserId={data?.auth?.user?.id ?? ''} />
+	{/if}
+
 	<div class="game-layout">
 		<div class="game-panel">
 			<div class="game-info">
@@ -341,14 +349,20 @@
 		display: none;
 		flex-direction: column;
 		gap: 1rem;
+		margin-block: 1rem;
 
 		@media screen and (width > 60rem) {
 			display: flex;
 		}
 	}
 
+	.game-info {
+		min-height: 0;
+	}
+
 	.chat {
 		flex: 1;
+		min-height: 0;
 	}
 
 	.moves {

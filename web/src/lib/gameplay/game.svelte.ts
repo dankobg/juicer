@@ -325,7 +325,6 @@ export class Game {
 		const offer = this.pendingDrawOffers[this.opponentPlayer?.userId];
 		return offer?.ply === this.ply;
 	});
-	uiShowChatButton = $derived<boolean>(false);
 	uiShowRequeueQuickGame = $derived<boolean>(
 		this.isPlaying && this.gameState !== GameState.ACTIVE && this.gameTimeControl !== undefined
 	);

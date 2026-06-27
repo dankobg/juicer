@@ -5,7 +5,7 @@
 	import IconArrowDown from '@lucide/svelte/icons/arrow-down';
 	import type { Presence } from '$lib/gen/juicer_pb';
 	import { colorFromUserId } from '$lib/utils';
-	import { chatManager, type ChatMessage } from '$lib/gameplay/chat-manager.svelte';
+	import { type ChatMessage } from '$lib/gameplay/chat-manager.svelte';
 
 	type Props = {
 		title: string;
