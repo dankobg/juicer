@@ -329,7 +329,7 @@
 			'controls'
 			'player-me';
 
-		@media screen and (width > 60rem) {
+		@media screen and (width >= 60rem) {
 			--game-layout-gap: 1rem;
 			grid-template-rows: auto minmax(0, 1fr) auto auto;
 			grid-template-columns:
@@ -351,7 +351,7 @@
 		gap: 1rem;
 		margin-block: 1rem;
 
-		@media screen and (width > 60rem) {
+		@media screen and (width >= 60rem) {
 			display: flex;
 		}
 	}
@@ -381,7 +381,7 @@
 		place-content: center;
 		width: calc(100cqmin * (var(--board-scale) / 100));
 
-		@media screen and (width > 60rem) {
+		@media screen and (width >= 60rem) {
 			place-content: unset;
 			width: calc(
 				(min(100cqh, calc(100cqw - var(--chat-min-width) - var(--panel-min-width) - 2 * var(--game-layout-gap)))) *
@@ -400,14 +400,14 @@
 	.player.opp {
 		grid-area: player-opp;
 
-		@media screen and (width > 60rem) {
+		@media screen and (width >= 60rem) {
 			margin-top: 1rem;
 		}
 	}
 	.player.me {
 		grid-area: player-me;
 
-		@media screen and (width > 60rem) {
+		@media screen and (width >= 60rem) {
 			margin-bottom: 1rem;
 		}
 	}

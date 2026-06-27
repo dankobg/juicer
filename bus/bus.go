@@ -42,7 +42,7 @@ func (b *Bus) subscribeToPubsub(ctx context.Context) {
 	for _, topic := range b.topics {
 		pubsub := b.rdb.PSubscribe(ctx, topic)
 		b.Subs[topic] = pubsub
-		b.SubMessages[topic] = pubsub.Channel(redis.WithChannelSize(1_000)) // increased for now (does not solve underlying problem)
+		b.SubMessages[topic] = pubsub.Channel() // i have some issues here, increasing buffer won't solve the problem
 	}
 }
 
