@@ -13,7 +13,7 @@
 	import type { Component } from 'svelte';
 	import type { GameTimeControl } from '$lib/gen/juicer_pb';
 	import Button from '../ui/button/button.svelte';
-	import { toggleChatDialog } from '../chat-box/game-chat-dialog.svelte';
+	import { toggleChatDialog } from '../chat-box/game-chat-dialog-state.svelte';
 
 	let { game }: { game: Game } = $props();
 

@@ -1,11 +1,3 @@
-<script module>
-	let open = $state<boolean>(false);
-
-	export function toggleChatDialog(): void {
-		open = !open;
-	}
-</script>
-
 <script lang="ts">
 	import ChatBox from './chat-box.svelte';
 	import * as Dialog from '$lib/components/ui/dialog/index.js';
@@ -15,6 +7,7 @@
 	import { gameManager } from '$lib/gameplay/game-manager.svelte';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import IconX from '@lucide/svelte/icons/x';
+	import { gameChatDialog, toggleChatDialog } from './game-chat-dialog-state.svelte';
 
 	let { chatUserId, game }: { chatUserId: string; game: Game } = $props();
 
@@ -23,7 +16,7 @@
 </script>
 
 <Dialog.Root
-	{open}
+	open={gameChatDialog.open}
 	onOpenChange={() => {
 		toggleChatDialog();
 	}}
