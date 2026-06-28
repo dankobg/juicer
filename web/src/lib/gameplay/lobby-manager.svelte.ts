@@ -6,6 +6,7 @@ import { chatManager, LOBBY_CHAT_CHANNEL, type ChatMessage } from './chat-manage
 class LobbyManager {
 	wsError = $state<string | undefined>();
 	seekingQuickGame = $state<boolean>(false);
+	seekingGameTimeControl = $state<{ clockMs: number; incrementMs: number } | null>(null);
 
 	seekGame(clockMs: number, incrementMs: number): void {
 		const seekGameMsg = create(MessageSchema, {
@@ -19,6 +20,7 @@ class LobbyManager {
 		ws.send(seekGameMsg);
 
 		this.seekingQuickGame = true;
+		this.seekingGameTimeControl = { clockMs, incrementMs };
 	}
 
 	cancelSeekGame(): void {
@@ -28,6 +30,7 @@ class LobbyManager {
 		ws.send(cancelSeekGameMsg);
 
 		this.seekingQuickGame = false;
+		this.seekingGameTimeControl = null;
 	}
 
 	sendLobbyChat(message: string): void {

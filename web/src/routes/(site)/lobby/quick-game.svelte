@@ -115,12 +115,28 @@
 <div class="rounded-xl border border-yellow-400/20">
 	<div class={['quick-game', { seeking: lobbyManager.seekingQuickGame }]}>
 		<div class="[view-transition-name:quick-game-content]">
-			{#if lobbyManager.seekingQuickGame}
-				<div class="grid gap-4 p-4">
-					<p>Searching for game...</p>
-					<p>Blitz</p>
-					<p>Active players: 69420</p>
-					{@render quickGameIcons?.['Blitz']?.('h-8 w-8')}
+			{#if lobbyManager.seekingQuickGame && lobbyManager.seekingGameTimeControl}
+				<div class="grid gap-4 p-4 content-center">
+					<p class="text-center">Searching for game...</p>
+					<p class="text-center">
+						{formatCategoryNameFromControl(
+							lobbyManager.seekingGameTimeControl.clockMs / 1000,
+							lobbyManager.seekingGameTimeControl.incrementMs / 1000
+						)}
+					</p>
+					<p class="text-center">
+						{formatPresetTimeControl(
+							lobbyManager.seekingGameTimeControl.clockMs / 1000,
+							lobbyManager.seekingGameTimeControl.incrementMs / 1000
+						)}
+					</p>
+					<!-- <p>Active players: 69420</p> -->
+					{@render quickGameIcons?.[
+						formatCategoryNameFromControl(
+							lobbyManager.seekingGameTimeControl.clockMs / 1000,
+							lobbyManager.seekingGameTimeControl.incrementMs / 1000
+						) as keyof typeof quickGameIcons
+					]?.('h-8 w-8 justify-self-center')}
 					<button class="rounded-md bg-yellow-600 px-3 py-1 text-black" onclick={onCancelSeekGame}>cancel seek</button>
 				</div>
 			{:else}

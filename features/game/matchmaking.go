@@ -53,7 +53,7 @@ loop:
 func (g *GameService) tryMatchPoolPlayers(ctx context.Context) {
 	g.log.Debug("matchmaking trying to match pool players")
 
-	for _, quickGame := range quickGames {
+	for _, quickGame := range QuickGames {
 		g.tryMatchPoolPlayersForPool(ctx, quickGame.ClockSecs*1000, quickGame.IncrementSecs*1000, true)
 		g.tryMatchPoolPlayersForPool(ctx, quickGame.ClockSecs*1000, quickGame.IncrementSecs*1000, false)
 	}

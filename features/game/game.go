@@ -242,7 +242,7 @@ func (g *GameService) ListRatings(ctx context.Context, request api.ListRatingsRe
 	return out, nil
 }
 
-var quickGames = []api.QuickGame{
+var QuickGames = []api.QuickGame{
 	{Name: "Hyperbullet", ClockSecs: 30, IncrementSecs: 0},
 	{Name: "Bullet", ClockSecs: 60, IncrementSecs: 0},
 	{Name: "Blitz", ClockSecs: 180, IncrementSecs: 0},
@@ -258,7 +258,7 @@ var quickGames = []api.QuickGame{
 }
 
 func (g *GameService) ListQuickGames(ctx context.Context, request api.ListQuickGamesRequestObject) ([]api.QuickGame, error) {
-	return quickGames, nil
+	return QuickGames, nil
 }
 
 func (g *GameService) GetGameStats(ctx context.Context, request api.GetGameStatsRequestObject) (api.GameStats, error) {

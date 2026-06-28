@@ -42,9 +42,9 @@ func (b *Bus) subscribeToPubsub(ctx context.Context) {
 	for _, topic := range b.topics {
 		pubsub := b.rdb.PSubscribe(ctx, topic)
 		b.Subs[topic] = pubsub
-		b.SubMessages[topic] = pubsub.Channel()
-		// i have issues here, increasing ^ buffer won't solve the problem
-		// usually after ~110 msgs i get err: redis: pubsub.go:793: channel is full for 1m0s (message is dropped)
+		b.SubMessages[topic] = pubsub.Channel(redis.WithChannelSize(10_000))
+		// i have issues here, increasing ^ buffer won't solve the problem, just hides it
+		// redis: pubsub.go:793: channel is full for 1m0s (message is dropped)
 	}
 }
 
