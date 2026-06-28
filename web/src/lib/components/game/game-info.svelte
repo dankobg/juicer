@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { Game } from '$lib/gameplay/game.svelte';
 	import { Color, GameTimeCategory, type GameTimeControl } from '$lib/gen/juicer_pb';
+	import { displayUsername } from '$lib/utils';
 	import { gameTimeCategoryIcons } from '../quick-game-icons/quick-game-icons.svelte';
 
 	let { game }: { game: Game } = $props();
@@ -97,14 +98,14 @@
 		<svg class="h-5 w-5 stroke-10 fill-black stroke-white" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
 			<circle cx="50" cy="50" r="40" />
 		</svg>
-		<span>{game.black?.username}</span>
+		<span>{displayUsername(game.black?.userId ?? '', game.black?.username ?? '')}</span>
 	</div>
 
 	<div class="flex gap-1 items-center">
 		<svg class="h-5 w-5 stroke-10 fill-white stroke-black" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
 			<circle cx="50" cy="50" r="40" />
 		</svg>
-		<span>{game.white?.username}</span>
+		<span>{displayUsername(game.white?.userId ?? '', game.white?.username ?? '')}</span>
 	</div>
 
 	{#if activity}

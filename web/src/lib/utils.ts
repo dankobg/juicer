@@ -77,3 +77,10 @@ export function colorFromUserId(userId: string): string {
 	const hue = Math.abs(hash) % 360;
 	return `hsl(${hue}, 70%, 50%)`;
 }
+
+export function displayUsername(id: string, username: string): string {
+	if (username === 'guest') {
+		return `Guest ${id.slice(0, 4)}..${id.slice(-4)}`;
+	}
+	return username;
+}

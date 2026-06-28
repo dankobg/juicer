@@ -4,7 +4,7 @@
 	import { Input } from '$lib/components/ui/input';
 	import IconArrowDown from '@lucide/svelte/icons/arrow-down';
 	import type { Presence } from '$lib/gen/juicer_pb';
-	import { colorFromUserId } from '$lib/utils';
+	import { colorFromUserId, displayUsername } from '$lib/utils';
 	import { type ChatMessage } from '$lib/gameplay/chat-manager.svelte';
 
 	type Props = {
@@ -115,7 +115,7 @@
 							style:--chat-bg={chatUserId === msg?.user?.id ? 'var(--primary)' : colorFromUserId(msg?.user?.id ?? '')}
 							class="rounded px-2 text-sm bg-(--chat-bg) text-[contrast-color(var(--chat-bg))]"
 						>
-							{msg?.user?.username}
+							{displayUsername(msg?.user?.id ?? '', msg?.user?.username)}
 						</span>
 					</div>
 					<p>{msg.message}</p>

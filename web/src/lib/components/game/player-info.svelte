@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { Color, type PlayerInfo } from '$lib/gen/juicer_pb';
+	import { displayUsername } from '$lib/utils';
 
 	type Props = {
 		player: PlayerInfo;
@@ -70,7 +71,7 @@
 				>
 					<circle cx="50" cy="50" r="40" />
 				</svg>
-				<span>{player?.username}</span>
+				<span>{displayUsername(player?.userId, player?.username)}</span>
 			</div>
 			<div class="grid [grid-template-areas:'img-stack']">
 				<img
@@ -128,7 +129,7 @@
 			>
 				<circle cx="50" cy="50" r="40" />
 			</svg>
-			<span>{player?.username}</span>
+			<span>{displayUsername(player?.userId, player?.username)}</span>
 		</div>
 		<div class="grid [grid-template-areas:'img-stack']">
 			<img
