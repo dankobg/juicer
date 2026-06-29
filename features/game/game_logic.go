@@ -1,11 +1,12 @@
 package game
 
 import (
+	"cmp"
 	"context"
 	"errors"
 	"fmt"
 	"log/slog"
-	"math"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -33,7 +34,7 @@ func (g *GameService) FetchCategoryThresholds(ctx context.Context) error {
 	}
 
 	for _, v := range gameTimeCategories.Data {
-		var limit time.Duration = math.MaxUint32
+		var limit time.Duration = 1<<63 - 1
 		if v.UpperTimeLimitSecs.IsValue() {
 			limit = time.Second * time.Duration(v.UpperTimeLimitSecs.MustGet())
 		}
@@ -51,6 +52,10 @@ func (g *GameService) FetchCategoryThresholds(ctx context.Context) error {
 			g.categoryThresholds = append(g.categoryThresholds, categoryThreshold{timeCategory: pb.GameTimeCategory_GAME_TIME_CATEGORY_CLASSICAL, upperLimit: limit})
 		}
 	}
+
+	slices.SortFunc(g.categoryThresholds, func(a, b categoryThreshold) int {
+		return cmp.Compare(a.upperLimit, b.upperLimit)
+	})
 
 	return nil
 }

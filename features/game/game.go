@@ -262,11 +262,9 @@ func (g *GameService) ListQuickGames(ctx context.Context, request api.ListQuickG
 }
 
 func (g *GameService) GetGameStats(ctx context.Context, request api.GetGameStatsRequestObject) (api.GameStats, error) {
-	return api.GameStats{}, nil
-	// 	gameStats, err := a.gamePst.GetGameStatsForUser(ctx, request.UserID, nil)
-	// 	if err != nil {
-	// 		return api.GetGameStats404JSONResponse{NotFoundErrorJSONResponse: api.NotFoundErrorJSONResponse{Message: "stats not found for user", Code: 404}}, nil
-	// 	}
-	// 	resp := api.GetGameStats200JSONResponse(gameStats)
-	// 	return resp, nil
+	gameStats, err := g.pst.Game.GetGameStatsForUser(ctx, request.UserID, &GameStatsForUserFilters{})
+	if err != nil {
+		return api.GameStats{}, err
+	}
+	return GameStatsToResponse(gameStats), nil
 }

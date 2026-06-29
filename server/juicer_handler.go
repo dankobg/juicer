@@ -165,11 +165,9 @@ func (a *ApiHandler) ListQuickGames(ctx context.Context, request api.ListQuickGa
 }
 
 func (a *ApiHandler) GetGameStats(ctx context.Context, request api.GetGameStatsRequestObject) (api.GetGameStatsResponseObject, error) {
-	return api.GetGameStats200JSONResponse{}, nil
-	// 	gameStats, err := a.persistor.Game().GetGameStatsForUser(ctx, request.UserID, nil)
-	// 	if err != nil {
-	// 		return api.GetGameStats404JSONResponse{NotFoundErrorJSONResponse: api.NotFoundErrorJSONResponse{Message: "stats not found for user", Code: 404}}, nil
-	// 	}
-	// 	resp := api.GetGameStats200JSONResponse(gameStats)
-	// 	return resp, nil
+	gameStats, err := a.game.GetGameStats(ctx, request)
+	if err != nil {
+		return api.GetGameStatsdefaultJSONResponse{StatusCode: 500, Body: newGenericErr(500, "GAME_STATS", "failed to get stats")}, nil
+	}
+	return api.GetGameStats200JSONResponse(gameStats), nil
 }

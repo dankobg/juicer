@@ -74,13 +74,6 @@ type ListGameVariantsFilters struct {
 	api.ListGameVariantsParams
 }
 
-type GameStats struct {
-	Win   int32 `json:"win"`
-	Loss  int32 `json:"loss"`
-	Draw  int32 `json:"draw"`
-	Total int32 `json:"total"`
-}
-
 type ListGamesFilters struct {
 	api.ListGamesParams
 	WithGameHashes bool
@@ -159,4 +152,21 @@ type ActiveGameHistoryHash struct {
 
 type ListRatingsFilters struct {
 	api.ListRatingsParams
+}
+
+type GameStats struct {
+	All         GameStat `json:"all"`
+	Hyperbullet GameStat `json:"hyperbullet"`
+	Bullet      GameStat `json:"bullet"`
+	Blitz       GameStat `json:"blitz"`
+	Rapid       GameStat `json:"rapid"`
+	Classical   GameStat `json:"classical"`
+}
+
+type GameStat struct {
+	Win         int32 `json:"win"`
+	Loss        int32 `json:"loss"`
+	Draw        int32 `json:"draw"`
+	Interrupted int32 `json:"interrupted"`
+	Total       int32 `json:"total"`
 }

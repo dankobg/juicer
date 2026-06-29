@@ -2544,10 +2544,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        data: components["schemas"]["GameStats"][];
-                        meta: components["schemas"]["PaginationMeta"];
-                    };
+                    "application/json": components["schemas"]["GameStats"];
                 };
             };
             401: components["responses"]["UnauthenticatedErrorResponse"];

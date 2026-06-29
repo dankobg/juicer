@@ -146,3 +146,50 @@ func RatingToResponse(r models.Rating) api.Rating {
 		UpdatedAt:          r.UpdatedAt,
 	}
 }
+
+func GameStatsToResponse(gs GameStats) api.GameStats {
+	return api.GameStats{
+		All: api.GameStat{
+			Draw:        gs.All.Draw,
+			Interrupted: gs.All.Interrupted,
+			Loss:        gs.All.Loss,
+			Total:       new(gs.All.Total),
+			Win:         gs.All.Win,
+		},
+		Blitz: api.GameStat{
+			Draw:        gs.Blitz.Draw,
+			Interrupted: gs.Blitz.Interrupted,
+			Loss:        gs.Blitz.Loss,
+			Total:       new(gs.Blitz.Total),
+			Win:         gs.Blitz.Win,
+		},
+		Bullet: api.GameStat{
+			Draw:        gs.Bullet.Draw,
+			Interrupted: gs.Bullet.Interrupted,
+			Loss:        gs.Bullet.Loss,
+			Total:       new(gs.Bullet.Total),
+			Win:         gs.Bullet.Win,
+		},
+		Classical: api.GameStat{
+			Draw:        gs.Classical.Draw,
+			Interrupted: gs.Classical.Interrupted,
+			Loss:        gs.Classical.Loss,
+			Total:       new(gs.Classical.Total),
+			Win:         gs.Classical.Win,
+		},
+		Hyperbullet: api.GameStat{
+			Draw:        gs.Hyperbullet.Draw,
+			Interrupted: gs.Hyperbullet.Interrupted,
+			Loss:        gs.Hyperbullet.Loss,
+			Total:       new(gs.Hyperbullet.Total),
+			Win:         gs.Hyperbullet.Win,
+		},
+		Rapid: api.GameStat{
+			Draw:        gs.Rapid.Draw,
+			Interrupted: gs.Rapid.Interrupted,
+			Loss:        gs.Rapid.Loss,
+			Total:       new(gs.Rapid.Total),
+			Win:         gs.Rapid.Win,
+		},
+	}
+}

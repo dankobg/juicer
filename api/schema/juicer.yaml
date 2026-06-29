@@ -501,16 +501,7 @@ paths:
             application/json:
               schema:
                 type: object
-                required:
-                  - data
-                  - meta
-                properties:
-                  data:
-                    type: array
-                    items:
-                      $ref: "#/components/schemas/GameStats"
-                  meta:
-                    $ref: "#/components/schemas/PaginationMeta"
+                $ref: "#/components/schemas/GameStats"
         "401":
           $ref: "#/components/responses/UnauthenticatedErrorResponse"
         "403":

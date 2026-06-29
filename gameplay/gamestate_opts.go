@@ -54,47 +54,47 @@ func WithFEN(fen string) GameOption { return fenOpt(fen) }
 
 type gameVariantOpt pb.GameVariant
 
-func (o gameVariantOpt) apply(g *gameOpts)              { g.gameVariant = pb.GameVariant(o) }
-func WithGameVariant(variant pb.GameVariant) GameOption { return gameVariantOpt(variant) }
+func (o gameVariantOpt) apply(g *gameOpts)                  { g.gameVariant = pb.GameVariant(o) }
+func WithGameVariant(gameVariant pb.GameVariant) GameOption { return gameVariantOpt(gameVariant) }
 
 type gameTimeKindOpt pb.GameTimeKind
 
-func (o gameTimeKindOpt) apply(g *gameOpts)                { g.gameTimeKind = pb.GameTimeKind(o) }
-func WithGameTimeKind(timeKind pb.GameTimeKind) GameOption { return gameTimeKindOpt(timeKind) }
+func (o gameTimeKindOpt) apply(g *gameOpts)                    { g.gameTimeKind = pb.GameTimeKind(o) }
+func WithGameTimeKind(gameTimeKind pb.GameTimeKind) GameOption { return gameTimeKindOpt(gameTimeKind) }
 
 type gameTimeCategoryOpt pb.GameTimeCategory
 
 func (o gameTimeCategoryOpt) apply(g *gameOpts) { g.gameTimeCategory = pb.GameTimeCategory(o) }
-func WithGameTimeCategory(timeCategory pb.GameTimeCategory) GameOption {
-	return gameTimeCategoryOpt(timeCategory)
+func WithGameTimeCategory(gameTimeCategory pb.GameTimeCategory) GameOption {
+	return gameTimeCategoryOpt(gameTimeCategory)
 }
 
 type gameTimeControlOpt struct{ tc *pb.GameTimeControl }
 
 func (o gameTimeControlOpt) apply(g *gameOpts) { g.gameTimeControl = o.tc }
-func WithGameTimeControl(timeControl *pb.GameTimeControl) GameOption {
-	return gameTimeControlOpt{tc: timeControl}
+func WithGameTimeControl(gameTimeControl *pb.GameTimeControl) GameOption {
+	return gameTimeControlOpt{tc: gameTimeControl}
 }
 
 type gameResultOpt pb.GameResult
 
 func (o gameResultOpt) apply(g *gameOpts) { g.gameResult = pb.GameResult(o) }
-func WithGameResult(result pb.GameResult) GameOption {
-	return gameResultOpt(result)
+func WithGameResult(gameResult pb.GameResult) GameOption {
+	return gameResultOpt(gameResult)
 }
 
 type gameResultStatusOpt pb.GameResultStatus
 
 func (o gameResultStatusOpt) apply(g *gameOpts) { g.gameResultStatus = pb.GameResultStatus(o) }
-func WithGameResultStatus(resultStatus pb.GameResultStatus) GameOption {
-	return gameResultStatusOpt(resultStatus)
+func WithGameResultStatus(gameResultStatus pb.GameResultStatus) GameOption {
+	return gameResultStatusOpt(gameResultStatus)
 }
 
 type gameStateOpt pb.GameState
 
 func (o gameStateOpt) apply(g *gameOpts) { g.gameState = pb.GameState(o) }
-func WithGameState(state pb.GameState) GameOption {
-	return gameStateOpt(state)
+func WithGameState(gameState pb.GameState) GameOption {
+	return gameStateOpt(gameState)
 }
 
 type reconnectTimeoutOpt time.Duration

@@ -94,12 +94,12 @@ type GameState struct {
 	blackReconnectTimer    *time.Timer
 }
 
-func NewGameState(gameID int64, players [2]Player, timeControl *pb.GameTimeControl, thresholds []CategoryThreshold, gameEvent chan GameEvent, opts ...GameOption) (*GameState, error) {
+func NewGameState(gameID int64, players [2]Player, gameTimeControl *pb.GameTimeControl, thresholds []CategoryThreshold, gameEvent chan GameEvent, opts ...GameOption) (*GameState, error) {
 	if err := validatePlayers(players); err != nil {
 		return nil, err
 	}
 
-	timeCategory, err := determineGameTimeCategoryFromTimeControl(timeControl, thresholds)
+	gametimeCategory, err := determineGameTimeCategoryFromTimeControl(gameTimeControl, thresholds)
 	if err != nil {
 		return nil, err
 	}
@@ -108,9 +108,9 @@ func NewGameState(gameID int64, players [2]Player, timeControl *pb.GameTimeContr
 		gameID:           gameID,
 		fen:              engine.FENStartingPosition,
 		gameVariant:      pb.GameVariant_GAME_VARIANT_STANDARD,
-		gameTimeControl:  timeControl,
+		gameTimeControl:  gameTimeControl,
 		gameTimeKind:     pb.GameTimeKind_GAME_TIME_KIND_REALTIME,
-		gameTimeCategory: timeCategory,
+		gameTimeCategory: gametimeCategory,
 		gameState:        pb.GameState_GAME_STATE_ACTIVE,
 		reconnectTimeout: defaultReconnectTimeout,
 		firstMoveTimeout: defaultFirstMoveTimeout,
