@@ -367,5 +367,88 @@ func (pst *PgGamePersistor) BulkDeleteGames(ctx context.Context, ids []int64) er
 }
 
 func (pst *PgGamePersistor) GetGameStatsForUser(ctx context.Context, userID uuid.UUID, filters *game.GameStatsForUserFilters) (game.GameStats, error) {
-	panic("")
+	raw := `WITH stats AS (
+    SELECT
+        gtc.name AS category,
+        CASE
+            WHEN gr.name = 'interrupted' THEN 'interrupted'
+            WHEN gr.name = 'draw' THEN 'draw'
+            WHEN (
+                (gr.name = 'white-won' AND g.white_id = ?)
+                OR
+                (gr.name = 'black-won' AND g.black_id = ?)
+            ) THEN 'win'
+            ELSE 'loss'
+        END AS result
+    FROM game g
+    JOIN game_time_category gtc
+        ON g.game_time_category_id = gtc.id
+    JOIN game_state gs
+        ON g.game_state_id = gs.id
+    LEFT JOIN game_result gr
+        ON g.game_result_id = gr.id
+    WHERE
+        (g.white_id = ? OR g.black_id = ?)
+        AND gs.name = 'finished'
+),
+counts AS (
+    SELECT
+        category,
+        COUNT(*) FILTER (WHERE result = 'win') AS win,
+        COUNT(*) FILTER (WHERE result = 'loss') AS loss,
+        COUNT(*) FILTER (WHERE result = 'draw') AS draw,
+        COUNT(*) FILTER (WHERE result = 'interrupted') AS interrupted,
+        COUNT(*) AS total
+    FROM stats
+    GROUP BY category
+),
+all_counts AS (
+    SELECT
+        COUNT(*) FILTER (WHERE result = 'win') AS win,
+        COUNT(*) FILTER (WHERE result = 'loss') AS loss,
+        COUNT(*) FILTER (WHERE result = 'draw') AS draw,
+        COUNT(*) FILTER (WHERE result = 'interrupted') AS interrupted,
+        COUNT(*) AS total
+    FROM stats
+)
+SELECT json_build_object(
+    'all',
+    (
+        SELECT row_to_json(a)
+        FROM all_counts a
+    ),
+    'hyperbullet',
+    COALESCE(
+        (SELECT row_to_json(c) FROM counts c WHERE category = 'hyperbullet'),
+        json_build_object('win',0,'loss',0,'draw',0,'interrupted',0,'total',0)
+    ),
+    'bullet',
+    COALESCE(
+        (SELECT row_to_json(c) FROM counts c WHERE category = 'bullet'),
+        json_build_object('win',0,'loss',0,'draw',0,'interrupted',0,'total',0)
+    ),
+    'blitz',
+    COALESCE(
+        (SELECT row_to_json(c) FROM counts c WHERE category = 'blitz'),
+        json_build_object('win',0,'loss',0,'draw',0,'interrupted',0,'total',0)
+    ),
+    'rapid',
+    COALESCE(
+        (SELECT row_to_json(c) FROM counts c WHERE category = 'rapid'),
+        json_build_object('win',0,'loss',0,'draw',0,'interrupted',0,'total',0)
+    ),
+    'classical',
+    COALESCE(
+        (SELECT row_to_json(c) FROM counts c WHERE category = 'classical'),
+        json_build_object('win',0,'loss',0,'draw',0,'interrupted',0,'total',0)
+    )
+) AS stats;`
+
+	q := psql.RawQuery(raw, userID.String(), userID.String(), userID.String(), userID.String())
+	gameStats, err := bob.One(ctx, pst.Exec, q, scan.StructMapper[game.GameStatsJSON](scan.WithTypeConverter(orm.NullTypeConverter{})))
+	if err != nil {
+		return game.GameStats{}, fmt.Errorf("query game stats")
+	}
+
+	return gameStats.Stats.Val, nil
 }

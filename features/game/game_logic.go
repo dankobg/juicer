@@ -576,7 +576,7 @@ func (g *GameService) handleGameFinishedEvent(event gameplay.GameFinishedEvent) 
 		}
 	}
 
-	if err := g.pst.ActiveGame.DeleteActiveGameByID(context.Background(), event.GameID); err != nil {
+	if err := g.pst.ActiveGame.DeleteActiveGameByID(context.Background(), event.GameID); err != nil && !errors.Is(err, redis.Nil) {
 		g.log.Error("DeleteActiveGameByID", slog.Int64("game_id", event.GameID), slog.Any("error", err))
 	}
 }

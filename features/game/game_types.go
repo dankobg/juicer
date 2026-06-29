@@ -163,6 +163,10 @@ type GameStats struct {
 	Classical   GameStat `json:"classical"`
 }
 
+type GameStatsJSON struct {
+	Stats types.JSON[GameStats]
+}
+
 type GameStat struct {
 	Win         int32 `json:"win"`
 	Loss        int32 `json:"loss"`
