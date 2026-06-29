@@ -1,13 +1,5 @@
 <script lang="ts">
 	import type { PageProps } from './$types';
-
-	let { data, params }: PageProps = $props();
-</script>
-
-<h1>User dashboard</h1>
-
-<!-- <script lang="ts">
-	import type { PageProps } from './$types';
 	import * as Card from '$lib/components/ui/card/index';
 	import { PieChart, Text } from 'layerchart';
 	import * as Chart from '$lib/components/ui/chart/index.js';
@@ -18,130 +10,189 @@
 
 	let { data }: PageProps = $props();
 
-	const chartConfigAdoptions = {
-		approved: { label: 'Approved', color: 'var(--color-green-600)' },
-		pending: { label: 'Pending', color: 'var(--color-yellow-600)' },
-		rejected: { label: 'Rejected', color: 'var(--color-red-600)' }
+	const chartConfigGameStats = {
+		draw: { label: 'Draw', color: 'var(--color-yellow-400)' },
+		interrupted: { label: 'Interrupted', color: 'var(--color-purple-600)' },
+		loss: { label: 'Loss', color: 'var(--color-red-600)' },
+		win: { label: 'Win', color: 'var(--color-green-600)' }
 	} satisfies Chart.ChartConfig;
 
-	const chartConfigOrganizations = {
-		approved: { label: 'Approved', color: 'var(--color-green-600)' },
-		pending: { label: 'Pending', color: 'var(--color-yellow-600)' },
-		rejected: { label: 'Rejected', color: 'var(--color-red-600)' }
-	} satisfies Chart.ChartConfig;
-
-	const chartConfigAnimals = {
-		adoptable: { label: 'Adoptable', color: 'var(--color-sky-600)' },
-		pending: { label: 'Pending', color: 'var(--color-yellow-600)' },
-		adopted: { label: 'Adopted', color: 'var(--color-green-600)' },
-		reserved: { label: 'Reserved', color: 'var(--color-sky-600)' },
-		rejected: { label: 'Rejected', color: 'var(--color-red-600)' }
-	} satisfies Chart.ChartConfig;
-
-	let chartDataAdoptions = $derived.by(() => {
-		if (!data?.myAnalyticsStatsResult?.data) {
+	let chartDataAll = $derived.by(() => {
+		if (!data?.gameStatsResult?.data) {
 			return [];
 		}
 		return [
 			{
-				label: chartConfigOrganizations.approved.label,
-				value: data.myAnalyticsStatsResult.data.stats.adoptions.by_status.approved,
-				color: chartConfigOrganizations.approved.color
+				label: chartConfigGameStats.draw.label,
+				value: data.gameStatsResult.data.all.draw,
+				color: chartConfigGameStats.draw.color
 			},
 			{
-				label: chartConfigOrganizations.pending.label,
-				value: data.myAnalyticsStatsResult.data.stats.adoptions.by_status.pending,
-				color: chartConfigOrganizations.pending.color
+				label: chartConfigGameStats.interrupted.label,
+				value: data.gameStatsResult.data.all.interrupted,
+				color: chartConfigGameStats.interrupted.color
 			},
 			{
-				label: chartConfigOrganizations.rejected.label,
-				value: data.myAnalyticsStatsResult.data.stats.adoptions.by_status.rejected,
-				color: chartConfigOrganizations.rejected.color
+				label: chartConfigGameStats.win.label,
+				value: data.gameStatsResult.data.all.win,
+				color: chartConfigGameStats.win.color
+			},
+			{
+				label: chartConfigGameStats.loss.label,
+				value: data.gameStatsResult.data.all.loss,
+				color: chartConfigGameStats.loss.color
 			}
 		];
 	});
 
-	let chartDataOrganizations = $derived.by(() => {
-		if (!data?.myAnalyticsStatsResult?.data) {
+	let chartDataHyperbullet = $derived.by(() => {
+		if (!data?.gameStatsResult?.data) {
 			return [];
 		}
 		return [
 			{
-				label: chartConfigOrganizations.approved.label,
-				value: data.myAnalyticsStatsResult.data.stats.organizations.by_status.approved,
-				color: chartConfigOrganizations.approved.color
+				label: chartConfigGameStats.draw.label,
+				value: data.gameStatsResult.data.hyperbullet.draw,
+				color: chartConfigGameStats.draw.color
 			},
 			{
-				label: chartConfigOrganizations.pending.label,
-				value: data.myAnalyticsStatsResult.data.stats.organizations.by_status.pending,
-				color: chartConfigOrganizations.pending.color
+				label: chartConfigGameStats.interrupted.label,
+				value: data.gameStatsResult.data.hyperbullet.interrupted,
+				color: chartConfigGameStats.interrupted.color
 			},
 			{
-				label: chartConfigOrganizations.rejected.label,
-				value: data.myAnalyticsStatsResult.data.stats.organizations.by_status.rejected,
-				color: chartConfigOrganizations.rejected.color
+				label: chartConfigGameStats.win.label,
+				value: data.gameStatsResult.data.hyperbullet.win,
+				color: chartConfigGameStats.win.color
+			},
+			{
+				label: chartConfigGameStats.loss.label,
+				value: data.gameStatsResult.data.hyperbullet.loss,
+				color: chartConfigGameStats.loss.color
 			}
 		];
 	});
 
-	let chartDataAnimals = $derived.by(() => {
-		if (!data?.myAnalyticsStatsResult?.data) {
+	let chartDataBullet = $derived.by(() => {
+		if (!data?.gameStatsResult?.data) {
 			return [];
 		}
 		return [
 			{
-				label: chartConfigAnimals.adoptable.label,
-				value: data.myAnalyticsStatsResult.data.stats.animals.posted.by_status.adoptable,
-				color: chartConfigAnimals.adoptable.color
+				label: chartConfigGameStats.draw.label,
+				value: data.gameStatsResult.data.bullet.draw,
+				color: chartConfigGameStats.draw.color
 			},
 			{
-				label: chartConfigAnimals.pending.label,
-				value: data.myAnalyticsStatsResult.data.stats.animals.posted.by_status.pending,
-				color: chartConfigAnimals.pending.color
+				label: chartConfigGameStats.interrupted.label,
+				value: data.gameStatsResult.data.bullet.interrupted,
+				color: chartConfigGameStats.interrupted.color
 			},
 			{
-				label: chartConfigAnimals.adopted.label,
-				value: data.myAnalyticsStatsResult.data.stats.animals.posted.by_status.adopted,
-				color: chartConfigAnimals.adopted.color
+				label: chartConfigGameStats.win.label,
+				value: data.gameStatsResult.data.bullet.win,
+				color: chartConfigGameStats.win.color
 			},
 			{
-				label: chartConfigAnimals.reserved.label,
-				value: data.myAnalyticsStatsResult.data.stats.animals.posted.by_status.reserved,
-				color: chartConfigAnimals.reserved.color
-			},
-			{
-				label: chartConfigAnimals.rejected.label,
-				value: data.myAnalyticsStatsResult.data.stats.animals.posted.by_status.rejected,
-				color: chartConfigAnimals.rejected.color
+				label: chartConfigGameStats.loss.label,
+				value: data.gameStatsResult.data.bullet.loss,
+				color: chartConfigGameStats.loss.color
 			}
 		];
 	});
 
-	let favoriteAnimalsDesc = $derived.by(() => {
-		const favorites = data?.myAnalyticsStatsResult?.data?.stats?.animals?.favorites || 0;
-		if (favorites > 0) {
-			return 'Possible future best friends';
-		} else {
-			return 'You have not found your perfect friend yet';
+	let chartDataBlitz = $derived.by(() => {
+		if (!data?.gameStatsResult?.data) {
+			return [];
 		}
+		return [
+			{
+				label: chartConfigGameStats.draw.label,
+				value: data.gameStatsResult.data.blitz.draw,
+				color: chartConfigGameStats.draw.color
+			},
+			{
+				label: chartConfigGameStats.interrupted.label,
+				value: data.gameStatsResult.data.blitz.interrupted,
+				color: chartConfigGameStats.interrupted.color
+			},
+			{
+				label: chartConfigGameStats.win.label,
+				value: data.gameStatsResult.data.blitz.win,
+				color: chartConfigGameStats.win.color
+			},
+			{
+				label: chartConfigGameStats.loss.label,
+				value: data.gameStatsResult.data.blitz.loss,
+				color: chartConfigGameStats.loss.color
+			}
+		];
 	});
 
-	let favoriteAnimalsText = $derived.by(() => {
-		const favorites = data?.myAnalyticsStatsResult?.data?.stats?.animals?.favorites || 0;
-		if (favorites === 0) return 'No liked animals';
-		if (favorites < 5) return 'Few liked animals';
-		if (favorites < 10) return 'Several liked animals';
-		return 'Many liked animals';
+	let chartDataRapid = $derived.by(() => {
+		if (!data?.gameStatsResult?.data) {
+			return [];
+		}
+		return [
+			{
+				label: chartConfigGameStats.draw.label,
+				value: data.gameStatsResult.data.rapid.draw,
+				color: chartConfigGameStats.draw.color
+			},
+			{
+				label: chartConfigGameStats.interrupted.label,
+				value: data.gameStatsResult.data.rapid.interrupted,
+				color: chartConfigGameStats.interrupted.color
+			},
+			{
+				label: chartConfigGameStats.win.label,
+				value: data.gameStatsResult.data.rapid.win,
+				color: chartConfigGameStats.win.color
+			},
+			{
+				label: chartConfigGameStats.loss.label,
+				value: data.gameStatsResult.data.rapid.loss,
+				color: chartConfigGameStats.loss.color
+			}
+		];
+	});
+
+	let chartDataClassical = $derived.by(() => {
+		if (!data?.gameStatsResult?.data) {
+			return [];
+		}
+		return [
+			{
+				label: chartConfigGameStats.draw.label,
+				value: data.gameStatsResult.data.classical.draw,
+				color: chartConfigGameStats.draw.color
+			},
+			{
+				label: chartConfigGameStats.interrupted.label,
+				value: data.gameStatsResult.data.classical.interrupted,
+				color: chartConfigGameStats.interrupted.color
+			},
+			{
+				label: chartConfigGameStats.win.label,
+				value: data.gameStatsResult.data.classical.win,
+				color: chartConfigGameStats.win.color
+			},
+			{
+				label: chartConfigGameStats.loss.label,
+				value: data.gameStatsResult.data.classical.loss,
+				color: chartConfigGameStats.loss.color
+			}
+		];
 	});
 </script>
 
-{#if data?.myAnalyticsStatsResult?.data}
-	<div class="grid grid-cols-1 gap-4 @xl/main:grid-cols-2 @5xl/main:grid-cols-4">
+{#if data?.gameStatsResult?.data}
+	<!-- <div class="grid grid-cols-1 gap-4 @xl/main:grid-cols-2 @5xl/main:grid-cols-4">
 		<Card.Root class="@container/card">
 			<Card.Header>
 				<Card.Description>Adoptions</Card.Description>
 				<Card.Title class="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
-					Total {data?.myAnalyticsStatsResult?.data?.stats?.adoptions.total}
+					Total {data?.gameStatsResult?.data?.stats?.adoptions.total}
 				</Card.Title>
 				<Card.Action>
 					<IconHandHeart />
@@ -149,10 +200,10 @@
 			</Card.Header>
 			<Card.Footer class="flex-col items-start gap-1.5 text-sm">
 				<div class="line-clamp-1 flex gap-2 font-medium">
-					Pending approval {data?.myAnalyticsStatsResult?.data?.stats?.adoptions?.by_status.pending}
+					Pending approval {data?.gameStatsResult?.data?.stats?.adoptions?.by_status.pending}
 				</div>
 				<div class="text-muted-foreground">
-					{data?.myAnalyticsStatsResult?.data?.stats?.organizations?.by_status.pending > 0
+					{data?.gameStatsResult?.data?.stats?.organizations?.by_status.pending > 0
 						? 'Waiting for admin approval'
 						: 'No pending adoptions'}
 				</div>
@@ -163,7 +214,7 @@
 			<Card.Header>
 				<Card.Description>Favorites</Card.Description>
 				<Card.Title class="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
-					Total {data?.myAnalyticsStatsResult?.data?.stats?.animals.favorites}
+					Total {data?.gameStatsResult?.data?.stats?.animals.favorites}
 				</Card.Title>
 				<Card.Action>
 					<IconUsers />
@@ -181,7 +232,7 @@
 			<Card.Header>
 				<Card.Description>Animals</Card.Description>
 				<Card.Title class="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
-					Total {data?.myAnalyticsStatsResult?.data?.stats?.animals.posted.total}
+					Total {data?.gameStatsResult?.data?.stats?.animals.posted.total}
 				</Card.Title>
 				<Card.Action>
 					<IconCat />
@@ -189,10 +240,10 @@
 			</Card.Header>
 			<Card.Footer class="flex-col items-start gap-1.5 text-sm">
 				<div class="line-clamp-1 flex gap-2 font-medium">
-					Pending approval {data?.myAnalyticsStatsResult?.data?.stats?.animals?.posted.by_status.pending}
+					Pending approval {data?.gameStatsResult?.data?.stats?.animals?.posted.by_status.pending}
 				</div>
 				<div class="text-muted-foreground">
-					{data?.myAnalyticsStatsResult?.data?.stats?.animals?.posted.by_status.pending > 0
+					{data?.gameStatsResult?.data?.stats?.animals?.posted.by_status.pending > 0
 						? 'Waiting for admin approval'
 						: 'No pending animals'}
 				</div>
@@ -203,7 +254,7 @@
 			<Card.Header>
 				<Card.Description>Organizations</Card.Description>
 				<Card.Title class="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
-					Total {data?.myAnalyticsStatsResult?.data?.stats?.organizations?.total}
+					Total {data?.gameStatsResult?.data?.stats?.organizations?.total}
 				</Card.Title>
 				<Card.Action>
 					<IconBuilding2 />
@@ -211,27 +262,27 @@
 			</Card.Header>
 			<Card.Footer class="flex-col items-start gap-1.5 text-sm">
 				<div class="line-clamp-1 flex gap-2 font-medium">
-					Pending approval {data?.myAnalyticsStatsResult?.data?.stats?.organizations?.by_status.pending}
+					Pending approval {data?.gameStatsResult?.data?.stats?.organizations?.by_status.pending}
 				</div>
 				<div class="text-muted-foreground">
-					{data?.myAnalyticsStatsResult?.data?.stats?.organizations?.by_status.pending > 0
+					{data?.gameStatsResult?.data?.stats?.organizations?.by_status.pending > 0
 						? 'Waiting for admin approval'
 						: 'No pending organizations'}
 				</div>
 			</Card.Footer>
 		</Card.Root>
-	</div>
+	</div> -->
 
 	<div class="grid grid-cols-[repeat(auto-fill,minmax(min(28rem,100%),1fr))] justify-center gap-4">
 		<Card.Root class="flex flex-col">
 			<Card.Header class="items-center">
-				<Card.Title>Adoptions</Card.Title>
-				<Card.Description>Adoptions by status</Card.Description>
+				<Card.Title>All</Card.Title>
+				<Card.Description>All categories stats</Card.Description>
 			</Card.Header>
 			<Card.Content class="flex-1">
-				<Chart.Container config={chartConfigAdoptions} class="mx-auto aspect-square max-h-[250px]">
+				<Chart.Container config={chartConfigGameStats} class="mx-auto aspect-square max-h-[250px]">
 					<PieChart
-						data={chartDataAdoptions}
+						data={chartDataAll}
 						key="label"
 						value="value"
 						c="color"
@@ -246,7 +297,7 @@
 					>
 						{#snippet aboveMarks()}
 							<Text
-								value={data.myAnalyticsStatsResult.data?.stats.adoptions.total}
+								value={data.gameStatsResult.data?.all?.total}
 								textAnchor="middle"
 								verticalAnchor="middle"
 								class="fill-foreground text-3xl! font-bold"
@@ -267,19 +318,19 @@
 				</Chart.Container>
 			</Card.Content>
 			<Card.Footer class="flex-col gap-2 text-sm">
-				<div class="leading-none text-muted-foreground">Adoptions stats</div>
+				<div class="leading-none text-muted-foreground">All categories stats</div>
 			</Card.Footer>
 		</Card.Root>
 
 		<Card.Root class="flex flex-col">
 			<Card.Header class="items-center">
-				<Card.Title>Animals</Card.Title>
-				<Card.Description>Animals by status</Card.Description>
+				<Card.Title>Hyperbullet</Card.Title>
+				<Card.Description>Hyperbullet stats</Card.Description>
 			</Card.Header>
 			<Card.Content class="flex-1">
-				<Chart.Container config={chartConfigAnimals} class="mx-auto aspect-square max-h-[250px]">
+				<Chart.Container config={chartConfigGameStats} class="mx-auto aspect-square max-h-[250px]">
 					<PieChart
-						data={chartDataAnimals}
+						data={chartDataHyperbullet}
 						key="label"
 						value="value"
 						c="color"
@@ -294,7 +345,7 @@
 					>
 						{#snippet aboveMarks()}
 							<Text
-								value={data.myAnalyticsStatsResult.data?.stats.animals.posted.total}
+								value={data.gameStatsResult.data?.hyperbullet?.total}
 								textAnchor="middle"
 								verticalAnchor="middle"
 								class="fill-foreground text-3xl! font-bold"
@@ -315,19 +366,19 @@
 				</Chart.Container>
 			</Card.Content>
 			<Card.Footer class="flex-col gap-2 text-sm">
-				<div class="leading-none text-muted-foreground">Animals stats</div>
+				<div class="leading-none text-muted-foreground">Hyperbullet stats</div>
 			</Card.Footer>
 		</Card.Root>
 
 		<Card.Root class="flex flex-col">
 			<Card.Header class="items-center">
-				<Card.Title>Organizations</Card.Title>
-				<Card.Description>Organizations by status</Card.Description>
+				<Card.Title>Bullet</Card.Title>
+				<Card.Description>Bullet stats</Card.Description>
 			</Card.Header>
 			<Card.Content class="flex-1">
-				<Chart.Container config={chartConfigOrganizations} class="mx-auto aspect-square max-h-[250px]">
+				<Chart.Container config={chartConfigGameStats} class="mx-auto aspect-square max-h-[250px]">
 					<PieChart
-						data={chartDataOrganizations}
+						data={chartDataBullet}
 						key="label"
 						value="value"
 						c="color"
@@ -342,7 +393,7 @@
 					>
 						{#snippet aboveMarks()}
 							<Text
-								value={data.myAnalyticsStatsResult.data?.stats.organizations.total}
+								value={data.gameStatsResult.data?.bullet?.total}
 								textAnchor="middle"
 								verticalAnchor="middle"
 								class="fill-foreground text-3xl! font-bold"
@@ -363,8 +414,152 @@
 				</Chart.Container>
 			</Card.Content>
 			<Card.Footer class="flex-col gap-2 text-sm">
-				<div class="leading-none text-muted-foreground">Organizations stats</div>
+				<div class="leading-none text-muted-foreground">Bullet stats</div>
+			</Card.Footer>
+		</Card.Root>
+
+		<Card.Root class="flex flex-col">
+			<Card.Header class="items-center">
+				<Card.Title>Blitz</Card.Title>
+				<Card.Description>Blitz stats</Card.Description>
+			</Card.Header>
+			<Card.Content class="flex-1">
+				<Chart.Container config={chartConfigGameStats} class="mx-auto aspect-square max-h-[250px]">
+					<PieChart
+						data={chartDataBlitz}
+						key="label"
+						value="value"
+						c="color"
+						innerRadius={60}
+						padding={28}
+						props={{
+							pie: {
+								motion: 'tween'
+							}
+						}}
+						legend
+					>
+						{#snippet aboveMarks()}
+							<Text
+								value={data.gameStatsResult.data?.blitz?.total}
+								textAnchor="middle"
+								verticalAnchor="middle"
+								class="fill-foreground text-3xl! font-bold"
+								dy={3}
+							/>
+							<Text
+								value="Total"
+								textAnchor="middle"
+								verticalAnchor="middle"
+								class="fill-muted-foreground! text-muted-foreground"
+								dy={22}
+							/>
+						{/snippet}
+						{#snippet tooltip()}
+							<Chart.Tooltip />
+						{/snippet}
+					</PieChart>
+				</Chart.Container>
+			</Card.Content>
+			<Card.Footer class="flex-col gap-2 text-sm">
+				<div class="leading-none text-muted-foreground">Blitz stats</div>
+			</Card.Footer>
+		</Card.Root>
+
+		<Card.Root class="flex flex-col">
+			<Card.Header class="items-center">
+				<Card.Title>Rapid</Card.Title>
+				<Card.Description>Rapid stats</Card.Description>
+			</Card.Header>
+			<Card.Content class="flex-1">
+				<Chart.Container config={chartConfigGameStats} class="mx-auto aspect-square max-h-[250px]">
+					<PieChart
+						data={chartDataRapid}
+						key="label"
+						value="value"
+						c="color"
+						innerRadius={60}
+						padding={28}
+						props={{
+							pie: {
+								motion: 'tween'
+							}
+						}}
+						legend
+					>
+						{#snippet aboveMarks()}
+							<Text
+								value={data.gameStatsResult.data?.rapid?.total}
+								textAnchor="middle"
+								verticalAnchor="middle"
+								class="fill-foreground text-3xl! font-bold"
+								dy={3}
+							/>
+							<Text
+								value="Total"
+								textAnchor="middle"
+								verticalAnchor="middle"
+								class="fill-muted-foreground! text-muted-foreground"
+								dy={22}
+							/>
+						{/snippet}
+						{#snippet tooltip()}
+							<Chart.Tooltip />
+						{/snippet}
+					</PieChart>
+				</Chart.Container>
+			</Card.Content>
+			<Card.Footer class="flex-col gap-2 text-sm">
+				<div class="leading-none text-muted-foreground">Rapid stats</div>
+			</Card.Footer>
+		</Card.Root>
+
+		<Card.Root class="flex flex-col">
+			<Card.Header class="items-center">
+				<Card.Title>Classical</Card.Title>
+				<Card.Description>Classical stats</Card.Description>
+			</Card.Header>
+			<Card.Content class="flex-1">
+				<Chart.Container config={chartConfigGameStats} class="mx-auto aspect-square max-h-[250px]">
+					<PieChart
+						data={chartDataClassical}
+						key="label"
+						value="value"
+						c="color"
+						innerRadius={60}
+						padding={28}
+						props={{
+							pie: {
+								motion: 'tween'
+							}
+						}}
+						legend
+					>
+						{#snippet aboveMarks()}
+							<Text
+								value={data.gameStatsResult.data?.classical?.total}
+								textAnchor="middle"
+								verticalAnchor="middle"
+								class="fill-foreground text-3xl! font-bold"
+								dy={3}
+							/>
+							<Text
+								value="Total"
+								textAnchor="middle"
+								verticalAnchor="middle"
+								class="fill-muted-foreground! text-muted-foreground"
+								dy={22}
+							/>
+						{/snippet}
+						{#snippet tooltip()}
+							<Chart.Tooltip />
+						{/snippet}
+					</PieChart>
+				</Chart.Container>
+			</Card.Content>
+			<Card.Footer class="flex-col gap-2 text-sm">
+				<div class="leading-none text-muted-foreground">Classical stats</div>
 			</Card.Footer>
 		</Card.Root>
 	</div>
-{/if} -->
+{/if}

@@ -10,38 +10,40 @@ export const load: PageLoad = async ({ fetch, depends, parent }) => {
 
 	if (data.auth.user?.isDeveloper) {
 		try {
-			// const analyticsStatsResult = await juicer.GET('/analytics/stats', {
-			// 	fetch
-			// });
+			const gameStatsResult = await juicer.GET('/game-stats/{user_id}', {
+				params: { path: { user_id: data?.auth?.user?.id } },
+				fetch
+			});
 
-			// if (analyticsStatsResult.error?.status_code === 403) {
-			// 	if (browser) {
-			// 		goto('/');
-			// 	}
-			// }
+			if (gameStatsResult.error?.status_code === 403) {
+				if (browser) {
+					goto('/');
+				}
+			}
 
 			return {
-				...data
-				// analyticsStatsResult
+				...data,
+				gameStatsResult
 			};
 		} catch (error) {
 			console.log('err', error);
 		}
 	} else {
 		try {
-			// const myAnalyticsStatsResult = await juicer.GET('/me/analytics/stats', {
-			// 	fetch
-			// });
+			const gameStatsResult = await juicer.GET('/game-stats/{user_id}', {
+				params: { path: { user_id: data?.auth?.user?.id ?? '' } },
+				fetch
+			});
 
-			// if (myAnalyticsStatsResult.error?.status_code === 403) {
-			// 	if (browser) {
-			// 		goto('/');
-			// 	}
-			// }
+			if (gameStatsResult.error?.status_code === 403) {
+				if (browser) {
+					goto('/');
+				}
+			}
 
 			return {
-				...data
-				// myAnalyticsStatsResult
+				...data,
+				gameStatsResult
 			};
 		} catch (error) {
 			console.log('err', error);
