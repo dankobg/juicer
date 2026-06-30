@@ -31,7 +31,9 @@
 				toast.success('id coppied');
 			});
 		} catch (error) {
-			if (error instanceof Error) toast.error('failed to copy id: ' + error.message);
+			if (Error.isError(error)) {
+				toast.error('failed to copy id: ' + error.message);
+			}
 		}
 	}
 

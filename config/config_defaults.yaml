@@ -24,6 +24,7 @@ server:
 cors:
   allow_origins:
     - http://localhost:3000
+    - http://juicer-dev.xyz
     - https://juicer-dev.xyz
     - https://client.scalar.com
   allow_methods:
@@ -50,7 +51,7 @@ cors:
     - Authorization
   allow_credentials: true
   max_age: 86400
-  debug: true
+  debug: false
 
 postgres:
   host: localhost

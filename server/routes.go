@@ -46,11 +46,6 @@ func (a *ApiHandler) SetupRoutes(env, uploadDir string) http.Handler {
 
 	mux.HandleFunc("/ws", a.serverWs)
 
-	cors, err := NewCORS(a.Cfg.Cors)
-	if err != nil {
-		panic("could not create cors middleware: " + err.Error())
-	}
-
 	// webhooks
 	mux.HandleFunc("POST /webhooks/kratos/registration_after_password", a.registrationAfterPassword)
 	mux.HandleFunc("POST /webhooks/kratos/registration_after_oidc", a.registrationAfterOidc)
@@ -87,7 +82,7 @@ func (a *ApiHandler) SetupRoutes(env, uploadDir string) http.Handler {
 		PanicRecovery,
 		RequestID,
 		BodyLimit(defaultBodyLimit),
-		cors,
+		newCORS(a.Cfg.Cors).Handler,
 		a.AttachSessionData,
 	)
 

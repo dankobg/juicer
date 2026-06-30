@@ -12,7 +12,6 @@ require (
 	github.com/jackc/pgerrcode v0.0.0-20250907135507-afb5586c32a6
 	github.com/jackc/pgx/v5 v5.10.0
 	github.com/joho/godotenv v1.5.1
-	github.com/jub0bs/cors v1.0.4
 	github.com/knadh/koanf/parsers/yaml v1.1.0
 	github.com/knadh/koanf/providers/env v1.1.0
 	github.com/knadh/koanf/providers/rawbytes v1.0.0
@@ -24,6 +23,7 @@ require (
 	github.com/ory/client-go v1.22.55
 	github.com/ory/keto/proto v0.13.0-alpha.0.0.20240724130948-6f5ee2ebdab3
 	github.com/redis/go-redis/v9 v9.21.0
+	github.com/rs/cors v1.11.1
 	github.com/stephenafamo/bob v0.46.0
 	github.com/stephenafamo/scan v0.7.0
 	github.com/wneessen/go-mail v0.7.3
