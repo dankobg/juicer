@@ -19,7 +19,7 @@ require (
 	github.com/lmittmann/tint v1.1.3
 	github.com/oapi-codegen/nethttp-middleware v1.1.2
 	github.com/oapi-codegen/nullable v1.2.0
-	github.com/oapi-codegen/runtime v1.4.2
+	github.com/oapi-codegen/runtime v1.5.0
 	github.com/ory/client-go v1.22.61
 	github.com/ory/keto/proto v0.13.0-alpha.0.0.20240724130948-6f5ee2ebdab3
 	github.com/redis/go-redis/v9 v9.21.0
