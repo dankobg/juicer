@@ -1,0 +1,9 @@
+{
+  "version": "1",
+  "name": "Juicer schema",
+  "type": "collection",
+  "ignore": [
+    "node_modules",
+    ".git"
+  ]
+}

@@ -1,0 +1,148 @@
+package server
+
+import (
+	"fmt"
+	"html/template"
+	"log/slog"
+	"net/http"
+	"strings"
+
+	api "github.com/dankobg/juicer/api/gen"
+	"github.com/dankobg/juicer/auth/keto"
+	"github.com/dankobg/juicer/auth/kratos"
+	"github.com/dankobg/juicer/bus"
+	"github.com/dankobg/juicer/config"
+	"github.com/dankobg/juicer/features/chat"
+	"github.com/dankobg/juicer/features/game"
+	"github.com/dankobg/juicer/features/idp"
+	"github.com/dankobg/juicer/features/webhooks"
+	"github.com/dankobg/juicer/mailer"
+	"github.com/dankobg/juicer/ws"
+	"github.com/redis/go-redis/v9"
+)
+
+var _ api.StrictServerInterface = (*ApiHandler)(nil)
+
+type ApiHandler struct {
+	idp  *idp.IdentityProvider
+	game *game.GameService
+	chat *chat.ChatService
+	wh   *webhooks.Webhooks
+
+	Cfg        *config.Config
+	Log        *slog.Logger
+	Kratos     *kratos.Client
+	Keto       *keto.Client
+	Hub        *ws.Hub
+	Rdb        *redis.Client
+	Mailer     mailer.Mailer
+	openapiTpl *template.Template
+	bus        *bus.Bus
+}
+
+func New(
+	cfg *config.Config,
+	log *slog.Logger,
+	rdb *redis.Client,
+	kratos *kratos.Client,
+	keto *keto.Client,
+	mailer mailer.Mailer,
+	hub *ws.Hub,
+	game *game.GameService,
+	chat *chat.ChatService,
+	idp *idp.IdentityProvider,
+	wh *webhooks.Webhooks,
+) *ApiHandler {
+	apiHandler := &ApiHandler{
+		Cfg:    cfg,
+		Log:    log,
+		Kratos: kratos,
+		Keto:   keto,
+		Mailer: mailer,
+		Hub:    hub,
+		Rdb:    rdb,
+		bus:    bus.NewBus(rdb),
+		game:   game,
+		chat:   chat,
+		idp:    idp,
+		wh:     wh,
+	}
+
+	return apiHandler
+}
+
+func (a *ApiHandler) SetOpenapiTemplates(tpl *template.Template) {
+	a.openapiTpl = tpl
+}
+
+func newNotFoundErr(code, message string, reason ...string) api.APIError {
+	e := api.APIError{
+		Code:       fmt.Sprintf("ERR_%s", strings.ToUpper(code)),
+		Message:    message,
+		StatusCode: http.StatusNotFound,
+	}
+	if len(reason) > 0 {
+		e.Reason = new(reason[0])
+	}
+
+	return e
+}
+
+func newUnauthenticatedErr(code, message string, reason ...string) api.APIError {
+	e := api.APIError{
+		Code:       fmt.Sprintf("ERR_%s", strings.ToUpper(code)),
+		Message:    message,
+		StatusCode: http.StatusUnauthorized,
+	}
+	if len(reason) > 0 && reason[0] != "" {
+		e.Reason = new(reason[0])
+	}
+
+	return e
+}
+
+func newUnauthorizedErr(code, message string, reason ...string) api.APIError {
+	e := api.APIError{
+		Code:       fmt.Sprintf("ERR_%s", strings.ToUpper(code)),
+		Message:    message,
+		StatusCode: http.StatusForbidden,
+	}
+	if len(reason) > 0 && reason[0] != "" {
+		e.Reason = new(reason[0])
+	}
+
+	return e
+}
+
+func newGenericErr(statusCode int32, code, message string, reason ...string) api.APIError {
+	e := api.APIError{
+		Code:       fmt.Sprintf("ERR_%s", strings.ToUpper(code)),
+		Message:    message,
+		StatusCode: statusCode,
+	}
+	if len(reason) > 0 && reason[0] != "" {
+		e.Reason = new(reason[0])
+	}
+
+	return e
+}
+
+func newNotFoundResp(code, message string, reason ...string) api.NotFoundErrorResponseJSONResponse {
+	e := newNotFoundErr(code, message, reason...)
+	return api.NotFoundErrorResponseJSONResponse(e)
+}
+
+func newUnauthenticatedResp(code, message string, reason ...string) api.UnauthenticatedErrorResponse {
+	e := newUnauthenticatedErr(code, message, reason...)
+	return api.UnauthenticatedErrorResponse(e)
+}
+
+func newUnauthorizedResp(code, message string, reason ...string) api.UnauthorizedErrorResponseJSONResponse {
+	e := newUnauthorizedErr(code, message, reason...)
+	return api.UnauthorizedErrorResponseJSONResponse(e)
+}
+
+func newGenericResp(statusCode int32, code, message string, reason ...string) api.GenericErrorResponseJSONResponse {
+	e := newGenericErr(statusCode, code, message, reason...)
+	return api.GenericErrorResponseJSONResponse(e)
+}

@@ -1,0 +1,438 @@
+syntax = "proto3";
+
+package pb;
+
+import "google/protobuf/duration.proto";
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/dankobg/juicer/pb";
+
+// Color is the player color
+enum Color {
+  COLOR_UNSPECIFIED = 0;
+  COLOR_WHITE = 1;
+  COLOR_BLACK = 2;
+}
+
+// GameVariant is game variant
+enum GameVariant {
+  GAME_VARIANT_UNSPECIFIED = 0;
+  GAME_VARIANT_STANDARD = 1;
+  GAME_VARIANT_ATOMIC = 2;
+  GAME_VARIANT_CRAZYHOUSE = 3;
+  GAME_VARIANT_CHESS960 = 4;
+  GAME_VARIANT_KING_OF_THE_HILL = 5;
+  GAME_VARIANT_THREE_CHECK = 6;
+  GAME_VARIANT_HORDE = 7;
+  GAME_VARIANT_RACING_KINGS = 8;
+}
+
+// GameTimeKind is game time kind
+enum GameTimeKind {
+  GAME_TIME_KIND_UNSPECIFIED = 0;
+  GAME_TIME_KIND_REALTIME = 1;
+  GAME_TIME_KIND_CORRESPONDENCE = 2;
+  GAME_TIME_KIND_UNLIMITED = 3;
+}
+
+// GameTimeCategory is game time category
+enum GameTimeCategory {
+  GAME_TIME_CATEGORY_UNSPECIFIED = 0;
+  GAME_TIME_CATEGORY_HYPERBULLET = 1;
+  GAME_TIME_CATEGORY_BULLET = 2;
+  GAME_TIME_CATEGORY_BLITZ = 3;
+  GAME_TIME_CATEGORY_RAPID = 4;
+  GAME_TIME_CATEGORY_CLASSICAL = 5;
+}
+
+// GameTimeControl is game time control
+message GameTimeControl {
+  int32 clock_ms = 1;
+  int32 increment_ms = 2;
+}
+
+// GameResult is result of the game
+enum GameResult {
+  GAME_RESULT_UNSPECIFIED = 0;
+  GAME_RESULT_WHITE_WON = 1;
+  GAME_RESULT_BLACK_WON = 2;
+  GAME_RESULT_DRAW = 3;
+  GAME_RESULT_INTERRUPTED = 4;
+}
+
+// GameResultStatus specifies the reason of result
+enum GameResultStatus {
+  GAME_RESULT_STATUS_UNSPECIFIED = 0;
+  GAME_RESULT_STATUS_CHECKMATE = 1;
+  GAME_RESULT_STATUS_INSUFFICIENT_MATERIAL = 2;
+  GAME_RESULT_STATUS_THREEFOLD_REPETITION = 3;
+  GAME_RESULT_STATUS_FIVEFOLD_REPETITION = 4;
+  GAME_RESULT_STATUS_FIFTY_MOVE_RULE = 5;
+  GAME_RESULT_STATUS_SEVENTYFIVE_MOVE_RULE = 6;
+  GAME_RESULT_STATUS_STALEMATE = 7;
+  GAME_RESULT_STATUS_RESIGNATION = 8;
+  GAME_RESULT_STATUS_DRAW_AGREED = 9;
+  GAME_RESULT_STATUS_FLAGGED = 10;
+  GAME_RESULT_STATUS_ADJUDICATION = 11;
+  GAME_RESULT_STATUS_TIMED_OUT = 12;
+  GAME_RESULT_STATUS_ABORTED = 13;
+  GAME_RESULT_STATUS_INTERRUPTED = 14;
+}
+
+// GameState is a game state
+enum GameState {
+  GAME_STATE_UNSPECIFIED = 0;
+  GAME_STATE_ACTIVE = 1;
+  GAME_STATE_FINISHED = 2;
+  GAME_STATE_INTERRUPTED = 3;
+}
+
+// GameSideChoice is a choice when playing custom game
+enum GameSideChoice {
+  GAME_SIDE_CHOICE_UNSPECIFIED = 0;
+  GAME_SIDE_CHOICE_RANDOM = 1;
+  GAME_SIDE_CHOICE_WHITE = 2;
+  GAME_SIDE_CHOICE_BLACK = 3;
+}
+
+// Message represents websocket message
+message Message {
+  oneof event {
+    Problem problem = 1;
+    Latency latency = 2;
+    Heartbeat heartbeat = 3;
+    LeaveTab leave_tab = 4;
+    LeaveSite leave_site = 5;
+    ClientConnected client_connected = 6;
+    ClientDisconnected client_disconnected = 7;
+    InitializeChannels initialize_channels = 8;
+    InitialChannels initial_channels = 9;
+    PresenceState presence_state = 10;
+    PresenceDiff presence_diff = 11;
+    SendLobbyChat send_lobby_chat = 12;
+    ListLobbyChats list_lobby_chats = 14;
+    LobbyChat lobby_chat = 13;
+    LobbyChatList lobby_chats = 15;
+    SeekGame seek_game = 16;
+    CancelSeekGame cancel_seek_game = 17;
+    GameFound game_found = 18;
+    AbortGame abort_game = 19;
+    ResignGame resign_game = 20;
+    OfferDraw offer_draw = 21;
+    AcceptDraw accept_draw = 22;
+    DeclineDraw decline_draw = 23;
+    PlayMoveUCI play_move_uci = 24;
+    MoveSync move_sync = 25;
+    GameFinished game_finished = 26;
+    SendGameChat send_game_chat = 27;
+    ListGameChats list_game_chats = 28;
+    GameChat game_chat = 29;
+    GameChatList game_chats = 30;
+
+    PlayerLeft player_left = 62;
+    PlayerRejoined player_rejoined = 63;
+    DrawDeclined draw_declined = 64;
+    DrawOffer draw_offer = 65;
+    MoveAck move_ack = 66;
+    GameInfo game_info = 67;
+    Echo echo = 69;
+  }
+}
+
+// Echo is just for testing
+message Echo {
+  string message = 1;
+}
+
+// Heartbeat is when client sends pong to signal heartbeat
+message Heartbeat {
+  string user_id = 1;
+  string conn_id = 2;
+  bool guest = 3;
+}
+
+// LeaveTab is when user leaves a tab (one conn)
+message LeaveTab {
+  string user_id = 1;
+  string conn_id = 2;
+  bool guest = 3;
+}
+
+// LeaveSite is when user leaves and has no conns anymore (all tabs closed)
+message LeaveSite {
+  string user_id = 1;
+  string conn_id = 2;
+  bool guest = 3;
+}
+
+// Latency is avg latency measured
+message Latency {
+  int32 latency_ms = 1;
+}
+
+// Problem is the websocket error
+message Problem {
+  string message = 1;
+}
+
+// ClientConnected signals that client connected
+message ClientConnected {
+  string user_id = 1;
+  string conn_id = 2;
+  bool guest = 3;
+  repeated string channels = 4;
+}
+
+// ClientDisconnected signals that client disconnected
+message ClientDisconnected {
+  string user_id = 1;
+  string conn_id = 2;
+  bool guest = 3;
+}
+
+// InitializeChannels requests initial channels that the user belongs to (e.g. ["lobby", "lobby.chat"])
+message InitializeChannels {
+  string user_id = 1;
+  string conn_id = 2;
+  bool guest = 3;
+  string path = 4;
+}
+
+// InitialChannels is the user initial channels
+message InitialChannels {
+  repeated string channels = 1;
+}
+
+// Presence represents user presence
+message Presence {
+  string user_id = 1;
+  string username = 2;
+  bool guest = 3;
+  string channel = 4;
+}
+
+// PresenceState is the full snapshot of all presences
+message PresenceState {
+  repeated Presence presences = 1;
+}
+
+// PresenceDiff is the incremental presence change event
+message PresenceDiff {
+  repeated Presence joined = 1;
+  repeated Presence left = 2;
+}
+
+// Clocks is white and black game clock
+message Clocks {
+  google.protobuf.Duration white = 1;
+  google.protobuf.Duration black = 2;
+}
+
+// SeekGame is searching for a game
+message SeekGame {
+  GameTimeControl game_time_control = 1;
+}
+
+// CancelSeekGame cancels the game search
+message CancelSeekGame {}
+
+// PlayerInfo is info about player
+message PlayerInfo {
+  string user_id = 1;
+  string username = 2;
+  bool guest = 3;
+  string avatar_url = 4;
+  int32 rating = 5;
+}
+
+// GameMove is the game move
+message GameMove {
+  string fen = 1;
+  optional string uci = 2;
+  optional string san = 3;
+  optional string lan = 4;
+  optional google.protobuf.Timestamp played_at = 5;
+}
+
+// GameFound signals that the game was found
+message GameFound {
+  int32 game_id = 1;
+}
+
+// GameInfo holds game info
+message GameInfo {
+  int32 game_id = 1;
+  GameVariant game_variant = 2;
+  GameTimeKind game_time_kind = 3;
+  GameTimeCategory game_time_category = 4;
+  GameState game_state = 5;
+  GameTimeControl game_time_control = 6;
+  Color color = 7;
+  string fen = 8;
+  uint32 ply = 9;
+  Clocks clocks = 10;
+  bool rated = 11;
+  repeated string legal_moves = 12;
+  PlayerInfo white = 13;
+  PlayerInfo black = 14;
+  int32 reconnect_timeout_ms = 15;
+  int32 first_move_timeout_ms = 16;
+  repeated GameMove game_moves = 17;
+  google.protobuf.Timestamp start_time = 18;
+  google.protobuf.Timestamp end_time = 19;
+  GameResult game_result = 20;
+  GameResultStatus game_result_status = 21;
+  int32 version = 22;
+  optional google.protobuf.Timestamp last_move = 23;
+  map<string, DrawOffer> pending_draw_offers = 24;
+  optional google.protobuf.Timestamp white_disconnected_at = 25;
+  optional google.protobuf.Timestamp black_disconnected_at = 26;
+}
+
+// AbortGame is game abort message
+message AbortGame {
+  int32 game_id = 1;
+}
+
+// ResignGame is game resign message
+message ResignGame {
+  int32 game_id = 1;
+}
+
+// OfferDraw is game draw offer message
+message OfferDraw {
+  int32 game_id = 1;
+}
+
+// DrawOffer is game draw offer response message
+message DrawOffer {
+  int32 game_id = 1;
+  uint32 ply = 2;
+  string offered_by = 3;
+  google.protobuf.Timestamp offered_at = 4;
+}
+
+// DrawDeclined is draw offer declined response message
+message DrawDeclined {
+  int32 game_id = 1;
+  string declined_by = 3;
+}
+
+// DeclineDraw is game draw decline message
+message DeclineDraw {
+  int32 game_id = 1;
+}
+
+// AcceptDraw is game accept draw message
+message AcceptDraw {
+  int32 game_id = 1;
+}
+
+// SendLobbyChat is the msg sent to lobby
+message SendLobbyChat {
+  string message = 1;
+}
+
+// ListLobbyChats fetches the lobby chat messages
+message ListLobbyChats {
+  optional string cursor = 1;
+  optional int32 page_size = 2;
+}
+
+// LobbyChat is the lobby chat msg received
+message LobbyChat {
+  string message_id = 1;
+  string message = 2;
+  ChatUserSnapshot user = 3;
+  google.protobuf.Timestamp posted_at = 4;
+}
+
+// LobbyChatList is the list of lobby chat messages
+message LobbyChatList {
+  repeated LobbyChat lobby_chats = 1;
+  bool has_more = 2;
+}
+
+// SendGameChat is the msg sent to game
+message SendGameChat {
+  int32 game_id = 1;
+  string message = 2;
+}
+
+// ListGameChats fetches the game chat messages
+message ListGameChats {
+  int32 game_id = 1;
+  optional string cursor = 2;
+  optional int32 page_size = 3;
+}
+
+// ChatUserSnapshot is userinfo for chat msgs
+message ChatUserSnapshot {
+  string id = 1;
+  string username = 2;
+}
+
+// GameChat is the game chat msg received
+message GameChat {
+  int32 game_id = 1;
+  string message_id = 2;
+  string message = 3;
+  ChatUserSnapshot user = 4;
+  google.protobuf.Timestamp posted_at = 5;
+}
+
+// GameChatList is the list of game chat messages
+message GameChatList {
+  int32 game_id = 1;
+  repeated GameChat game_chats = 2;
+  bool has_more = 3;
+}
+
+// PlayMoveUCI plays a game move
+message PlayMoveUCI {
+  int32 game_id = 1;
+  string uci = 2;
+  int32 ack = 3;
+}
+
+// MoveAck is move acknowledge msg
+message MoveAck {
+  int32 game_id = 1;
+  int32 version = 2;
+}
+
+// MoveSync sends the move sync info
+message MoveSync {
+  int32 game_id = 1;
+  string uci = 2;
+  string san = 3;
+  string lan = 4;
+  string fen = 5;
+  uint32 ply = 6;
+  Clocks clocks = 7;
+  repeated string legal_moves = 8;
+  int32 version = 9;
+  google.protobuf.Timestamp played_at = 10;
+}
+
+// GameFinished signals the game is over
+message GameFinished {
+  int32 game_id = 1;
+  GameResult game_result = 2;
+  GameResultStatus game_result_status = 3;
+  GameState game_state = 4;
+}
+
+// PlayerLeft signals that player disconnected from the game
+message PlayerLeft {
+  int32 game_id = 1;
+  string user_id = 2;
+  google.protobuf.Timestamp left_at = 3;
+}
+
+// PlayerRejoined signals that player reconnected to the game
+message PlayerRejoined {
+  int32 game_id = 1;
+  string user_id = 2;
+  google.protobuf.Timestamp rejoined_at = 3;
+}

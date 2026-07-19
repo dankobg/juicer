@@ -1,0 +1,568 @@
+package ws
+
+import (
+	"context"
+	"fmt"
+	"log/slog"
+	"slices"
+	"strconv"
+	"strings"
+	"sync"
+
+	pb "github.com/dankobg/juicer/pb/proto/juicer"
+	"github.com/google/uuid"
+	"github.com/redis/go-redis/v9"
+	"google.golang.org/protobuf/encoding/protojson"
+)
+
+type Hub struct {
+	ClientConnected    chan *client
+	ClientDisconnected chan *client
+	clientsByUserID    map[uuid.UUID]map[*client]struct{}
+	clientsByConnID    map[uuid.UUID]*client
+	clientChannels     map[*client][]Channel
+	channels           map[Channel]map[*client]struct{}
+	mu                 *sync.Mutex
+	bus                *bus
+	broadcastConn      chan ConnMessage
+	broadcastUser      chan UserMessage
+	broadcastChannel   chan ChannelMessage
+	rdb                *redis.Client
+	log                *slog.Logger
+}
+
+func NewHub(rdb *redis.Client, logger *slog.Logger) *Hub {
+	hub := &Hub{
+		ClientConnected:    make(chan *client),
+		ClientDisconnected: make(chan *client),
+		clientsByUserID:    make(map[uuid.UUID]map[*client]struct{}),
+		clientsByConnID:    make(map[uuid.UUID]*client),
+		clientChannels:     make(map[*client][]Channel),
+		channels:           make(map[Channel]map[*client]struct{}),
+		mu:                 &sync.Mutex{},
+		bus:                newBus(rdb),
+		broadcastConn:      make(chan ConnMessage, 100),
+		broadcastUser:      make(chan UserMessage, 100),
+		broadcastChannel:   make(chan ChannelMessage, 100),
+		rdb:                rdb,
+		log:                logger,
+	}
+
+	return hub
+}
+
+// Run starts the pubsub and machmaking, as well as broadcast events
+func (h *Hub) Run(ctx context.Context) error {
+	defer func() {
+		if r := recover(); r != nil {
+			h.log.Error("hub panic recovered", slog.Any("recover", r))
+		}
+	}()
+
+	h.log.Info("hub is running")
+
+	go h.PubsubProcess(ctx)
+
+loop:
+	for {
+		select {
+		case c := <-h.ClientConnected:
+			h.onClientConnected(c)
+		case c := <-h.ClientDisconnected:
+			h.onClientDisconnected(c)
+		case m, ok := <-h.broadcastConn:
+			if !ok {
+				continue
+			}
+
+			h.onBroadcastConn(m)
+		case m, ok := <-h.broadcastUser:
+			if !ok {
+				continue
+			}
+
+			h.onBroadcastUser(m)
+		case m, ok := <-h.broadcastChannel:
+			if !ok {
+				continue
+			}
+
+			h.onBroadcastChannel(m)
+		case <-ctx.Done():
+			break loop
+		}
+	}
+
+	return nil
+}
+
+func (h *Hub) Stop() {
+	h.bus.Close()
+}
+
+// processClientWebsocketMessage publishes client websocket message to pubsub
+func (h *Hub) processClientWebsocketMessage(client *client, msg []byte) error {
+	topic := fmt.Sprintf("wsc.%s.%s.%d", client.userID, client.connID, client.authState)
+
+	if err := h.bus.Publish(context.Background(), topic, msg); err != nil {
+		h.log.Error("hub publish websocket message", slog.String("user_id", client.userID.String()), slog.String("conn_id", client.connID.String()), slog.String("auth_state", client.authState.String()), slog.String("topic", topic), slog.Any("error", err))
+	}
+
+	return nil
+}
+
+func (h *Hub) onClientConnected(client *client) {
+	h.log.Debug("hub client connected", slog.String("user_id", client.userID.String()), slog.String("conn_id", client.connID.String()), slog.String("auth_state", client.authState.String()), slog.Any("channels", client.channels))
+
+	h.addClient(client)
+
+	clientChannels := make([]string, len(client.channels))
+	for i, ch := range client.channels {
+		clientChannels[i] = ch.String()
+	}
+
+	clientConnectedMsg := &pb.Message{
+		Event: &pb.Message_ClientConnected{ClientConnected: &pb.ClientConnected{
+			UserId:   client.userID.String(),
+			ConnId:   client.connID.String(),
+			Guest:    client.authState == ClientGuest,
+			Channels: clientChannels,
+		}},
+	}
+
+	clientConnectedMsgBytes, err := protojson.Marshal(clientConnectedMsg)
+	if err != nil {
+		h.log.Error("protojson marshal Message_ClientConnected", slog.String("user_id", client.userID.String()), slog.String("conn_id", client.connID.String()), slog.String("auth_state", client.authState.String()), slog.Any("channels", client.channels), slog.Any("error", err))
+	} else {
+		if err := h.bus.Publish(context.Background(), "ipc", clientConnectedMsgBytes); err != nil {
+			h.log.Error("hub publish Message_ClientConnected", slog.String("user_id", client.userID.String()), slog.String("conn_id", client.connID.String()), slog.String("auth_state", client.authState.String()), slog.String("topic", "ipc"), slog.Any("error", err))
+		}
+	}
+}
+
+func (h *Hub) onClientDisconnected(client *client) {
+	h.log.Debug("hub client disconnected", slog.String("user_id", client.userID.String()), slog.String("conn_id", client.connID.String()), slog.String("auth_state", client.authState.String()))
+	h.removeClient(client)
+
+	clientDisconnectedMsg := &pb.Message{
+		Event: &pb.Message_ClientDisconnected{ClientDisconnected: &pb.ClientDisconnected{
+			UserId: client.userID.String(),
+			ConnId: client.connID.String(),
+			Guest:  client.authState == ClientGuest,
+		}},
+	}
+
+	clientDisconnectedMsgBytes, err := protojson.Marshal(clientDisconnectedMsg)
+	if err != nil {
+		h.log.Error("protojson marshal Message_ClientDisconnected", slog.String("user_id", client.userID.String()), slog.String("conn_id", client.connID.String()), slog.String("auth_state", client.authState.String()), slog.Any("error", err))
+	} else {
+		if err := h.bus.Publish(context.Background(), "ipc", clientDisconnectedMsgBytes); err != nil {
+			h.log.Error("hub publish Message_ClientDisconnected", slog.String("user_id", client.userID.String()), slog.String("conn_id", client.connID.String()), slog.String("auth_state", client.authState.String()), slog.String("topic", "ipc"), slog.Any("error", err))
+		}
+	}
+}
+
+func (h *Hub) onBroadcastConn(connMsg ConnMessage) {
+	h.log.Debug("hub broadcasting to conn", slog.String("conn_id", connMsg.connID.String()), slog.String("msg", string(connMsg.msg)))
+
+	c, ok := h.clientsByConnID[connMsg.connID]
+	if !ok {
+		h.log.Debug("broadcasting to conn, conn not found", slog.String("conn_id", connMsg.connID.String()))
+		return
+	}
+
+	select {
+	case c.outMsg <- connMsg.msg:
+	default:
+		h.removeClient(c)
+	}
+}
+
+func (h *Hub) onBroadcastUser(clientMsg UserMessage) {
+	h.log.Debug("hub broadcasting to user", slog.String("user_id", clientMsg.userID.String()), slog.String("channel", channelSafePrint(clientMsg.channel)), slog.String("msg", string(clientMsg.msg)))
+
+	for c := range h.clientsByUserID[clientMsg.userID] {
+		canSend := true
+
+		if clientMsg.channel != nil {
+			canSend = slices.Contains(c.channels, *clientMsg.channel)
+		}
+
+		if !canSend {
+			continue
+		}
+
+		select {
+		case c.outMsg <- clientMsg.msg:
+		default:
+			h.removeClient(c)
+		}
+	}
+}
+
+func (h *Hub) onBroadcastChannel(channelMsg ChannelMessage) {
+	h.log.Debug("hub broadcasting to channel", slog.String("channel", channelMsg.channel.String()), slog.String("msg", string(channelMsg.msg)))
+
+	for c := range h.channels[channelMsg.channel] {
+		select {
+		case c.outMsg <- channelMsg.msg:
+		default:
+			h.removeClient(c)
+		}
+	}
+}
+
+func (h *Hub) addClient(c *client) {
+	h.mu.Lock()
+
+	if h.clientsByUserID[c.userID] == nil {
+		h.clientsByUserID[c.userID] = make(map[*client]struct{})
+	}
+
+	h.clientsByUserID[c.userID][c] = struct{}{}
+	h.clientsByConnID[c.connID] = c
+	h.clientChannels = make(map[*client][]Channel)
+
+	h.clientChannels[c] = make([]Channel, 0)
+	for _, clientChannel := range c.channels {
+		if h.channels[clientChannel] == nil {
+			h.channels[clientChannel] = make(map[*client]struct{})
+		}
+
+		h.channels[clientChannel][c] = struct{}{}
+		h.clientChannels[c] = append(h.clientChannels[c], clientChannel)
+	}
+
+	h.mu.Unlock()
+
+	h.log.Debug("hub client added", slog.String("user_id", c.userID.String()), slog.String("conn_id", c.connID.String()), slog.String("auth_state", c.authState.String()))
+}
+
+func (h *Hub) removeClient(c *client) {
+	c.cancel()
+
+	var leftSite bool
+
+	h.mu.Lock()
+
+	for _, clientChannel := range h.clientChannels[c] {
+		delete(h.channels[clientChannel], c)
+
+		if len(h.channels[clientChannel]) == 0 {
+			delete(h.channels, clientChannel)
+		}
+	}
+
+	delete(h.clientChannels, c)
+	delete(h.clientsByConnID, c.connID)
+
+	if len(h.clientsByUserID[c.userID]) == 1 {
+		delete(h.clientsByUserID, c.userID)
+
+		leftSite = true
+	} else {
+		delete(h.clientsByUserID[c.userID], c)
+	}
+
+	h.mu.Unlock()
+
+	leaveTabMsg := &pb.Message{
+		Event: &pb.Message_LeaveTab{
+			LeaveTab: &pb.LeaveTab{UserId: c.userID.String(), ConnId: c.connID.String(), Guest: c.authState == ClientGuest},
+		},
+	}
+
+	leaveTabMsgBytes, err := protojson.Marshal(leaveTabMsg)
+	if err != nil {
+		h.log.Error("protojson marshal Message_LeaveTab", slog.String("user_id", c.userID.String()), slog.String("conn_id", c.connID.String()), slog.String("auth_state", c.authState.String()), slog.Any("error", err))
+	} else {
+		if err := h.bus.Publish(context.Background(), "ipc", leaveTabMsgBytes); err != nil {
+			h.log.Error("hub publish Message_LeaveTab", slog.String("user_id", c.userID.String()), slog.String("conn_id", c.connID.String()), slog.String("auth_state", c.authState.String()), slog.String("topic", "ipc"), slog.Any("error", err))
+		}
+	}
+
+	if leftSite {
+		leaveSiteMsg := &pb.Message{
+			Event: &pb.Message_LeaveSite{
+				LeaveSite: &pb.LeaveSite{UserId: c.userID.String(), ConnId: c.connID.String(), Guest: c.authState == ClientGuest},
+			},
+		}
+
+		leaveSiteMsgBytes, err := protojson.Marshal(leaveSiteMsg)
+		if err != nil {
+			h.log.Error("protojson marshal Message_LeaveSite", slog.String("user_id", c.userID.String()), slog.String("conn_id", c.connID.String()), slog.String("auth_state", c.authState.String()), slog.Any("error", err))
+		} else {
+			if err := h.bus.Publish(context.Background(), "ipc", leaveSiteMsgBytes); err != nil {
+				h.log.Error("hub publish Message_LeaveSite", slog.String("user_id", c.userID.String()), slog.String("conn_id", c.connID.String()), slog.String("auth_state", c.authState.String()), slog.String("topic", "ipc"), slog.Any("error", err))
+			}
+		}
+	}
+
+	h.log.Debug("hub client removed", slog.String("user_id", c.userID.String()), slog.String("conn_id", c.connID.String()), slog.String("auth_state", c.authState.String()))
+}
+
+func (h *Hub) InitializeChannels(ctx context.Context, client *client) ([]string, error) {
+	h.log.Debug("requesting initial channels", slog.String("user_id", client.userID.String()), slog.String("conn_id", client.connID.String()), slog.String("auth_state", client.authState.String()))
+
+	topic := "reply-initial-channels." + client.userID.String() + "." + client.connID.String()
+	sub := h.rdb.Subscribe(ctx, topic)
+
+	defer func() {
+		_ = sub.Close()
+	}()
+
+	initializeChannelsMsg := &pb.Message{
+		Event: &pb.Message_InitializeChannels{InitializeChannels: &pb.InitializeChannels{
+			UserId: client.userID.String(),
+			ConnId: client.connID.String(),
+			Guest:  client.authState == ClientGuest,
+			Path:   client.query.Get("path"),
+		}},
+	}
+
+	initializeChannelsMsgBytes, err := protojson.Marshal(initializeChannelsMsg)
+	if err != nil {
+		h.log.Error("protojson marshal Message_InitializeChannels", slog.String("user_id", client.userID.String()), slog.String("conn_id", client.connID.String()), slog.String("auth_state", client.authState.String()), slog.Any("error", err))
+	} else {
+		if err := h.bus.Publish(context.Background(), "ipc", initializeChannelsMsgBytes); err != nil {
+			h.log.Error("hub publish Message_InitializeChannels", slog.String("user_id", client.userID.String()), slog.String("conn_id", client.connID.String()), slog.String("auth_state", client.authState.String()), slog.String("topic", "ipc"), slog.Any("error", err))
+		}
+	}
+
+	msg, err := sub.ReceiveMessage(ctx)
+	if err != nil {
+		h.log.Error("hub recv reply Message_InitialChannels", slog.String("user_id", client.userID.String()), slog.String("conn_id", client.connID.String()), slog.String("auth_state", client.authState.String()), slog.String("topic", "ipc"), slog.Any("error", err))
+		return nil, fmt.Errorf("failed to receive initial channels reply: %w", err)
+	}
+
+	m := &pb.Message{}
+	if err := protojson.Unmarshal([]byte(msg.Payload), m); err != nil {
+		h.log.Error("protojson unmarshal reply Message_InitialChannels", slog.String("user_id", client.userID.String()), slog.String("conn_id", client.connID.String()), slog.String("auth_state", client.authState.String()), slog.Any("error", err))
+		return nil, fmt.Errorf("protojson.Unmarshal Message_InitialChannels: %w", err)
+	}
+
+	initialChannels := m.GetInitialChannels().GetChannels()
+
+	return initialChannels, nil
+}
+
+func (h *Hub) PubsubProcess(ctx context.Context) {
+	h.log.Info("hub pubsub started")
+
+	for {
+		select {
+		case msg := <-h.bus.subMessages["presence.diff.*"]:
+			h.onPresenceDiffMsg(msg)
+		case msg := <-h.bus.subMessages["lobby*"]:
+			h.onLobbyMsg(msg)
+		case msg := <-h.bus.subMessages["user.*"]:
+			h.onUserMsg(msg)
+		case msg := <-h.bus.subMessages["conn.*"]:
+			h.onConnMsg(msg)
+		case msg := <-h.bus.subMessages["game.*"]:
+			h.onGameMsg(msg)
+		case msg := <-h.bus.subMessages["gametv.*"]:
+			h.onGametvMsg(msg)
+
+		case <-ctx.Done():
+			h.log.Debug("hub pubsub ctx done")
+			return
+		}
+	}
+}
+
+func (h *Hub) onPresenceDiffMsg(m *redis.Message) {
+	h.log.Debug("hub onPresenceDiffMsg", slog.Any("msg", m))
+
+	// userID, err := extractPresenceDiffTopicParts(m.Channel)
+	// if err != nil {
+	// 	h.log.Error("hub extractPresenceDiffTopicParts", slog.Any("error", err))
+	// 	return
+	// }
+
+	// h.broadcastUser <- UserMessage{userID: userID, msg: []byte(m.Payload)}
+}
+
+func (h *Hub) onLobbyMsg(m *redis.Message) {
+	h.log.Debug("hub onLobbyMsg", slog.Any("msg", m))
+
+	channel, err := extractLobbyTopicParts(m.Channel)
+	if err != nil {
+		h.log.Error("hub extractLobbyTopicParts", slog.Any("error", err))
+		return
+	}
+
+	h.broadcastChannel <- ChannelMessage{channel: Channel(channel), msg: []byte(m.Payload)}
+}
+
+func (h *Hub) onUserMsg(m *redis.Message) {
+	h.log.Debug("hub onUserMsg", slog.Any("msg", m))
+
+	userID, channel, err := extractUserTopicParts(m.Channel)
+	if err != nil {
+		h.log.Error("hub extractUserTopicParts", slog.Any("error", err))
+		return
+	}
+
+	h.broadcastUser <- UserMessage{userID: userID, channel: (*Channel)(channel), msg: []byte(m.Payload)}
+}
+
+func (h *Hub) onConnMsg(m *redis.Message) {
+	h.log.Debug("hub onConnMsg", slog.Any("msg", m))
+
+	connID, err := extractConnTopicParts(m.Channel)
+	if err != nil {
+		h.log.Error("hub extractConnTopicParts", slog.Any("error", err))
+		return
+	}
+
+	h.broadcastConn <- ConnMessage{connID: connID, msg: []byte(m.Payload)}
+}
+
+func (h *Hub) onGameMsg(m *redis.Message) {
+	h.log.Debug("hub onGameMsg", slog.Any("msg", m))
+
+	channel, _, _, err := extractGameTopicParts(m.Channel)
+	if err != nil {
+		h.log.Error("hub extractGameTopicParts", slog.Any("error", err))
+		return
+	}
+
+	h.broadcastChannel <- ChannelMessage{channel: Channel(channel), msg: []byte(m.Payload)}
+}
+
+func (h *Hub) onGametvMsg(m *redis.Message) {
+	h.log.Debug("hub onGametvMsg", slog.Any("msg", m))
+
+	channel, _, _, err := extractGameTvTopicParts(m.Channel)
+	if err != nil {
+		h.log.Error("hub extractGameTvTopicParts", slog.Any("error", err))
+		return
+	}
+
+	h.broadcastChannel <- ChannelMessage{channel: Channel(channel), msg: []byte(m.Payload)}
+}
+
+// extractUserTopicParts extracts the user_id and optional channel if it exists
+func extractUserTopicParts(topic string) (uuid.UUID, *string, error) {
+	parts := strings.SplitN(topic, ".", 3)
+	if len(parts) != 2 && len(parts) != 3 {
+		return uuid.Nil, nil, fmt.Errorf("invalid parts length, expected 2 or 3, got: %d", len(parts))
+	}
+
+	clientIDStr := parts[1]
+	if clientIDStr == "" {
+		return uuid.Nil, nil, fmt.Errorf("empty user id")
+	}
+
+	clientID, err := uuid.Parse(clientIDStr)
+	if err != nil {
+		return uuid.Nil, nil, fmt.Errorf("failed to parse user id")
+	}
+
+	var channel *string
+
+	if len(parts) == 3 {
+		channel = new(parts[2])
+	}
+
+	return clientID, channel, nil
+}
+
+// extractConnTopicParts extracts the conn_id
+func extractConnTopicParts(topic string) (uuid.UUID, error) {
+	parts := strings.Split(topic, ".")
+	if len(parts) != 2 {
+		return uuid.Nil, fmt.Errorf("invalid parts length, expected 2, got: %d", len(parts))
+	}
+
+	connIDStr := parts[1]
+	if connIDStr == "" {
+		return uuid.Nil, fmt.Errorf("empty conn id")
+	}
+
+	connID, err := uuid.Parse(connIDStr)
+	if err != nil {
+		return uuid.Nil, fmt.Errorf("failed to parse conn id")
+	}
+
+	return connID, nil
+}
+
+// extractLobbyTopicParts returns the proper lobby channel e.g. "lobby" or "lobby.chat"
+func extractLobbyTopicParts(topic string) (string, error) {
+	if topic == "lobby" {
+		return topic, nil
+	}
+
+	parts := strings.Split(topic, ".")
+	if len(parts) != 2 {
+		return "", fmt.Errorf("invalid parts length, expected 2, got: %d", len(parts))
+	}
+
+	return topic, nil
+}
+
+// extractPresenceDiffTopicParts extracts the user_id
+func extractPresenceDiffTopicParts(topic string) (uuid.UUID, error) {
+	parts := strings.Split(topic, ".")
+	if len(parts) != 2 {
+		return uuid.Nil, fmt.Errorf("invalid parts length, expected 2, got: %d", len(parts))
+	}
+
+	userIDStr := parts[1]
+	if userIDStr == "" {
+		return uuid.Nil, fmt.Errorf("empty conn id")
+	}
+
+	userID, err := uuid.Parse(userIDStr)
+	if err != nil {
+		return uuid.Nil, fmt.Errorf("failed to parse conn id")
+	}
+
+	return userID, nil
+}
+
+// extractGameTopicParts extracts the full channel, game_id and whether it is chat channel
+func extractGameTopicParts(topic string) (string, int64, bool, error) {
+	parts := strings.Split(topic, ".")
+	if len(parts) != 2 && len(parts) != 3 {
+		return "", 0, false, fmt.Errorf("invalid parts length, expected 2 or 3, got: %d", len(parts))
+	}
+
+	gameIDStr := parts[1]
+
+	gameID, err := strconv.ParseInt(gameIDStr, 10, 64)
+	if err != nil {
+		return "", 0, false, err
+	}
+
+	var isChat bool
+	if len(parts) == 3 && parts[2] == "chat" {
+		isChat = true
+	}
+
+	return topic, gameID, isChat, nil
+}
+
+// extractGameTvTopicParts extracts the full channel, game_id and whether it is chat channel
+func extractGameTvTopicParts(topic string) (string, int64, bool, error) {
+	parts := strings.Split(topic, ".")
+	if len(parts) != 2 && len(parts) != 3 {
+		return "", 0, false, fmt.Errorf("invalid parts length, expected 2 or 3, got: %d", len(parts))
+	}
+
+	gameIDStr := parts[1]
+
+	gameID, err := strconv.ParseInt(gameIDStr, 10, 64)
+	if err != nil {
+		return "", 0, false, err
+	}
+
+	var isChat bool
+	if len(parts) == 3 && parts[2] == "chat" {
+		isChat = true
+	}
+
+	return topic, gameID, isChat, nil
+}
