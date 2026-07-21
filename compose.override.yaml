@@ -43,7 +43,7 @@ services:
   #         "--no-verbose",
   #         "--tries=1",
   #         "--spider",
-  #         "http://localhost:${WEB_PORT:-3000}",
+  #         "http://localhost:3000",
   #       ]
   #   labels:
   #     - traefik.enable=true
@@ -76,7 +76,7 @@ services:
   #         "--no-verbose",
   #         "--tries=1",
   #         "--spider",
-  #         "http://localhost:${PORT:-1337}/api/v1/health/alive",
+  #         "http://localhost:1337/api/v1/health/alive",
   #       ]
   #   develop:
   #     watch:
@@ -162,7 +162,7 @@ services:
           "--no-verbose",
           "--tries=1",
           "--spider",
-          "http://localhost:${KRATOS_PUBLIC_PORT:-4433}/health/alive",
+          "http://localhost:4433/health/alive",
         ]
     labels:
       - traefik.enable=true
@@ -201,7 +201,7 @@ services:
           "--no-verbose",
           "--tries=1",
           "--spider",
-          "http://localhost:${SERVE_READ_PORT:-4466}/health/alive",
+          "http://localhost:4466/health/alive",
         ]
   # ----------------------------------------------------------------------------
   keto-migrate:
@@ -223,8 +223,8 @@ services:
     volumes:
       - mailpit-data:/data
     ports:
-      - 8025:8025
-      - 1025:1025
+      - "${MAILPIT_WEB_PORT:-8025}:8025"
+      - "${MAILPIT_PORT:-1025}:1025"
     networks:
       - intranet
     logging: *dev-logging
@@ -237,7 +237,7 @@ services:
           "--no-verbose",
           "--tries=1",
           "--spider",
-          "http://localhost:${MAILPIT_PORT:-8025}/livez",
+          "http://localhost:8025/livez",
         ]
     labels:
       - traefik.enable=true

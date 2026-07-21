@@ -34,8 +34,6 @@ services:
       - .env
     environment:
       - ENV=production
-    ports:
-      - "${PORT:-1337}:1337"
     logging: *prod-logging
     healthcheck:
       <<: *prod-healthcheck
@@ -72,8 +70,6 @@ services:
       - POSTGRES_USER=${POSTGRES_USER:?Please provide POSTGRES_USER env var}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:?Please provide POSTGRES_PASSWORD env var}
       - POSTGRES_DB=${POSTGRES_DB:?Please provide POSTGRES_DB env var}
-    ports:
-      - "${POSTGRES_PORT:?Please provide POSTGRES_PORT env var}:5432"
     logging: *prod-logging
     healthcheck:
       <<: *prod-healthcheck
@@ -94,8 +90,6 @@ services:
       - .env
     environment:
       - ENV=production
-    ports:
-      - "${REDIS_PORT:?Please provide REDIS_PORT env var}:6379"
     logging: *prod-logging
     healthcheck:
       <<: *prod-healthcheck
@@ -108,9 +102,6 @@ services:
     environment:
       - ENV=production
     command: "serve --watch-courier --config /etc/config/kratos/kratos.yaml"
-    ports:
-      - "${KRATOS_PUBLIC_PORT:?Please provide KRATOS_PUBLIC_PORT env var}:4433"
-      - "${KRATOS_ADMIN_PORT:?Please provide KRATOS_ADMIN_PORT env var}:4434"
     logging: *prod-logging
     healthcheck:
       <<: *prod-healthcheck
@@ -121,7 +112,7 @@ services:
           "--no-verbose",
           "--tries=1",
           "--spider",
-          "http://localhost:${KRATOS_PUBLIC_PORT:-4433}/health/alive",
+          "http://localhost:4433/health/alive",
         ]
     deploy: *prod-deploy
     labels:
@@ -147,9 +138,6 @@ services:
       - .env
     environment:
       - ENV=production
-    ports:
-      - "${SERVE_READ_PORT:?Please provide SERVE_READ_PORT env var}:4466"
-      - "${SERVE_WRITE_PORT:?Please provide SERVE_WRITE_PORT env var}:4467"
     logging: *prod-logging
     healthcheck:
       <<: *prod-healthcheck
@@ -160,7 +148,7 @@ services:
           "--no-verbose",
           "--tries=1",
           "--spider",
-          "http://localhost:${SERVE_READ_PORT}/health/alive",
+          "http://localhost:4466/health/alive",
         ]
     deploy: *prod-deploy
   # ----------------------------------------------------------------------------

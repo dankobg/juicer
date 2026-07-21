@@ -69,7 +69,7 @@ func (a *ApiHandler) serverWs(w http.ResponseWriter, r *http.Request) {
 	)
 
 	conn, err := websocket.Accept(w, r, &websocket.AcceptOptions{
-		InsecureSkipVerify: a.Cfg.ENV == "development",
+		InsecureSkipVerify: a.Cfg.App.ENV == "development",
 		OriginPatterns:     a.Cfg.Cors.AllowOrigins,
 		OnPingReceived: func(ctx context.Context, payload []byte) bool {
 			if onPingReceived != nil {
