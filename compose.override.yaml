@@ -154,7 +154,9 @@ services:
       - "${KRATOS_PUBLIC_PORT:-4433}:4433"
       - "${KRATOS_ADMIN_PORT:-4434}:4434"
     networks:
-      - devproxy
+      devproxy:
+        aliases:
+          - juicer-kratos
     logging: *dev-logging
     healthcheck:
       <<: *dev-healthcheck
@@ -182,8 +184,6 @@ services:
   kratos-migrate:
     env_file:
       - .env
-    networks:
-      - devproxy
     logging: *dev-logging
   # ----------------------------------------------------------------------------
   keto:
@@ -193,7 +193,9 @@ services:
       - "${KETO_SERVE_READ_PORT:-4466}:4466"
       - "${KETO_SERVE_WRITE_PORT:-4467}:4467"
     networks:
-      - devproxy
+      devproxy:
+        aliases:
+          - juicer-keto
     logging: *dev-logging
     healthcheck:
       <<: *dev-healthcheck
@@ -210,8 +212,6 @@ services:
   keto-migrate:
     env_file:
       - .env
-    networks:
-      - devproxy
     logging: *dev-logging
   # ----------------------------------------------------------------------------
   mailpit:
@@ -228,8 +228,10 @@ services:
       - "${MAILPIT_WEB_PORT:-8025}:8025"
       - "${MAILPIT_PORT:-1025}:1025"
     networks:
-      - intranet
-      - devproxy
+      intranet: {}
+      devproxy:
+        aliases:
+          - juicer-mailpit
     logging: *dev-logging
     healthcheck:
       <<: *dev-healthcheck

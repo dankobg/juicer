@@ -3,7 +3,7 @@ juicer-dev.xyz {
 
         # auth (ory kratos)
         handle_path /kratos/* {
-                reverse_proxy kratos:4433
+                reverse_proxy juicer-kratos:4433
         }
 
         # backend api (go)
@@ -22,12 +22,12 @@ mail.juicer-dev.xyz {
         tls internal
 
         # test mailserver (mailpit)
-        reverse_proxy mailpit:8025
+        reverse_proxy juicer-mailpit:8025
 }
 
 # s3.juicer-dev.xyz {
 #         tls internal
 #
 #         # s3 ui (rustfs)
-#         reverse_proxy rustfs:9001
+#         reverse_proxy juiceer-rustfs:9001
 # }
