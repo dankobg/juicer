@@ -74,14 +74,14 @@ func (sc *ServeCommand) Run() error {
 		return fmt.Errorf("failed to connect to redis: %w", err)
 	}
 
-	kratosClient := kratos.NewClient(cfg.App.KratosPublicURL, cfg.App.KratosAdminURL)
+	kratosClient := kratos.NewClient(cfg.Kratos.ServePublicBaseURL, cfg.Kratos.ServeAdminBaseURL)
 
-	ketoClient, err := keto.NewClient(cfg.App.KetoReadURL, cfg.App.KetoWriteURL)
+	ketoClient, err := keto.NewClient(cfg.Keto.ServeReadURL, cfg.Keto.ServeWriteURL)
 	if err != nil {
 		return err
 	}
 
-	pool, err := postgres.NewPool(context.Background(), cfg.Database)
+	pool, err := postgres.NewPool(context.Background(), cfg.Postgres)
 	if err != nil {
 		return fmt.Errorf("postgres.NewPool: %w", err)
 	}
@@ -113,7 +113,7 @@ func (sc *ServeCommand) Run() error {
 	// chatSvc := chat.NewChatService(redisChatPst, sqlChatPst, sqlChatPst, sqlChatPst, logger)
 	chatSvc := chat.NewChatService(redisChatPst, redisChatPst, redisChatPst, redisChatPst, logger)
 	_ = sqlChatPst
-	idpr := idp.NewIdentityProvider(kratosClient, ketoClient, cfg.App.KratosAPIKey, cfg.App.KetoAPIKey, userPst, gtcPst, ratingPst, logger)
+	idpr := idp.NewIdentityProvider(kratosClient, ketoClient, cfg.Kratos.ApiKey, cfg.Keto.ApiKey, userPst, gtcPst, ratingPst, logger)
 
 	pst := game.Persistor{
 		Game:             gamePst,

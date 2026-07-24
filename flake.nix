@@ -48,6 +48,9 @@
                 echo "-----------------------------------"
                 echo "You are in juicer DEV environment"
                 echo "-----------------------------------"
+
+                docker network inspect devproxy >/dev/null || docker network create --driver bridge devproxy
+                docker volume create caddy-sites
               '';
             };
           };

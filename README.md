@@ -1,6 +1,10 @@
 # Juicer (chess platform)
 
-Project local setup:
+Run caddy devproxy
+
+1. `dc -p devproxy -f compose.devproxy.yaml up -d`
+
+Juicer local setup:
 
 1. `docker compose up -d`
 
@@ -10,9 +14,12 @@ Project local setup:
 
 4. `go run main.go identities import-identities`
 
-5. `just certs-trust`
+5. `just devproxy-setup`
 
-Run project:
+6. `just certs-trust`
+
+
+Run juicer:
 
 1. `just dev`
 

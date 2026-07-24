@@ -50,7 +50,7 @@ func (a *ApiHandler) SetupRoutes(env, uploadDir string) http.Handler {
 	mux.HandleFunc("POST /webhooks/kratos/registration_after_password", a.registrationAfterPassword)
 	mux.HandleFunc("POST /webhooks/kratos/registration_after_oidc", a.registrationAfterOidc)
 
-	openapi, err := api.GetSwagger()
+	openapi, err := api.GetSpec()
 	if err != nil {
 		panic("error loading openapi spec: " + err.Error())
 	}

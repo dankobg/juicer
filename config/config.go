@@ -14,33 +14,38 @@ import (
 )
 
 const (
-	prefix     = "JUICER"
+	prefix     = ""
 	oldDelim   = "_"
 	newDelim   = "."
 	sliceDelim = ","
 )
 
-var knownKeys = []string{"app", "server", "cors", "postgres", "redis", "email", "logger", "rustfs"}
-
-// AppConfig contains juicer app settings
-type AppConfig struct {
-	ENV             string `koanf:"env"`
-	Host            string `koanf:"host"`
-	Port            int    `koanf:"port"`
-	BaseURL         string `koanf:"base_url"`
-	WebsiteURL      string `koanf:"website_url"`
-	FileStorage     string `koanf:"file_storage"`
-	UploadDir       string `koanf:"upload_dir"`
-	OpenapiSpecURL  string `koanf:"openapi_spec_url"`
-	KratosPublicURL string `koanf:"kratos_public_url"`
-	KratosAdminURL  string `koanf:"kratos_admin_url"`
-	KratosAPIKey    string `koanf:"kratos_api_key"`
-	KetoReadURL     string `koanf:"keto_read_url"`
-	KetoWriteURL    string `koanf:"keto_write_url"`
-	KetoAPIKey      string `koanf:"keto_api_key"`
+var knownKeys = []string{
+	"app",
+	"kratos",
+	"keto",
+	"server",
+	"cors",
+	"postgres",
+	"redis",
+	"email",
+	"logger",
+	"rustfs",
 }
 
-// ServerConfig contains the http server settings
+// AppConfig contains common go app settings
+type AppConfig struct {
+	ENV            string `koanf:"env"`
+	Host           string `koanf:"host"`
+	Port           int    `koanf:"port"`
+	BaseURL        string `koanf:"base_url"`
+	WebsiteURL     string `koanf:"website_url"`
+	FileStorage    string `koanf:"file_storage"`
+	UploadDir      string `koanf:"upload_dir"`
+	OpenapiSpecURL string `koanf:"openapi_spec_url"`
+}
+
+// ServerConfig contains http server settings
 type ServerConfig struct {
 	ReadHeaderTimeout time.Duration `koanf:"read_header_timeout"`
 	ReadTimeout       time.Duration `koanf:"read_timeout"`
@@ -52,7 +57,21 @@ type ServerConfig struct {
 	KEY_FILE          string        `koanf:"key_file"`
 }
 
-// CorsConfig contains the CORS settings
+// KratosConfig contains kratos settings
+type KratosConfig struct {
+	ServePublicBaseURL string `koanf:"serve_public_base_url"`
+	ServeAdminBaseURL  string `koanf:"serve_admin_base_url"`
+	ApiKey             string `koanf:"api_key"`
+}
+
+// KetoConfig contains keto settings
+type KetoConfig struct {
+	ServeReadURL  string `koanf:"serve_read_url"`
+	ServeWriteURL string `koanf:"serve_write_url"`
+	ApiKey        string `koanf:"api_key"`
+}
+
+// CorsConfig contains CORS settings
 type CorsConfig struct {
 	AllowOrigins     []string `koanf:"allow_origins"`
 	AllowMethods     []string `koanf:"allow_methods"`
@@ -63,8 +82,8 @@ type CorsConfig struct {
 	Debug            bool     `koanf:"debug"`
 }
 
-// DatabaseConfig contains DB settings
-type DatabaseConfig struct {
+// PostgresConfig contains postgres settings
+type PostgresConfig struct {
 	Host         string        `koanf:"host"`
 	Port         int           `koanf:"port"`
 	DB           string        `koanf:"db"`
@@ -76,7 +95,7 @@ type DatabaseConfig struct {
 	RetriesDelay time.Duration `koanf:"retries_delay"`
 }
 
-// RedisConfig contains Redis db settings
+// RedisConfig contains redis settings
 type RedisConfig struct {
 	Host     string `koanf:"host"`
 	Port     int    `koanf:"port"`
@@ -106,28 +125,30 @@ type LoggerConfig struct {
 	Pretty bool   `koanf:"pretty"`
 }
 
-// RustfsConfig contains the rustfs settings
+// RustfsConfig contains rustfs settings
 type RustfsConfig struct {
-	Host                      string
-	Address                   int
-	ConsoleAddress            int
-	ConsoleEnable             bool
-	AccessKey                 string
-	SecretKey                 string
-	DefaultBucket             string
-	ServerDomains             []string
-	CorsAllowedOrigins        []string
-	ConsoleCorsAllowedOrigins []string
-	UseSSL                    bool
-	Token                     string
+	Host                      string   `koanf:"host"`
+	Port                      int      `koanf:"port"`
+	ConsolePort               int      `koanf:"console_port"`
+	ConsoleEnable             bool     `koanf:"console_enable"`
+	AccessKey                 string   `koanf:"access_key"`
+	SecretKey                 string   `koanf:"secret_key"`
+	DefaultBucket             string   `koanf:"default_bucket"`
+	ServerDomains             []string `koanf:"server_domains"`
+	CorsAllowedOrigins        []string `koanf:"cors_allowed_origins"`
+	ConsoleCorsAllowedOrigins []string `koanf:"console_cors_allowed_origins"`
+	UseSSL                    bool     `koanf:"use_ssl"`
+	Token                     string   `koanf:"token"`
 }
 
-// Config represents the app config
+// Config represents app config
 type Config struct {
 	App      AppConfig      `koanf:"app"`
+	Kratos   KratosConfig   `koanf:"kratos"`
+	Keto     KetoConfig     `koanf:"keto"`
 	Server   ServerConfig   `koanf:"server"`
 	Cors     CorsConfig     `koanf:"cors"`
-	Database DatabaseConfig `koanf:"postgres"`
+	Postgres PostgresConfig `koanf:"postgres"`
 	Redis    RedisConfig    `koanf:"redis"`
 	Email    EmailConfig    `koanf:"email"`
 	Logger   LoggerConfig   `koanf:"logger"`
@@ -173,12 +194,12 @@ func loadFromEnv(k *koanf.Koanf) error {
 }
 
 func loadDefaults(k *koanf.Koanf) error {
-	configDefaults, err := getDefaultConfig()
+	defaultConfig, err := getDefaultConfig()
 	if err != nil {
 		return err
 	}
 
-	return k.Load(structs.Provider(configDefaults, "koanf"), nil)
+	return k.Load(structs.Provider(defaultConfig, "koanf"), nil)
 }
 
 func getConfig(k *koanf.Koanf) (*Config, error) {

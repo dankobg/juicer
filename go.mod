@@ -6,7 +6,7 @@ require (
 	github.com/aarondl/opt v0.0.0-20250607033636-982744e1bd65
 	github.com/alecthomas/kong v1.16.0
 	github.com/coder/websocket v1.8.15
-	github.com/getkin/kin-openapi v0.142.0
+	github.com/getkin/kin-openapi v0.143.0
 	github.com/goforj/godump v1.9.1
 	github.com/google/uuid v1.6.0
 	github.com/jackc/pgerrcode v0.0.0-20250907135507-afb5586c32a6
@@ -16,15 +16,15 @@ require (
 	github.com/knadh/koanf/providers/structs v1.0.0
 	github.com/knadh/koanf/v2 v2.3.5
 	github.com/lmittmann/tint v1.2.0
-	github.com/oapi-codegen/nethttp-middleware v1.1.2
+	github.com/oapi-codegen/nethttp-middleware v1.2.0
 	github.com/oapi-codegen/nullable v1.2.0
 	github.com/oapi-codegen/runtime v1.6.0
-	github.com/ory/client-go v1.22.63
+	github.com/ory/client-go v1.22.64
 	github.com/ory/keto/proto v0.13.0-alpha.0.0.20240724130948-6f5ee2ebdab3
 	github.com/redis/go-redis/v9 v9.21.0
 	github.com/rs/cors v1.11.1
-	github.com/stephenafamo/bob v0.48.0
-	github.com/stephenafamo/scan v0.8.0
+	github.com/stephenafamo/bob v0.49.0
+	github.com/stephenafamo/scan v0.9.0
 	github.com/wneessen/go-mail v0.8.1
 	google.golang.org/grpc v1.82.1
 	google.golang.org/protobuf v1.36.11
@@ -34,8 +34,8 @@ require (
 	github.com/apapsch/go-jsonmerge/v2 v2.0.0 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/fatih/structs v1.1.0 // indirect
-	github.com/go-openapi/jsonpointer v0.22.5 // indirect
-	github.com/go-openapi/swag/jsonname v0.25.5 // indirect
+	github.com/go-openapi/jsonpointer v1.0.0 // indirect
+	github.com/go-openapi/swag/jsonname v0.27.0 // indirect
 	github.com/go-viper/mapstructure/v2 v2.5.0 // indirect
 	github.com/gorilla/mux v1.8.1 // indirect
 	github.com/jackc/pgpassfile v1.0.0 // indirect
