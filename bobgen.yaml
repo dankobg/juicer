@@ -2,7 +2,7 @@ type_system: github.com/aarondl/opt
 
 psql:
   driver: github.com/jackc/pgx/v5/stdlib
-  dsn: postgres://test:test@localhost:32150/test?sslmode=disable # @TODO: CHANGE LATER
+  dsn: postgres://test:test@localhost:5432/test?sslmode=disable
   schemas: [public]
   uuid_pkg: google
   # queries: ./queries

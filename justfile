@@ -29,7 +29,7 @@ dev:
 
 # generate sql bob db models, enums, tables etc.
 gen-sql:
-	go tool -modfile=tools.mod bobgen-psql -c bobgen.yaml
+	PSQL_DSN={{db_uri}} go tool -modfile=tools.mod bobgen-psql -c bobgen.yaml
 
 # Generate protobuf
 gen-proto:
