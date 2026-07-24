@@ -9,7 +9,7 @@ juicer-dev.xyz {
         # backend api (go)
         @backend path /api/* /ws* /webhooks/* /public/* /uploads/* /spec* /docs/*
         handle @backend {
-                reverse_proxy host.docker.internal:6969
+                reverse_proxy host.docker.internal:1337
         }
 
         # web frontend (sveltekit)
