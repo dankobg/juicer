@@ -29,5 +29,5 @@ mail.juicer-dev.xyz {
 #         tls internal
 #
 #         # s3 ui (rustfs)
-#         reverse_proxy juiceer-rustfs:9001
+#         reverse_proxy juicer-rustfs:9001
 # }
