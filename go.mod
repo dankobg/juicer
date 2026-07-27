@@ -6,7 +6,7 @@ require (
 	github.com/aarondl/opt v0.0.0-20250607033636-982744e1bd65
 	github.com/alecthomas/kong v1.16.0
 	github.com/coder/websocket v1.8.15
-	github.com/getkin/kin-openapi v0.143.0
+	github.com/getkin/kin-openapi v0.145.0
 	github.com/goforj/godump v1.9.1
 	github.com/google/uuid v1.6.0
 	github.com/jackc/pgerrcode v0.0.0-20250907135507-afb5586c32a6
@@ -35,7 +35,6 @@ require (
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/fatih/structs v1.1.0 // indirect
 	github.com/go-openapi/jsonpointer v1.0.0 // indirect
-	github.com/go-openapi/swag/jsonname v0.27.0 // indirect
 	github.com/go-viper/mapstructure/v2 v2.5.0 // indirect
 	github.com/gorilla/mux v1.8.1 // indirect
 	github.com/jackc/pgpassfile v1.0.0 // indirect
