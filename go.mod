@@ -19,7 +19,7 @@ require (
 	github.com/oapi-codegen/nethttp-middleware v1.2.0
 	github.com/oapi-codegen/nullable v1.2.0
 	github.com/oapi-codegen/runtime v1.6.0
-	github.com/ory/client-go v1.22.64
+	github.com/ory/client-go v1.22.66
 	github.com/ory/keto/proto v0.13.0-alpha.0.0.20240724130948-6f5ee2ebdab3
 	github.com/redis/go-redis/v9 v9.21.0
 	github.com/rs/cors v1.11.1
@@ -35,7 +35,6 @@ require (
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/fatih/structs v1.1.0 // indirect
 	github.com/go-openapi/jsonpointer v1.0.0 // indirect
-	github.com/go-openapi/swag/jsonname v0.27.0 // indirect
 	github.com/go-viper/mapstructure/v2 v2.5.0 // indirect
 	github.com/gorilla/mux v1.8.1 // indirect
 	github.com/jackc/pgpassfile v1.0.0 // indirect
