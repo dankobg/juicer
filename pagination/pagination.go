@@ -29,11 +29,9 @@ type PaginationMeta struct {
 
 func NewMeta(np Pagination, totalCount int64) PaginationMeta {
 	return PaginationMeta{
-		Pagination: Pagination{
-			Page:     np.Page,
-			PageSize: np.PageSize,
-		},
-		Total: totalCount,
+		Page:     np.Page,
+		PageSize: np.PageSize,
+		Total:    totalCount,
 	}
 }
 

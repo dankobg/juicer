@@ -1655,7 +1655,7 @@ func (g *GameService) loadGameState(gameID int64) (*gameplay.GameState, error) {
 		return gs, nil
 	}
 
-	filters := GetGameByIDFilters{GetGameParams: api.GetGameParams{Embed: &[]api.GetGameParamsEmbed{api.GetGameParamsEmbedMoves}}, WithGameHashes: true}
+	filters := GetGameByIDFilters{Embed: &[]api.GetGameParamsEmbed{api.GetGameParamsEmbedMoves}, WithGameHashes: true}
 
 	game, err := g.pst.Game.GetGameByID(context.Background(), gameID, filters)
 	if err != nil {
