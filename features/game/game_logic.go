@@ -548,6 +548,8 @@ func (g *GameService) handleGamePlayerReconnectedEvent(event gameplay.PlayerReco
 func (g *GameService) handleGameFinishedEvent(event gameplay.GameFinishedEvent) {
 	g.log.Debug("handleGameFinishedEvent", slog.Int64("game_id", event.GameID))
 
+	delete(g.gamestates, event.GameID)
+
 	gameSetter := models.GameSetter{
 		EndTime:            omitnull.From(event.EndTime),
 		GameResultID:       omitnull.From(g.gameResultProtoToID(event.GameResult)),
