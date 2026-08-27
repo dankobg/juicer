@@ -623,6 +623,7 @@ func (gs *GameState) acceptDraw(c AcceptDrawCmd) ([]GameEvent, error) {
 	gs.GameState = pb.GameState_GAME_STATE_FINISHED
 
 	gs.EndTime = &acceptedDrawAt
+	gs.Stop()
 
 	events := []GameEvent{
 		AcceptDrawEvent{
@@ -723,6 +724,7 @@ func (gs *GameState) playMoveUCI(c PlayMoveUCICmd) ([]GameEvent, error) {
 	}
 
 	if terminated {
+		gs.Stop()
 		return events, nil
 	}
 
@@ -839,6 +841,8 @@ func (gs *GameState) playMoveUCI(c PlayMoveUCICmd) ([]GameEvent, error) {
 			gs.GameResult = pb.GameResult_GAME_RESULT_DRAW
 			gs.GameResultStatus = pb.GameResultStatus_GAME_RESULT_STATUS_STALEMATE
 		}
+
+		gs.Stop()
 
 		events = append(events, GameFinishedEvent{
 			GameID:           gs.GameID,
