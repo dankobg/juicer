@@ -92,6 +92,7 @@ type GameState struct {
 	firstMoveTimer         *time.Timer
 	whiteReconnectTimer    *time.Timer
 	blackReconnectTimer    *time.Timer
+	cancel                 context.CancelFunc
 }
 
 func NewGameState(gameID int64, players [2]Player, gameTimeControl *pb.GameTimeControl, thresholds []CategoryThreshold, gameEvent chan GameEvent, opts ...GameOption) (*GameState, error) {
@@ -213,6 +214,9 @@ func (gs *GameState) Start(ctx context.Context) {
 	if gs.running.Swap(true) {
 		return
 	}
+
+	ctx, cancel := context.WithCancel(ctx)
+	gs.cancel = cancel
 
 	gs.firstMoveTimer = time.NewTimer(gs.FirstMoveTimeout)
 
@@ -859,6 +863,10 @@ func (gs *GameState) playMoveUCI(c PlayMoveUCICmd) ([]GameEvent, error) {
 }
 
 func (gs *GameState) Stop() {
+	if gs.cancel != nil {
+		gs.cancel()
+	}
+
 	if gs.activeGameTimer != nil {
 		gs.activeGameTimer.Stop()
 	}
