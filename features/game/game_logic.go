@@ -1730,7 +1730,7 @@ func (g *GameService) gameStateFromPersistence(ctx context.Context, game models.
 		gameplay.WithGameTimeCategory(g.gameTimeCategoryIDToProto(game.GameTimeCategoryID)),
 		gameplay.WithGameState(g.gameStateIDToProto(game.GameStateID)),
 		gameplay.WithReconnectTimeout(time.Duration(game.ReconnectTimeoutMS)*time.Millisecond),
-		gameplay.WithFirstMoveTimeoutOpt(time.Duration(game.FirstMoveTimeoutMS)*time.Millisecond),
+		gameplay.WithFirstMoveTimeout(time.Duration(game.FirstMoveTimeoutMS)*time.Millisecond),
 		gameplay.WithLastMove(game.LastMove.Ptr()),
 		gameplay.WithStartTime(game.StartTime.Ptr()),
 		gameplay.WithEndTime(game.EndTime.Ptr()),
