@@ -30,6 +30,7 @@
 	import { chatManager } from '$lib/gameplay/chat-manager.svelte';
 	import { MediaQuery } from 'svelte/reactivity';
 	import GameChatDialog from '$lib/components/chat-box/game-chat-dialog.svelte';
+	import { tick } from 'svelte';
 
 	let { data, params }: PageProps = $props();
 
@@ -110,7 +111,8 @@
 			promotionPopoverElm.style.setProperty('--sq-size', `${rect.width}px`);
 			promotionPopoverElm.style.left = `${rect.left}px`;
 			promotionPopoverElm.style.top = `${rect.top}px`;
-			promotionPopoverElm.showPopover();
+			// without tick, it worked in firefox but not in chromium lol
+			tick().then(() => promotionPopoverElm.showPopover())
 			event.preventDefault();
 			return;
 		}

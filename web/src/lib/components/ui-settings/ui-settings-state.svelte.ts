@@ -86,7 +86,7 @@ class UiSettings {
 	soundThemes = ['futuristic', 'lisp', 'nes', 'piano', 'robot', 'sfx', 'standard', 'woodland'] as const;
 	sounds = new PersistedState<{ enabled: boolean; volume: number; theme: string }>('juicer-sounds', {
 		enabled: true,
-		volume: 1,
+		volume: 0.3,
 		theme: 'standard'
 	});
 	chat = new PersistedState<'disabled' | 'friends-only' | 'everyone'>('juicer-chat', 'everyone');
