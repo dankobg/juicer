@@ -193,6 +193,8 @@ github.com/oapi-codegen/runtime v1.7.0 h1:t7358VYPvNbWJ9gdAkIK/smVeHpBf6yp8VTsaZ
 github.com/oapi-codegen/runtime v1.7.0/go.mod h1:GwV7hC2hviaMzj+ITfHVRESK5J2W/GefVwIND/bMGvU=
 github.com/oapi-codegen/runtime v1.8.0 h1:RJzEgQSJQADEPaG1cYuSCKYai/cCVRE2xnkrqhJs/3c=
 github.com/oapi-codegen/runtime v1.8.0/go.mod h1:GwV7hC2hviaMzj+ITfHVRESK5J2W/GefVwIND/bMGvU=
+github.com/oapi-codegen/runtime v1.9.0 h1:YZ9DxX8ZQ8ZmNW1xAtOqa3MQ9AfdcUTcoBakvhQKHno=
+github.com/oapi-codegen/runtime v1.9.0/go.mod h1:jDd+iW9sT//NMDhIne8laRtI2Zq+z1QmUNidsql+M64=
 github.com/oasdiff/yaml v0.1.1 h1:6nHx+pn9gBRM6YpBlFZFQGCCd1nuvqOBtTD3KKTgGxY=
 github.com/oasdiff/yaml v0.1.1/go.mod h1:EYJNoyktvWMJ0Hmhx+6qTaqMOsalUaRGT8Sj1hNcegU=
 github.com/oasdiff/yaml3 v0.0.14 h1:aLJee3hxBK2H5wdXd9iPcIXb93Nty1Ge0pT171eHtkw=
@@ -209,6 +211,8 @@ github.com/ory/client-go v1.22.66 h1:Lto0/KHrrpf3ghdKe8JkC8ZZWI/vlwLfsYw5XgdaXyc
 github.com/ory/client-go v1.22.66/go.mod h1:G1f+5+m/PJVvl40bsRn0QuyVIcXe7EHiWeM7iWpIDjw=
 github.com/ory/client-go v1.22.92 h1:9ay5rXGWi55ixAd1wNesAe8SL2HVdr4lCMO6L7LozQQ=
 github.com/ory/client-go v1.22.92/go.mod h1:Wrl5ahzWgI815iijeZBJEczZwQrvCUV9ToBNfDJB4tQ=
+github.com/ory/client-go v1.22.93 h1:o5m3zP/5AzE4FMb2BVtkycM62u24gHuU3CfUKSMdBLE=
+github.com/ory/client-go v1.22.93/go.mod h1:zfQgPWatQ7EvCzrfswAVajDlGM/b5GblgDaDHfn0jGM=
 github.com/ory/keto/proto v0.13.0-alpha.0.0.20240724130948-6f5ee2ebdab3 h1:53p9eVK9GIFRrrfyI1WwqBGrzvl5lg0uLyq2ZCH7Vro=
 github.com/ory/keto/proto v0.13.0-alpha.0.0.20240724130948-6f5ee2ebdab3/go.mod h1:r060ciW8gaEnMNt6FkGNQKTzpYaeyofKUfn/AgDNUqQ=
 github.com/pganalyze/pg_query_go/v6 v6.1.0 h1:jG5ZLhcVgL1FAw4C/0VNQaVmX1SUJx71wBGdtTtBvls=
