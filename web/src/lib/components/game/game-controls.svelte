@@ -64,7 +64,7 @@
 			<Tooltip.Trigger class={buttonVariants({ variant: 'outline', size: 'icon', class: 'rounded-full' })} {onclick}>
 				<Icon />
 			</Tooltip.Trigger>
-			<Tooltip.Content>
+			<Tooltip.Content class="z-75">
 				<span>{text}</span>
 			</Tooltip.Content>
 		</Tooltip.Root>

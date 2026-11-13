@@ -73,7 +73,7 @@
 					</Avatar.Root>
 					<span class="sr-only">Toggle user menu</span>
 				</DropdownMenu.Trigger>
-				<DropdownMenu.Content class="w-56">
+				<DropdownMenu.Content class="w-56 z-75">
 					<DropdownMenu.Group>
 						<DropdownMenu.GroupHeading>{user.fullName ?? user.email}</DropdownMenu.GroupHeading>
 						<DropdownMenu.Separator />
