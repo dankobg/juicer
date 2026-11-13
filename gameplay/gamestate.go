@@ -231,6 +231,7 @@ func (gs *GameState) Start(ctx context.Context) {
 					GameState:        pb.GameState_GAME_STATE_INTERRUPTED,
 					EndTime:          time.Now(),
 				}
+
 				gs.Stop()
 
 			case <-Tick(gs.activeGameTimer):
@@ -246,6 +247,7 @@ func (gs *GameState) Start(ctx context.Context) {
 					GameState:        pb.GameState_GAME_STATE_FINISHED,
 					EndTime:          time.Now(),
 				}
+
 				gs.Stop()
 
 			case <-Tick(gs.whiteReconnectTimer):
@@ -256,6 +258,7 @@ func (gs *GameState) Start(ctx context.Context) {
 					GameState:        pb.GameState_GAME_STATE_FINISHED,
 					EndTime:          time.Now(),
 				}
+
 				gs.Stop()
 
 			case <-Tick(gs.blackReconnectTimer):
@@ -266,6 +269,7 @@ func (gs *GameState) Start(ctx context.Context) {
 					GameState:        pb.GameState_GAME_STATE_FINISHED,
 					EndTime:          time.Now(),
 				}
+
 				gs.Stop()
 
 			case cmd := <-gs.GameCommand:

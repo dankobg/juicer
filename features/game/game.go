@@ -266,5 +266,6 @@ func (g *GameService) GetGameStats(ctx context.Context, request api.GetGameStats
 	if err != nil {
 		return api.GameStats{}, err
 	}
+
 	return GameStatsToResponse(gameStats), nil
 }

@@ -94,6 +94,7 @@ func New(opts ...LoggerOption) *slog.Logger {
 				a.Value = slog.StringValue("UNKNOWN")
 			}
 		}
+
 		return a
 	}})
 

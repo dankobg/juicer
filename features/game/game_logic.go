@@ -1685,6 +1685,7 @@ func (g *GameService) gameStateFromPersistence(ctx context.Context, game models.
 	if game.GuestBlackID.IsValue() && game.GuestWhiteID.IsValue() {
 		whiteID, blackID = game.GuestWhiteID.MustGet(), game.GuestBlackID.MustGet()
 	}
+
 	if game.WhiteID.IsValue() && game.BlackID.IsValue() {
 		whiteID, blackID = game.WhiteID.MustGet(), game.BlackID.MustGet()
 	}

@@ -169,5 +169,6 @@ func (a *ApiHandler) GetGameStats(ctx context.Context, request api.GetGameStatsR
 	if err != nil {
 		return api.GetGameStatsdefaultJSONResponse{StatusCode: 500, Body: newGenericErr(500, "GAME_STATS", "failed to get stats")}, nil
 	}
+
 	return api.GetGameStats200JSONResponse(gameStats), nil
 }

@@ -445,6 +445,7 @@ SELECT json_build_object(
 ) AS stats;`
 
 	q := psql.RawQuery(raw, userID.String(), userID.String(), userID.String(), userID.String())
+
 	gameStats, err := bob.One(ctx, pst.Exec, q, scan.StructMapper[game.GameStatsJSON](scan.WithTypeConverter(orm.NullTypeConverter{})))
 	if err != nil {
 		return game.GameStats{}, fmt.Errorf("query game stats")
