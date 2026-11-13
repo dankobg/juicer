@@ -865,7 +865,7 @@ func (gs *GameState) playMoveUCI(c PlayMoveUCICmd) ([]GameEvent, error) {
 		})
 	}
 
-	debug_print_gamestate_info(gs)
+	// debug_print_gamestate_info(gs)
 
 	return events, nil
 }
