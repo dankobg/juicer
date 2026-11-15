@@ -1,6 +1,6 @@
 <script lang="ts">
-	import { Color, type PlayerInfo } from '$lib/gen/juicer_pb';
-	import { displayUsername } from '$lib/utils';
+	import { Color, type PlayerInfo } from '#lib/gen/juicer_pb.ts';
+	import { displayUsername } from '#lib/utils.ts';
 
 	type Props = {
 		player: PlayerInfo;
@@ -103,7 +103,7 @@
 	{/if}
 </div>
 
-<div class="min-[60rem]:hidden flex items-center justify-between gap-1 flex-wrap">
+<div class="flex flex-wrap items-center justify-between gap-1 min-[60rem]:hidden">
 	<div class={['rounded-sm bg-green-700 p-1 text-xl', active ? 'bg-green-700' : 'bg-neutral-200 dark:bg-neutral-700']}>
 		{formatChessTime(clockMs ?? 0, clockPrecision)}
 	</div>

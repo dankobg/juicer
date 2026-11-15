@@ -1,8 +1,8 @@
 <script lang="ts">
 	import type { PageProps } from './$types';
-	import { ws } from '$lib/ws/juicer-ws.svelte';
-	import { onWsClose, onWsError, onWsMessage, onWsOpen } from '$lib/ws/ws-message-handler';
-	import { gameManager } from '$lib/gameplay/game-manager.svelte';
+	import { ws } from '#lib/ws/juicer-ws.svelte.ts';
+	import { onWsClose, onWsError, onWsMessage, onWsOpen } from '#lib/ws/ws-message-handler.ts';
+	import { gameManager } from '#lib/gameplay/game-manager.svelte.ts';
 	import {
 		Game,
 		getPromotionLabelText,
@@ -10,7 +10,7 @@
 		isPromotionMove,
 		playedEnpassantMove,
 		PROMOS
-	} from '$lib/gameplay/game.svelte';
+	} from '#lib/gameplay/game.svelte.ts';
 	import type {
 		Coord,
 		MoveCancelEvent,
@@ -18,18 +18,18 @@
 		MoveStartEvent,
 		ResizerScaleChangeEvent
 	} from '@dankop/juicer-board';
-	import { uiSettings } from '$lib/components/ui-settings/ui-settings-state.svelte';
-	import { Color, GameState } from '$lib/gen/juicer_pb';
-	import ChatBox from '$lib/components/chat-box/chat-box.svelte';
-	import { presenceManager } from '$lib/gameplay/presence-manager.svelte';
-	import { soundManager } from '$lib/sound/sound-manager.svelte';
-	import GameControls from '$lib/components/game/game-controls.svelte';
-	import PlayerInfo from '$lib/components/game/player-info.svelte';
-	import MovesList from '$lib/components/game/moves-list.svelte';
-	import GameInfo from '$lib/components/game/game-info.svelte';
-	import { chatManager } from '$lib/gameplay/chat-manager.svelte';
+	import { uiSettings } from '#lib/components/ui-settings/ui-settings-state.svelte.ts';
+	import { Color, GameState } from '#lib/gen/juicer_pb.ts';
+	import ChatBox from '#lib/components/chat-box/chat-box.svelte';
+	import { presenceManager } from '#lib/gameplay/presence-manager.svelte.ts';
+	import { soundManager } from '#lib/sound/sound-manager.svelte.ts';
+	import GameControls from '#lib/components/game/game-controls.svelte';
+	import PlayerInfo from '#lib/components/game/player-info.svelte';
+	import MovesList from '#lib/components/game/moves-list.svelte';
+	import GameInfo from '#lib/components/game/game-info.svelte';
+	import { chatManager } from '#lib/gameplay/chat-manager.svelte.ts';
 	import { MediaQuery } from 'svelte/reactivity';
-	import GameChatDialog from '$lib/components/chat-box/game-chat-dialog.svelte';
+	import GameChatDialog from '#lib/components/chat-box/game-chat-dialog.svelte';
 	import { tick } from 'svelte';
 
 	let { data, params }: PageProps = $props();
@@ -112,7 +112,7 @@
 			promotionPopoverElm.style.left = `${rect.left}px`;
 			promotionPopoverElm.style.top = `${rect.top}px`;
 			// without tick, it worked in firefox but not in chromium lol
-			tick().then(() => promotionPopoverElm.showPopover())
+			tick().then(() => promotionPopoverElm.showPopover());
 			event.preventDefault();
 			return;
 		}

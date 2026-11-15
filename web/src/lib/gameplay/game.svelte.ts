@@ -12,13 +12,12 @@ import {
 	type GameTimeControl,
 	type GameMove,
 	type DrawOffer
-} from '$lib/gen/juicer_pb';
-import { soundManager, type SoundName } from '$lib/sound/sound-manager.svelte';
-import { ws } from '$lib/ws/juicer-ws.svelte';
+} from '#lib/gen/juicer_pb.ts';
+import { soundManager, type SoundName } from '#lib/sound/sound-manager.svelte.ts';
+import { ws } from '#lib/ws/juicer-ws.svelte.ts';
 import { create } from '@bufbuild/protobuf';
 import { type Timestamp, type Duration, timestampDate } from '@bufbuild/protobuf/wkt';
 import type { JuicerBoard, Coord, PieceFenSymbol } from '@dankop/juicer-board';
-import { SvelteMap } from 'svelte/reactivity';
 
 export type GameOptions = {
 	gameId?: number;

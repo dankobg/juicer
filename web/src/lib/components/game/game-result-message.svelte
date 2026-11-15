@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { Game } from '$lib/gameplay/game.svelte';
+	import type { Game } from '#lib/gameplay/game.svelte.ts';
 
 	let { game }: { game: Game } = $props();
 </script>

@@ -8,8 +8,8 @@
 	import IconChevronsRight from '@lucide/svelte/icons/chevrons-right';
 	import IconChevronsLeft from '@lucide/svelte/icons/chevrons-left';
 	import type { Table } from '@tanstack/table-core';
-	import * as Select from '$lib/components/ui/select/index';
-	import { Button } from '$lib/components/ui/button/index';
+	import * as Select from '#lib/components/ui/select/index.ts';
+	import { Button } from '#lib/components/ui/button/index.ts';
 
 	let { table }: { table: Table<TData> } = $props();
 </script>

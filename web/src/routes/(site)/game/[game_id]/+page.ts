@@ -1,4 +1,4 @@
-import { juicer } from '$lib/juicer/client';
+import { juicer } from '#lib/juicer/client.ts';
 import type { PageLoad } from './$types';
 import { error, isHttpError } from '@sveltejs/kit';
 
@@ -25,9 +25,7 @@ export const load: PageLoad = async ({ fetch, depends, params }) => {
 		};
 	} catch (err) {
 		if (isHttpError(err)) {
-			error(404, {
-				message: 'Game not found'
-			});
+			error(404, 'Game not found');
 		}
 	}
 };

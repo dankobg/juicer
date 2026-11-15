@@ -1,11 +1,11 @@
 <script lang="ts">
 	import ChatBox from './chat-box.svelte';
-	import * as Dialog from '$lib/components/ui/dialog/index.js';
-	import type { Game } from '$lib/gameplay/game.svelte';
-	import { presenceManager } from '$lib/gameplay/presence-manager.svelte';
-	import { chatManager } from '$lib/gameplay/chat-manager.svelte';
-	import { gameManager } from '$lib/gameplay/game-manager.svelte';
-	import { Button } from '$lib/components/ui/button/index.js';
+	import * as Dialog from '#lib/components/ui/dialog/index.js';
+	import type { Game } from '#lib/gameplay/game.svelte.ts';
+	import { presenceManager } from '#lib/gameplay/presence-manager.svelte.ts';
+	import { chatManager } from '#lib/gameplay/chat-manager.svelte.ts';
+	import { gameManager } from '#lib/gameplay/game-manager.svelte.ts';
+	import { Button } from '#lib/components/ui/button/index.js';
 	import IconX from '@lucide/svelte/icons/x';
 	import { gameChatDialog, toggleChatDialog } from './game-chat-dialog-state.svelte';
 

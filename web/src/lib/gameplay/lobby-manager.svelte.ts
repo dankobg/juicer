@@ -1,5 +1,5 @@
-import { MessageSchema, type LobbyChat, type LobbyChatList } from '$lib/gen/juicer_pb';
-import { ws } from '$lib/ws/juicer-ws.svelte';
+import { MessageSchema, type LobbyChat, type LobbyChatList } from '#lib/gen/juicer_pb.ts';
+import { ws } from '#lib/ws/juicer-ws.svelte.ts';
 import { create } from '@bufbuild/protobuf';
 import { chatManager, LOBBY_CHAT_CHANNEL, type ChatMessage } from './chat-manager.svelte';
 

@@ -1,4 +1,4 @@
-import { MessageSchema, type Message } from '$lib/gen/juicer_pb';
+import { MessageSchema, type Message } from '#lib/gen/juicer_pb.ts';
 import { toJsonString } from '@bufbuild/protobuf';
 import { createSubscriber } from 'svelte/reactivity';
 const wsEndpoint = import.meta.env['VITE_PUBLIC_WS_ENDPOINT'] as string;

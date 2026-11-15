@@ -4,7 +4,7 @@ const publicUrl = import.meta.env['VITE_PUBLIC_KRATOS_PUBLIC_URL'] as string;
 export const config = {
 	kratos: {
 		baseUrl,
-		publicUrl,
+		publicUrl
 	},
 
 	routes: {

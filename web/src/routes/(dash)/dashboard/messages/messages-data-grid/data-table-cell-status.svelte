@@ -1,6 +1,6 @@
 <script lang="ts">
-	import { Badge } from '$lib/components/ui/badge/index';
-	import { CourierMessageStatus } from '$lib/gen/juicer_openapi';
+	import { Badge } from '#lib/components/ui/badge/index.ts';
+	import { CourierMessageStatus } from '#lib/gen/juicer_openapi.ts';
 	import { statusIcons } from './data';
 
 	let { value }: { value?: string } = $props();

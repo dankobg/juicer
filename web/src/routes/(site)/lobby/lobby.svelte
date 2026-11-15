@@ -1,15 +1,15 @@
 <script lang="ts">
-	import { ws } from '$lib/ws/juicer-ws.svelte';
-	import * as Tabs from '$lib/components/ui/tabs';
+	import { ws } from '#lib/ws/juicer-ws.svelte.ts';
+	import * as Tabs from '#lib/components/ui/tabs/index.ts';
 	import type { PageProps } from '../$types';
 	import QuickGame from './quick-game.svelte';
 	import CustomGame from './custom-game.svelte';
 	import PlayFriend from './play-friend.svelte';
-	import { onWsClose, onWsError, onWsMessage, onWsOpen } from '$lib/ws/ws-message-handler';
-	import ChatBox from '$lib/components/chat-box/chat-box.svelte';
-	import { lobbyManager } from '$lib/gameplay/lobby-manager.svelte';
-	import { presenceManager } from '$lib/gameplay/presence-manager.svelte';
-	import { chatManager, LOBBY_CHAT_CHANNEL } from '$lib/gameplay/chat-manager.svelte';
+	import { onWsClose, onWsError, onWsMessage, onWsOpen } from '#lib/ws/ws-message-handler.ts';
+	import ChatBox from '#lib/components/chat-box/chat-box.svelte';
+	import { lobbyManager } from '#lib/gameplay/lobby-manager.svelte.ts';
+	import { presenceManager } from '#lib/gameplay/presence-manager.svelte.ts';
+	import { chatManager, LOBBY_CHAT_CHANNEL } from '#lib/gameplay/chat-manager.svelte.ts';
 
 	let { data }: PageProps = $props();
 

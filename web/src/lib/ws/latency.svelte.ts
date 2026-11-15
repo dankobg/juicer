@@ -1,4 +1,4 @@
-import type { Latency } from '$lib/gen/juicer_pb';
+import type { Latency } from '#lib/gen/juicer_pb.ts';
 
 class LatencyStats {
 	latencyMs = $state<number>(0);

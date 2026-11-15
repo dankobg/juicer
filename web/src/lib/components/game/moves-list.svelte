@@ -3,11 +3,11 @@
 	import IconStepForward from '@lucide/svelte/icons/step-forward';
 	import IconSkipBack from '@lucide/svelte/icons/skip-back';
 	import IconSkipForward from '@lucide/svelte/icons/skip-forward';
-	import * as Tooltip from '$lib/components/ui/tooltip';
-	import { buttonVariants } from '$lib/components/ui/button/index';
+	import * as Tooltip from '#lib/components/ui/tooltip/index.ts';
+	import { buttonVariants } from '#lib/components/ui/button/index.ts';
 	import IconArrowDown from '@lucide/svelte/icons/arrow-down-to-line';
 	import { tick, type Component } from 'svelte';
-	import type { Game } from '$lib/gameplay/game.svelte';
+	import type { Game } from '#lib/gameplay/game.svelte.ts';
 
 	let { game }: { game: Game } = $props();
 
@@ -96,13 +96,13 @@
 				<div class="grid grid-cols-[10%_1fr_1fr_15%] items-center justify-between gap-4 border-b border-stone-300/10">
 					<div class="text-start">{num}.</div>
 					<button
-						class={['hover:bg-secondary rounded-sm text-center', game.historyPointer === w && 'bg-secondary']}
+						class={['rounded-sm text-center hover:bg-secondary', game.historyPointer === w && 'bg-secondary']}
 						onclick={() => game.movesGoto(w)}
 					>
 						{h1?.san}
 					</button>
 					<button
-						class={['hover:bg-secondary rounded-sm text-center', game.historyPointer === b && 'bg-secondary']}
+						class={['rounded-sm text-center hover:bg-secondary', game.historyPointer === b && 'bg-secondary']}
 						onclick={() => game.movesGoto(b)}
 					>
 						{h2?.san}
@@ -135,12 +135,12 @@
 	</div>
 </div>
 
-<div class="flex items-center gap-1 min-[60rem]:hidden w-screen">
+<div class="flex w-screen items-center gap-1 min-[60rem]:hidden">
 	<button class={buttonVariants({ variant: 'secondary', size: 'icon' })} onclick={() => game.movesGotoStart()}>
 		<IconSkipBack />
 	</button>
 
-	<div class="flex items-center flex-1 overflow-x-auto min-w-0 no-scrollbar gap-1">
+	<div class="no-scrollbar flex min-w-0 flex-1 items-center gap-1 overflow-x-auto">
 		{#each game.gameMoves.slice(1) as move, i (move.fen)}
 			{@const num = i + 1}
 			<button
@@ -148,7 +148,7 @@
 					variant: 'ghost',
 					size: 'sm',
 					class: [
-						'hover:bg-secondary text-center border rounded-sm whitespace-nowrap shrink-0 px-2',
+						'shrink-0 rounded-sm border px-2 text-center whitespace-nowrap hover:bg-secondary',
 						game.historyPointer === num && 'bg-secondary'
 					]
 				})}

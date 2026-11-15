@@ -1,7 +1,7 @@
 <script lang="ts">
-	import type { Game } from '$lib/gameplay/game.svelte';
-	import { Color, GameTimeCategory, type GameTimeControl } from '$lib/gen/juicer_pb';
-	import { displayUsername } from '$lib/utils';
+	import type { Game } from '#lib/gameplay/game.svelte.ts';
+	import { Color, GameTimeCategory, type GameTimeControl } from '#lib/gen/juicer_pb.ts';
+	import { displayUsername } from '#lib/utils.ts';
 	import { gameTimeCategoryIcons } from '../quick-game-icons/quick-game-icons.svelte';
 
 	let { game }: { game: Game } = $props();
@@ -74,9 +74,9 @@
 	});
 </script>
 
-<div class="flex p-4 flex-col rounded-md border border-secondary gap-4">
+<div class="flex flex-col gap-4 rounded-md border border-secondary p-4">
 	{#if game.gameTimeCategory}
-		<div class="flex gap-1 items-center">
+		<div class="flex items-center gap-1">
 			{@render gameTimeCategoryIcons?.[game.gameTimeCategory]?.('h-8 w-8')}
 			<span>{formatGameTimeCategory(game.gameTimeCategory)}</span>
 			{#if game.gameTimeControl}
@@ -94,15 +94,15 @@
 		<span>You are spectating</span>
 	{/if}
 
-	<div class="flex gap-1 items-center">
-		<svg class="h-5 w-5 stroke-10 fill-black stroke-white" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+	<div class="flex items-center gap-1">
+		<svg class="h-5 w-5 fill-black stroke-white stroke-10" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
 			<circle cx="50" cy="50" r="40" />
 		</svg>
 		<span>{displayUsername(game.black?.userId ?? '', game.black?.username ?? '')}</span>
 	</div>
 
-	<div class="flex gap-1 items-center">
-		<svg class="h-5 w-5 stroke-10 fill-white stroke-black" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+	<div class="flex items-center gap-1">
+		<svg class="h-5 w-5 fill-white stroke-black stroke-10" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
 			<circle cx="50" cy="50" r="40" />
 		</svg>
 		<span>{displayUsername(game.white?.userId ?? '', game.white?.username ?? '')}</span>

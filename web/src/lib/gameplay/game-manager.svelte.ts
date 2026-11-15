@@ -17,12 +17,12 @@ import {
 	type PlayerRejoined,
 	type PlayerLeft,
 	type GameChatList
-} from '$lib/gen/juicer_pb';
+} from '#lib/gen/juicer_pb.ts';
 import { create } from '@bufbuild/protobuf';
 import type { Coord } from '@dankop/juicer-board';
-import { ws } from '$lib/ws/juicer-ws.svelte';
+import { ws } from '#lib/ws/juicer-ws.svelte.ts';
 import { goto } from '$app/navigation';
-import { soundManager } from '$lib/sound/sound-manager.svelte';
+import { soundManager } from '#lib/sound/sound-manager.svelte.ts';
 import { Game, getRookCastleMove, isEnpassantLanMove, isPromotionUciMove, type GameOptions } from './game.svelte';
 import { chatManager, gameChatChannel, type ChatMessage } from './chat-manager.svelte';
 

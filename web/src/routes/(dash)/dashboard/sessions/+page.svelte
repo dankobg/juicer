@@ -3,7 +3,7 @@
 	import { columns, columnsWithIdentity } from './sessions-data-grid/columns';
 	import type { PageProps } from './$types';
 	import { expandSessions } from './expandSessions.svelte';
-	import { PathsSessionsGetParametersQueryExpand } from '$lib/gen/juicer_openapi';
+	import { PathsSessionsGetParametersQueryExpand } from '#lib/gen/juicer_openapi.ts';
 
 	let { data }: PageProps = $props();
 

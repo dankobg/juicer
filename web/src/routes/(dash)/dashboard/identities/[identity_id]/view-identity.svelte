@@ -1,15 +1,15 @@
 <script lang="ts">
 	import type { PageProps } from './$types';
-	import * as Table from '$lib/components/ui/table/index';
+	import * as Table from '#lib/components/ui/table/index.ts';
 	import { stateIcons } from '../identities-data-grid/data';
 	import IconCheck from '@lucide/svelte/icons/check';
 	import IconX from '@lucide/svelte/icons/x';
-	import Button from '$lib/components/ui/button/button.svelte';
-	import { confirmation } from '$lib/components/confirmation-dialog/confirmation-dialog-state.svelte';
-	import { juicer } from '$lib/juicer/client';
+	import Button from '#lib/components/ui/button/button.svelte';
+	import { confirmation } from '#lib/components/confirmation-dialog/confirmation-dialog-state.svelte.ts';
+	import { juicer } from '#lib/juicer/client.ts';
 	import { goto } from '$app/navigation';
-	import { IdentityState } from '$lib/gen/juicer_openapi';
-	import type { CustomTraits } from '$lib/kratos/service';
+	import { IdentityState } from '#lib/gen/juicer_openapi.ts';
+	import type { CustomTraits } from '#lib/kratos/service.ts';
 
 	let { data }: PageProps = $props();
 	const fmt = new Intl.DateTimeFormat(undefined, {

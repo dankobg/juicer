@@ -1,14 +1,14 @@
 <script lang="ts">
 	import { superForm } from 'sveltekit-superforms/client';
-	import * as Card from '$lib/components/ui/card';
-	import { Label } from '$lib/components/ui/label';
-	import * as Select from '$lib/components/ui/select';
-	import { Slider } from '$lib/components/ui/slider';
-	import * as RadioGroup from '$lib/components/ui/radio-group';
-	import * as Form from '$lib/components/ui/form';
+	import * as Card from '#lib/components/ui/card/index.ts';
+	import { Label } from '#lib/components/ui/label/index.ts';
+	import * as Select from '#lib/components/ui/select/index.ts';
+	import { Slider } from '#lib/components/ui/slider/index.ts';
+	import * as RadioGroup from '#lib/components/ui/radio-group/index.ts';
+	import * as Form from '#lib/components/ui/form/index.ts';
 	import { valibot } from 'sveltekit-superforms/adapters';
 	import * as v from 'valibot';
-	import type { components } from '$lib/gen/juicer_openapi';
+	import type { components } from '#lib/gen/juicer_openapi.ts';
 
 	let {
 		gameVariants,

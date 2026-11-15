@@ -1,7 +1,7 @@
-import { browser } from '$app/environment';
+import { browser } from '$app/env';
 import { goto } from '$app/navigation';
-import { juicer } from '$lib/juicer/client';
-import { config } from '$lib/kratos/config';
+import { juicer } from '#lib/juicer/client.ts';
+import { config } from '#lib/kratos/config.ts';
 import type { PageLoad } from './$types';
 
 export const load: PageLoad = async ({ fetch, params, depends }) => {

@@ -1,9 +1,9 @@
 <script lang="ts">
 	import { page } from '$app/state';
-	import { quickGameIcons } from '$lib/components/quick-game-icons/quick-game-icons.svelte';
-	import { lobbyManager } from '$lib/gameplay/lobby-manager.svelte';
-	import type { components } from '$lib/gen/juicer_openapi';
-	import { ws } from '$lib/ws/juicer-ws.svelte';
+	import { quickGameIcons } from '#lib/components/quick-game-icons/quick-game-icons.svelte';
+	import { lobbyManager } from '#lib/gameplay/lobby-manager.svelte.ts';
+	import type { components } from '#lib/gen/juicer_openapi.ts';
+	import { ws } from '#lib/ws/juicer-ws.svelte.ts';
 
 	let {
 		gameTimeCategories,
@@ -116,7 +116,7 @@
 	<div class={['quick-game', { seeking: lobbyManager.seekingQuickGame }]}>
 		<div class="[view-transition-name:quick-game-content]">
 			{#if lobbyManager.seekingQuickGame && lobbyManager.seekingGameTimeControl}
-				<div class="grid gap-4 p-4 content-center">
+				<div class="grid content-center gap-4 p-4">
 					<p class="text-center">Searching for game...</p>
 					<p class="text-center">
 						{formatCategoryNameFromControl(

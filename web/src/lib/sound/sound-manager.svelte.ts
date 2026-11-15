@@ -1,5 +1,5 @@
-import { browser } from '$app/environment';
-import { uiSettings } from '$lib/components/ui-settings/ui-settings-state.svelte';
+import { browser } from '$app/env';
+import { uiSettings } from '#lib/components/ui-settings/ui-settings-state.svelte.ts';
 
 export type SoundName =
 	| 'Capture'

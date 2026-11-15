@@ -1,10 +1,10 @@
 import type { ColumnDef } from '@tanstack/table-core';
-import { renderComponent } from '$lib/components/ui/data-table/index';
-import DataTableCheckbox from '$lib/components/data-grid-shared/data-table-checkbox.svelte';
-import DataTableCellId from '$lib/components/data-grid-shared/data-table-cell-id.svelte';
-import DataTableColumnHeader from '$lib/components/data-grid-shared/data-table-column-header.svelte';
+import { renderComponent } from '#lib/components/ui/data-table/index.ts';
+import DataTableCheckbox from '#lib/components/data-grid-shared/data-table-checkbox.svelte';
+import DataTableCellId from '#lib/components/data-grid-shared/data-table-cell-id.svelte';
+import DataTableColumnHeader from '#lib/components/data-grid-shared/data-table-column-header.svelte';
 import DataTableRowActions from './data-table-row-actions.svelte';
-import type { components } from '$lib/gen/juicer_openapi';
+import type { components } from '#lib/gen/juicer_openapi.ts';
 
 export const columns: ColumnDef<components['schemas']['IdentitySchemaContainer']>[] = [
 	{

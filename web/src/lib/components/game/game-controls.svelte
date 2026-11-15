@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { Game } from '$lib/gameplay/game.svelte';
+	import type { Game } from '#lib/gameplay/game.svelte.ts';
 	import IconFlag from '@lucide/svelte/icons/flag';
 	import IconHandshake from '@lucide/svelte/icons/handshake';
 	import IconArrowUpDown from '@lucide/svelte/icons/arrow-up-down';
@@ -8,10 +8,10 @@
 	import IconX from '@lucide/svelte/icons/x';
 	import IconMessageSquareText from '@lucide/svelte/icons/message-square-text';
 	import IconCirclePlay from '@lucide/svelte/icons/circle-play';
-	import * as Tooltip from '$lib/components/ui/tooltip';
+	import * as Tooltip from '#lib/components/ui/tooltip/index.ts';
 	import { buttonVariants } from '../ui/button';
 	import type { Component } from 'svelte';
-	import type { GameTimeControl } from '$lib/gen/juicer_pb';
+	import type { GameTimeControl } from '#lib/gen/juicer_pb.ts';
 	import Button from '../ui/button/button.svelte';
 	import { toggleChatDialog } from '../chat-box/game-chat-dialog-state.svelte';
 
@@ -22,7 +22,7 @@
 	}
 </script>
 
-<div class="flex gap-2 items-center justify-center">
+<div class="flex items-center justify-center gap-2">
 	{#if game}
 		{#if game.uiShowAbortButton}
 			{@render btn('Abort', IconFootprints, () => game.abortGame())}

@@ -1,17 +1,17 @@
 <script lang="ts">
-	import { Button } from '$lib/components/ui/button/index';
+	import { Button } from '#lib/components/ui/button/index.ts';
 	import IconChevronLeft from '@lucide/svelte/icons/chevron-left';
-	import * as Dialog from '$lib/components/ui/dialog/index';
-	import { Label } from '$lib/components/ui/label/index';
-	import { uiSettings } from '$lib/components/ui-settings/ui-settings-state.svelte';
-	import * as Select from '$lib/components/ui/select/index';
-	import * as Tooltip from '$lib/components/ui/tooltip/index';
-	import { Slider } from '$lib/components/ui/slider/index';
+	import * as Dialog from '#lib/components/ui/dialog/index.ts';
+	import { Label } from '#lib/components/ui/label/index.ts';
+	import { uiSettings } from '#lib/components/ui-settings/ui-settings-state.svelte.ts';
+	import * as Select from '#lib/components/ui/select/index.ts';
+	import * as Tooltip from '#lib/components/ui/tooltip/index.ts';
+	import { Slider } from '#lib/components/ui/slider/index.ts';
 	import IconVolume from '@lucide/svelte/icons/volume';
 	import IconVolume1 from '@lucide/svelte/icons/volume-1';
 	import IconVolume2 from '@lucide/svelte/icons/volume-2';
 	import IconVolumeOff from '@lucide/svelte/icons/volume-off';
-	import { soundManager } from '$lib/sound/sound-manager.svelte';
+	import { soundManager } from '#lib/sound/sound-manager.svelte.ts';
 	import Switch from '../ui/switch/switch.svelte';
 	import type { CoordsRanksPosition, CoordsFilesPosition, CoordsPlacement } from '@dankop/juicer-board';
 

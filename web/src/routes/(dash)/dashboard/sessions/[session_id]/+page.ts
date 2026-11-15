@@ -1,6 +1,6 @@
-import { juicer } from '$lib/juicer/client';
+import { juicer } from '#lib/juicer/client.ts';
 import type { PageLoad } from './$types';
-import { PathsSessionsIdGetParametersQueryExpand, type operations } from '$lib/gen/juicer_openapi';
+import { PathsSessionsIdGetParametersQueryExpand, type operations } from '#lib/gen/juicer_openapi.ts';
 
 export const load: PageLoad = async ({ fetch, params, url, depends }) => {
 	depends(`data:dashboard-sessions-${params.session_id}`);

@@ -5,16 +5,16 @@
 <script lang="ts" generics="TData">
 	import IconX from '@lucide/svelte/icons/x';
 	import type { Table } from '@tanstack/table-core';
-	import Button from '$lib/components/ui/button/button.svelte';
-	import DataTableFacetedFilter from '$lib/components/data-grid-shared/data-table-faceted-filter.svelte';
-	import DataTableViewOptions from '$lib/components/data-grid-shared/data-table-view-options.svelte';
+	import Button from '#lib/components/ui/button/button.svelte';
+	import DataTableFacetedFilter from '#lib/components/data-grid-shared/data-table-faceted-filter.svelte';
+	import DataTableViewOptions from '#lib/components/data-grid-shared/data-table-view-options.svelte';
 	import { aals } from './data';
-	import { confirmation } from '$lib/components/confirmation-dialog/confirmation-dialog-state.svelte';
-	import { juicer } from '$lib/juicer/client';
+	import { confirmation } from '#lib/components/confirmation-dialog/confirmation-dialog-state.svelte.ts';
+	import { juicer } from '#lib/juicer/client.ts';
 	import { toast } from 'svelte-sonner';
 	import { invalidate } from '$app/navigation';
-	import type { components } from '$lib/gen/juicer_openapi';
-	import type { CustomTraits } from '$lib/kratos/service';
+	import type { components } from '#lib/gen/juicer_openapi.ts';
+	import type { CustomTraits } from '#lib/kratos/service.ts';
 
 	let { table, identity }: { table: Table<TData>; identity: components['schemas']['Identity'] | undefined } = $props();
 

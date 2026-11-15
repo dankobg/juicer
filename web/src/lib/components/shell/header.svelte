@@ -1,20 +1,20 @@
 <script lang="ts">
-	import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index';
-	import * as Avatar from '$lib/components/ui/avatar/index';
-	import { config } from '$lib/kratos/config';
+	import * as DropdownMenu from '#lib/components/ui/dropdown-menu/index.ts';
+	import * as Avatar from '#lib/components/ui/avatar/index.ts';
+	import { config } from '#lib/kratos/config.ts';
 	import { page } from '$app/state';
 	import { mainNavItems } from './nav-items';
-	import ModeSwitcher from '$lib/components/mode-switcher/mode-switcher.svelte';
+	import ModeSwitcher from '#lib/components/mode-switcher/mode-switcher.svelte';
 	import IconLogout from '@lucide/svelte/icons/log-out';
 	import IconUserIcon from '@lucide/svelte/icons/user';
 	import IconGauge from '@lucide/svelte/icons/gauge';
 	import IconSidebar from '@lucide/svelte/icons/sidebar';
 	import IconSettings from '@lucide/svelte/icons/settings';
-	import { Button } from '$lib/components/ui/button/index.js';
-	import { Separator } from '$lib/components/ui/separator/index.js';
-	import * as Sidebar from '$lib/components/ui/sidebar/index.js';
-	import type { User } from '$lib/kratos/service';
-	import { getInitials } from '$lib/utils';
+	import { Button } from '#lib/components/ui/button/index.js';
+	import { Separator } from '#lib/components/ui/separator/index.js';
+	import * as Sidebar from '#lib/components/ui/sidebar/index.js';
+	import type { User } from '#lib/kratos/service.ts';
+	import { getInitials } from '#lib/utils.ts';
 	import UiSettings from '../ui-settings/ui-settings.svelte';
 	import { uiSettings } from '../ui-settings/ui-settings-state.svelte';
 
@@ -73,7 +73,7 @@
 					</Avatar.Root>
 					<span class="sr-only">Toggle user menu</span>
 				</DropdownMenu.Trigger>
-				<DropdownMenu.Content class="w-56 z-75">
+				<DropdownMenu.Content class="z-75 w-56">
 					<DropdownMenu.Group>
 						<DropdownMenu.GroupHeading>{user.fullName ?? user.email}</DropdownMenu.GroupHeading>
 						<DropdownMenu.Separator />

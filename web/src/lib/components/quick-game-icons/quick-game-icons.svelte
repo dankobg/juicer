@@ -1,5 +1,5 @@
 <script lang="ts" module>
-	import { GameTimeCategory } from '$lib/gen/juicer_pb';
+	import { GameTimeCategory } from '#lib/gen/juicer_pb.ts';
 
 	export { hyperBulletIcon, bulletIcon, blitzIcon, rapidIcon, classicalIcon };
 

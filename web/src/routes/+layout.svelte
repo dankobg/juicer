@@ -1,9 +1,9 @@
 <script lang="ts">
 	import { ModeWatcher } from 'mode-watcher';
-	import { Toaster } from '$lib/components/ui/sonner/index';
-	import ConfirmationDialog from '$lib/components/confirmation-dialog/confirmation-dialog.svelte';
+	import { Toaster } from '#lib/components/ui/sonner/index.ts';
+	import ConfirmationDialog from '#lib/components/confirmation-dialog/confirmation-dialog.svelte';
 	import { onMount } from 'svelte';
-	import { soundManager } from '$lib/sound/sound-manager.svelte';
+	import { soundManager } from '#lib/sound/sound-manager.svelte.ts';
 	import '../app.css';
 
 	onMount(() => {

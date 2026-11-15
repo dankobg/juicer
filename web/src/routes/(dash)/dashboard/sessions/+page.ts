@@ -1,9 +1,9 @@
-import { juicer } from '$lib/juicer/client';
+import { juicer } from '#lib/juicer/client.ts';
 import type { PageLoad } from './$types';
-import type { operations, PathsSessionsGetParametersQueryExpand } from '$lib/gen/juicer_openapi';
-import { browser } from '$app/environment';
+import type { operations, PathsSessionsGetParametersQueryExpand } from '#lib/gen/juicer_openapi.ts';
+import { browser } from '$app/env';
 import { goto } from '$app/navigation';
-import { config } from '$lib/kratos/config';
+import { config } from '#lib/kratos/config.ts';
 
 export const load: PageLoad = async ({ fetch, url, depends }) => {
 	depends('data:dashboard-sessions');

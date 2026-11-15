@@ -7,8 +7,8 @@
 	import IconEye from '@lucide/svelte/icons/eye';
 	import IconCopy from '@lucide/svelte/icons/copy';
 	import type { Row } from '@tanstack/table-core';
-	import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index';
-	import Button from '$lib/components/ui/button/button.svelte';
+	import * as DropdownMenu from '#lib/components/ui/dropdown-menu/index.ts';
+	import Button from '#lib/components/ui/button/button.svelte';
 	import { toast } from 'svelte-sonner';
 
 	let { row }: { row: Row<TData> } = $props();

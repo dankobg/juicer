@@ -111,7 +111,6 @@ export function mergeObjects<Sources extends readonly MaybeThunk<any>[]>(
 		},
 
 		ownKeys(): (string | symbol)[] {
-			 
 			const all = new Set<string | symbol>();
 			for (const s of sources) {
 				const obj = resolve(s);

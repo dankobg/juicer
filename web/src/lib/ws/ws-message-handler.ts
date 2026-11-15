@@ -1,9 +1,9 @@
-import { MessageSchema } from '$lib/gen/juicer_pb';
+import { MessageSchema } from '#lib/gen/juicer_pb.ts';
 import { fromJsonString } from '@bufbuild/protobuf';
 import { latencyStats } from './latency.svelte';
-import { presenceManager } from '$lib/gameplay/presence-manager.svelte';
-import { lobbyManager } from '$lib/gameplay/lobby-manager.svelte';
-import { gameManager } from '$lib/gameplay/game-manager.svelte';
+import { presenceManager } from '#lib/gameplay/presence-manager.svelte.ts';
+import { lobbyManager } from '#lib/gameplay/lobby-manager.svelte.ts';
+import { gameManager } from '#lib/gameplay/game-manager.svelte.ts';
 
 export function onWsOpen(event: Event): void {
 	console.debug('ws open:', event);

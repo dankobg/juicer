@@ -9,14 +9,14 @@
 	import IconTrash2 from '@lucide/svelte/icons/trash-2';
 	import IconCirclePlus from '@lucide/svelte/icons/circle-plus';
 	import type { Row } from '@tanstack/table-core';
-	import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index';
-	import Button from '$lib/components/ui/button/button.svelte';
+	import * as DropdownMenu from '#lib/components/ui/dropdown-menu/index.ts';
+	import Button from '#lib/components/ui/button/button.svelte';
 	import { toast } from 'svelte-sonner';
 	import { invalidate } from '$app/navigation';
-	import { juicer } from '$lib/juicer/client';
-	import { confirmation } from '$lib/components/confirmation-dialog/confirmation-dialog-state.svelte';
-	import type { components } from '$lib/gen/juicer_openapi';
-	import type { CustomTraits } from '$lib/kratos/service';
+	import { juicer } from '#lib/juicer/client.ts';
+	import { confirmation } from '#lib/components/confirmation-dialog/confirmation-dialog-state.svelte.ts';
+	import type { components } from '#lib/gen/juicer_openapi.ts';
+	import type { CustomTraits } from '#lib/kratos/service.ts';
 
 	let { row }: { row: Row<TData> } = $props();
 

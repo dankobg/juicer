@@ -8,12 +8,12 @@
 	import IconCheck from '@lucide/svelte/icons/check';
 	import type { Column } from '@tanstack/table-core';
 	import { SvelteSet } from 'svelte/reactivity';
-	import * as Command from '$lib/components/ui/command/index';
-	import * as Popover from '$lib/components/ui/popover/index';
-	import { Button } from '$lib/components/ui/button/index';
-	import { Separator } from '$lib/components/ui/separator/index';
-	import { Badge } from '$lib/components/ui/badge/index';
-	import { cn } from '$lib/utils.js';
+	import * as Command from '#lib/components/ui/command/index.ts';
+	import * as Popover from '#lib/components/ui/popover/index.ts';
+	import { Button } from '#lib/components/ui/button/index.ts';
+	import { Separator } from '#lib/components/ui/separator/index.ts';
+	import { Badge } from '#lib/components/ui/badge/index.ts';
+	import { cn } from '#lib/utils.js';
 
 	type Props<TData, TValue> = {
 		column: Column<TData, TValue>;

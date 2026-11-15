@@ -1,11 +1,11 @@
 <script lang="ts">
 	import { onMount, tick } from 'svelte';
-	import { Button } from '$lib/components/ui/button/index';
-	import { Input } from '$lib/components/ui/input';
+	import { Button } from '#lib/components/ui/button/index.ts';
+	import { Input } from '#lib/components/ui/input/index.ts';
 	import IconArrowDown from '@lucide/svelte/icons/arrow-down';
-	import type { Presence } from '$lib/gen/juicer_pb';
-	import { colorFromUserId, displayUsername } from '$lib/utils';
-	import { type ChatMessage } from '$lib/gameplay/chat-manager.svelte';
+	import type { Presence } from '#lib/gen/juicer_pb.ts';
+	import { colorFromUserId, displayUsername } from '#lib/utils.ts';
+	import { type ChatMessage } from '#lib/gameplay/chat-manager.svelte.ts';
 
 	type Props = {
 		title: string;
@@ -113,7 +113,7 @@
 						/>
 						<span
 							style:--chat-bg={chatUserId === msg?.user?.id ? 'var(--primary)' : colorFromUserId(msg?.user?.id ?? '')}
-							class="rounded px-2 text-sm bg-(--chat-bg) text-[contrast-color(var(--chat-bg))]"
+							class="rounded bg-(--chat-bg) px-2 text-sm text-[contrast-color(var(--chat-bg))]"
 						>
 							{displayUsername(msg?.user?.id ?? '', msg?.user?.username)}
 						</span>

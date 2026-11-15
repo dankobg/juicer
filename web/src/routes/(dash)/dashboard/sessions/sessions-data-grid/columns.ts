@@ -1,13 +1,13 @@
 import type { ColumnDef } from '@tanstack/table-core';
-import { renderComponent, renderSnippet } from '$lib/components/ui/data-table/index';
-import DataTableCheckbox from '$lib/components/data-grid-shared/data-table-checkbox.svelte';
-import DataTableCellId from '$lib/components/data-grid-shared/data-table-cell-id.svelte';
-import DataTableColumnHeader from '$lib/components/data-grid-shared/data-table-column-header.svelte';
+import { renderComponent, renderSnippet } from '#lib/components/ui/data-table/index.ts';
+import DataTableCheckbox from '#lib/components/data-grid-shared/data-table-checkbox.svelte';
+import DataTableCellId from '#lib/components/data-grid-shared/data-table-cell-id.svelte';
+import DataTableColumnHeader from '#lib/components/data-grid-shared/data-table-column-header.svelte';
 import DataTableRowActions from './data-table-row-actions.svelte';
 import { createRawSnippet } from 'svelte';
 import DataTableCellActive from './data-table-cell-active.svelte';
-import type { AuthenticatorAssuranceLevel, components } from '$lib/gen/juicer_openapi';
-import type { CustomTraits } from '$lib/kratos/service';
+import type { AuthenticatorAssuranceLevel, components } from '#lib/gen/juicer_openapi.ts';
+import type { CustomTraits } from '#lib/kratos/service.ts';
 
 export const columns: ColumnDef<components['schemas']['Session']>[] = [
 	{

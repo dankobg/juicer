@@ -19,10 +19,10 @@
 		getSortedRowModel
 	} from '@tanstack/table-core';
 	import DataTableToolbar from './data-table-toolbar.svelte';
-	import DataTablePagination from '$lib/components/data-grid-shared/data-table-pagination.svelte';
-	import { createSvelteTable } from '$lib/components/ui/data-table/data-table.svelte';
-	import FlexRender from '$lib/components/ui/data-table/flex-render.svelte';
-	import * as Table from '$lib/components/ui/table/index';
+	import DataTablePagination from '#lib/components/data-grid-shared/data-table-pagination.svelte';
+	import { createSvelteTable } from '#lib/components/ui/data-table/data-table.svelte.ts';
+	import FlexRender from '#lib/components/ui/data-table/flex-render.svelte';
+	import * as Table from '#lib/components/ui/table/index.ts';
 
 	let { columns, data }: { columns: ColumnDef<TData, TValue>[]; data: TData[] } = $props();
 

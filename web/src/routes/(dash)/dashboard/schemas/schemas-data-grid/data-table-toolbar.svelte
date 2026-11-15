@@ -5,9 +5,9 @@
 <script lang="ts" generics="TData">
 	import IconX from '@lucide/svelte/icons/x';
 	import type { Table } from '@tanstack/table-core';
-	import Button from '$lib/components/ui/button/button.svelte';
-	import { Input } from '$lib/components/ui/input/index';
-	import DataTableViewOptions from '$lib/components/data-grid-shared/data-table-view-options.svelte';
+	import Button from '#lib/components/ui/button/button.svelte';
+	import { Input } from '#lib/components/ui/input/index.ts';
+	import DataTableViewOptions from '#lib/components/data-grid-shared/data-table-view-options.svelte';
 
 	let { table }: { table: Table<TData> } = $props();
 

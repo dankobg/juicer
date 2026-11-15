@@ -1,4 +1,4 @@
-import type { Echo, Presence, PresenceDiff, PresenceState } from '$lib/gen/juicer_pb';
+import type { Echo, Presence, PresenceDiff, PresenceState } from '#lib/gen/juicer_pb.ts';
 
 class PresenceManager {
 	userPresences = $state<Record<string, Presence>>({});

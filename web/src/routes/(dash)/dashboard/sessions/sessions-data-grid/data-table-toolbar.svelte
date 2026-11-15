@@ -5,18 +5,18 @@
 <script lang="ts" generics="TData">
 	import IconX from '@lucide/svelte/icons/x';
 	import type { Table } from '@tanstack/table-core';
-	import Button from '$lib/components/ui/button/button.svelte';
-	import DataTableFacetedFilter from '$lib/components/data-grid-shared/data-table-faceted-filter.svelte';
-	import DataTableViewOptions from '$lib/components/data-grid-shared/data-table-view-options.svelte';
+	import Button from '#lib/components/ui/button/button.svelte';
+	import DataTableFacetedFilter from '#lib/components/data-grid-shared/data-table-faceted-filter.svelte';
+	import DataTableViewOptions from '#lib/components/data-grid-shared/data-table-view-options.svelte';
 	import { aals } from './data';
-	import Checkbox from '$lib/components/ui/checkbox/checkbox.svelte';
-	import Label from '$lib/components/ui/label/label.svelte';
+	import Checkbox from '#lib/components/ui/checkbox/checkbox.svelte';
+	import Label from '#lib/components/ui/label/label.svelte';
 	import { page } from '$app/state';
 	import { goto } from '$app/navigation';
 	import { SvelteURLSearchParams } from 'svelte/reactivity';
 	import { expandSessions } from '../expandSessions.svelte';
-	import Input from '$lib/components/ui/input/input.svelte';
-	import { PathsSessionsGetParametersQueryExpand } from '$lib/gen/juicer_openapi';
+	import Input from '#lib/components/ui/input/input.svelte';
+	import { PathsSessionsGetParametersQueryExpand } from '#lib/gen/juicer_openapi.ts';
 
 	let { table }: { table: Table<TData> } = $props();
 
@@ -24,7 +24,7 @@
 	const aalCol = $derived(table.getColumn('authenticator_assurance_level'));
 	const expandOptions = Object.values(PathsSessionsGetParametersQueryExpand);
 
-	const searchParams = new SvelteURLSearchParams(page.url.searchParams);
+	const searchParams = new SvelteURLSearchParams(new URL(page.url.href).searchParams);
 
 	function onExpandCheckedChange(val: boolean, opt: PathsSessionsGetParametersQueryExpand) {
 		const all = searchParams.getAll('expand') as PathsSessionsGetParametersQueryExpand[];
