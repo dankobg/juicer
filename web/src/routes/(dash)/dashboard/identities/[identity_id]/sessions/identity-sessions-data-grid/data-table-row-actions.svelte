@@ -8,7 +8,7 @@
 	import IconCopy from '@lucide/svelte/icons/copy';
 	import IconTrash2 from '@lucide/svelte/icons/trash-2';
 	import IconCirclePlus from '@lucide/svelte/icons/circle-plus';
-	import type { Row } from '@tanstack/table-core';
+	import type { Row } from '@tanstack/svelte-table';
 	import * as DropdownMenu from '#lib/components/ui/dropdown-menu/index.ts';
 	import Button from '#lib/components/ui/button/button.svelte';
 	import { toast } from 'svelte-sonner';

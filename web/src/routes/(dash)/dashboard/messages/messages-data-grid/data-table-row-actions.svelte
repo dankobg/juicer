@@ -6,7 +6,7 @@
 	import IconEllipsis from '@lucide/svelte/icons/ellipsis';
 	import IconEye from '@lucide/svelte/icons/eye';
 	import IconCopy from '@lucide/svelte/icons/copy';
-	import type { Row } from '@tanstack/table-core';
+	import type { Row } from '@tanstack/svelte-table';
 	import * as DropdownMenu from '#lib/components/ui/dropdown-menu/index.ts';
 	import Button from '#lib/components/ui/button/button.svelte';
 	import { toast } from 'svelte-sonner';

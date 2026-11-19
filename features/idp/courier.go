@@ -33,13 +33,13 @@ func (idp *IdentityProvider) ListCourierMessages(ctx context.Context, request ap
 	defer func() { _ = courierMessagesResp.Body.Close() }()
 
 	outMsgs := make([]api.Message, len(courierMessages))
-	for _, msg := range courierMessages {
+	for i, msg := range courierMessages {
 		res, err := MessageToResponse(msg)
 		if err != nil {
 			return Paged[api.Message]{}, err
 		}
 
-		outMsgs = append(outMsgs, res)
+		outMsgs[i] = res
 	}
 
 	out := Paged[api.Message]{

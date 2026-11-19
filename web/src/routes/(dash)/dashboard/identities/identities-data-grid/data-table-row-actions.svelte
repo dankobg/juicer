@@ -9,7 +9,7 @@
 	import IconPen from '@lucide/svelte/icons/pen';
 	import IconFingerprint from '@lucide/svelte/icons/fingerprint';
 	import IconTrash2 from '@lucide/svelte/icons/trash-2';
-	import type { Row } from '@tanstack/table-core';
+	import type { Row } from '@tanstack/svelte-table';
 	import * as DropdownMenu from '#lib/components/ui/dropdown-menu/index.ts';
 	import Button from '#lib/components/ui/button/button.svelte';
 	import { toast } from 'svelte-sonner';

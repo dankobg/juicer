@@ -1,4 +1,6 @@
 @import 'tailwindcss';
+@import 'tw-animate-css';
+@import 'shadcn-svelte/tailwind.css';
 
 @custom-variant dark (&:is(.dark *));
 
@@ -200,18 +202,4 @@
 		letter-spacing: var(--tracking-normal);
 		margin: 0px;
 	}
-}
-
-.custom-row td:first-child {
-	background-color: var(--background);
-}
-.custom-row td:last-child {
-	background-color: var(--background);
-}
-
-.custom-row:hover td:first-child {
-	background-color: var(--background);
-}
-.custom-row:hover td:last-child {
-	background-color: var(--background);
 }

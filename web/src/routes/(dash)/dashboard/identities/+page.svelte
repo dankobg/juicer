@@ -14,6 +14,7 @@
 				<p class="text-muted-foreground">List of identities</p>
 			</div>
 		</div>
-		<DataTable data={data.identitiesResult?.data ?? []} {columns} />
+		PLACEHOLDER
+		<!-- <DataTable data={data.identitiesResult?.data ?? []} {columns} /> -->
 	</div>
 {/if}

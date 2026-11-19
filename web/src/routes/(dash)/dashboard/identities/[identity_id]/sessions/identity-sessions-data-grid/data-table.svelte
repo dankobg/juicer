@@ -17,7 +17,7 @@
 		getFilteredRowModel,
 		getPaginationRowModel,
 		getSortedRowModel
-	} from '@tanstack/table-core';
+	} from '@tanstack/svelte-table';
 	import DataTableToolbar from './data-table-toolbar.svelte';
 	import DataTablePagination from '#lib/components/data-grid-shared/data-table-pagination.svelte';
 	import { createSvelteTable } from '#lib/components/ui/data-table/data-table.svelte.ts';

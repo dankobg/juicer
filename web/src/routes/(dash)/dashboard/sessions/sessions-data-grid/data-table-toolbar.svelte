@@ -1,10 +1,5 @@
-<script lang="ts" module>
-	type TData = unknown;
-</script>
-
-<script lang="ts" generics="TData">
+<script lang="ts">
 	import IconX from '@lucide/svelte/icons/x';
-	import type { Table } from '@tanstack/table-core';
 	import Button from '#lib/components/ui/button/button.svelte';
 	import DataTableFacetedFilter from '#lib/components/data-grid-shared/data-table-faceted-filter.svelte';
 	import DataTableViewOptions from '#lib/components/data-grid-shared/data-table-view-options.svelte';
@@ -17,10 +12,11 @@
 	import { expandSessions } from '../expandSessions.svelte';
 	import Input from '#lib/components/ui/input/input.svelte';
 	import { PathsSessionsGetParametersQueryExpand } from '#lib/gen/juicer_openapi.ts';
+	import { useTableContext } from '#lib/components/data-grid-shared/app-table.ts';
 
-	let { table }: { table: Table<TData> } = $props();
+	const table = useTableContext();
 
-	const isFiltered = $derived(table.getState().columnFilters.length > 0);
+	const isFiltered = $derived(table.atoms.columnFilters.get().length > 0);
 	const aalCol = $derived(table.getColumn('authenticator_assurance_level'));
 	const expandOptions = Object.values(PathsSessionsGetParametersQueryExpand);
 
@@ -115,5 +111,5 @@
 			</Button>
 		{/if}
 	</div>
-	<DataTableViewOptions {table} />
+	<DataTableViewOptions />
 </div>

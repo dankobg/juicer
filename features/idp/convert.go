@@ -26,24 +26,24 @@ func IdentityToResponse(identity orykratos.Identity) (api.Identity, error) {
 		}
 	}
 
-	recoveryAddresses := make([]api.RecoveryIdentityAddress, 0, len(identity.RecoveryAddresses))
-	for _, recAddr := range identity.RecoveryAddresses {
+	recoveryAddresses := make([]api.RecoveryIdentityAddress, len(identity.RecoveryAddresses))
+	for i, recAddr := range identity.RecoveryAddresses {
 		id, err := uuid.Parse(*recAddr.Id)
 		if err != nil {
 			return api.Identity{}, fmt.Errorf("failed to parse recovery address uuid: %w", err)
 		}
 
-		recoveryAddresses = append(recoveryAddresses, api.RecoveryIdentityAddress{
+		recoveryAddresses[i] = api.RecoveryIdentityAddress{
 			ID:        id,
 			Value:     recAddr.Value,
 			Via:       recAddr.Via,
 			CreatedAt: recAddr.CreatedAt,
 			UpdatedAt: recAddr.UpdatedAt,
-		})
+		}
 	}
 
-	verifiableAddresses := make([]api.VerifiableIdentityAddress, 0, len(identity.VerifiableAddresses))
-	for _, verAddr := range identity.VerifiableAddresses {
+	verifiableAddresses := make([]api.VerifiableIdentityAddress, len(identity.VerifiableAddresses))
+	for i, verAddr := range identity.VerifiableAddresses {
 		var id *api.UUID
 
 		if verAddr.Id != nil {
@@ -55,7 +55,7 @@ func IdentityToResponse(identity orykratos.Identity) (api.Identity, error) {
 			id = &parsed
 		}
 
-		verifiableAddresses = append(verifiableAddresses, api.VerifiableIdentityAddress{
+		verifiableAddresses[i] = api.VerifiableIdentityAddress{
 			ID:         id,
 			Status:     verAddr.Status,
 			Value:      verAddr.Value,
@@ -64,7 +64,7 @@ func IdentityToResponse(identity orykratos.Identity) (api.Identity, error) {
 			CreatedAt:  verAddr.CreatedAt,
 			UpdatedAt:  verAddr.UpdatedAt,
 			VerifiedAt: convert.PtrToNullableNull(verAddr.VerifiedAt),
-		})
+		}
 	}
 
 	id, err := uuid.Parse(identity.Id)
@@ -92,30 +92,30 @@ func IdentityToResponse(identity orykratos.Identity) (api.Identity, error) {
 }
 
 func SessionToResponse(sess orykratos.Session) (api.Session, error) {
-	authMethods := make([]api.SessionAuthenticationMethod, 0, len(sess.AuthenticationMethods))
-	for _, am := range sess.AuthenticationMethods {
-		authMethods = append(authMethods, api.SessionAuthenticationMethod{
+	authMethods := make([]api.SessionAuthenticationMethod, len(sess.AuthenticationMethods))
+	for i, am := range sess.AuthenticationMethods {
+		authMethods[i] = api.SessionAuthenticationMethod{
 			Aal:          (*api.AuthenticatorAssuranceLevel)(am.Aal),
 			CompletedAt:  am.CompletedAt,
 			Method:       (*api.SessionAuthenticationMethodMethod)(am.Method),
 			Organization: am.Organization,
 			Provider:     am.Provider,
-		})
+		}
 	}
 
-	sessDevices := make([]api.SessionDevice, 0, len(sess.Devices))
-	for _, x := range sess.Devices {
+	sessDevices := make([]api.SessionDevice, len(sess.Devices))
+	for i, x := range sess.Devices {
 		id, err := uuid.Parse(x.Id)
 		if err != nil {
 			return api.Session{}, fmt.Errorf("failed to parse devices uuid: %w", err)
 		}
 
-		sessDevices = append(sessDevices, api.SessionDevice{
+		sessDevices[i] = api.SessionDevice{
 			ID:        id,
 			IPAddress: x.IpAddress,
 			Location:  x.Location,
 			UserAgent: x.UserAgent,
-		})
+		}
 	}
 
 	var identity *api.Identity
@@ -179,8 +179,8 @@ func RecoveryLinkForIdentityToResponse(link orykratos.RecoveryLinkForIdentity) (
 }
 
 func MessageToResponse(message orykratos.Message) (api.Message, error) {
-	dispatches := make([]api.MessageDispatch, 0, len(message.Dispatches))
-	for _, d := range message.Dispatches {
+	dispatches := make([]api.MessageDispatch, len(message.Dispatches))
+	for i, d := range message.Dispatches {
 		id, err := uuid.Parse(message.Id)
 		if err != nil {
 			return api.Message{}, fmt.Errorf("failed to parse dispatch uuid: %w", err)
@@ -191,14 +191,14 @@ func MessageToResponse(message orykratos.Message) (api.Message, error) {
 			return api.Message{}, fmt.Errorf("failed to parse dispatch messageid uuid: %w", err)
 		}
 
-		dispatches = append(dispatches, api.MessageDispatch{
+		dispatches[i] = api.MessageDispatch{
 			ID:        id,
 			MessageID: messageID,
 			Status:    api.MessageDispatchStatus(d.Status),
 			Error:     &d.Error,
 			CreatedAt: d.CreatedAt,
 			UpdatedAt: d.UpdatedAt,
-		})
+		}
 	}
 
 	id, err := uuid.Parse(message.Id)

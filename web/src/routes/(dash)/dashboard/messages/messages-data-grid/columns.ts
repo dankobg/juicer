@@ -1,4 +1,4 @@
-import type { ColumnDef } from '@tanstack/table-core';
+import type { ColumnDef } from '@tanstack/svelte-table';
 import { renderComponent, renderSnippet } from '#lib/components/ui/data-table/index.ts';
 import DataTableCheckbox from '#lib/components/data-grid-shared/data-table-checkbox.svelte';
 import DataTableCellId from '#lib/components/data-grid-shared/data-table-cell-id.svelte';

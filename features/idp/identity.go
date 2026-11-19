@@ -113,14 +113,14 @@ func (idp *IdentityProvider) ListIdentitySchemas(ctx context.Context, request ap
 
 	defer func() { _ = schemaContainersResp.Body.Close() }()
 
-	outSchemas := make([]api.IdentitySchemaContainer, 0, len(schemaContainers))
-	for _, sc := range schemaContainers {
+	outSchemas := make([]api.IdentitySchemaContainer, len(schemaContainers))
+	for i, sc := range schemaContainers {
 		res, err := SchemaContainerToResponse(sc)
 		if err != nil {
 			return Paged[api.IdentitySchemaContainer]{}, err
 		}
 
-		outSchemas = append(outSchemas, res)
+		outSchemas[i] = res
 	}
 
 	out := Paged[api.IdentitySchemaContainer]{
@@ -180,14 +180,14 @@ func (idp *IdentityProvider) ListIdentities(ctx context.Context, request api.Lis
 
 	defer func() { _ = identitiesResp.Body.Close() }()
 
-	outIdentities := make([]api.Identity, 0, len(identities))
-	for _, identity := range identities {
+	outIdentities := make([]api.Identity, len(identities))
+	for i, identity := range identities {
 		res, err := IdentityToResponse(identity)
 		if err != nil {
 			return Paged[api.Identity]{}, err
 		}
 
-		outIdentities = append(outIdentities, res)
+		outIdentities[i] = res
 	}
 
 	out := Paged[api.Identity]{
@@ -573,14 +573,14 @@ func (idp *IdentityProvider) ListIdentitySessions(ctx context.Context, request a
 
 	defer func() { _ = identitySessionsResp.Body.Close() }()
 
-	outSessions := make([]api.Session, 0, len(identitySessions))
-	for _, sess := range identitySessions {
+	outSessions := make([]api.Session, len(identitySessions))
+	for i, sess := range identitySessions {
 		res, err := SessionToResponse(sess)
 		if err != nil {
 			return Paged[api.Session]{}, err
 		}
 
-		outSessions = append(outSessions, res)
+		outSessions[i] = res
 	}
 
 	out := Paged[api.Session]{

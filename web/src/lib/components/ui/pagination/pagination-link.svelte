@@ -1,8 +1,7 @@
 <script lang="ts">
 	import { Pagination as PaginationPrimitive } from 'bits-ui';
+	import { buttonVariants, type ButtonSize } from '#lib/components/ui/button/index.js';
 	import { cn } from '#lib/utils.js';
-	import { type Props, buttonVariants } from '#lib/components/ui/button/index.js';
-
 	let {
 		ref = $bindable(null),
 		class: className,
@@ -11,10 +10,10 @@
 		page,
 		children,
 		...restProps
-	}: PaginationPrimitive.PageProps &
-		Props & {
-			isActive: boolean;
-		} = $props();
+	}: PaginationPrimitive.PageProps & {
+		size?: ButtonSize;
+		isActive: boolean;
+	} = $props();
 </script>
 
 {#snippet Fallback()}
@@ -27,13 +26,13 @@
 	aria-current={isActive ? 'page' : undefined}
 	data-slot="pagination-link"
 	data-active={isActive}
-	class={cn(
-		buttonVariants({
-			variant: isActive ? 'outline' : 'ghost',
-			size
-		}),
-		className
-	)}
-	children={children || Fallback}
+	data-size={size}
+	class={cn(buttonVariants({ size, variant: isActive ? 'outline' : 'ghost' }), '', className)}
 	{...restProps}
-/>
+>
+	{#if children}
+		{@render children?.()}
+	{:else}
+		{@render Fallback()}
+	{/if}
+</PaginationPrimitive.Page>

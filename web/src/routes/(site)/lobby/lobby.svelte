@@ -49,7 +49,7 @@
 		/>
 	</div>
 
-	<Tabs.Root value="quick-game" class="w-full max-w-[42rem] justify-self-center">
+	<Tabs.Root value="quick-game" class="w-full max-w-[42rem] justify-self-center" data-horizontal>
 		<Tabs.List class="grid w-full grid-cols-3">
 			<Tabs.Trigger value="quick-game">Quick game</Tabs.Trigger>
 			<Tabs.Trigger value="custom-game">Custom game</Tabs.Trigger>

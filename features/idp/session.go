@@ -37,13 +37,13 @@ func (idp *IdentityProvider) ListSessions(ctx context.Context, request api.ListS
 	defer func() { _ = sessionsResp.Body.Close() }()
 
 	outSessions := make([]api.Session, len(sessions))
-	for _, session := range sessions {
+	for i, session := range sessions {
 		res, err := SessionToResponse(session)
 		if err != nil {
 			return Paged[api.Session]{}, err
 		}
 
-		outSessions = append(outSessions, res)
+		outSessions[i] = res
 	}
 
 	out := Paged[api.Session]{

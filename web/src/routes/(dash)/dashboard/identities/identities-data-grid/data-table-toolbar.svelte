@@ -4,7 +4,7 @@
 
 <script lang="ts" generics="TData">
 	import IconX from '@lucide/svelte/icons/x';
-	import type { Table } from '@tanstack/table-core';
+	import type { Table } from '@tanstack/svelte-table';
 	import Button from '#lib/components/ui/button/button.svelte';
 	import { Input } from '#lib/components/ui/input/index.ts';
 	import DataTableFacetedFilter from '#lib/components/data-grid-shared/data-table-faceted-filter.svelte';
@@ -13,7 +13,7 @@
 
 	let { table }: { table: Table<TData> } = $props();
 
-	const isFiltered = $derived(table.getState().columnFilters.length > 0);
+	const isFiltered = $derived(table.atoms.columnFilters.get().length > 0);
 	const stateCol = $derived(table.getColumn('state'));
 </script>
 

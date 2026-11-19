@@ -1,40 +1,28 @@
-import type { ColumnDef } from '@tanstack/table-core';
-import { renderComponent, renderSnippet } from '#lib/components/ui/data-table/index.ts';
-import DataTableCheckbox from '#lib/components/data-grid-shared/data-table-checkbox.svelte';
+import { renderComponent, renderSnippet } from '@tanstack/svelte-table';
 import DataTableCellId from '#lib/components/data-grid-shared/data-table-cell-id.svelte';
-import DataTableColumnHeader from '#lib/components/data-grid-shared/data-table-column-header.svelte';
 import DataTableRowActions from './data-table-row-actions.svelte';
 import { createRawSnippet } from 'svelte';
 import DataTableCellActive from './data-table-cell-active.svelte';
-import type { AuthenticatorAssuranceLevel, components } from '#lib/gen/juicer_openapi.ts';
+import type { components } from '#lib/gen/juicer_openapi.ts';
 import type { CustomTraits } from '#lib/kratos/service.ts';
+import { createAppColumnHelper } from '#lib/components/data-grid-shared/app-table.ts';
 
-export const columns: ColumnDef<components['schemas']['Session']>[] = [
-	{
+const columnHelper = createAppColumnHelper<components['schemas']['Session']>();
+
+export const columns = columnHelper.columns([
+	columnHelper.display({
 		id: 'select',
-		header: ({ table }) =>
-			renderComponent(DataTableCheckbox, {
-				checked: table.getIsAllPageRowsSelected(),
-				onCheckedChange: value => table.toggleAllPageRowsSelected(!!value),
-				'aria-label': 'Select all',
-				class: 'translate-y-[2px]'
-			}),
-		cell: ({ row }) =>
-			renderComponent(DataTableCheckbox, {
-				checked: row.getIsSelected(),
-				onCheckedChange: value => row.toggleSelected(!!value),
-				'aria-label': 'Select row',
-				class: 'translate-y-[2px]'
-			}),
+		header: ({ header }) => renderComponent(header.SelectHeader),
+		cell: ({ cell }) => renderComponent(cell.SelectCell),
 		enableSorting: false,
-		enableHiding: false
-	},
-	{
-		accessorKey: 'id',
-		header: ({ column }) => {
-			return renderComponent(DataTableColumnHeader<components['schemas']['Session'], unknown>, {
-				column,
-				title: 'Id'
+		enableHiding: false,
+		enableResizing: false,
+		maxSize: 40
+	}),
+	columnHelper.accessor('id', {
+		header: ({ header }) => {
+			return renderComponent(header.DataTableColumnHeader, {
+				title: 'ID'
 			});
 		},
 		cell: ({ row }) => {
@@ -42,16 +30,12 @@ export const columns: ColumnDef<components['schemas']['Session']>[] = [
 				value: row.original.id,
 				href: `/dashboard/sessions/${row.original.id}`
 			});
-		},
-		enableSorting: false,
-		enableHiding: false
-	},
-	{
-		accessorKey: 'active',
-		header: ({ column }) => {
-			return renderComponent(DataTableColumnHeader<components['schemas']['Session'], unknown>, {
-				title: 'Active',
-				column
+		}
+	}),
+	columnHelper.accessor('active', {
+		header: ({ header }) => {
+			return renderComponent(header.DataTableColumnHeader, {
+				title: 'Active'
 			});
 		},
 		cell: ({ row }) => {
@@ -59,41 +43,24 @@ export const columns: ColumnDef<components['schemas']['Session']>[] = [
 				value: Boolean(row.original.active)
 			});
 		}
-	},
-	{
-		accessorKey: 'authenticated_at',
-		header: ({ column }) => {
-			return renderComponent(DataTableColumnHeader<components['schemas']['Session'], unknown>, {
-				title: 'Authenticated time',
-				column
+	}),
+	columnHelper.accessor('authenticated_at', {
+		header: ({ header }) => {
+			return renderComponent(header.DataTableColumnHeader, {
+				title: 'Authenticated time'
 			});
 		},
-		cell: ({ row }) => {
-			const fmt = new Intl.DateTimeFormat(undefined, {
-				dateStyle: 'short',
-				timeStyle: 'short',
-				hour12: false
-			});
-			const authenticatedAtSnippet = createRawSnippet<[{ authenticatedAt: string | undefined }]>(getAuthenticatedAt => {
-				const { authenticatedAt } = getAuthenticatedAt();
-				return {
-					render: () => `<div>${authenticatedAt && fmt.format(new Date(authenticatedAt))}</div>`
-				};
-			});
-			return renderSnippet(authenticatedAtSnippet, {
-				authenticatedAt: row.original.authenticated_at
-			});
+		cell: ({ cell }) => {
+			return renderComponent(cell.DateCell);
 		},
 		filterFn: (row, id, value) => {
 			return value.includes(row.getValue(id));
 		}
-	},
-	{
-		accessorKey: 'authentication_methods',
-		header: ({ column }) => {
-			return renderComponent(DataTableColumnHeader<components['schemas']['Session'], unknown>, {
-				title: 'Authentication methods',
-				column
+	}),
+	columnHelper.accessor('authentication_methods', {
+		header: ({ header }) => {
+			return renderComponent(header.DataTableColumnHeader, {
+				title: 'Authentication methods'
 			});
 		},
 		cell: ({ row }) => {
@@ -114,172 +81,107 @@ export const columns: ColumnDef<components['schemas']['Session']>[] = [
 		filterFn: (row, id, value) => {
 			return value.includes(row.getValue(id));
 		}
-	},
-	{
-		accessorKey: 'authenticator_assurance_level',
-		header: ({ column }) => {
-			return renderComponent(DataTableColumnHeader<components['schemas']['Session'], unknown>, {
-				title: 'Authenticator assurance level',
-				column
+	}),
+	columnHelper.accessor('authenticator_assurance_level', {
+		header: ({ header }) => {
+			return renderComponent(header.DataTableColumnHeader, {
+				title: 'Authenticator assurance level'
 			});
 		},
-		cell: ({ row }) => {
-			const aalSnippet = createRawSnippet<[{ aal: AuthenticatorAssuranceLevel | undefined }]>(getAal => {
-				const { aal } = getAal();
-				return {
-					render: () => `<div>${aal && aal}</div>`
-				};
-			});
-			return renderSnippet(aalSnippet, {
-				aal: row.original.authenticator_assurance_level
-			});
-		},
-		filterFn: (row, id, value) => {
-			return (row.getValue(id) as string).includes(value);
-		}
-	},
-	{
-		accessorKey: 'expires_at',
-		header: ({ column }) => {
-			return renderComponent(DataTableColumnHeader<components['schemas']['Session'], unknown>, {
-				title: 'Expires time',
-				column
-			});
-		},
-		cell: ({ row }) => {
-			const fmt = new Intl.DateTimeFormat(undefined, {
-				dateStyle: 'short',
-				timeStyle: 'short',
-				hour12: false
-			});
-			const expiresAtSnippet = createRawSnippet<[{ expiresAt: string | undefined }]>(getExpiresAt => {
-				const { expiresAt } = getExpiresAt();
-				return {
-					render: () => `<div>${expiresAt && fmt.format(new Date(expiresAt))}</div>`
-				};
-			});
-			return renderSnippet(expiresAtSnippet, {
-				expiresAt: row.original.expires_at
-			});
+		cell: ({ cell }) => {
+			return renderComponent(cell.TextCell);
 		},
 		filterFn: (row, id, value) => {
 			return value.includes(row.getValue(id));
 		}
-	},
-	{
-		accessorKey: 'issued_at',
-		header: ({ column }) => {
-			return renderComponent(DataTableColumnHeader<components['schemas']['Session'], unknown>, {
-				title: 'Issued time',
-				column
+	}),
+	columnHelper.accessor('expires_at', {
+		header: ({ header }) => {
+			return renderComponent(header.DataTableColumnHeader, {
+				title: 'Expires time'
 			});
 		},
-		cell: ({ row }) => {
-			const fmt = new Intl.DateTimeFormat(undefined, {
-				dateStyle: 'short',
-				timeStyle: 'short',
-				hour12: false
-			});
-			const issuedAtSnippet = createRawSnippet<[{ issuedAt: string | undefined }]>(getIssuedAt => {
-				const { issuedAt } = getIssuedAt();
-				return {
-					render: () => `<div>${issuedAt && fmt.format(new Date(issuedAt))}</div>`
-				};
-			});
-			return renderSnippet(issuedAtSnippet, {
-				issuedAt: row.original.issued_at
-			});
+		cell: ({ cell }) => {
+			return renderComponent(cell.DateCell);
 		},
 		filterFn: (row, id, value) => {
 			return value.includes(row.getValue(id));
 		}
-	},
-	{
+	}),
+	columnHelper.accessor('issued_at', {
+		header: ({ header }) => {
+			return renderComponent(header.DataTableColumnHeader, {
+				title: 'Issued time'
+			});
+		},
+		cell: ({ cell }) => {
+			return renderComponent(cell.DateCell);
+		},
+		filterFn: (row, id, value) => {
+			return value.includes(row.getValue(id));
+		}
+	}),
+	columnHelper.display({
 		id: 'actions',
-		cell: ({ row }) => renderComponent(DataTableRowActions<components['schemas']['Session']>, { row })
-	}
-];
+		cell: () => renderComponent(DataTableRowActions),
+		enableSorting: false,
+		enableHiding: false,
+		enableResizing: false,
+		maxSize: 40
+	})
+]);
 
-const identityColumns: ColumnDef<components['schemas']['Session']>[] = [
-	{
-		accessorFn: row => (row.identity?.traits as CustomTraits)?.['email'],
+const identityColumnHelper = createAppColumnHelper<components['schemas']['Session']>();
+
+const identityColumns = identityColumnHelper.columns([
+	identityColumnHelper.accessor(row => (row.identity?.traits as CustomTraits)['email'], {
 		id: 'email',
-		header: ({ column }) => {
-			return renderComponent(DataTableColumnHeader<components['schemas']['Session'], unknown>, {
-				title: 'E-Mail',
-				column
+		header: ({ header }) => {
+			return renderComponent(header.DataTableColumnHeader, {
+				title: 'E-Mail'
 			});
 		},
-		cell: ({ row }) => {
-			const identityEmailSnippet = createRawSnippet<[{ email: string }]>(getIdentityEmail => {
-				const { email } = getIdentityEmail();
-				return {
-					render: () => `<div>${email ?? ''}</div>`
-				};
-			});
-			return renderSnippet(identityEmailSnippet, {
-				email: row.getValue('email') as string
-			});
+		cell: ({ cell }) => {
+			return renderComponent(cell.TextCell);
 		},
 		filterFn: (row, id, value) => {
-			return (row.getValue(id) as string).includes(value);
+			return value.includes(row.getValue(id));
 		}
-	},
-	{
-		accessorFn: row => (row.identity?.traits as CustomTraits)?.['username'],
+	}),
+	identityColumnHelper.accessor(row => (row.identity?.traits as CustomTraits)['username'], {
 		id: 'username',
-		header: ({ column }) => {
-			return renderComponent(DataTableColumnHeader<components['schemas']['Session'], unknown>, {
-				title: 'Username',
-				column
+		header: ({ header }) => {
+			return renderComponent(header.DataTableColumnHeader, {
+				title: 'Username'
 			});
 		},
-		cell: ({ row }) => {
-			const identityEmailSnippet = createRawSnippet<[{ username: string }]>(getIdentityUsername => {
-				const { username } = getIdentityUsername();
-				return {
-					render: () => `<div>${username ?? ''}</div>`
-				};
-			});
-			return renderSnippet(identityEmailSnippet, {
-				username: row.getValue('username') as string
-			});
+		cell: ({ cell }) => {
+			return renderComponent(cell.TextCell);
 		},
 		filterFn: (row, id, value) => {
-			return (row.getValue(id) as string).includes(value);
+			return value.includes(row.getValue(id));
 		}
-	},
-	{
-		accessorFn: row => row.identity?.traits,
-		id: 'full_name',
-		header: ({ column }) => {
-			return renderComponent(DataTableColumnHeader<components['schemas']['Session'], unknown>, {
-				title: 'Full name',
-				column
-			});
+	}),
+	identityColumnHelper.accessor(
+		row => {
+			const traits = row.identity?.traits as CustomTraits;
+			return `${traits?.first_name ?? ''}${traits?.last_name ? ' ' : ''}${traits?.last_name ?? ''}`;
 		},
-		cell: ({ row }) => {
-			const identityFullNameSnippet = createRawSnippet<[{ fullName: string }]>(getIdentityFullName => {
-				const { fullName } = getIdentityFullName();
-				return {
-					render: () => `<div>${fullName}</div>`
-				};
-			});
-			const traits = row.getValue('full_name') as CustomTraits;
-			const fullName = `${traits?.first_name ?? ''}${traits?.last_name ? ' ' : ''}${traits?.last_name ?? ''}`;
-			return renderSnippet(identityFullNameSnippet, {
-				fullName
-			});
-		},
-		filterFn: (row, id, value) => {
-			const traits = row.getValue(id) as CustomTraits;
-			return `${traits.first_name} ${traits.last_name}`.toLowerCase().includes((value as string).toLowerCase());
+		{
+			id: 'full_name',
+			header: ({ header }) => {
+				return renderComponent(header.DataTableColumnHeader, {
+					title: 'Full name'
+				});
+			},
+			cell: ({ cell }) => {
+				return renderComponent(cell.TextCell);
+			},
+			filterFn: (row, id, value) => {
+				return value.includes(row.getValue(id));
+			}
 		}
-	}
-];
+	)
+]);
 
-export const columnsWithIdentity: ColumnDef<components['schemas']['Session']>[] = columns.toSpliced(
-	2,
-	0,
-	...identityColumns
-);
+export const columnsWithIdentity = columns.toSpliced(2, 0, ...identityColumns);

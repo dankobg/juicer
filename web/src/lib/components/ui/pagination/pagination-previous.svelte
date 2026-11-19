@@ -10,16 +10,9 @@
 <PaginationPrimitive.PrevButton
 	bind:ref
 	aria-label="Go to previous page"
-	class={cn(
-		buttonVariants({
-			size: 'default',
-			variant: 'ghost',
-			class: 'gap-1 px-2.5 sm:ps-2.5'
-		}),
-		className
-	)}
+	class={cn(buttonVariants({ variant: 'ghost', size: 'default' }), 'pl-1.5!', className)}
 	{...restProps}
 >
-	<ChevronLeftIcon />
-	<span class="hidden sm:block">Previous</span></PaginationPrimitive.PrevButton
->
+	<ChevronLeftIcon data-icon="inline-start" class="cn-rtl-flip" />
+	<span class="hidden sm:block">Previous</span>
+</PaginationPrimitive.PrevButton>
