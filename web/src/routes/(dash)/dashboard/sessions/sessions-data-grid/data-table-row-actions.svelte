@@ -12,7 +12,7 @@
 	import { confirmation } from '#lib/components/confirmation-dialog/confirmation-dialog-state.svelte.ts';
 	import type { components } from '#lib/gen/juicer_openapi.ts';
 	import type { CustomTraits } from '#lib/kratos/service.ts';
-	import { useCellContext, type AppFeatures } from '#lib/components/data-grid-shared/app-table.ts';
+	import { useCellContext } from '#lib/components/data-grid-shared/app-table.ts';
 
 	const cell = useCellContext();
 	const row = $derived(cell.row);

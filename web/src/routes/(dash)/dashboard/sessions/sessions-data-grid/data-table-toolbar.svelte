@@ -10,13 +10,15 @@
 	import { goto } from '$app/navigation';
 	import { SvelteURLSearchParams } from 'svelte/reactivity';
 	import { expandSessions } from '../expandSessions.svelte';
-	import Input from '#lib/components/ui/input/input.svelte';
 	import { PathsSessionsGetParametersQueryExpand } from '#lib/gen/juicer_openapi.ts';
 	import { useTableContext } from '#lib/components/data-grid-shared/app-table.ts';
+	import FilterInput from '#lib/components/data-grid-shared/filter-input.svelte';
 
 	const table = useTableContext();
 
 	const isFiltered = $derived(table.atoms.columnFilters.get().length > 0);
+	const emailCol = $derived(table.getColumn('email'));
+	const fullnameCol = $derived(table.getColumn('full_name'));
 	const aalCol = $derived(table.getColumn('authenticator_assurance_level'));
 	const expandOptions = Object.values(PathsSessionsGetParametersQueryExpand);
 
@@ -76,28 +78,12 @@
 <div class="flex items-center justify-between">
 	<div class="flex flex-1 flex-wrap items-center space-x-2 gap-y-2">
 		{#if expandSessions.expanded.includes(PathsSessionsGetParametersQueryExpand.identity)}
-			<Input
-				placeholder="Filter by email..."
-				value={(table.getColumn('email')?.getFilterValue() as string) ?? ''}
-				oninput={e => {
-					table.getColumn('email')?.setFilterValue(e.currentTarget.value);
-				}}
-				onchange={e => {
-					table.getColumn('email')?.setFilterValue(e.currentTarget.value);
-				}}
-				class="h-8 w-[150px] lg:w-[250px]"
-			/>
-			<Input
-				placeholder="Filter by full name..."
-				value={(table.getColumn('full_name')?.getFilterValue() as string) ?? ''}
-				oninput={e => {
-					table.getColumn('full_name')?.setFilterValue(e.currentTarget.value);
-				}}
-				onchange={e => {
-					table.getColumn('full_name')?.setFilterValue(e.currentTarget.value);
-				}}
-				class="h-8 w-[150px] lg:w-[250px]"
-			/>
+			{#if emailCol}
+				<FilterInput column={emailCol} />
+			{/if}
+			{#if fullnameCol}
+				<FilterInput column={fullnameCol} title="full name" />
+			{/if}
 		{/if}
 
 		{#if aalCol}

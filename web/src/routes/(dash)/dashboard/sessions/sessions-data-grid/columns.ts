@@ -1,4 +1,4 @@
-import { renderComponent, renderSnippet } from '@tanstack/svelte-table';
+import { filterFn_inDateRange, renderComponent, renderSnippet } from '@tanstack/svelte-table';
 import DataTableCellId from '#lib/components/data-grid-shared/data-table-cell-id.svelte';
 import DataTableRowActions from './data-table-row-actions.svelte';
 import { createRawSnippet } from 'svelte';
@@ -53,9 +53,7 @@ export const columns = columnHelper.columns([
 		cell: ({ cell }) => {
 			return renderComponent(cell.DateCell);
 		},
-		filterFn: (row, id, value) => {
-			return value.includes(row.getValue(id));
-		}
+		filterFn: filterFn_inDateRange
 	}),
 	columnHelper.accessor('authentication_methods', {
 		header: ({ header }) => {
@@ -78,9 +76,7 @@ export const columns = columnHelper.columns([
 				authenticationMethods: value
 			});
 		},
-		filterFn: (row, id, value) => {
-			return value.includes(row.getValue(id));
-		}
+		filterFn: 'includesString'
 	}),
 	columnHelper.accessor('authenticator_assurance_level', {
 		header: ({ header }) => {
@@ -91,9 +87,7 @@ export const columns = columnHelper.columns([
 		cell: ({ cell }) => {
 			return renderComponent(cell.TextCell);
 		},
-		filterFn: (row, id, value) => {
-			return value.includes(row.getValue(id));
-		}
+		filterFn: 'includesString'
 	}),
 	columnHelper.accessor('expires_at', {
 		header: ({ header }) => {
@@ -104,9 +98,7 @@ export const columns = columnHelper.columns([
 		cell: ({ cell }) => {
 			return renderComponent(cell.DateCell);
 		},
-		filterFn: (row, id, value) => {
-			return value.includes(row.getValue(id));
-		}
+		filterFn: filterFn_inDateRange
 	}),
 	columnHelper.accessor('issued_at', {
 		header: ({ header }) => {
@@ -117,9 +109,7 @@ export const columns = columnHelper.columns([
 		cell: ({ cell }) => {
 			return renderComponent(cell.DateCell);
 		},
-		filterFn: (row, id, value) => {
-			return value.includes(row.getValue(id));
-		}
+		filterFn: filterFn_inDateRange
 	}),
 	columnHelper.display({
 		id: 'actions',
@@ -134,7 +124,7 @@ export const columns = columnHelper.columns([
 const identityColumnHelper = createAppColumnHelper<components['schemas']['Session']>();
 
 const identityColumns = identityColumnHelper.columns([
-	identityColumnHelper.accessor(row => (row.identity?.traits as CustomTraits)['email'], {
+	identityColumnHelper.accessor(row => (row.identity?.traits as CustomTraits)?.['email'], {
 		id: 'email',
 		header: ({ header }) => {
 			return renderComponent(header.DataTableColumnHeader, {
@@ -144,11 +134,9 @@ const identityColumns = identityColumnHelper.columns([
 		cell: ({ cell }) => {
 			return renderComponent(cell.TextCell);
 		},
-		filterFn: (row, id, value) => {
-			return value.includes(row.getValue(id));
-		}
+		filterFn: 'includesString'
 	}),
-	identityColumnHelper.accessor(row => (row.identity?.traits as CustomTraits)['username'], {
+	identityColumnHelper.accessor(row => (row.identity?.traits as CustomTraits)?.['username'], {
 		id: 'username',
 		header: ({ header }) => {
 			return renderComponent(header.DataTableColumnHeader, {
@@ -158,9 +146,7 @@ const identityColumns = identityColumnHelper.columns([
 		cell: ({ cell }) => {
 			return renderComponent(cell.TextCell);
 		},
-		filterFn: (row, id, value) => {
-			return value.includes(row.getValue(id));
-		}
+		filterFn: 'includesString'
 	}),
 	identityColumnHelper.accessor(
 		row => {
@@ -177,9 +163,7 @@ const identityColumns = identityColumnHelper.columns([
 			cell: ({ cell }) => {
 				return renderComponent(cell.TextCell);
 			},
-			filterFn: (row, id, value) => {
-				return value.includes(row.getValue(id));
-			}
+			filterFn: 'includesString'
 		}
 	)
 ]);

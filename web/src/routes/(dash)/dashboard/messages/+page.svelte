@@ -14,7 +14,6 @@
 				<p class="text-muted-foreground">List of courier messages</p>
 			</div>
 		</div>
-		PLACEHOLDER
-		<!-- <DataTable data={data.messagesResult?.data ?? []} {columns} /> -->
+		<DataTable data={data.messagesResult?.data ?? []} {columns} />
 	</div>
 {/if}

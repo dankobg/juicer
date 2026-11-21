@@ -1,7 +1,7 @@
 <script lang="ts">
 	import Settings2Icon from '@lucide/svelte/icons/settings-2';
-	import * as DropdownMenu from '#lib/components/ui/dropdown-menu/index.js';
-	import { buttonVariants } from '#lib/components/ui/button/index.js';
+	import * as DropdownMenu from '#lib/components/ui/dropdown-menu/index.ts';
+	import { buttonVariants } from '#lib/components/ui/button/index.ts';
 	import { useTableContext } from './app-table';
 
 	const table = useTableContext();

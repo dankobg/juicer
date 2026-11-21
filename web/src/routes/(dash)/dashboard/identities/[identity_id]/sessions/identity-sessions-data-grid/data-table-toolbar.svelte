@@ -1,10 +1,5 @@
-<script lang="ts" module>
-	type TData = unknown;
-</script>
-
-<script lang="ts" generics="TData">
+<script lang="ts">
 	import IconX from '@lucide/svelte/icons/x';
-	import type { Table } from '@tanstack/svelte-table';
 	import Button from '#lib/components/ui/button/button.svelte';
 	import DataTableFacetedFilter from '#lib/components/data-grid-shared/data-table-faceted-filter.svelte';
 	import DataTableViewOptions from '#lib/components/data-grid-shared/data-table-view-options.svelte';
@@ -15,8 +10,10 @@
 	import { invalidate } from '$app/navigation';
 	import type { components } from '#lib/gen/juicer_openapi.ts';
 	import type { CustomTraits } from '#lib/kratos/service.ts';
+	import { useTableContext } from '#lib/components/data-grid-shared/app-table.ts';
 
-	let { table, identity }: { table: Table<TData>; identity: components['schemas']['Identity'] | undefined } = $props();
+	const table = useTableContext();
+	let { identity }: { identity: components['schemas']['Identity'] | undefined } = $props();
 
 	const isFiltered = $derived(table.atoms.columnFilters.get().length > 0);
 	const aalCol = $derived(table.getColumn('authenticator_assurance_level'));
@@ -74,5 +71,5 @@
 			</Button>
 		{/if}
 	</div>
-	<DataTableViewOptions {table} />
+	<DataTableViewOptions />
 </div>

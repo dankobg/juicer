@@ -14,7 +14,6 @@
 				<p class="text-muted-foreground">List of identity schemas</p>
 			</div>
 		</div>
-		PLACEHOLDER
-		<!-- <DataTable data={data.schemasResult?.data ?? []} {columns} /> -->
+		<DataTable data={data.schemasResult?.data ?? []} {columns} />
 	</div>
 {/if}

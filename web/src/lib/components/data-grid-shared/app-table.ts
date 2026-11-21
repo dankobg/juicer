@@ -72,8 +72,8 @@ export const { createAppTable, createAppColumnHelper, appFeatures, useCellContex
 			DateCell
 		},
 		tableComponents: {
-			// DataTableViewOptions,
 			DataTablePagination
+			// DataTableViewOptions
 		},
 		enableRowSelection: true
 	});

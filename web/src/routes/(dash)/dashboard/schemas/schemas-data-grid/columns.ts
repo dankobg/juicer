@@ -1,37 +1,25 @@
-import type { ColumnDef } from '@tanstack/svelte-table';
-import { renderComponent } from '#lib/components/ui/data-table/index.ts';
-import DataTableCheckbox from '#lib/components/data-grid-shared/data-table-checkbox.svelte';
+import { renderComponent } from '@tanstack/svelte-table';
 import DataTableCellId from '#lib/components/data-grid-shared/data-table-cell-id.svelte';
-import DataTableColumnHeader from '#lib/components/data-grid-shared/data-table-column-header.svelte';
 import DataTableRowActions from './data-table-row-actions.svelte';
 import type { components } from '#lib/gen/juicer_openapi.ts';
+import { createAppColumnHelper } from '#lib/components/data-grid-shared/app-table.ts';
 
-export const columns: ColumnDef<components['schemas']['IdentitySchemaContainer']>[] = [
-	{
+const columnHelper = createAppColumnHelper<components['schemas']['IdentitySchemaContainer']>();
+
+export const columns = columnHelper.columns([
+	columnHelper.display({
 		id: 'select',
-		header: ({ table }) =>
-			renderComponent(DataTableCheckbox, {
-				checked: table.getIsAllPageRowsSelected(),
-				onCheckedChange: value => table.toggleAllPageRowsSelected(!!value),
-				'aria-label': 'Select all',
-				class: 'translate-y-[2px]'
-			}),
-		cell: ({ row }) =>
-			renderComponent(DataTableCheckbox, {
-				checked: row.getIsSelected(),
-				onCheckedChange: value => row.toggleSelected(!!value),
-				'aria-label': 'Select row',
-				class: 'translate-y-[2px]'
-			}),
+		header: ({ header }) => renderComponent(header.SelectHeader),
+		cell: ({ cell }) => renderComponent(cell.SelectCell),
 		enableSorting: false,
-		enableHiding: false
-	},
-	{
-		accessorKey: 'id',
-		header: ({ column }) => {
-			return renderComponent(DataTableColumnHeader<components['schemas']['IdentitySchemaContainer'], unknown>, {
-				column,
-				title: 'Id'
+		enableHiding: false,
+		enableResizing: false,
+		maxSize: 40
+	}),
+	columnHelper.accessor('id', {
+		header: ({ header }) => {
+			return renderComponent(header.DataTableColumnHeader, {
+				title: 'ID'
 			});
 		},
 		cell: ({ row }) => {
@@ -39,12 +27,14 @@ export const columns: ColumnDef<components['schemas']['IdentitySchemaContainer']
 				value: row.original.id,
 				href: `/dashboard/schemas/${row.original.id}`
 			});
-		},
-		enableSorting: false,
-		enableHiding: false
-	},
-	{
+		}
+	}),
+	columnHelper.display({
 		id: 'actions',
-		cell: ({ row }) => renderComponent(DataTableRowActions<components['schemas']['IdentitySchemaContainer']>, { row })
-	}
-];
+		cell: () => renderComponent(DataTableRowActions),
+		enableSorting: false,
+		enableHiding: false,
+		enableResizing: false,
+		maxSize: 40
+	})
+]);

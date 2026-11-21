@@ -1,17 +1,14 @@
-<script lang="ts" module>
-	type TData = unknown;
-</script>
-
-<script lang="ts" generics="TData">
+<script lang="ts">
 	import IconEllipsis from '@lucide/svelte/icons/ellipsis';
 	import IconEye from '@lucide/svelte/icons/eye';
 	import IconCopy from '@lucide/svelte/icons/copy';
-	import type { Row } from '@tanstack/svelte-table';
 	import * as DropdownMenu from '#lib/components/ui/dropdown-menu/index.ts';
 	import Button from '#lib/components/ui/button/button.svelte';
 	import { toast } from 'svelte-sonner';
+	import { useCellContext } from '#lib/components/data-grid-shared/app-table.ts';
 
-	let { row }: { row: Row<TData> } = $props();
+	const cell = useCellContext();
+	const row = $derived(cell.row);
 
 	const hasId = $derived(
 		typeof row.original === 'object' && !!row.original && 'id' in row.original && typeof row.original.id === 'string'
@@ -19,7 +16,7 @@
 
 	function copyIdToClipboard() {
 		try {
-			navigator.clipboard.writeText((row.original as TData & { id: string }).id).then(() => {
+			navigator.clipboard.writeText(row.original.id).then(() => {
 				toast.success('id coppied');
 			});
 		} catch (error) {

@@ -17,7 +17,6 @@
 				<p class="text-muted-foreground">List of sessions</p>
 			</div>
 		</div>
-		PLACEHOLDER
-		<!-- <DataTable data={data.sessionsResult?.data ?? []} {columns} identity={data.identityResult?.data} /> -->
+		<DataTable data={data.sessionsResult?.data ?? []} {columns} identity={data.identityResult?.data} />
 	</div>
 {/if}

@@ -37,8 +37,7 @@
 			return columns;
 		},
 		initialState: {
-			columnPinning: { start: ['select'], end: ['actions'] },
-			columnOrder: (() => columns)().map(c => c.id ?? '')
+			columnPinning: { start: ['select'], end: ['actions'] }
 		},
 		state: {
 			get sorting() {
