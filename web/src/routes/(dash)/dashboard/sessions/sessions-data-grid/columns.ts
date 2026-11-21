@@ -1,5 +1,4 @@
 import { filterFn_inDateRange, renderComponent, renderSnippet } from '@tanstack/svelte-table';
-import DataTableCellId from '#lib/components/data-grid-shared/data-table-cell-id.svelte';
 import DataTableRowActions from './data-table-row-actions.svelte';
 import { createRawSnippet } from 'svelte';
 import DataTableCellActive from './data-table-cell-active.svelte';
@@ -25,8 +24,8 @@ export const columns = columnHelper.columns([
 				title: 'ID'
 			});
 		},
-		cell: ({ row }) => {
-			return renderComponent(DataTableCellId, {
+		cell: ({ cell, row }) => {
+			return renderComponent(cell.DataTableCellId, {
 				value: row.original.id,
 				href: `/dashboard/sessions/${row.original.id}`
 			});

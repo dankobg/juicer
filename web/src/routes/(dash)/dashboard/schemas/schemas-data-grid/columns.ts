@@ -1,5 +1,4 @@
 import { renderComponent } from '@tanstack/svelte-table';
-import DataTableCellId from '#lib/components/data-grid-shared/data-table-cell-id.svelte';
 import DataTableRowActions from './data-table-row-actions.svelte';
 import type { components } from '#lib/gen/juicer_openapi.ts';
 import { createAppColumnHelper } from '#lib/components/data-grid-shared/app-table.ts';
@@ -22,8 +21,8 @@ export const columns = columnHelper.columns([
 				title: 'ID'
 			});
 		},
-		cell: ({ row }) => {
-			return renderComponent(DataTableCellId, {
+		cell: ({ cell, row }) => {
+			return renderComponent(cell.DataTableCellId, {
 				value: row.original.id,
 				href: `/dashboard/schemas/${row.original.id}`
 			});
