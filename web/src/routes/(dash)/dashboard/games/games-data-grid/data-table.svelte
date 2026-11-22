@@ -1,0 +1,176 @@
+<script lang="ts">
+	import {
+		createTableState,
+		type ColumnDef,
+		type ColumnFiltersState,
+		type ColumnVisibilityState,
+		type PaginationState,
+		type RowSelectionState,
+		type SortingState
+	} from '@tanstack/svelte-table';
+	import DataTableToolbar from './data-table-toolbar.svelte';
+	import * as Table from '#lib/components/ui/table/index.ts';
+	import type { components } from '#lib/gen/juicer_openapi.ts';
+	import { page } from '$app/state';
+	import { goto } from '$app/navigation';
+	import { createAppTable, type AppFeatures } from '#lib/components/data-grid-shared/app-table.ts';
+	import { getCommonPinningStyles } from '#lib/components/data-grid-shared/common-pinning-styles.ts';
+	import { cn } from '#lib/utils.ts';
+	import { makeColumns } from './columns';
+
+	let {
+		columns,
+		data,
+		meta,
+		gameVariants,
+		gameTimeKinds,
+		gameTimeCategories,
+		gameResults,
+		gameResultStatuses,
+		gameStates
+	}: {
+		columns: ColumnDef<AppFeatures, components['schemas']['Game']>[];
+		data: components['schemas']['Game'][];
+		meta: components['schemas']['PaginationMeta'];
+		gameVariants: components['schemas']['GameVariant'][];
+		gameTimeKinds: components['schemas']['GameTimeKind'][];
+		gameTimeCategories: components['schemas']['GameTimeCategory'][];
+		gameResults: components['schemas']['GameResult'][];
+		gameResultStatuses: components['schemas']['GameResultStatus'][];
+		gameStates: components['schemas']['GameState'][];
+	} = $props();
+
+	const [rowSelection, setRowSelection] = createTableState<RowSelectionState>({});
+	const [columnVisibility, setColumnVisibility] = createTableState<ColumnVisibilityState>({});
+	const [columnFilters, setColumnFilters] = createTableState<ColumnFiltersState>([]);
+	const [sorting, setSorting] = createTableState<SortingState>([]);
+	const [pagination, setPagination] = createTableState<PaginationState>(
+		(() => ({
+			pageIndex: meta.page - 1,
+			pageSize: meta.page_size
+		}))()
+	);
+
+	function gotoWithFilters(params: URLSearchParams) {
+		goto(page.url.pathname + params.size ? `?${params}` : '', { reset: false });
+	}
+
+	const table = createAppTable({
+		get data() {
+			return data;
+		},
+		get columns() {
+			return columns;
+		},
+		initialState: {
+			columnPinning: { start: ['select'], end: ['actions'] }
+		},
+		get rowCount() {
+			return meta.total;
+		},
+		state: {
+			get sorting() {
+				return sorting();
+			},
+			get columnVisibility() {
+				return columnVisibility();
+			},
+			get rowSelection() {
+				return rowSelection();
+			},
+			get columnFilters() {
+				return columnFilters();
+			},
+			get pagination() {
+				return pagination();
+			}
+		},
+		onSortingChange: setSorting,
+		onColumnVisibilityChange: setColumnVisibility,
+		onRowSelectionChange: setRowSelection,
+		onColumnFiltersChange: setColumnFilters,
+		onPaginationChange: updater => {
+			const p: PaginationState = typeof updater === 'function' ? updater(pagination()) : updater;
+			setPagination(p);
+			const sp = new URLSearchParams(new URL(page.url.href).searchParams);
+			sp.set('page', String(p.pageIndex + 1));
+			sp.set('page_size', String(p.pageSize));
+			gotoWithFilters(sp);
+		},
+		manualPagination: true,
+		manualFiltering: true
+	});
+</script>
+
+<table.AppTable>
+	<div class="space-y-4">
+		<DataTableToolbar
+			{gameVariants}
+			{gameTimeKinds}
+			{gameTimeCategories}
+			{gameResults}
+			{gameResultStatuses}
+			{gameStates}
+		/>
+		<div class="rounded-md border">
+			<Table.Root>
+				<Table.Header>
+					{#each table.getHeaderGroups() as headerGroup (headerGroup.id)}
+						<Table.Row>
+							{#each headerGroup.headers.filter(header => header.column.getIsVisible()) as header (header.id)}
+								<table.AppHeader {header}>
+									{#snippet children(h)}
+										<Table.Head
+											colspan={h.colSpan}
+											class={cn('relative', {
+												'border-r': h.id !== 'actions',
+												'text-center [&>[role=checkbox]]:mx-auto': h.column.id === 'select'
+											})}
+											style={`flex-grow: ${h.getSize()}; width: ${h.getSize()}px; ${getCommonPinningStyles(h.column)}`}
+										>
+											{#if !h.isPlaceholder}
+												<h.FlexRender header={h} />
+											{/if}
+											<h.ResizeHandle />
+										</Table.Head>
+									{/snippet}
+								</table.AppHeader>
+							{/each}
+						</Table.Row>
+					{/each}
+				</Table.Header>
+				<Table.Body>
+					{#each table.getRowModel().rows as row (row.id)}
+						<Table.Row data-state={row.getIsSelected() ? 'selected' : undefined} aria-selected={row.getIsSelected()}>
+							{#each row.getVisibleCells() as cell (cell.id)}
+								<table.AppCell {cell}>
+									{#snippet children(c)}
+										<Table.Cell
+											class={cn(
+												c.column.id === 'actions' ? '' : 'border-r',
+												c.column.id === 'select' && 'text-center [&>[role=checkbox]]:mx-auto'
+											)}
+											style={`flex-grow: ${c.column.getSize()}; width: ${c.column.getSize()}px; ${getCommonPinningStyles(c.column, row.getIsSelected())}`}
+										>
+											<!-- {#if c.getIsGrouped()}
+												<c.GroupedCell />
+											{:else}
+												<c.FlexRender cell={c} />
+											{/if} -->
+											<c.FlexRender cell={c} />
+										</Table.Cell>
+									{/snippet}
+								</table.AppCell>
+							{/each}
+						</Table.Row>
+					{:else}
+						<Table.Row>
+							<Table.Cell colspan={columns.length} class="h-24 text-center">No results.</Table.Cell>
+						</Table.Row>
+					{/each}
+				</Table.Body>
+			</Table.Root>
+		</div>
+		<table.DataTablePagination />
+	</div>
+</table.AppTable>

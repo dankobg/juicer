@@ -45,6 +45,17 @@ export const customerDashboardNavItems: NavItem[] = [
 				icon: IconUser
 			}
 		]
+	},
+	{
+		title: 'Juicer',
+		url: '#',
+		items: [
+			{
+				title: 'My games',
+				url: '/dashboard/games',
+				icon: IconGamepad2
+			}
+		]
 	}
 ];
 

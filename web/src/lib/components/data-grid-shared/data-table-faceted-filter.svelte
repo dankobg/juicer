@@ -15,7 +15,8 @@
 	let {
 		column,
 		title,
-		options
+		options,
+		onFacetChange
 	}: {
 		column: Column<AppFeatures, TData, unknown>;
 		title: string;
@@ -24,6 +25,7 @@
 			value: string;
 			icon?: Component;
 		}[];
+		onFacetChange?: (selected: boolean, option: { label: string; value: string }) => void;
 	} = $props();
 
 	const facets = $derived(column?.getFacetedUniqueValues());
@@ -75,6 +77,7 @@
 								}
 								const filterValues = Array.from(selectedValues);
 								column?.setFilterValue(filterValues.length ? filterValues : undefined);
+								onFacetChange?.(isSelected, { label: option.label, value: option.value });
 							}}
 						>
 							<div
