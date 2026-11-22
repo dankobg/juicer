@@ -6,13 +6,13 @@ import (
 )
 
 func GameToResponse(g models.Game) api.Game {
-	whiteIsGuest, blackIsGuest := true, true
+	var whiteIsGuest, blackIsGuest bool
 	if g.WhiteID.IsNull() {
-		whiteIsGuest = false
+		whiteIsGuest = true
 	}
 
 	if g.BlackID.IsNull() {
-		blackIsGuest = false
+		blackIsGuest = true
 	}
 
 	return api.Game{
@@ -47,13 +47,13 @@ func GameToResponse(g models.Game) api.Game {
 }
 
 func GameDetailsToResponse(g GameDetails) api.Game {
-	whiteIsGuest, blackIsGuest := true, true
+	var whiteIsGuest, blackIsGuest bool
 	if g.WhiteID.IsNull() {
-		whiteIsGuest = false
+		whiteIsGuest = true
 	}
 
 	if g.BlackID.IsNull() {
-		blackIsGuest = false
+		blackIsGuest = true
 	}
 
 	game := api.Game{

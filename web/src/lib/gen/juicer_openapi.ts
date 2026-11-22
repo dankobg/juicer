@@ -2455,6 +2455,8 @@ export interface operations {
                 game_result_status_id?: number[];
                 /** @description Filter games by game state id */
                 game_state_id?: number[];
+                /** @description Filter games by user ID */
+                user_id?: string;
                 /** @description Filter games by rated flag */
                 rated?: boolean;
                 /** @description Filter games by from timestamp */

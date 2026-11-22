@@ -170,6 +170,13 @@ func (pst *PgGamePersistor) ListGames(ctx context.Context, filters game.ListGame
 			q.Apply(sm.Where(models.Games.Columns.GameStateID.In(psql.Arg(gameStateIDs...))))
 		}
 
+		if filters.UserID != nil {
+			q.Apply(sm.Where(
+				models.Games.Columns.WhiteID.EQ(psql.Arg(*filters.UserID)).
+					Or(models.Games.Columns.BlackID.EQ(psql.Arg(*filters.UserID))),
+			))
+		}
+
 		if filters.Rated != nil {
 			q.Apply(sm.Where(models.Games.Columns.Rated.EQ(psql.Arg(*filters.Rated))))
 		}
