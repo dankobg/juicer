@@ -25,7 +25,7 @@ export const columns = columnHelper.columns([
 				title: 'ID'
 			});
 		},
-		cell: ({ cell,row }) => {
+		cell: ({ cell, row }) => {
 			return renderComponent(cell.DataTableCellId, {
 				value: row.original.id,
 				href: `/dashboard/identities/${row.original.id}`
