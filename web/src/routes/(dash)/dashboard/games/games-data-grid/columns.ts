@@ -141,7 +141,7 @@ export function makeColumns(
 				},
 				cell: ({ cell }) => {
 					return renderComponent(DataTableCellResult, {
-						value: cell.getValue()
+						value: cell.getValue() as 'win' | 'loss' | 'draw' | 'interrupted'
 					});
 				}
 			}

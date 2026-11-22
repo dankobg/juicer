@@ -1,18 +1,20 @@
 <script lang="ts">
 	import { Badge } from '#lib/components/ui/badge/index.ts';
 
-	let { value }: { value?: string } = $props();
+	let { value }: { value?: 'win' | 'loss' | 'draw' | 'interrupted' } = $props();
 
 	let color = $derived.by(() => {
 		switch (value) {
 			case 'win':
-			case 'won':
 				return 'text-green-400';
 			case 'loss':
-			case 'lost':
 				return 'text-red-400';
-			default:
+			case 'draw':
+				return 'text-yellow-400';
+			case 'interrupted':
 				return 'text-orange-400';
+			default:
+				return '';
 		}
 	});
 </script>
