@@ -10,6 +10,7 @@
 	import IconGauge from '@lucide/svelte/icons/gauge';
 	import IconSidebar from '@lucide/svelte/icons/sidebar';
 	import IconSettings from '@lucide/svelte/icons/settings';
+	import IconGamepad2 from '@lucide/svelte/icons/gamepad-2';
 	import { Button } from '#lib/components/ui/button/index.js';
 	import { Separator } from '#lib/components/ui/separator/index.js';
 	import * as Sidebar from '#lib/components/ui/sidebar/index.js';
@@ -92,6 +93,12 @@
 								<DropdownMenu.Item class="cursor-pointer">
 									<IconUserIcon class="mr-2 size-4" />
 									<span>Account</span>
+								</DropdownMenu.Item>
+							</a>
+							<a href="/dashboard/games">
+								<DropdownMenu.Item class="cursor-pointer">
+									<IconGamepad2 class="mr-2 size-4" />
+									<span>My Games</span>
 								</DropdownMenu.Item>
 							</a>
 						</DropdownMenu.Group>

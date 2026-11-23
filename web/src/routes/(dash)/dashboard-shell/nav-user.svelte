@@ -3,6 +3,7 @@
 	import IconChevronsUpDown from '@lucide/svelte/icons/chevrons-up-down';
 	import IconLogout from '@lucide/svelte/icons/log-out';
 	import IconDashboard from '@lucide/svelte/icons/layout-dashboard';
+	import IconGamepad2 from '@lucide/svelte/icons/gamepad-2';
 	import * as Avatar from '#lib/components/ui/avatar/index.js';
 	import * as DropdownMenu from '#lib/components/ui/dropdown-menu/index.js';
 	import * as Sidebar from '#lib/components/ui/sidebar/index.js';
@@ -55,6 +56,14 @@
 						<DropdownMenu.Item>
 							<IconUser />
 							Account
+						</DropdownMenu.Item>
+					</a>
+				</DropdownMenu.Group>
+				<DropdownMenu.Group>
+					<a href="/dashboard/games">
+						<DropdownMenu.Item>
+							<IconGamepad2 />
+							My Games
 						</DropdownMenu.Item>
 					</a>
 				</DropdownMenu.Group>
