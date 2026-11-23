@@ -367,11 +367,24 @@ paths:
               format: int64
         - name: user_id
           in: query
-          description: Filter games by user ID
+          description: Filter games by user id
           required: false
           schema:
             type: string
             format: uuid
+        - name: user_game_result
+          in: query
+          description: Filter games by result for user id, only used when there is user_id
+          required: false
+          schema:
+            type: array
+            items:
+              type: string
+              enum:
+                - "win"
+                - "loss"
+                - "draw"
+                - "interrupted"
         - name: rated
           in: query
           description: Filter games by rated flag

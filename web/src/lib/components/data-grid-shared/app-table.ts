@@ -30,6 +30,7 @@ import SelectHeader from './select-header.svelte';
 import TextCell from './text-cell.svelte';
 import DateCell from './date-cell.svelte';
 import ResizeHandle from './resize-handle.svelte';
+import TextValue from './text-value.svelte';
 
 export interface MyColumnMeta {
 	label?: string;
@@ -69,6 +70,7 @@ export const { createAppTable, createAppColumnHelper, appFeatures, useCellContex
 			DataTableCellId,
 			SelectCell,
 			TextCell,
+			TextValue,
 			DateCell
 		},
 		tableComponents: {

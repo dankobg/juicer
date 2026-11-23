@@ -32,7 +32,8 @@
 	let gameVariantIdCol = $derived(table.getColumn('game_variant_id'));
 	let gameTimeKindIdCol = $derived(table.getColumn('game_time_kind_id'));
 	let gameTimeCategoryIdCol = $derived(table.getColumn('game_time_category_id'));
-	let gameResultIdCol = $derived(table.getColumn('game_result_id'));
+	// let gameResultIdCol = $derived(table.getColumn('game_result_id'));
+	let userGameResultCol = $derived(table.getColumn('user_game_result'));
 	let gameResultStatusIdCol = $derived(table.getColumn('game_result_status_id'));
 	let gameStateIdCol = $derived(table.getColumn('game_state_id'));
 	let ratedCol = $derived(table.getColumn('rated'));
@@ -67,13 +68,20 @@
 		}
 	});
 
-	let gameResultIds = $derived.by(() => {
-		const params = page.url.searchParams.getAll('game_result_id');
+	// let gameResultIds = $derived.by(() => {
+	// 	const params = page.url.searchParams.getAll('game_result_id');
+	// 	if (params.length > 0) {
+	// 		const ids = params.map(Number).filter(Number.isFinite);
+	// 		if (ids.length > 0) {
+	// 			return ids;
+	// 		}
+	// 	}
+	// });
+
+	let userGameResults = $derived.by(() => {
+		const params = page.url.searchParams.getAll('user_game_result');
 		if (params.length > 0) {
-			const ids = params.map(Number).filter(Number.isFinite);
-			if (ids.length > 0) {
-				return ids;
-			}
+			return params;
 		}
 	});
 
@@ -107,7 +115,15 @@
 	let gameVariantOptions = gameVariants.map(x => ({ label: capitalize(x.name), value: String(x.id) }));
 	let gameTimeKindOptions = gameTimeKinds.map(x => ({ label: capitalize(x.name), value: String(x.id) }));
 	let gameTimeCategoryOptions = gameTimeCategories.map(x => ({ label: capitalize(x.name), value: String(x.id) }));
-	let gameResultOptions = gameResults.map(x => ({ label: capitalize(x.name), value: String(x.id) }));
+	// let gameResultOptions = gameResults.map(x => ({ label: capitalize(x.name), value: String(x.id) }));
+
+	const userGameResultOptions = [
+		{ label: 'Win', value: 'win' },
+		{ label: 'Loss', value: 'loss' },
+		{ label: 'Draw', value: 'draw' },
+		{ label: 'Interrupted', value: 'interrupted' }
+	];
+
 	let gameResultStatusOptions = gameResultStatuses.map(x => ({ label: capitalize(x.name), value: String(x.id) }));
 	let gameStateOptions = gameStates.map(x => ({ label: capitalize(x.name), value: String(x.id) }));
 
@@ -125,8 +141,11 @@
 		if (gameTimeCategoryIdCol && gameTimeCategoryIds) {
 			gameTimeCategoryIdCol.setFilterValue(gameTimeCategoryIds);
 		}
-		if (gameResultIdCol && gameResultIds) {
-			gameResultIdCol.setFilterValue(gameResultIds);
+		// if (gameResultIdCol && gameResultIds) {
+		// 	gameResultIdCol.setFilterValue(gameResultIds);
+		// }
+		if (userGameResultCol && userGameResults) {
+			userGameResultCol.setFilterValue(userGameResults);
 		}
 		if (gameResultStatusIdCol && gameResultStatusIds) {
 			gameResultStatusIdCol.setFilterValue(gameResultStatusIds);
@@ -145,7 +164,7 @@
 		{#if gameVariantIdCol}
 			<DataTableFacetedFilter
 				column={gameVariantIdCol}
-				title="Type"
+				title="Variant"
 				options={gameVariantOptions}
 				onFacetChange={(selected, opt) => {
 					const sp = new URLSearchParams(new URL(page.url.href).searchParams);
@@ -162,7 +181,7 @@
 		{#if gameTimeKindIdCol}
 			<DataTableFacetedFilter
 				column={gameTimeKindIdCol}
-				title="Type"
+				title="Time kind"
 				options={gameTimeKindOptions}
 				onFacetChange={(selected, opt) => {
 					const sp = new URLSearchParams(new URL(page.url.href).searchParams);
@@ -179,7 +198,7 @@
 		{#if gameTimeCategoryIdCol}
 			<DataTableFacetedFilter
 				column={gameTimeCategoryIdCol}
-				title="Type"
+				title="Time category"
 				options={gameTimeCategoryOptions}
 				onFacetChange={(selected, opt) => {
 					const sp = new URLSearchParams(new URL(page.url.href).searchParams);
@@ -193,10 +212,10 @@
 			/>
 		{/if}
 
-		{#if gameResultIdCol}
+		<!-- {#if gameResultIdCol}
 			<DataTableFacetedFilter
 				column={gameResultIdCol}
-				title="Type"
+				title="Result"
 				options={gameResultOptions}
 				onFacetChange={(selected, opt) => {
 					const sp = new URLSearchParams(new URL(page.url.href).searchParams);
@@ -208,12 +227,29 @@
 					gotoWithFilters(sp);
 				}}
 			/>
+		{/if} -->
+
+		{#if userGameResultCol}
+			<DataTableFacetedFilter
+				column={userGameResultCol}
+				title="Result"
+				options={userGameResultOptions}
+				onFacetChange={(selected, opt) => {
+					const sp = new URLSearchParams(new URL(page.url.href).searchParams);
+					if (selected) {
+						sp.append('user_game_result', opt.value);
+					} else {
+						sp.delete('user_game_result', opt.value);
+					}
+					gotoWithFilters(sp);
+				}}
+			/>
 		{/if}
 
 		{#if gameResultStatusIdCol}
 			<DataTableFacetedFilter
 				column={gameResultStatusIdCol}
-				title="Type"
+				title="Result status"
 				options={gameResultStatusOptions}
 				onFacetChange={(selected, opt) => {
 					const sp = new URLSearchParams(new URL(page.url.href).searchParams);
@@ -230,7 +266,7 @@
 		{#if gameStateIdCol}
 			<DataTableFacetedFilter
 				column={gameStateIdCol}
-				title="Type"
+				title="State"
 				options={gameStateOptions}
 				onFacetChange={(selected, opt) => {
 					const sp = new URLSearchParams(new URL(page.url.href).searchParams);

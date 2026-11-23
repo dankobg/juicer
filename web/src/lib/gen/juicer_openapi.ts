@@ -2455,8 +2455,10 @@ export interface operations {
                 game_result_status_id?: number[];
                 /** @description Filter games by game state id */
                 game_state_id?: number[];
-                /** @description Filter games by user ID */
+                /** @description Filter games by user id */
                 user_id?: string;
+                /** @description Filter games by result for user id, only used when there is user_id */
+                user_game_result?: PathsGamesGetParametersQueryUser_game_result[];
                 /** @description Filter games by rated flag */
                 rated?: boolean;
                 /** @description Filter games by from timestamp */
@@ -3677,6 +3679,12 @@ export interface operations {
             default: components["responses"]["UnexpectedErrorResponse"];
         };
     };
+}
+export enum PathsGamesGetParametersQueryUser_game_result {
+    win = "win",
+    loss = "loss",
+    draw = "draw",
+    interrupted = "interrupted"
 }
 export enum PathsGamesGetParametersQueryEmbed {
     moves = "moves"

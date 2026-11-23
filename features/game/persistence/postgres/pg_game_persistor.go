@@ -175,6 +175,48 @@ func (pst *PgGamePersistor) ListGames(ctx context.Context, filters game.ListGame
 				models.Games.Columns.WhiteID.EQ(psql.Arg(*filters.UserID)).
 					Or(models.Games.Columns.BlackID.EQ(psql.Arg(*filters.UserID))),
 			))
+
+			if filters.UserGameResult != nil {
+				var conditions []bob.Expression
+
+				for _, result := range *filters.UserGameResult {
+					switch result {
+					case "win":
+						conditions = append(conditions,
+							psql.Or(
+								models.Games.Columns.WhiteID.EQ(psql.Arg(*filters.UserID)).
+									And(models.Games.Columns.GameResultID.EQ(psql.Arg(1))),
+								models.Games.Columns.BlackID.EQ(psql.Arg(*filters.UserID)).
+									And(models.Games.Columns.GameResultID.EQ(psql.Arg(2))),
+							),
+						)
+
+					case "loss":
+						conditions = append(conditions,
+							psql.Or(
+								models.Games.Columns.WhiteID.EQ(psql.Arg(*filters.UserID)).
+									And(models.Games.Columns.GameResultID.EQ(psql.Arg(2))),
+								models.Games.Columns.BlackID.EQ(psql.Arg(*filters.UserID)).
+									And(models.Games.Columns.GameResultID.EQ(psql.Arg(1))),
+							),
+						)
+
+					case "draw":
+						conditions = append(conditions,
+							models.Games.Columns.GameResultID.EQ(psql.Arg(3)),
+						)
+
+					case "interrupted":
+						conditions = append(conditions,
+							models.Games.Columns.GameResultID.EQ(psql.Arg(4)),
+						)
+					}
+				}
+
+				if len(conditions) > 0 {
+					q.Apply(sm.Where(psql.Or(conditions...)))
+				}
+			}
 		}
 
 		if filters.Rated != nil {

@@ -1,7 +1,7 @@
 import DataTableRowActions from './data-table-row-actions.svelte';
 import type { components } from '#lib/gen/juicer_openapi.ts';
 import { createAppColumnHelper } from '#lib/components/data-grid-shared/app-table.ts';
-import { renderComponent } from '@tanstack/svelte-table';
+import { renderComponent, renderSnippet } from '@tanstack/svelte-table';
 import {
 	gameResultNames,
 	gameResultStatusNames,
@@ -13,6 +13,7 @@ import {
 import DataTableCellResult from './data-table-cell-result.svelte';
 import { Color } from '#lib/gen/juicer_pb.ts';
 import DataTableCellColor from './data-table-cell-color.svelte';
+import { createRawSnippet } from 'svelte';
 
 const columnHelper = createAppColumnHelper<components['schemas']['Game']>();
 
@@ -69,37 +70,61 @@ export function makeColumns(
 				return renderComponent(cell.TextCell);
 			}
 		}),
-		columnHelper.accessor(row => getGameVariantNames(gameVariants).get(row.game_variant_id), {
-			id: 'game_variant',
+		columnHelper.accessor('game_variant_id', {
 			header: ({ header }) => {
 				return renderComponent(header.DataTableColumnHeader, {
 					title: 'Variant'
 				});
 			},
-			cell: ({ cell }) => {
-				return renderComponent(cell.TextCell);
+			cell: ({ row }) => {
+				const gameVariantSnippet = createRawSnippet<[{ value: string | undefined }]>(getValue => {
+					const { value } = getValue();
+					return {
+						render: () => `<span>${value}</span>`
+					};
+				});
+
+				return renderSnippet(gameVariantSnippet, {
+					value: getGameVariantNames(gameVariants).get(row.original.game_variant_id)
+				});
 			}
 		}),
-		columnHelper.accessor(row => getGameTimeKindNames(gameTimeKinds).get(row.game_time_kind_id), {
-			id: 'game_time_kind',
+		columnHelper.accessor('game_time_kind_id', {
 			header: ({ header }) => {
 				return renderComponent(header.DataTableColumnHeader, {
 					title: 'Time kind'
 				});
 			},
-			cell: ({ cell }) => {
-				return renderComponent(cell.TextCell);
+			cell: ({ row }) => {
+				const gameTimeKindSnippet = createRawSnippet<[{ value: string | undefined }]>(getValue => {
+					const { value } = getValue();
+					return {
+						render: () => `<span>${value}</span>`
+					};
+				});
+
+				return renderSnippet(gameTimeKindSnippet, {
+					value: getGameTimeKindNames(gameTimeKinds).get(row.original.game_time_kind_id)
+				});
 			}
 		}),
-		columnHelper.accessor(row => getGameTimeCategoryNames(gameTimeCategories).get(row.game_time_category_id), {
-			id: 'game_time_category',
+		columnHelper.accessor('game_time_category_id', {
 			header: ({ header }) => {
 				return renderComponent(header.DataTableColumnHeader, {
 					title: 'Time category'
 				});
 			},
-			cell: ({ cell }) => {
-				return renderComponent(cell.TextCell);
+			cell: ({ row }) => {
+				const gameTimeCategorySnippet = createRawSnippet<[{ value: string | undefined }]>(getValue => {
+					const { value } = getValue();
+					return {
+						render: () => `<span>${value}</span>`
+					};
+				});
+
+				return renderSnippet(gameTimeCategorySnippet, {
+					value: getGameTimeCategoryNames(gameTimeCategories).get(row.original.game_time_category_id)
+				});
 			}
 		}),
 		columnHelper.accessor(
@@ -118,22 +143,51 @@ export function makeColumns(
 				}
 			}
 		),
+		// columnHelper.accessor('game_result_id', {
+		// 	header: ({ header }) => {
+		// 		return renderComponent(header.DataTableColumnHeader, {
+		// 			title: 'Result'
+		// 		});
+		// 	},
+		// 	cell: ({ row }) => {
+		// 		const getRes = (): 'win' | 'loss' | 'draw' | 'interrupted' => {
+		// 			const resultName = gameResultNames.get(row.original.game_result_id!);
+		// 			switch (resultName) {
+		// 				case 'white-won':
+		// 					if (userId === row.original.white_id) return 'win';
+		// 					return 'loss';
+		// 				case 'black-won':
+		// 					if (userId === row.original.white_id) return 'loss';
+		// 					return 'win';
+		// 				default:
+		// 					return resultName as 'win' | 'loss' | 'draw' | 'interrupted';
+		// 			}
+		// 		};
+
+		// 		return renderComponent(DataTableCellResult, {
+		// 			value: getRes()
+		// 		});
+		// 	}
+		// }),
 		columnHelper.accessor(
 			row => {
-				const resultName = gameResultNames.get(row.game_result_id!);
-				switch (resultName) {
-					case 'white-won':
-						if (userId === row.white_id) return 'win';
-						return 'loss';
-					case 'black-won':
-						if (userId === row.white_id) return 'loss';
-						return 'win';
-					default:
-						return resultName;
-				}
+				const getRes = (): 'win' | 'loss' | 'draw' | 'interrupted' => {
+					const resultName = gameResultNames.get(row.game_result_id!);
+					switch (resultName) {
+						case 'white-won':
+							if (userId === row.white_id) return 'win';
+							return 'loss';
+						case 'black-won':
+							if (userId === row.white_id) return 'loss';
+							return 'win';
+						default:
+							return resultName as 'win' | 'loss' | 'draw' | 'interrupted';
+					}
+				};
+				return getRes();
 			},
 			{
-				id: 'game_result',
+				id: 'user_game_result',
 				header: ({ header }) => {
 					return renderComponent(header.DataTableColumnHeader, {
 						title: 'Result'
@@ -141,31 +195,33 @@ export function makeColumns(
 				},
 				cell: ({ cell }) => {
 					return renderComponent(DataTableCellResult, {
-						value: cell.getValue() as 'win' | 'loss' | 'draw' | 'interrupted'
+						value: cell.getValue()
 					});
 				}
 			}
 		),
-		columnHelper.accessor(row => gameResultStatusNames.get(row.game_result_status_id!), {
-			id: 'game_result_status',
+		columnHelper.accessor('game_result_status_id', {
 			header: ({ header }) => {
 				return renderComponent(header.DataTableColumnHeader, {
 					title: 'Result status'
 				});
 			},
-			cell: ({ cell }) => {
-				return renderComponent(cell.TextCell);
+			cell: ({ cell, row }) => {
+				return renderComponent(cell.TextValue, {
+					value: gameResultStatusNames.get(row.original.game_result_status_id!)
+				});
 			}
 		}),
-		columnHelper.accessor(row => gameStateNames.get(row.game_state_id!), {
-			id: 'game_state',
+		columnHelper.accessor('game_state_id', {
 			header: ({ header }) => {
 				return renderComponent(header.DataTableColumnHeader, {
 					title: 'State'
 				});
 			},
-			cell: ({ cell }) => {
-				return renderComponent(cell.TextCell);
+			cell: ({ cell, row }) => {
+				return renderComponent(cell.TextValue, {
+					value: gameStateNames.get(row.original.game_state_id!)
+				});
 			}
 		}),
 		columnHelper.accessor('rated', {

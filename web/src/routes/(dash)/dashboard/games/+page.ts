@@ -1,7 +1,11 @@
 import { browser } from '$app/env';
 import { goto } from '$app/navigation';
 import { juicer } from '#lib/juicer/client.ts';
-import type { operations, PathsGamesGetParametersQueryEmbed } from '#lib/gen/juicer_openapi.ts';
+import type {
+	operations,
+	PathsGamesGetParametersQueryEmbed,
+	PathsGamesGetParametersQueryUser_game_result
+} from '#lib/gen/juicer_openapi.ts';
 import { config } from '#lib/kratos/config.ts';
 import type { PageLoad } from './$types';
 
@@ -83,6 +87,11 @@ export const load: PageLoad = async ({ fetch, url, depends, parent }) => {
 	const userIdParam = url.searchParams.get('user_id');
 	if (userIdParam) {
 		listGamesParams.query!.user_id = userIdParam;
+	}
+
+	const userGameResultParams = url.searchParams.getAll('user_game_result');
+	if (userGameResultParams.length > 0) {
+		listGamesParams.query!.user_game_result = userGameResultParams as PathsGamesGetParametersQueryUser_game_result[];
 	}
 
 	const ratedParam = url.searchParams.get('rated');
