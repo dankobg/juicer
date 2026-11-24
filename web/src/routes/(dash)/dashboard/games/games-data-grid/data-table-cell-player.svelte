@@ -1,11 +1,11 @@
 <script lang="ts">
 	import { Color } from '#lib/gen/juicer_pb.ts';
 
-	let { color }: { color?: Color } = $props();
+	let { username, color }: { username: string; color: Color } = $props();
 </script>
 
 <div class="flex items-center justify-center gap-2">
-	{color === Color.WHITE ? 'White' : 'Black'}
+	{username}
 	<svg
 		class={['h-5 w-5 stroke-10', color === Color.WHITE ? 'fill-white stroke-black' : 'fill-black stroke-white']}
 		viewBox="0 0 100 100"

@@ -12,8 +12,8 @@ import {
 } from './data';
 import DataTableCellResult from './data-table-cell-result.svelte';
 import { Color } from '#lib/gen/juicer_pb.ts';
-import DataTableCellColor from './data-table-cell-color.svelte';
 import { createRawSnippet } from 'svelte';
+import DataTableCellPlayer from './data-table-cell-player.svelte';
 
 const columnHelper = createAppColumnHelper<components['schemas']['Game']>();
 
@@ -47,27 +47,37 @@ export function makeColumns(
 			}
 		}),
 		columnHelper.accessor(row => (userId === row.white_id ? Color.WHITE : Color.BLACK), {
-			id: 'color',
+			id: 'me',
 			header: ({ header }) => {
 				return renderComponent(header.DataTableColumnHeader, {
-					title: 'Color'
+					title: 'Me'
 				});
 			},
-			cell: ({ cell }) => {
-				return renderComponent(DataTableCellColor, {
-					color: cell.getValue()
+			cell: ({ cell, row }) => {
+				return renderComponent(DataTableCellPlayer, {
+					color: cell.getValue(),
+					username:
+						cell.getValue() === Color.WHITE
+							? row.original.white_username_snapshot
+							: row.original.black_username_snapshot
 				});
 			}
 		}),
-		columnHelper.accessor(row => (userId === row.white_id ? row.black_id : row.white_id), {
+		columnHelper.accessor(row => (userId === row.white_id ? Color.BLACK : Color.WHITE), {
 			id: 'opponent',
 			header: ({ header }) => {
 				return renderComponent(header.DataTableColumnHeader, {
 					title: 'Opponent'
 				});
 			},
-			cell: ({ cell }) => {
-				return renderComponent(cell.TextCell);
+			cell: ({ cell, row }) => {
+				return renderComponent(DataTableCellPlayer, {
+					color: cell.getValue(),
+					username:
+						cell.getValue() === Color.WHITE
+							? row.original.white_username_snapshot
+							: row.original.black_username_snapshot
+				});
 			}
 		}),
 		columnHelper.accessor('game_variant_id', {

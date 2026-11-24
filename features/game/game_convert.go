@@ -15,15 +15,25 @@ func GameToResponse(g models.Game) api.Game {
 		blackIsGuest = true
 	}
 
+	var whiteUsernameSnapshot, blackUsernameSnapshot string
+	if g.WhiteUsernameSnapshot.IsValue() {
+		whiteUsernameSnapshot = g.WhiteUsernameSnapshot.MustGet()
+	}
+	if g.BlackUsernameSnapshot.IsValue() {
+		blackUsernameSnapshot = g.BlackUsernameSnapshot.MustGet()
+	}
+
 	return api.Game{
-		ID:           g.ID,
-		WhiteID:      g.WhiteID.Ptr(),
-		BlackID:      g.BlackID.Ptr(),
-		WhiteIsGuest: whiteIsGuest,
-		BlackIsGuest: blackIsGuest,
-		Rated:        g.Rated,
-		WhiteGuestID: g.GuestWhiteID.Ptr(),
-		BlackGuestID: g.GuestBlackID.Ptr(),
+		ID:                    g.ID,
+		WhiteID:               g.WhiteID.Ptr(),
+		BlackID:               g.BlackID.Ptr(),
+		WhiteIsGuest:          whiteIsGuest,
+		BlackIsGuest:          blackIsGuest,
+		Rated:                 g.Rated,
+		WhiteGuestID:          g.GuestWhiteID.Ptr(),
+		BlackGuestID:          g.GuestBlackID.Ptr(),
+		WhiteUsernameSnapshot: whiteUsernameSnapshot,
+		BlackUsernameSnapshot: blackUsernameSnapshot,
 		// WhiteGameClock:         int64(g.WhiteGameClock), // @TODO: check lejtaaaaaaaaa
 		// BlackGameClock:         int64(g.BlackGameClock), // @TODO: check lejtaaaaaaaaa
 		GameVariantID:          g.GameVariantID,
@@ -56,15 +66,25 @@ func GameDetailsToResponse(g GameDetails) api.Game {
 		blackIsGuest = true
 	}
 
+	var whiteUsernameSnapshot, blackUsernameSnapshot string
+	if g.WhiteUsernameSnapshot.IsValue() {
+		whiteUsernameSnapshot = g.WhiteUsernameSnapshot.MustGet()
+	}
+	if g.BlackUsernameSnapshot.IsValue() {
+		blackUsernameSnapshot = g.BlackUsernameSnapshot.MustGet()
+	}
+
 	game := api.Game{
-		ID:           g.ID,
-		WhiteID:      g.WhiteID.Ptr(),
-		BlackID:      g.BlackID.Ptr(),
-		WhiteIsGuest: whiteIsGuest,
-		BlackIsGuest: blackIsGuest,
-		Rated:        g.Rated,
-		WhiteGuestID: g.GuestWhiteID.Ptr(),
-		BlackGuestID: g.GuestBlackID.Ptr(),
+		ID:                    g.ID,
+		WhiteID:               g.WhiteID.Ptr(),
+		BlackID:               g.BlackID.Ptr(),
+		WhiteIsGuest:          whiteIsGuest,
+		BlackIsGuest:          blackIsGuest,
+		Rated:                 g.Rated,
+		WhiteGuestID:          g.GuestWhiteID.Ptr(),
+		BlackGuestID:          g.GuestBlackID.Ptr(),
+		WhiteUsernameSnapshot: whiteUsernameSnapshot,
+		BlackUsernameSnapshot: blackUsernameSnapshot,
 		// WhiteGameClock:         int64(g.WhiteGameClock), // @TODO: check lejtaaaaaaaaa
 		// BlackGameClock:         int64(g.BlackGameClock), // @TODO: check lejtaaaaaaaaa
 		GameVariantID:          g.GameVariantID,

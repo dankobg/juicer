@@ -16,8 +16,8 @@
 	<div class="flex h-full flex-1 flex-col space-y-8 p-8">
 		<div class="flex items-center justify-between space-y-2">
 			<div>
-				<h2 class="text-2xl font-bold tracking-tight">Games</h2>
-				<p class="text-muted-foreground">List of Games</p>
+				<h2 class="text-2xl font-bold tracking-tight">My Games</h2>
+				<p class="text-muted-foreground">List of my Games</p>
 			</div>
 		</div>
 		<DataTable

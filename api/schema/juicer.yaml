@@ -2864,6 +2864,8 @@ components:
         - game_state_id
         - white_is_guest
         - black_is_guest
+        - white_username_snapshot
+        - black_username_snapshot
         - time_control_clock_ms
         - time_control_increment_ms
         - reconnect_timeout_ms
@@ -2916,6 +2918,12 @@ components:
         black_is_guest:
           type: boolean
           description: Whether white is guest user
+        white_username_snapshot:
+          type: string
+          description: White player username snapshot
+        black_username_snapshot:
+          type: string
+          description: Black player username snapshot
         time_control_clock_ms:
           type: integer
           format: int64

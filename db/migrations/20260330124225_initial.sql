@@ -108,6 +108,8 @@ create table "game" (
   "black_id" uuid,
   "guest_white_id" uuid,
   "guest_black_id" uuid,
+  "white_username_snapshot" character varying(64),
+  "black_username_snapshot" character varying(64),
   "game_variant_id" bigint not null,
   "game_time_kind_id" bigint not null,
   "game_time_category_id" bigint not null,

@@ -1153,6 +1153,10 @@ export interface components {
             rated: boolean;
             /** @description Whether white is guest user */
             black_is_guest: boolean;
+            /** @description White player username snapshot */
+            white_username_snapshot: string;
+            /** @description Black player username snapshot */
+            black_username_snapshot: string;
             /**
              * Format: int64
              * @description Time control clock
