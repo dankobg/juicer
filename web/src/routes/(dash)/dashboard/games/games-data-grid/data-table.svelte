@@ -16,7 +16,6 @@
 	import { createAppTable, type AppFeatures } from '#lib/components/data-grid-shared/app-table.ts';
 	import { getCommonPinningStyles } from '#lib/components/data-grid-shared/common-pinning-styles.ts';
 	import { cn } from '#lib/utils.ts';
-	import { makeColumns } from './columns';
 
 	let {
 		columns,

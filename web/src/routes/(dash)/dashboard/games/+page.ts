@@ -17,7 +17,8 @@ export const load: PageLoad = async ({ fetch, url, depends, parent }) => {
 
 	const listGamesParams: operations['listGames']['parameters'] = {
 		query: {
-			user_id: auth?.user?.id
+			user_id: auth?.user?.id,
+			sort: ['-start_time']
 		}
 	};
 
